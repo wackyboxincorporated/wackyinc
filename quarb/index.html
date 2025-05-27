@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>twang</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+            padding: 10px;
+            background-color: rgba(0,0,0,0.7);
+            border-radius: 8px;
+            font-size: 0.9em;
+            z-index: 100;
+            color: #eee;
+        }
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5em;
+            color: #fff;
+            z-index: 200;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="info" class="text-sm md:text-base">
+        loading… drag the screen to rotate… tap the Quarb to make it funky.
+    </div>
+    <div id="loading">(loading).</div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+
+        let scene, camera, renderer, mesh, controls, raycaster;
+        let clock = new THREE.Clock();
+        let originalPositions = null; // Will be Float32Array
+        let morphedPositions = null; // To store current state of morph
+
+        // --- Configuration ---
+        const SHAPE_SIZE = 2.5;
+        const SUBDIVISIONS = 7;
+
+        const hdriURL = 'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/2k/phalzer_forest_01_2k.hdr';
+        const objectTextureURL = 'https://placehold.co/1024x1024/777/ccc?text=Metallic+Pattern';
+
+        const ripples = []; // Array to store active ripple effects
+        const MAX_RIPPLES = 5; // Max concurrent ripples
+        const RIPPLE_DURATION = 2.5; // seconds
+        const RIPPLE_SPEED = 3.0;
+        const RIPPLE_AMPLITUDE = 0.3 * SHAPE_SIZE; // Max displacement of ripple
+
+        function init() {
+            const loadingDiv = document.getElementById('loading');
+            const infoDiv = document.getElementById('info');
+
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, SHAPE_SIZE * 0.5, SHAPE_SIZE * 3);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.0;
+            document.body.appendChild(renderer.domElement);
+
+            raycaster = new THREE.Raycaster();
+
+            const rgbeLoader = new RGBELoader();
+            const textureLoader = new THREE.TextureLoader();
+            let hdriLoaded = false;
+            let textureLoaded = false;
+
+            rgbeLoader.load(hdriURL, (texture) => {
+                texture.mapping = THREE.EquirectangularReflectionMapping;
+                scene.background = texture;
+                scene.environment = texture;
+                hdriLoaded = true;
+                checkAssetsLoaded();
+            }, undefined, (error) => {
+                console.error('Error loading HDRI:', error);
+                scene.background = new THREE.Color(0x111111);
+                hdriLoaded = true;
+                checkAssetsLoaded();
+            });
+
+            const diffuseTexture = textureLoader.load(objectTextureURL, () => {
+                textureLoaded = true;
+                checkAssetsLoaded();
+            }, undefined, (error) => {
+                console.error('Error loading object texture:', error);
+                textureLoaded = true;
+                checkAssetsLoaded();
+            });
+            diffuseTexture.wrapS = THREE.RepeatWrapping;
+            diffuseTexture.wrapT = THREE.RepeatWrapping;
+            diffuseTexture.repeat.set(3, 3);
+
+            function checkAssetsLoaded() {
+                if (hdriLoaded && textureLoaded) {
+                    if (loadingDiv) loadingDiv.style.display = 'none';
+                    if (infoDiv) infoDiv.textContent = 'Click/Tap the shape to see it morph. Drag to rotate.';
+                    createSceneObjects(diffuseTexture);
+                    animate();
+                }
+            }
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.minDistance = SHAPE_SIZE * 1.2;
+            controls.maxDistance = SHAPE_SIZE * 10;
+            controls.target.set(0, SHAPE_SIZE * 0.2, 0);
+
+            window.addEventListener('resize', onWindowResize, false);
+            renderer.domElement.addEventListener('pointerdown', onPointerDown, false);
+        }
+
+        function createSceneObjects(loadedTexture) {
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+            scene.add(ambientLight);
+
+            const keyLight = new THREE.DirectionalLight(0xffffff, 1.0);
+            keyLight.position.set(5, 5, 5);
+            keyLight.castShadow = true;
+            keyLight.shadow.mapSize.width = 2048;
+            keyLight.shadow.mapSize.height = 2048;
+            keyLight.shadow.camera.near = 0.5;
+            keyLight.shadow.camera.far = 50;
+            const shadowCamSize = 10;
+            keyLight.shadow.camera.left = -shadowCamSize;
+            keyLight.shadow.camera.right = shadowCamSize;
+            keyLight.shadow.camera.top = shadowCamSize;
+            keyLight.shadow.camera.bottom = -shadowCamSize;
+            keyLight.shadow.bias = -0.001;
+            scene.add(keyLight);
+            // const keyLightHelper = new THREE.CameraHelper(keyLight.shadow.camera);
+            // scene.add(keyLightHelper);
+
+            const fillLight = new THREE.DirectionalLight(0xaaaaff, 0.5);
+            fillLight.position.set(-5, 2, 5);
+            scene.add(fillLight);
+
+            const geometry = new THREE.IcosahedronGeometry(SHAPE_SIZE, SUBDIVISIONS);
+            geometry.computeVertexNormals(); // Initial normals
+
+            // Store original positions
+            originalPositions = geometry.attributes.position.array.slice(); // Create a copy
+            morphedPositions = geometry.attributes.position.array.slice(); // Initialize morphed with original
+
+            const material = new THREE.MeshStandardMaterial({
+                map: loadedTexture,
+                color: 0xffffff,
+                metalness: 0.95,
+                roughness: 0.05,
+                envMap: scene.environment,
+                envMapIntensity: 1.5,
+            });
+
+            mesh = new THREE.Mesh(geometry, material);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            scene.add(mesh);
+
+            const groundGeo = new THREE.PlaneGeometry(100, 100);
+            const groundMat = new THREE.MeshStandardMaterial({
+                color: 0x222222,
+                metalness: 0.6,
+                roughness: 0.5,
+                envMap: scene.environment,
+                envMapIntensity: 0.7
+            });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = -SHAPE_SIZE * 1.5;
+            ground.receiveShadow = true;
+            scene.add(ground);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function onPointerDown(event) {
+            event.preventDefault(); // Prevent default browser actions
+
+            const pointer = new THREE.Vector2();
+            pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+            pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(pointer, camera);
+            const intersects = raycaster.intersectObject(mesh);
+
+            if (intersects.length > 0) {
+                const intersection = intersects[0];
+                const point = intersection.point; // World coordinates of the click
+                const normal = intersection.face.normal.clone().transformDirection(mesh.matrixWorld).normalize(); // World normal
+
+                if (ripples.length >= MAX_RIPPLES) {
+                    ripples.shift(); // Remove the oldest ripple if max is reached
+                }
+                ripples.push({
+                    center: point,
+                    startTime: clock.getElapsedTime(),
+                    normal: normal // Store the normal at the point of impact for directional displacement
+                });
+            }
+        }
+
+        function applyMorphing() {
+            if (!mesh || !originalPositions) return;
+
+            const positionAttribute = mesh.geometry.attributes.position;
+            const time = clock.getElapsedTime();
+
+            // Reset to original positions before applying ripples Ok
+            positionAttribute.array.set(originalPositions); // Start from base shape
+
+            const tempVec = new THREE.Vector3(); // For calculations
+
+            for (let r = 0; r < ripples.length; r++) {
+                const ripple = ripples[r];
+                const rippleAge = time - ripple.startTime;
+
+                if (rippleAge > RIPPLE_DURATION) {
+                    ripples.splice(r, 1); // Remove old ripple
+                    r--;
+                    continue;
+                }
+
+                const progress = rippleAge / RIPPLE_DURATION; // 0 to 1
+                const currentRippleRadius = rippleAge * RIPPLE_SPEED;
+                // Amplitude decays over the ripple's life (e.g., using a sine wave for in-out effect)
+                const currentAmplitude = RIPPLE_AMPLITUDE * Math.sin(progress * Math.PI);
+
+                for (let i = 0; i < positionAttribute.count; i++) {
+                    tempVec.fromArray(originalPositions, i * 3); // Get original vertex position
+                    const distToCenter = tempVec.distanceTo(ripple.center);
+
+                    // Affect vertices within the expanding wave front
+                    const waveWidth = SHAPE_SIZE * 0.5; // How thick the ripple wave is
+                    if (distToCenter > currentRippleRadius - waveWidth && distToCenter < currentRippleRadius + waveWidth) {
+                        // Calculate displacement
+                        // The (currentRippleRadius - distToCenter) / waveWidth creates a profile for the wave
+                        // It's 1 at the inner edge, 0 at center, -1 at outer edge of the wave segment
+                        const waveProfile = Math.sin(((distToCenter - currentRippleRadius) / waveWidth) * Math.PI);
+                        const displacement = currentAmplitude * waveProfile;
+
+                        // Apply displacement along the impact normal, or vertex normal
+                        // Using impact normal for a more "pushed in/out" effect
+                        const dx = ripple.normal.x * displacement;
+                        const dy = ripple.normal.y * displacement;
+                        const dz = ripple.normal.z * displacement;
+
+                        // Add to current morphed position
+                        positionAttribute.array[i * 3] += dx;
+                        positionAttribute.array[i * 3 + 1] += dy;
+                        positionAttribute.array[i * 3 + 2] += dz;
+                    }
+                }
+            }
+
+            positionAttribute.needsUpdate = true;
+            // Recomputing normals is very expensive
+            if (ripples.length > 0) { // Only compute if there are active ripples
+                mesh.geometry.computeVertexNormals();
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            applyMorphing(); // Apply ripple effects
+            renderer.render(scene, camera);
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
