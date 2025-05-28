@@ -3,497 +3,267 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LibOpenMPT Tracker Player</title>
+    <title>Tracker Music Player</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        /* Custom styles for range inputs for better cross-browser appearance */
-        input[type="range"] {
-            -webkit-appearance: none;
-            appearance: none;
+        /* Custom CSS for better visual appeal and responsiveness */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Dark background */
+            color: #e2e8f0; /* Light text */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #2d3748; /* Slightly lighter dark background for the container */
+            border-radius: 1rem; /* More rounded corners */
+            padding: 2rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            max-width: 500px;
             width: 100%;
-            height: 8px;
-            background: #d3d3d3;
-            outline: none;
-            opacity: 0.7;
-            -webkit-transition: .2s;
-            transition: opacity .2s;
-            border-radius: 4px;
+            text-align: center;
         }
-        input[type="range"]:hover {
-            opacity: 1;
+        .btn {
+            @apply px-6 py-3 rounded-xl font-semibold transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-opacity-75;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 16px;
-            height: 16px;
-            background: #4F46E5; /* Indigo-600 */
-            cursor: pointer;
-            border-radius: 50%;
+        .btn-primary {
+            @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500;
         }
-        input[type="range"]::-moz-range-thumb {
-            width: 16px;
-            height: 16px;
-            background: #4F46E5; /* Indigo-600 */
-            cursor: pointer;
-            border-radius: 50%;
-            border: none;
+        .btn-secondary {
+            @apply bg-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500;
         }
-        .disabled-button {
-            opacity: 0.5;
-            cursor: not-allowed;
+        .file-input-label {
+            @apply block w-full cursor-pointer bg-purple-600 text-white py-3 px-4 rounded-xl font-semibold text-center hover:bg-purple-700 transition duration-300 ease-in-out transform hover:scale-105;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        input[type="file"] {
+            display: none; /* Hide the default file input */
+        }
+        .info-text {
+            @apply text-lg font-medium text-gray-300;
+        }
+        .info-value {
+            @apply text-xl font-bold text-white;
         }
     </style>
-    <script>
-      window.libOpenMPTLoadError = false;
-      window.libOpenMPTLoadErrorMessage = "Unknown error loading libopenmpt.js";
-    </script>
-    <script src="https://unpkg.com/libopenmpt-js@0.7.0/libopenmpt.js"
-            onerror="window.libOpenMPTLoadError = true; window.libOpenMPTLoadErrorMessage = 'onerror: libopenmpt.js script failed to load from unpkg.com CDN.'; console.error(window.libOpenMPTLoadErrorMessage);">
-    </script>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col items-center justify-center p-4 selection:bg-indigo-500 selection:text-white">
-
-    <div class="bg-gray-800 p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-2xl">
-        <header class="mb-6 text-center">
-            <h1 class="text-3xl font-bold text-indigo-400">Tracker Module Player</h1>
-            <p class="text-sm text-gray-400 mt-1">Powered by LibOpenMPT</p>
-        </header>
+<body>
+    <div class="container">
+        <h1 class="text-4xl font-extrabold mb-6 text-white">Tracker Music Player</h1>
 
         <div class="mb-6">
-            <label for="file-input" class="block text-sm font-medium text-gray-300 mb-2">Select Module File:</label>
-            <input type="file" id="file-input" accept=".mod,.s3m,.xm,.it,.mptm,.stm,.nst,.wow,.okt,.med,.far,.ult,.669,.mtm,.ptm,.mdl,.dsm,.amf,.psm,.j2b,.dmf,.umx,.gdm,.imf,.stx,.mt2,.ice,.mo3,.oxm,.pt36,.sfx,.sfx2,.mms,.symmod,.digi,.dbm,.dtm,.emod,.mdz,.s3z,.xmz,.itz,.mdr,.itr,.xmr,.s3r"
-                   class="block w-full text-sm text-gray-300
-                          file:mr-4 file:py-2 file:px-4
-                          file:rounded-lg file:border-0
-                          file:text-sm file:font-semibold
-                          file:bg-indigo-600 file:text-indigo-50
-                          hover:file:bg-indigo-700
-                          focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150">
+            <label for="moduleFile" class="file-input-label">
+                Choose a Tracker Module (.mod, .s3m, .xm, .it)
+            </label>
+            <input type="file" id="moduleFile" accept=".mod,.s3m,.xm,.it">
+            <p id="fileNameDisplay" class="text-sm text-gray-400 mt-2">No file chosen</p>
         </div>
 
-        <div id="status-message" class="mb-4 text-sm text-center text-yellow-400 min-h-[20px]">
-            Loading LibOpenMPT...
+        <div class="flex justify-center space-x-4 mb-8">
+            <button id="playButton" class="btn btn-primary" disabled>Play</button>
+            <button id="pauseButton" class="btn btn-secondary" disabled>Pause</button>
+            <button id="stopButton" class="btn btn-secondary" disabled>Stop</button>
         </div>
 
-        <div id="module-info-container" class="mb-6 p-4 bg-gray-700 rounded-lg hidden">
-            <h2 class="text-xl font-semibold text-indigo-300 mb-2">Module Information</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                <div><strong class="text-gray-400">Title:</strong> <span id="info-title" class="text-gray-200">N/A</span></div>
-                <div><strong class="text-gray-400">Artist:</strong> <span id="info-artist" class="text-gray-200">N/A</span></div>
-                <div><strong class="text-gray-400">Tracker:</strong> <span id="info-tracker" class="text-gray-200">N/A</span></div>
-                <div><strong class="text-gray-400">Type:</strong> <span id="info-type" class="text-gray-200">N/A</span></div>
-            </div>
-        </div>
-
-        <div class="space-y-4">
-            <div class="flex items-center space-x-3">
-                <span id="current-time" class="text-xs text-gray-400 w-12 text-center">0:00</span>
-                <input type="range" id="seek-bar" value="0" max="100" class="flex-grow" disabled>
-                <span id="total-time" class="text-xs text-gray-400 w-12 text-center">0:00</span>
-            </div>
-
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div class="flex space-x-3">
-                    <button id="play-pause-button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-150 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 disabled-button" disabled>
-                        Play
-                    </button>
-                    <button id="stop-button" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-150 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 disabled-button" disabled>
-                        Stop
-                    </button>
-                </div>
-                <div class="flex items-center space-x-2 w-full sm:w-auto">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 11-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z" clip-rule="evenodd" />
-                    </svg>
-                    <input type="range" id="volume-control" min="0" max="1" step="0.01" value="0.7" class="w-24 sm:w-32">
-                </div>
-            </div>
+        <div class="text-left space-y-3">
+            <p class="info-text">Module Title: <span id="moduleTitle" class="info-value">N/A</span></p>
+            <p class="info-text">Module Artist: <span id="moduleArtist" class="info-value">N/A</span></p>
         </div>
     </div>
 
-    <footer class="mt-8 text-center text-xs text-gray-500">
-        <p>Tip: Use keyboard spacebar to Play/Pause.</p>
-    </footer>
-
+    <!--
+        IMPORTANT: You need to download libopenmpt.js from the source you provided
+        (e.g., https://file.garden/ZMbUnW5nmTe-x54m/libopenmpt.js)
+        and place it in the same directory as this HTML file.
+        This is necessary because direct fetching from file.garden might be blocked by CORS.
+    -->
+    <script src="libopenmpt.js"></script>
     <script>
-        // --- UI Elements ---
-        const fileInput = document.getElementById('file-input');
-        const playPauseButton = document.getElementById('play-pause-button');
-        const stopButton = document.getElementById('stop-button');
-        const volumeControl = document.getElementById('volume-control');
-        const seekBar = document.getElementById('seek-bar');
-        const currentTimeDisplay = document.getElementById('current-time');
-        const totalTimeDisplay = document.getElementById('total-time');
-        const statusMessage = document.getElementById('status-message');
-        const moduleInfoContainer = document.getElementById('module-info-container');
-        const infoTitle = document.getElementById('info-title');
-        const infoArtist = document.getElementById('info-artist');
-        const infoTracker = document.getElementById('info-tracker');
-        const infoType = document.getElementById('info-type');
+        // Global variables for audio context and player instances
+        let audioContext = null;
+        let scriptProcessorNode = null;
+        let modPlayer = null;
+        let currentModuleBuffer = null; // Stores the ArrayBuffer of the loaded module
 
-        // --- Check for library loading status ---
-        // This script block runs after the libopenmpt.js script tag has been processed.
-        if (window.libOpenMPTLoadError) {
-            statusMessage.textContent = 'ERROR: Failed to load core audio library (' + window.libOpenMPTLoadErrorMessage + '). Player cannot start.';
-        } else if (typeof LibTypedModule === 'undefined') {
-            statusMessage.textContent = 'ERROR: Audio library (libopenmpt.js) seems loaded, but LibTypedModule is not defined. Player cannot start.';
-            console.error("LibTypedModule is undefined, though the script tag for libopenmpt.js did not report an immediate load error. This might indicate an issue within the library script itself or its execution environment.");
-        } else {
-            // --- Library is likely available, proceed with initialization ---
-            statusMessage.textContent = 'Core audio library found. Initializing player...';
+        // Get references to DOM elements
+        const moduleFile = document.getElementById('moduleFile');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+        const playButton = document.getElementById('playButton');
+        const pauseButton = document.getElementById('pauseButton');
+        const stopButton = document.getElementById('stopButton');
+        const moduleTitleSpan = document.getElementById('moduleTitle');
+        const moduleArtistSpan = document.getElementById('moduleArtist');
 
-            // --- Global Variables ---
-            let OpenMPT = null; 
-            let audioContext = null;
-            let scriptNode = null;
-            let gainNode = null;
-            let currentModulePtr = 0; 
-            let currentFileBufferPtr = 0;
-            let isPlaying = false;
-            let isModuleLoaded = false;
-            let sampleRate = 48000; 
-            const SCRIPT_NODE_BUFFER_SIZE = 4096; 
-            let leftBufferPtr = 0; 
-            let rightBufferPtr = 0;
-            
-            // --- Initialization ---
-            LibTypedModule({
-                // locateFile: (path, prefix) => `https://unpkg.com/libopenmpt-js@0.7.0/${path}` // For unpkg, .wasm should be found relative to .js
-            }).then((loadedModule) => {
-                OpenMPT = loadedModule;
-                statusMessage.textContent = 'Player ready. Select a module file.';
-                console.log('LibOpenMPT Initialized (WASM module loaded):', OpenMPT);
-                enableControls();
-                allocateWasmBuffers();
-            }).catch(err => {
-                statusMessage.textContent = 'Error initializing LibOpenMPT WASM module: ' + (err.message || err);
-                console.error("LibOpenMPT WASM module initialization failed:", err);
-            });
-
-            function allocateWasmBuffers() {
-                if (!OpenMPT) return;
-                leftBufferPtr = OpenMPT._malloc(SCRIPT_NODE_BUFFER_SIZE * 4);
-                rightBufferPtr = OpenMPT._malloc(SCRIPT_NODE_BUFFER_SIZE * 4);
-                if (!leftBufferPtr || !rightBufferPtr) {
-                    console.error("Failed to allocate WASM buffers for audio.");
-                    statusMessage.textContent = "Error: Failed to allocate memory for audio processing.";
-                }
+        /**
+         * Initializes the Web Audio API AudioContext.
+         * Creates a new AudioContext if one doesn't already exist.
+         */
+        function initAudioContext() {
+            if (!audioContext) {
+                // Use window.AudioContext or window.webkitAudioContext for cross-browser compatibility
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
             }
-            
-            function initAudioContext() {
-                if (!audioContext) {
-                    try {
-                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                        sampleRate = audioContext.sampleRate;
-                        gainNode = audioContext.createGain();
-                        gainNode.gain.value = parseFloat(volumeControl.value);
-                        gainNode.connect(audioContext.destination);
-                    } catch (e) {
-                        console.error("Failed to initialize AudioContext:", e);
-                        statusMessage.textContent = "Error: Could not initialize audio playback.";
-                        return; 
-                    }
-                }
-                if (audioContext.state === 'suspended') {
-                    audioContext.resume().catch(err => console.warn("AudioContext resume failed:", err));
-                }
-            }
-
-            // --- File Handling ---
-            fileInput.addEventListener('change', (event) => {
-                const file = event.target.files[0];
-                if (file && OpenMPT) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const fileData = new Uint8Array(e.target.result);
-                        loadModule(fileData);
-                    };
-                    reader.onerror = (e) => {
-                        statusMessage.textContent = 'Error reading file.';
-                        console.error("File reading error:", e);
-                    }
-                    reader.readAsArrayBuffer(file);
-                    statusMessage.textContent = `Loading ${file.name}...`;
-                }
-            });
-
-            function loadModule(fileData) {
-                if (!OpenMPT) {
-                    statusMessage.textContent = 'LibOpenMPT (WASM) not ready.';
-                    return;
-                }
-                
-                stopPlayback(false); 
-
-                if (currentModulePtr) {
-                    OpenMPT._openmpt_module_destroy(currentModulePtr);
-                    currentModulePtr = 0;
-                }
-                if (currentFileBufferPtr) {
-                    OpenMPT._free(currentFileBufferPtr);
-                    currentFileBufferPtr = 0;
-                }
-
-                currentFileBufferPtr = OpenMPT._malloc(fileData.byteLength);
-                if (!currentFileBufferPtr) {
-                    statusMessage.textContent = 'Error: Failed to allocate memory for module.';
-                    console.error("Failed to allocate WASM memory for file data.");
-                    return;
-                }
-                OpenMPT.HEAPU8.set(fileData, currentFileBufferPtr);
-                
-                currentModulePtr = OpenMPT._openmpt_module_create_from_memory(currentFileBufferPtr, fileData.byteLength, 0, 0, 0);
-
-                if (!currentModulePtr) {
-                    statusMessage.textContent = 'Error: Could not load module. Invalid format or corrupted file.';
-                    console.error("Failed to create module from memory. Pointer is null.");
-                    OpenMPT._free(currentFileBufferPtr); 
-                    currentFileBufferPtr = 0;
-                    isModuleLoaded = false;
-                    resetUIForNewModule();
-                    return;
-                }
-
-                isModuleLoaded = true;
-                initAudioContext(); 
-                if (!audioContext) { 
-                     statusMessage.textContent = 'Module loaded, but audio playback is not available.';
-                     isModuleLoaded = false; 
-                     resetUIForNewModule();
-                     return;
-                }
-
-                statusMessage.textContent = 'Module loaded successfully!';
-                displayModuleInfo();
-                setupScriptNode(); 
-                updateSeekBarAndTimes();
-                playPauseButton.disabled = false;
-                stopButton.disabled = false;
-                seekBar.disabled = false;
-                playPauseButton.classList.remove('disabled-button');
-                stopButton.classList.remove('disabled-button');
-            }
-
-            function displayModuleInfo() {
-                if (!OpenMPT || !currentModulePtr) return;
-
-                const keysPtr = OpenMPT._openmpt_module_get_metadata_keys(currentModulePtr);
-                const keysStr = OpenMPT.UTF8ToString(keysPtr);
-                OpenMPT._openmpt_free_string(keysPtr); 
-
-                const metadata = {};
-                if (keysStr) {
-                    keysStr.split(';').forEach(key => {
-                        if (key) {
-                            const keyPtr = OpenMPT.allocateUTF8(key);
-                            const valuePtr = OpenMPT._openmpt_module_get_metadata(currentModulePtr, keyPtr);
-                            metadata[key] = OpenMPT.UTF8ToString(valuePtr);
-                            OpenMPT._free(keyPtr);
-                            OpenMPT._openmpt_free_string(valuePtr);
-                        }
-                    });
-                }
-                
-                infoTitle.textContent = metadata.title || 'N/A';
-                infoArtist.textContent = metadata.artist || 'N/A';
-                infoTracker.textContent = metadata.tracker || metadata.creator || 'N/A';
-                infoType.textContent = metadata.type_long || metadata.type || 'N/A';
-                moduleInfoContainer.classList.remove('hidden');
-            }
-            
-            function setupScriptNode() {
-                if (!audioContext || !currentModulePtr) {
-                    console.warn("Cannot setup ScriptNode: AudioContext or Module not ready.");
-                    return;
-                }
-
-                if (scriptNode) {
-                    scriptNode.disconnect(); 
-                }
-                scriptNode = audioContext.createScriptProcessor(SCRIPT_NODE_BUFFER_SIZE, 0, 2); 
-                scriptNode.onaudioprocess = audioProcessingCallback;
-            }
-
-            function audioProcessingCallback(audioProcessingEvent) {
-                if (!isPlaying || !currentModulePtr || !OpenMPT || !leftBufferPtr || !rightBufferPtr) {
-                    const outputBuffer = audioProcessingEvent.outputBuffer;
-                    for (let channel = 0; channel < outputBuffer.numberOfChannels; channel++) {
-                        outputBuffer.getChannelData(channel).fill(0);
-                    }
-                    return;
-                }
-
-                const framesToProcess = audioProcessingEvent.outputBuffer.length;
-                
-                const framesRead = OpenMPT._openmpt_module_read_float_stereo(
-                    currentModulePtr,
-                    sampleRate,
-                    framesToProcess,
-                    leftBufferPtr,
-                    rightBufferPtr
-                );
-
-                const outputL = audioProcessingEvent.outputBuffer.getChannelData(0);
-                const outputR = audioProcessingEvent.outputBuffer.getChannelData(1);
-
-                if (framesRead > 0) {
-                    const wasmHeapFloatLeft = OpenMPT.HEAPF32.subarray(leftBufferPtr / 4, leftBufferPtr / 4 + framesRead);
-                    const wasmHeapFloatRight = OpenMPT.HEAPF32.subarray(rightBufferPtr / 4, rightBufferPtr / 4 + framesRead);
-                    
-                    outputL.set(wasmHeapFloatLeft);
-                    outputR.set(wasmHeapFloatRight);
-
-                } else { 
-                    outputL.fill(0);
-                    outputR.fill(0);
-                    if (isPlaying) { 
-                        stopPlayback(true); 
-                        statusMessage.textContent = "Playback finished.";
-                    }
-                }
-                
-                if (isPlaying) {
-                     requestAnimationFrame(updateSeekBarAndTimes);
-                }
-            }
-
-            playPauseButton.addEventListener('click', togglePlayPause);
-            stopButton.addEventListener('click', () => stopPlayback(true));
-
-            function togglePlayPause() {
-                if (!isModuleLoaded || !OpenMPT) return;
-                
-                initAudioContext(); 
-                if (!audioContext || audioContext.state === 'closed') {
-                    statusMessage.textContent = "Audio playback not available or closed.";
-                    return;
-                }
-                if (audioContext.state === 'suspended') {
-                    audioContext.resume().then(() => {
-                        actuallyTogglePlayPause();
-                    }).catch(err => {
-                        statusMessage.textContent = "Failed to resume audio. Click page?";
-                        console.warn("AudioContext resume failed on toggle:", err);
-                    });
-                } else {
-                    actuallyTogglePlayPause();
-                }
-            }
-            
-            function actuallyTogglePlayPause() {
-                if (!isModuleLoaded || !scriptNode || !gainNode) { 
-                    console.warn("Cannot toggle play/pause: module or audio nodes not ready.");
-                    statusMessage.textContent = "Player not fully ready.";
-                    return;
-                }
-
-                isPlaying = !isPlaying;
-                if (isPlaying) {
-                    scriptNode.connect(gainNode); 
-                    playPauseButton.textContent = 'Pause';
-                    statusMessage.textContent = 'Playing...';
-                } else {
-                    scriptNode.disconnect(); 
-                    playPauseButton.textContent = 'Play';
-                    statusMessage.textContent = 'Paused.';
-                }
-            }
-
-            function stopPlayback(resetUI) {
-                if (scriptNode) {
-                    scriptNode.disconnect();
-                }
-                isPlaying = false;
-                if (OpenMPT && currentModulePtr) {
-                    OpenMPT._openmpt_module_set_position_seconds(currentModulePtr, 0);
-                }
-                if (resetUI) {
-                    playPauseButton.textContent = 'Play';
-                    seekBar.value = 0;
-                    currentTimeDisplay.textContent = formatTime(0);
-                    statusMessage.textContent = 'Stopped.';
-                    if (!isModuleLoaded) { 
-                        resetUIForNewModule();
-                    }
-                }
-            }
-            
-            function resetUIForNewModule() {
-                moduleInfoContainer.classList.add('hidden');
-                infoTitle.textContent = 'N/A';
-                infoArtist.textContent = 'N/A';
-                infoTracker.textContent = 'N/A';
-                infoType.textContent = 'N/A';
-                totalTimeDisplay.textContent = formatTime(0);
-                currentTimeDisplay.textContent = formatTime(0);
-                seekBar.value = 0;
-                seekBar.max = 100; 
-                playPauseButton.textContent = 'Play';
-                playPauseButton.disabled = true;
-                stopButton.disabled = true;
-                seekBar.disabled = true;
-                playPauseButton.classList.add('disabled-button');
-                stopButton.classList.add('disabled-button');
-            }
-
-            volumeControl.addEventListener('input', (event) => {
-                if (gainNode) {
-                    gainNode.gain.value = parseFloat(event.target.value);
-                }
-            });
-
-            seekBar.addEventListener('input', (event) => {
-                if (OpenMPT && currentModulePtr && isModuleLoaded) {
-                    const newPosition = parseFloat(event.target.value);
-                    OpenMPT._openmpt_module_set_position_seconds(currentModulePtr, newPosition);
-                    if (!isPlaying) { 
-                        currentTimeDisplay.textContent = formatTime(newPosition);
-                    }
-                }
-            });
-
-            function updateSeekBarAndTimes() {
-                if (!OpenMPT || !currentModulePtr || !isModuleLoaded) return;
-
-                const duration = OpenMPT._openmpt_module_get_duration_seconds(currentModulePtr);
-                const position = OpenMPT._openmpt_module_get_position_seconds(currentModulePtr);
-
-                seekBar.max = duration;
-                seekBar.value = position;
-                currentTimeDisplay.textContent = formatTime(position);
-                totalTimeDisplay.textContent = formatTime(duration);
-            }
-
-            function formatTime(seconds) {
-                const min = Math.floor(seconds / 60);
-                const sec = Math.floor(seconds % 60).toString().padStart(2, '0');
-                return `${min}:${sec}`;
-            }
-
-            function enableControls() {
-                // Controls are enabled/disabled dynamically based on module load state.
-            }
-            
-            document.addEventListener('keydown', (event) => {
-                if (event.code === 'Space' && isModuleLoaded && playPauseButton && !playPauseButton.disabled) {
-                    event.preventDefault(); 
-                    togglePlayPause();
-                }
-            });
-
-            resetUIForNewModule(); 
-
-            function initialUserInteractionListener() {
-                console.log("Initial user interaction detected, attempting to init AudioContext.");
-                initAudioContext(); 
-                document.body.removeEventListener('click', initialUserInteractionListener, {capture: true});
-                document.body.removeEventListener('keydown', initialUserInteractionListener, {capture: true});
-            }
-            document.body.addEventListener('click', initialUserInteractionListener, { once: true, capture: true });
-            document.body.addEventListener('keydown', initialUserInteractionListener, { once: true, capture: true });
         }
+
+        /**
+         * Loads a tracker module from an ArrayBuffer and starts playback.
+         * @param {ArrayBuffer} arrayBuffer The ArrayBuffer containing the module data.
+         */
+        async function loadAndPlayModule(arrayBuffer) {
+            initAudioContext(); // Ensure AudioContext is initialized
+
+            // If a player already exists, stop and unload it before loading a new one
+            if (modPlayer) {
+                modPlayer.stop();
+                modPlayer.unload();
+                // Disconnect and clear the ScriptProcessorNode if it exists
+                if (scriptProcessorNode) {
+                    scriptProcessorNode.disconnect(audioContext.destination);
+                    scriptProcessorNode = null;
+                }
+            }
+
+            try {
+                // Create a new OpenMPT player instance with the AudioContext and module data
+                modPlayer = new OpenMPT(audioContext, arrayBuffer);
+
+                // Update module metadata display
+                moduleTitleSpan.textContent = modPlayer.metadata.title || 'Unknown Title';
+                moduleArtistSpan.textContent = modPlayer.metadata.artist || 'Unknown Artist';
+
+                // Create a ScriptProcessorNode to process audio data from OpenMPT
+                // The first parameter (0) lets the browser choose the optimal buffer size.
+                // The last two parameters (0, 2) specify 0 input channels and 2 output channels (stereo).
+                scriptProcessorNode = audioContext.createScriptProcessor(0, 0, 2);
+
+                // This event handler is called when the audio buffer needs to be filled
+                scriptProcessorNode.onaudioprocess = (event) => {
+                    // Get the audio data buffers for the left and right channels
+                    const left = event.outputBuffer.getChannelData(0);
+                    const right = event.outputBuffer.getChannelData(1);
+
+                    // Request OpenMPT to process and fill the audio buffers
+                    modPlayer.process(left, right);
+                };
+
+                // Connect the ScriptProcessorNode to the audio context's destination (speakers)
+                scriptProcessorNode.connect(audioContext.destination);
+
+                // Start playback in OpenMPT
+                modPlayer.play();
+
+                // Update button states
+                playButton.disabled = true; // Disable play as it's already playing
+                pauseButton.disabled = false; // Enable pause
+                stopButton.disabled = false; // Enable stop
+                pauseButton.textContent = 'Pause'; // Reset pause button text
+            } catch (error) {
+                console.error("Error loading or playing module:", error);
+                // Reset UI on error
+                moduleTitleSpan.textContent = 'Error';
+                moduleArtistSpan.textContent = 'Check console';
+                playButton.disabled = false;
+                pauseButton.disabled = true;
+                stopButton.disabled = true;
+                // Optionally, display a user-friendly message in a modal or div
+            }
+        }
+
+        /**
+         * Handles the file input change event.
+         * Reads the selected file as an ArrayBuffer.
+         */
+        moduleFile.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                fileNameDisplay.textContent = file.name; // Display selected file name
+                try {
+                    // Read the file content as an ArrayBuffer
+                    currentModuleBuffer = await file.arrayBuffer();
+                    playButton.disabled = false; // Enable play button once a file is selected and read
+                    moduleTitleSpan.textContent = 'Ready to play';
+                    moduleArtistSpan.textContent = '';
+                } catch (error) {
+                    console.error("Error reading file:", error);
+                    fileNameDisplay.textContent = 'Error reading file';
+                    playButton.disabled = true;
+                    moduleTitleSpan.textContent = 'N/A';
+                    moduleArtistSpan.textContent = 'N/A';
+                }
+            } else {
+                fileNameDisplay.textContent = 'No file chosen';
+                playButton.disabled = true;
+                moduleTitleSpan.textContent = 'N/A';
+                moduleArtistSpan.textContent = 'N/A';
+            }
+        });
+
+        /**
+         * Event listener for the Play button.
+         * Starts playback of the currently loaded module.
+         */
+        playButton.addEventListener('click', () => {
+            if (currentModuleBuffer) {
+                loadAndPlayModule(currentModuleBuffer);
+            }
+        });
+
+        /**
+         * Event listener for the Pause/Resume button.
+         * Toggles between pausing and resuming playback.
+         */
+        pauseButton.addEventListener('click', () => {
+            if (modPlayer) {
+                if (modPlayer.isPaused()) {
+                    modPlayer.play(); // Resume playback
+                    pauseButton.textContent = 'Pause';
+                } else {
+                    modPlayer.pause(); // Pause playback
+                    pauseButton.textContent = 'Resume';
+                }
+            }
+        });
+
+        /**
+         * Event listener for the Stop button.
+         * Stops playback and unloads the module.
+         */
+        stopButton.addEventListener('click', () => {
+            if (modPlayer) {
+                modPlayer.stop(); // Stop playback
+                modPlayer.unload(); // Unload the module from OpenMPT
+                modPlayer = null; // Clear the player instance
+
+                // Disconnect the ScriptProcessorNode from the audio destination
+                if (scriptProcessorNode) {
+                    scriptProcessorNode.disconnect(audioContext.destination);
+                    scriptProcessorNode = null; // Clear the node instance
+                }
+
+                // Reset UI elements
+                moduleTitleSpan.textContent = 'N/A';
+                moduleArtistSpan.textContent = 'N/A';
+                fileNameDisplay.textContent = 'No file chosen';
+                moduleFile.value = ''; // Clear file input selection
+
+                // Update button states
+                playButton.disabled = true; // Disable play until a new file is selected
+                pauseButton.disabled = true;
+                stopButton.disabled = true;
+                pauseButton.textContent = 'Pause'; // Reset pause button text
+            }
+        });
+
+        // Initialize button states on page load
+        playButton.disabled = true;
+        pauseButton.disabled = true;
+        stopButton.disabled = true;
     </script>
 </body>
 </html>
