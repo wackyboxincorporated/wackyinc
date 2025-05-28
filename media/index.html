@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Play the Sound</title>
+    <title>wb-player 2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -121,8 +121,8 @@
 </head>
 <body>
     <div class="container">
-        <h1>Play the Sound</h1>
-        <p>Enter a URL or select a local file to play:</p>
+        <h1>wb-player version 2</h1>
+        <p>enter a url or select a local file...</p>
 
         <div class="input-group">
             <input type="text" id="audioUrlInput" placeholder="Enter audio URL (e.g., .mp3, .flac)">
@@ -132,13 +132,13 @@
         <div class="input-group">
             <div class="file-input-wrapper">
                 <input type="file" id="audioFileInput" accept="audio/*">
-                <label for="audioFileInput" class="file-upload-label">Select Local Audio File</label>
+                <label for="audioFileInput" class="file-upload-label">pick something off your device!</label>
             </div>
         </div>
 
         <audio controls autoplay loop>
             <source src="https://wackybox.org/19-4.flac" type="audio/flac">
-            Your browser does not support the audio element.
+            Your browser does not support flac files... what the hell are you loading this on?
         </audio>
 
         <div id="audioSourceDisplay" class="audio-source">
