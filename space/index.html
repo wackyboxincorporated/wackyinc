@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Orbiting 3D Objects</title>
+    <title>space</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body {
@@ -13,9 +13,9 @@
             background-color: #1a1a2e; /* Dark background */
             color: #e0e0e0;
             display: flex;
-            flex-direction: column; /* Changed to column to allow centering of single element */
-            align-items: center; /* Center horizontally */
-            justify-content: center; /* Center vertically */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             min-height: 100vh;
         }
         canvas {
@@ -26,19 +26,88 @@
             border-radius: 15px;
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
         }
+        /* Removed .controls-info styling */
+        .mobile-controls {
+            display: none; /* Hidden by default, shown on mobile */
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 10;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .joystick-area {
+            width: 120px;
+            height: 120px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            touch-action: none; /* Prevent browser default touch actions */
+        }
+        .joystick-handle {
+            width: 60px;
+            height: 60px;
+            background-color: rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            position: absolute;
+        }
+        .look-area {
+            flex-grow: 1;
+            height: 120px;
+            background-color: rgba(255, 255, 255, 0.05);
+            margin-left: 20px;
+            border-radius: 10px;
+            touch-action: none; /* Prevent browser default touch actions */
+        }
+
+        /* Show mobile controls only on small screens */
+        @media (max-width: 768px) {
+            /* Removed .controls-info display none as the element is gone */
+            .mobile-controls {
+                display: flex;
+            }
+        }
     </style>
 </head>
 <body>
     <canvas id="threeJsCanvas"></canvas>
+
+    <div class="mobile-controls">
+        <div id="joystickArea" class="joystick-area">
+            <div id="joystickHandle" class="joystick-handle"></div>
+        </div>
+        <div id="lookArea" class="look-area"></div>
+    </div>
 
     <script>
         // Global variables for Three.js scene components
         let scene, camera, renderer;
         let objects = []; // Array to hold all 3D objects (cubes, triangles, hexagons)
 
-        // Camera orbit parameters
-        const cameraOrbitRadius = 35; // Increased camera orbit radius to accommodate more objects
-        const cameraOrbitSpeed = 0.0005;
+        // Camera movement and look parameters
+        const moveSpeed = 0.2; // Decreased from 0.5 to 0.2 for slower WASD movement
+        const lookSpeed = 0.005; // Increased from 0.002 to 0.005 for higher mouse sensitivity
+        const mobileLookSpeed = 0.005; // Touch look sensitivity (kept same)
+        const mobileMoveSpeed = 0.3; // Mobile movement speed (kept same)
+
+        let keys = { w: false, a: false, s: false, d: false }; // Track pressed keys
+        let mouseX = 0, mouseY = 0;
+        let prevMouseX = 0, prevMouseY = 0;
+        let isMouseDown = false;
+
+        // Mobile control variables
+        let isMobile = false;
+        let joystickHandle, joystickArea;
+        let joystickActive = false;
+        let joystickStart = { x: 0, y: 0 };
+        let joystickCurrent = { x: 0, y: 0 };
+        let lookArea;
+        let touchLookActive = false;
+        let touchLookStart = { x: 0, y: 0 };
 
         // Function to create a simple procedural texture (e.g., a checkerboard pattern)
         function createCheckerboardTexture() {
@@ -52,8 +121,8 @@
                     const stride = (i * size + j) * 3;
                     const color = (Math.floor(i / (size / 8)) % 2) === (Math.floor(j / (size / 8)) % 2) ? color1 : color2;
                     data[stride] = Math.floor(color.r * 255);
-                    data[stride + 1] = Math.floor(color.g * 255);
-                    data[stride + 2] = Math.floor(color.b * 255);
+                    data[stride + 1] = Math.floor(color.r * 255);
+                    data[stride + 2] = Math.floor(color.r * 255);
                 }
             }
             const texture = new THREE.DataTexture(data, size, size, THREE.RGBFormat);
@@ -63,49 +132,41 @@
 
         // Initialize the 3D scene
         function init() {
+            // Check for mobile device
+            isMobile = /Mobi|Android/i.test(navigator.userAgent);
+
             // Create a new Three.js scene
             scene = new THREE.Scene();
-            // Set the scene background to emit a dim global light
             scene.background = new THREE.Color(0x2a2a3a); // A slightly brighter, dim background color
 
             // Set up the camera
-            // PerspectiveCamera(FOV, Aspect Ratio, Near, Far)
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(cameraOrbitRadius, 10, 0); // Initial camera position for orbiting
+            camera.position.set(0, 5, 20); // Initial camera position (closer to center)
 
             // Set up the WebGL renderer
             renderer = new THREE.WebGLRenderer({ antialias: true, canvas: document.getElementById('threeJsCanvas') });
-            renderer.setSize(window.innerWidth, window.innerHeight * 0.9); // Set renderer size based on canvas height
-            renderer.setPixelRatio(window.devicePixelRatio); // Handle high DPI displays
+            renderer.setSize(window.innerWidth, window.innerHeight * 0.9);
+            renderer.setPixelRatio(window.devicePixelRatio);
 
             // Add improved lighting
-            // Ambient light for general illumination
             const ambientLight = new THREE.AmbientLight(0x404040, 1.0);
             scene.add(ambientLight);
-
-            // Hemisphere light for more natural lighting (sky and ground colors)
             const hemisphereLight = new THREE.HemisphereLight(0xb1e1ff, 0xb97a20, 1.0);
             scene.add(hemisphereLight);
-
-            // Directional light 1 (main light source)
             const directionalLight1 = new THREE.DirectionalLight(0xffffff, 1.5);
             directionalLight1.position.set(5, 10, 7).normalize();
             scene.add(directionalLight1);
-
-            // Directional light 2 (fill light from another angle)
             const directionalLight2 = new THREE.DirectionalLight(0xffffff, 1.0);
             directionalLight2.position.set(-5, -10, -7).normalize();
             scene.add(directionalLight2);
-
-            // Add a PointLight for more localized and intense illumination
             const pointLight = new THREE.PointLight(0xffffff, 1.5, 100);
             pointLight.position.set(0, 10, 0);
             scene.add(pointLight);
 
             // Define common geometry for cubes, triangles, and hexagons
             const cubeGeometry = new THREE.BoxGeometry(2, 2, 2);
-            const triangleGeometry = new THREE.ConeGeometry(1.5, 2, 3); // Radius, Height, Segments (3 for triangle)
-            const hexagonGeometry = new THREE.CylinderGeometry(1.5, 1.5, 1, 6); // RadiusTop, RadiusBottom, Height, Segments (6 for hexagon)
+            const triangleGeometry = new THREE.ConeGeometry(1.5, 2, 3);
+            const hexagonGeometry = new THREE.CylinderGeometry(1.5, 1.5, 1, 6);
 
             // Function to generate a random color
             function getRandomColor() {
@@ -121,13 +182,13 @@
             function createRandomObject(geometry, baseRadius, index) {
                 const material = new THREE.MeshStandardMaterial({
                     color: getRandomColor(),
-                    metalness: Math.random() * 0.5 + 0.5, // Metalness between 0.5 and 1.0
-                    roughness: Math.random() * 0.5, // Roughness between 0.0 and 0.5
+                    metalness: Math.random() * 0.5 + 0.5,
+                    roughness: Math.random() * 0.5,
                     map: createCheckerboardTexture()
                 });
                 const object = new THREE.Mesh(geometry, material);
                 object.userData = {
-                    orbitRadius: baseRadius + index * 0.8, // Adjusted increment for more objects
+                    orbitRadius: baseRadius + index * 0.15,
                     orbitSpeed: (Math.random() * 0.005 + 0.002) * (Math.random() > 0.5 ? 1 : -1),
                     orbitOffset: Math.random() * Math.PI * 2,
                     rotationSpeedX: Math.random() * 0.01 + 0.005,
@@ -163,28 +224,49 @@
                 scene.add(cube);
             });
 
-            // Add 48 more cubes dynamically
-            const numberOfNewCubes = 48;
-            const baseOrbitRadiusCubes = 12;
+            // Quadruple the count of additional cubes
+            const numberOfNewCubes = 48 * 4; // 192 cubes
+            const baseOrbitRadiusCubes = 2; // Start closer to the camera
             for (let i = 0; i < numberOfNewCubes; i++) {
                 createRandomObject(cubeGeometry, baseOrbitRadiusCubes, i);
             }
 
-            // Add 32 triangles dynamically
-            const numberOfTriangles = 32;
-            const baseOrbitRadiusTriangles = baseOrbitRadiusCubes + numberOfNewCubes * 0.8; // Start after cubes
+            // Quadruple the count of triangles
+            const numberOfTriangles = 32 * 4; // 128 triangles
+            const baseOrbitRadiusTriangles = baseOrbitRadiusCubes + numberOfNewCubes * 0.15; // Continue from where cubes end
             for (let i = 0; i < numberOfTriangles; i++) {
                 createRandomObject(triangleGeometry, baseOrbitRadiusTriangles, i);
             }
 
-            // Add 32 hexagons dynamically
-            const numberOfHexagons = 32;
-            const baseOrbitRadiusHexagons = baseOrbitRadiusTriangles + numberOfTriangles * 0.8; // Start after triangles
+            // Quadruple the count of hexagons
+            const numberOfHexagons = 32 * 4; // 128 hexagons
+            const baseOrbitRadiusHexagons = baseOrbitRadiusTriangles + numberOfTriangles * 0.15; // Continue from where triangles end
             for (let i = 0; i < numberOfHexagons; i++) {
                 createRandomObject(hexagonGeometry, baseOrbitRadiusHexagons, i);
             }
 
-            // Add event listener for window resizing
+            // Event Listeners for Desktop Controls
+            if (!isMobile) {
+                document.addEventListener('keydown', onKeyDown, false);
+                document.addEventListener('keyup', onKeyUp, false);
+                document.addEventListener('mousemove', onMouseMove, false);
+                document.addEventListener('mousedown', onMouseDown, false);
+                document.addEventListener('mouseup', onMouseUp, false);
+            } else {
+                // Mobile Controls Setup
+                joystickHandle = document.getElementById('joystickHandle');
+                joystickArea = document.getElementById('joystickArea');
+                lookArea = document.getElementById('lookArea');
+
+                joystickArea.addEventListener('touchstart', onJoystickTouchStart, false);
+                joystickArea.addEventListener('touchmove', onJoystickTouchMove, false);
+                joystickArea.addEventListener('touchend', onJoystickTouchEnd, false);
+
+                lookArea.addEventListener('touchstart', onLookTouchStart, false);
+                lookArea.addEventListener('touchmove', onLookTouchMove, false);
+                lookArea.addEventListener('touchend', onLookTouchEnd, false);
+            }
+
             window.addEventListener('resize', onWindowResize, false);
         }
 
@@ -195,6 +277,121 @@
             renderer.setSize(window.innerWidth, window.innerHeight * 0.9);
         }
 
+        // --- Desktop Control Functions ---
+        function onKeyDown(event) {
+            switch (event.code) {
+                case 'KeyW': keys.w = true; break;
+                case 'KeyA': keys.a = true; break;
+                case 'KeyS': keys.s = true; break;
+                case 'KeyD': keys.d = true; break;
+            }
+        }
+
+        function onKeyUp(event) {
+            switch (event.code) {
+                case 'KeyW': keys.w = false; break;
+                case 'KeyA': keys.a = false; break;
+                case 'KeyS': keys.s = false; break;
+                case 'KeyD': keys.d = false; break;
+            }
+        }
+
+        function onMouseDown(event) {
+            isMouseDown = true;
+            prevMouseX = event.clientX;
+            prevMouseY = event.clientY;
+        }
+
+        function onMouseUp(event) {
+            isMouseDown = false;
+        }
+
+        function onMouseMove(event) {
+            if (!isMouseDown) return;
+
+            const deltaX = event.clientX - prevMouseX;
+            const deltaY = event.clientY - prevMouseY;
+
+            // Apply yaw (rotation around Y-axis)
+            camera.rotation.y -= deltaX * lookSpeed;
+            // Apply pitch (rotation around X-axis), clamped and inverted Y-axis
+            camera.rotation.x -= deltaY * lookSpeed; // Changed from += to -= to invert Y-axis
+            camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x)); // Clamp pitch
+
+            prevMouseX = event.clientX;
+            prevMouseY = event.clientY;
+        }
+
+        // --- Mobile Control Functions ---
+        function onJoystickTouchStart(event) {
+            event.preventDefault(); // Prevent scrolling/zooming
+            joystickActive = true;
+            const touch = event.touches[0];
+            joystickStart.x = touch.clientX;
+            joystickStart.y = touch.clientY;
+            joystickHandle.style.left = `${touch.clientX - joystickArea.getBoundingClientRect().left - joystickHandle.offsetWidth / 2}px`;
+            joystickHandle.style.top = `${touch.clientY - joystickArea.getBoundingClientRect().top - joystickHandle.offsetHeight / 2}px`;
+        }
+
+        function onJoystickTouchMove(event) {
+            if (!joystickActive) return;
+            event.preventDefault();
+            const touch = event.touches[0];
+            let deltaX = touch.clientX - joystickStart.x;
+            let deltaY = touch.clientY - joystickStart.y;
+
+            const maxDistance = joystickArea.offsetWidth / 2 - joystickHandle.offsetWidth / 2;
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+            if (distance > maxDistance) {
+                const angle = Math.atan2(deltaY, deltaX);
+                deltaX = Math.cos(angle) * maxDistance;
+                deltaY = Math.sin(angle) * maxDistance;
+            }
+
+            joystickCurrent.x = deltaX;
+            joystickCurrent.y = deltaY;
+
+            joystickHandle.style.left = `${joystickArea.offsetWidth / 2 + deltaX - joystickHandle.offsetWidth / 2}px`;
+            joystickHandle.style.top = `${joystickArea.offsetHeight / 2 + deltaY - joystickHandle.offsetHeight / 2}px`;
+        }
+
+        function onJoystickTouchEnd(event) {
+            joystickActive = false;
+            joystickCurrent.x = 0;
+            joystickCurrent.y = 0;
+            joystickHandle.style.left = '50%';
+            joystickHandle.style.top = '50%';
+            joystickHandle.style.transform = 'translate(-50%, -50%)'; // Reset to center
+        }
+
+        function onLookTouchStart(event) {
+            event.preventDefault();
+            touchLookActive = true;
+            const touch = event.touches[0];
+            prevMouseX = touch.clientX; // Reusing prevMouseX/Y for touch look
+            prevMouseY = touch.clientY;
+        }
+
+        function onLookTouchMove(event) {
+            if (!touchLookActive) return;
+            event.preventDefault();
+            const touch = event.touches[0];
+            const deltaX = touch.clientX - prevMouseX;
+            const deltaY = touch.clientY - prevMouseY;
+
+            camera.rotation.y -= deltaX * mobileLookSpeed;
+            camera.rotation.x -= deltaY * mobileLookSpeed;
+            camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
+
+            prevMouseX = touch.clientX;
+            prevMouseY = touch.clientY;
+        }
+
+        function onLookTouchEnd(event) {
+            touchLookActive = false;
+        }
+
         // Animation loop
         function animate() {
             requestAnimationFrame(animate);
@@ -203,25 +400,45 @@
 
             // Update each object's rotation and orbit
             objects.forEach(object => {
-                // Rotate object on its own axis
                 object.rotation.x += object.userData.rotationSpeedX;
                 object.rotation.y += object.userData.rotationSpeedY;
 
-                // Make object orbit around an invisible central point
                 object.position.x = Math.cos(time * object.userData.orbitSpeed + object.userData.orbitOffset) * object.userData.orbitRadius;
                 object.position.z = Math.sin(time * object.userData.orbitSpeed + object.userData.orbitOffset) * object.userData.orbitRadius;
-                // Add some vertical movement based on orbit speed
                 object.position.y = Math.sin(time * object.userData.orbitSpeed * 0.5 + object.userData.orbitOffset) * object.userData.orbitRadius * 0.2;
             });
 
-            // Make the camera orbit around the scene center
-            camera.position.x = Math.cos(time * cameraOrbitSpeed) * cameraOrbitRadius;
-            camera.position.z = Math.sin(time * cameraOrbitSpeed) * cameraOrbitRadius;
-            camera.position.y = Math.sin(time * cameraOrbitSpeed * 0.5) * cameraOrbitRadius * 0.3;
+            // Camera Movement
+            const cameraDirection = new THREE.Vector3();
+            camera.getWorldDirection(cameraDirection); // Get forward direction of camera
 
-            camera.lookAt(scene.position);
+            const rightDirection = new THREE.Vector3();
+            rightDirection.crossVectors(camera.up, cameraDirection); // Get right direction
 
-            // Render the scene with the camera
+            const moveVector = new THREE.Vector3();
+
+            if (isMobile) {
+                // Mobile movement based on joystick
+                const joystickMagnitude = Math.sqrt(joystickCurrent.x * joystickCurrent.x + joystickCurrent.y * joystickCurrent.y);
+                if (joystickMagnitude > 0) {
+                    const normalizedJoystickX = joystickCurrent.x / joystickArea.offsetWidth * 2; // Normalize to -1 to 1
+                    const normalizedJoystickY = joystickCurrent.y / joystickArea.offsetHeight * 2;
+
+                    // Map joystick to WASD-like movement relative to camera
+                    moveVector.addScaledVector(cameraDirection, -normalizedJoystickY * mobileMoveSpeed); // Forward/Backward
+                    moveVector.addScaledVector(rightDirection, normalizedJoystickX * mobileMoveSpeed); // Left/Right
+                }
+            } else {
+                // Desktop movement based on WASD keys
+                if (keys.w) moveVector.addScaledVector(cameraDirection, moveSpeed);
+                if (keys.s) moveVector.addScaledVector(cameraDirection, -moveSpeed);
+                if (keys.a) moveVector.addScaledVector(rightDirection, -moveSpeed);
+                if (keys.d) moveVector.addScaledVector(rightDirection, moveSpeed);
+            }
+
+            camera.position.add(moveVector);
+
+            // Render the scene
             renderer.render(scene, camera);
         }
 
