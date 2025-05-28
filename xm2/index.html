@@ -109,6 +109,14 @@
         document.getElementById('loadingMessage').classList.remove('hidden');
     </script>
     <script src="libopenmpt.js"></script>
+    <!--
+        Integrating chiptune2.js.
+        Note: The exact functionality and interaction with libopenmpt.js of chiptune2.js
+        is unknown without inspecting its content. It's included here as a script,
+        but further code changes might be needed to utilize its features or resolve
+        potential conflicts if it defines similar global objects or functionalities.
+    -->
+    <script src="https://wackybox.org/xm2/chiptune2.js"></script>
     <script>
         // Global variables for audio context and player instances
         let audioContext = null;
