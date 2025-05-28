@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Roboto Mono', monospace; 
+            font-family: 'Roboto Mono', monospace;
             background-color: #000000;
             color: #f0f0f0;
             display: flex;
@@ -18,6 +18,7 @@
             margin: 0;
             padding: 1rem;
             box-sizing: border-box;
+            position: relative;
         }
         .container {
             background-color: #282828;
@@ -27,6 +28,7 @@
             max-width: 90%;
             width: 500px;
             text-align: center;
+            position: relative;
         }
         audio {
             width: 100%;
@@ -105,17 +107,99 @@
             height: 100%;
         }
         .message-box {
-            background-color: #fed7d7;
-            color: #c53030;
             padding: 0.75rem;
             border-radius: 0.5rem;
             margin-top: 1rem;
             display: none;
             font-size: 0.9rem;
         }
-        .message-box.bg-green-100 {
+        .message-box.bg-red-200 {
+            background-color: #fed7d7;
+            color: #c53030;
+        }
+        .message-box.bg-green-200 {
             background-color: #c6f6d5;
             color: #2f855a;
+        }
+        #infoButton {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background-color: #4a5568;
+            color: white;
+            border-radius: 9999px;
+            padding: 0.75rem 1rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            transition: background-color 0.2s ease-in-out;
+            z-index: 1000;
+        }
+        #infoButton:hover {
+            background-color: #2d3748;
+        }
+        #infoPage {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            padding: 1rem;
+            box-sizing: border-box;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s;
+        }
+        #infoPage.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        #infoPageContent {
+            background-color: #282828;
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+            color: #f0f0f0;
+            position: relative;
+        }
+        #infoPageContent h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #ffffff;
+        }
+        #infoPageContent p {
+            font-size: 1rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+            color: #e0e0e0;
+        }
+        #closeInfoButton {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background-color: #880808;
+            color: white;
+            border-radius: 9999px;
+            padding: 0.5rem 0.8rem;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+            border: none;
+        }
+        #closeInfoButton:hover {
+            background-color: #660000;
         }
     </style>
 </head>
@@ -148,6 +232,18 @@
         <div id="messageBox" class="message-box"></div>
     </div>
 
+    <button id="infoButton">i</button>
+
+    <div id="infoPage">
+        <div id="infoPageContent">
+            <button id="closeInfoButton">X</button>
+            <h2>About wb-player</h2>
+            <p>wb-player 2. this application allows you to play audio files directly from a URL or by selecting them from your local storage !</p>
+            <p>it supports common audio formats like MP3, WAV, OGG, FLAC, AAC, and M4A. just paste a direct link to an audio file or upload one.</p>
+            <p>the modern web sucks 8@115.</p>
+        </div>
+    </div>
+
     <script>
         const audioPlayer = document.querySelector('audio');
         const audioUrlInput = document.getElementById('audioUrlInput');
@@ -155,6 +251,9 @@
         const audioFileInput = document.getElementById('audioFileInput');
         const audioSourceDisplay = document.getElementById('audioSourceDisplay');
         const messageBox = document.getElementById('messageBox');
+        const infoButton = document.getElementById('infoButton');
+        const infoPage = document.getElementById('infoPage');
+        const closeInfoButton = document.getElementById('closeInfoButton');
 
         function showMessage(message, type = 'error') {
             messageBox.textContent = message;
@@ -169,14 +268,8 @@
             }, 5000);
         }
 
-        function updateAudioSource(src, isLocalFile = false) {
-            audioPlayer.src = src;
-            audioPlayer.load();
-            audioPlayer.play().catch(e => {
-                console.error("Error playing audio:", e);
-                showMessage("Autoplay prevented. Please click play.", "info");
-            });
-
+        // Function to update the displayed audio source
+        function updateAudioDisplay(src, isLocalFile = false) {
             if (isLocalFile) {
                 audioSourceDisplay.innerHTML = 'Source: Local File';
             } else {
@@ -185,41 +278,104 @@
             messageBox.style.display = 'none';
         }
 
-        loadUrlButton.addEventListener('click', () => {
-            let url = audioUrlInput.value.trim();
-            if (url) {
-                let processedUrl = url;
+        // Function to attempt loading and playing an audio URL
+        async function attemptLoadAndPlay(src) {
+            return new Promise((resolve, reject) => {
+                audioPlayer.src = src;
+                audioPlayer.load();
 
-                const hasProtocol = processedUrl.startsWith('http://') || processedUrl.startsWith('https://');
-                const hasSlash = processedUrl.includes('/');
+                const onCanPlayThrough = () => {
+                    audioPlayer.removeEventListener('canplaythrough', onCanPlayThrough);
+                    audioPlayer.removeEventListener('error', onError);
+                    audioPlayer.play().then(() => {
+                        resolve();
+                    }).catch(e => {
+                        // Autoplay prevented, but resource is loaded.
+                        console.warn("Autoplay prevented for:", src, e);
+                        showMessage("Autoplay prevented. Please click play.", "info");
+                        resolve(); // Resolve even if autoplay fails, as the resource is loaded
+                    });
+                };
 
-                if (!hasProtocol && !hasSlash) {
-                    processedUrl = `https://wackybox.org/${processedUrl}`;
-                } else if (!hasProtocol) {
-                    processedUrl = `https://${processedUrl}`;
-                }
+                const onError = () => {
+                    audioPlayer.removeEventListener('canplaythrough', onCanPlayThrough);
+                    audioPlayer.removeEventListener('error', onError);
+                    reject(new Error(`Failed to load audio from ${src}`));
+                };
 
-                processedUrl = processedUrl.replace(/ /g, '%20');
+                audioPlayer.addEventListener('canplaythrough', onCanPlayThrough);
+                audioPlayer.addEventListener('error', onError);
+            });
+        }
 
-                const audioExtensions = ['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a'];
-                const isAudioUrl = audioExtensions.some(ext => processedUrl.toLowerCase().endsWith(ext));
-
-                if (isAudioUrl) {
-                    updateAudioSource(processedUrl);
-                } else {
-                    showMessage("Invalid URL format. Please provide a direct link to an audio file (e.g., .mp3, .flac).");
-                }
-            } else {
+        // Event listener for the "Load from URL" button
+        loadUrlButton.addEventListener('click', async () => {
+            let urlInput = audioUrlInput.value.trim();
+            if (!urlInput) {
                 showMessage("Please enter an audio URL.");
+                return;
+            }
+
+            let primaryUrl = urlInput;
+            let isShortPath = false;
+
+            const hasProtocol = primaryUrl.startsWith('http://') || primaryUrl.startsWith('https://');
+            const hasSlash = primaryUrl.includes('/');
+
+            // Determine if it's a short path (e.g., "19-4.flac")
+            if (!hasProtocol && !hasSlash) {
+                primaryUrl = `https://wackybox.org/${primaryUrl}`;
+                isShortPath = true;
+            } else if (!hasProtocol) {
+                // If it has slashes but no protocol, assume https
+                primaryUrl = `https://${primaryUrl}`;
+            }
+
+            primaryUrl = primaryUrl.replace(/ /g, '%20'); // Encode spaces
+
+            const audioExtensions = ['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a'];
+            const isAudioUrl = audioExtensions.some(ext => primaryUrl.toLowerCase().endsWith(ext));
+
+            if (!isAudioUrl) {
+                showMessage("Invalid URL format. Please provide a direct link to an audio file (e.g., .mp3, .flac).");
+                return;
+            }
+
+            try {
+                await attemptLoadAndPlay(primaryUrl);
+                updateAudioDisplay(primaryUrl);
+            } catch (error) {
+                console.error("Primary URL load failed:", error);
+                // If primary URL failed and it was a short path from wackybox.org, try fallback
+                if (isShortPath && primaryUrl.includes('wackybox.org')) {
+                    showMessage("Failed to load from wackybox.org, trying file.garden...", "info");
+                    const fallbackUrl = `https://file.garden/ZMbUnW5nmTe-x54m/${urlInput.replace(/ /g, '%20')}`;
+                    try {
+                        await attemptLoadAndPlay(fallbackUrl);
+                        updateAudioDisplay(fallbackUrl);
+                    } catch (fallbackError) {
+                        console.error("Fallback URL load failed:", fallbackError);
+                        showMessage("Failed to load audio from both primary and fallback sources.", "error");
+                    }
+                } else {
+                    showMessage("Failed to load audio. Please check the URL or try a different file.", "error");
+                }
             }
         });
 
+        // Event listener for the file input change
         audioFileInput.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
                 if (file.type.startsWith('audio/')) {
                     const fileURL = URL.createObjectURL(file);
-                    updateAudioSource(fileURL, true);
+                    audioPlayer.src = fileURL; // Set source for local file
+                    audioPlayer.load();
+                    audioPlayer.play().catch(e => {
+                        console.error("Error playing local audio:", e);
+                        showMessage("Autoplay prevented. Please click play.", "info");
+                    });
+                    updateAudioDisplay(fileURL, true); // Update display for local file
                 } else {
                     showMessage("Please select a valid audio file.");
                     audioFileInput.value = '';
@@ -227,9 +383,22 @@
             }
         });
 
+        // Event listeners for info page toggle with animation
+        infoButton.addEventListener('click', () => {
+            infoPage.classList.add('active');
+        });
+
+        closeInfoButton.addEventListener('click', () => {
+            infoPage.classList.remove('active');
+        });
+
+        // Set initial audio source display when the window loads
         window.onload = () => {
-            const initialSrc = audioPlayer.querySelector('source').src;
-            audioSourceDisplay.innerHTML = `Source: <a href="${initialSrc}" target="_blank" class="text-red-700 hover:underline">${initialSrc}</a>`;
+            const initialSourceElement = audioPlayer.querySelector('source');
+            if (initialSourceElement) {
+                const initialSrc = initialSourceElement.src;
+                updateAudioDisplay(initialSrc);
+            }
         };
     </script>
 </body>
