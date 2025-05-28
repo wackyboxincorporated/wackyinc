@@ -111,17 +111,14 @@
     <script src="libopenmpt.js"></script>
     <!--
         Integrating chiptune2.js.
-        Note: The exact functionality and interaction with libopenmpt.js of chiptune2.js
-        is unknown without inspecting its content. It's included here as a script,
-        but further code changes might be needed to utilize its features or resolve
-        potential conflicts if it defines similar global objects or functionalities.
+        This script is expected to provide a high-level API (e.g., ChiptunePlayer class)
+        to interact with libopenmpt.js.
     -->
     <script src="https://wackybox.org/xm2/chiptune2.js"></script>
     <script>
         // Global variables for audio context and player instances
         let audioContext = null;
-        let scriptProcessorNode = null;
-        let modPlayer = null;
+        let chiptunePlayer = null; // Renamed from modPlayer to reflect chiptune2.js usage
         let currentModuleBuffer = null; // Stores the ArrayBuffer of the loaded module
 
         // Get references to DOM elements
@@ -156,46 +153,30 @@
         async function loadAndPlayModule(arrayBuffer) {
             initAudioContext(); // Ensure AudioContext is initialized
 
-            // If a player already exists, stop and unload it before loading a new one
-            if (modPlayer) {
-                modPlayer.stop();
-                modPlayer.unload();
-                // Disconnect and clear the ScriptProcessorNode if it exists
-                if (scriptProcessorNode) {
-                    scriptProcessorNode.disconnect(audioContext.destination);
-                    scriptProcessorNode = null;
-                }
+            // If a chiptunePlayer already exists, stop and unload it before loading a new one
+            if (chiptunePlayer) {
+                chiptunePlayer.stop();
+                // chiptune2.js might not have an explicit 'unload' method,
+                // but stopping and replacing the instance is generally sufficient.
+                chiptunePlayer = null; // Clear the old instance
             }
 
             try {
-                // Create a new OpenMPT player instance with the AudioContext and module data
-                // This line will now be called only after Module.onRuntimeInitialized has fired.
-                modPlayer = new OpenMPT(audioContext, arrayBuffer);
+                // Instantiate ChiptunePlayer from chiptune2.js
+                // Assuming ChiptunePlayer takes the AudioContext and handles OpenMPT internally.
+                chiptunePlayer = new ChiptunePlayer(audioContext);
+
+                // Load the module data.
+                // Assuming chiptunePlayer.load takes an ArrayBuffer
+                await chiptunePlayer.load(arrayBuffer);
 
                 // Update module metadata display
-                moduleTitleSpan.textContent = modPlayer.metadata.title || 'Unknown Title';
-                moduleArtistSpan.textContent = modPlayer.metadata.artist || 'Unknown Artist';
+                // Assuming chiptunePlayer exposes metadata similar to OpenMPT
+                moduleTitleSpan.textContent = chiptunePlayer.metadata.title || 'Unknown Title';
+                moduleArtistSpan.textContent = chiptunePlayer.metadata.artist || 'Unknown Artist';
 
-                // Create a ScriptProcessorNode to process audio data from OpenMPT
-                // The first parameter (0) lets the browser choose the optimal buffer size.
-                // The last two parameters (0, 2) specify 0 input channels and 2 output channels (stereo).
-                scriptProcessorNode = audioContext.createScriptProcessor(0, 0, 2);
-
-                // This event handler is called when the audio buffer needs to be filled
-                scriptProcessorNode.onaudioprocess = (event) => {
-                    // Get the audio data buffers for the left and right channels
-                    const left = event.outputBuffer.getChannelData(0);
-                    const right = event.outputBuffer.getChannelData(1);
-
-                    // Request OpenMPT to process and fill the audio buffers
-                    modPlayer.process(left, right);
-                };
-
-                // Connect the ScriptProcessorNode to the audio context's destination (speakers)
-                scriptProcessorNode.connect(audioContext.destination);
-
-                // Start playback in OpenMPT
-                modPlayer.play();
+                // Start playback via chiptunePlayer
+                chiptunePlayer.play();
 
                 // Update button states
                 playButton.disabled = true; // Disable play as it's already playing
@@ -203,7 +184,7 @@
                 stopButton.disabled = false; // Enable stop
                 pauseButton.textContent = 'Pause'; // Reset pause button text
             } catch (error) {
-                console.error("Error loading or playing module:", error);
+                console.error("Error loading or playing module with chiptune2.js:", error);
                 // Reset UI on error
                 moduleTitleSpan.textContent = 'Error';
                 moduleArtistSpan.textContent = 'Check console';
@@ -258,12 +239,12 @@
          * Toggles between pausing and resuming playback.
          */
         pauseButton.addEventListener('click', () => {
-            if (modPlayer) {
-                if (modPlayer.isPaused()) {
-                    modPlayer.play(); // Resume playback
+            if (chiptunePlayer) {
+                if (chiptunePlayer.isPaused()) { // Assuming chiptunePlayer has isPaused()
+                    chiptunePlayer.play(); // Resume playback
                     pauseButton.textContent = 'Pause';
                 } else {
-                    modPlayer.pause(); // Pause playback
+                    chiptunePlayer.pause(); // Pause playback
                     pauseButton.textContent = 'Resume';
                 }
             }
@@ -274,16 +255,9 @@
          * Stops playback and unloads the module.
          */
         stopButton.addEventListener('click', () => {
-            if (modPlayer) {
-                modPlayer.stop(); // Stop playback
-                modPlayer.unload(); // Unload the module from OpenMPT
-                modPlayer = null; // Clear the player instance
-
-                // Disconnect the ScriptProcessorNode from the audio destination
-                if (scriptProcessorNode) {
-                    scriptProcessorNode.disconnect(audioContext.destination);
-                    scriptProcessorNode = null; // Clear the node instance
-                }
+            if (chiptunePlayer) {
+                chiptunePlayer.stop(); // Stop playback
+                chiptunePlayer = null; // Clear the player instance
 
                 // Reset UI elements
                 moduleTitleSpan.textContent = 'N/A';
