@@ -316,46 +316,54 @@
                 return;
             }
 
-            let primaryUrl = urlInput;
-            let isShortPath = false;
+            // Determine if the input is a full URL, a path with slashes, or just a filename.
+            const hasProtocol = urlInput.startsWith('http://') || urlInput.startsWith('https://');
+            const hasSlash = urlInput.includes('/');
 
-            const hasProtocol = primaryUrl.startsWith('http://') || primaryUrl.startsWith('https://');
-            const hasSlash = primaryUrl.includes('/');
+            let primaryAttemptUrl = '';
+            let fallbackAttemptUrl = '';
+            let isShortFilename = false; // Flag to indicate if it's just a filename (no protocol, no slashes)
 
-            // Determine if it's a short path (e.g., "19-4.flac")
-            if (!hasProtocol && !hasSlash) {
-                primaryUrl = `https://wackybox.org/${primaryUrl}`;
-                isShortPath = true;
-            } else if (!hasProtocol) {
-                // If it has slashes but no protocol, assume https
-                primaryUrl = `https://${primaryUrl}`;
+            if (hasProtocol) {
+                // User provided a full URL (e.g., "https://example.com/audio.mp3")
+                primaryAttemptUrl = urlInput;
+            } else if (hasSlash) {
+                // User provided a path with slashes but no protocol (e.g., "my folder/audio.mp3" or "example.com/audio.mp3")
+                // Prepend https and encode spaces in the entire path.
+                primaryAttemptUrl = `https://${urlInput.replace(/ /g, '%20')}`;
+            } else {
+                // User provided a short filename (e.g., "back in the water.flac")
+                isShortFilename = true;
+                // Encode the filename part for URL safety (handles spaces and other special chars)
+                const encodedFilename = encodeURIComponent(urlInput);
+                primaryAttemptUrl = `https://wackybox.org/${encodedFilename}`;
+                fallbackAttemptUrl = `https://file.garden/ZMbUnW5nmTe-x54m/${encodedFilename}`;
             }
 
-            primaryUrl = primaryUrl.replace(/ /g, '%20'); // Encode spaces
-
+            // Check if the URL (or its derived filename) has a valid audio extension
             const audioExtensions = ['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a'];
-            const isAudioUrl = audioExtensions.some(ext => primaryUrl.toLowerCase().endsWith(ext));
+            const finalUrlToCheckExtension = isShortFilename ? urlInput : primaryAttemptUrl; // Check original input for short filenames, or the constructed URL
+            const isAudioUrl = audioExtensions.some(ext => finalUrlToCheckExtension.toLowerCase().endsWith(ext));
 
             if (!isAudioUrl) {
-                showMessage("Invalid URL format. Please provide a direct link to an audio file (e.g., .mp3, .flac).");
+                showMessage("Invalid URL format. Please provide a direct link to an audio file (e.g., .mp3, .flac).", "error");
                 return;
             }
 
             try {
-                await attemptLoadAndPlay(primaryUrl);
-                updateAudioDisplay(primaryUrl);
+                showMessage(`Attempting to load: ${primaryAttemptUrl}`, "info");
+                await attemptLoadAndPlay(primaryAttemptUrl);
+                updateAudioDisplay(primaryAttemptUrl);
             } catch (error) {
                 console.error("Primary URL load failed:", error);
-                // If primary URL failed and it was a short path from wackybox.org, try fallback
-                if (isShortPath && primaryUrl.includes('wackybox.org')) {
-                    showMessage("Failed to load from wackybox.org, trying file.garden...", "info");
-                    const fallbackUrl = `https://file.garden/ZMbUnW5nmTe-x54m/${urlInput.replace(/ /g, '%20')}`;
+                if (isShortFilename && fallbackAttemptUrl) {
+                    showMessage("Failed to load from primary source, trying fallback...", "info");
                     try {
-                        await attemptLoadAndPlay(fallbackUrl);
-                        updateAudioDisplay(fallbackUrl);
+                        await attemptLoadAndPlay(fallbackAttemptUrl);
+                        updateAudioDisplay(fallbackAttemptUrl);
                     } catch (fallbackError) {
                         console.error("Fallback URL load failed:", fallbackError);
-                        showMessage("Failed to load audio from both primary and fallback sources.", "error");
+                        showMessage("Failed to load audio from all attempted sources.", "error");
                     }
                 } else {
                     showMessage("Failed to load audio. Please check the URL or try a different file.", "error");
