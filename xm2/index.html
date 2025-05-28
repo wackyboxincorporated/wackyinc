@@ -51,6 +51,9 @@
         .info-value {
             @apply text-xl font-bold text-white;
         }
+        #loadingMessage {
+            @apply text-yellow-400 text-sm mt-4;
+        }
     </style>
 </head>
 <body>
@@ -63,6 +66,7 @@
             </label>
             <input type="file" id="moduleFile" accept=".mod,.s3m,.xm,.it">
             <p id="fileNameDisplay" class="text-sm text-gray-400 mt-2">No file chosen</p>
+            <p id="loadingMessage" class="hidden">Initializing audio library...</p>
         </div>
 
         <div class="flex justify-center space-x-4 mb-8">
@@ -80,9 +84,30 @@
     <!--
         IMPORTANT: You need to download libopenmpt.js from the source you provided
         (e.g., https://file.garden/ZMbUnW5nmTe-x54m/libopenmpt.js)
-        and place it in the same directory as this HTML file.
-        This is necessary because direct fetching from file.garden might be blocked by CORS.
+        and place it in the same directory as this HTML file, along with its
+        corresponding libopenmpt.js.mem (or .wasm) file.
+        This is necessary because direct fetching from file.garden might be blocked by CORS
+        and the .mem file needs to be found relative to libopenmpt.js.
     -->
+    <script>
+        // Define a Module object for Emscripten.
+        // Emscripten-compiled libraries often use this global object for configuration
+        // and to signal when the runtime is ready.
+        var Module = {
+            onRuntimeInitialized: function() {
+                // This function is called by libopenmpt.js once its WebAssembly/memory
+                // runtime is fully initialized and the OpenMPT object is available.
+                console.log("libopenmpt.js runtime initialized. OpenMPT is now defined.");
+                document.getElementById('loadingMessage').classList.add('hidden'); // Hide loading message
+                // Now that OpenMPT is available, we can enable the file input
+                // and set up event listeners for the player controls.
+                moduleFile.disabled = false; // Enable file input
+                // Initial button states are set at the end of the script.
+            }
+        };
+        // Show loading message while libopenmpt.js is initializing
+        document.getElementById('loadingMessage').classList.remove('hidden');
+    </script>
     <script src="libopenmpt.js"></script>
     <script>
         // Global variables for audio context and player instances
@@ -99,6 +124,11 @@
         const stopButton = document.getElementById('stopButton');
         const moduleTitleSpan = document.getElementById('moduleTitle');
         const moduleArtistSpan = document.getElementById('moduleArtist');
+        const loadingMessage = document.getElementById('loadingMessage');
+
+
+        // Initially disable file input until libopenmpt.js is ready
+        moduleFile.disabled = true;
 
         /**
          * Initializes the Web Audio API AudioContext.
@@ -131,6 +161,7 @@
 
             try {
                 // Create a new OpenMPT player instance with the AudioContext and module data
+                // This line will now be called only after Module.onRuntimeInitialized has fired.
                 modPlayer = new OpenMPT(audioContext, arrayBuffer);
 
                 // Update module metadata display
@@ -261,6 +292,7 @@
         });
 
         // Initialize button states on page load
+        // These will be re-enabled by Module.onRuntimeInitialized once libopenmpt is ready
         playButton.disabled = true;
         pauseButton.disabled = true;
         stopButton.disabled = true;
