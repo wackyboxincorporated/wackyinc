@@ -1,0 +1,16 @@
+body {
+    margin: 0;
+    overflow: hidden; /* Prevent scrollbars */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #333; /* Dark background for outside canvas */
+    font-family: 'Press Start 2P', monospace; /* Will use if font is loaded */
+}
+
+canvas {
+    background-color: black;
+    border: 2px solid #555;
+    display: block; /* Remove extra space below canvas */
+}
