@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Space Platformer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Inter', sans-serif; background-color: #000; color: #fff; }
+        canvas { display: block; width: 100%; height: 100%; }
+        #info-box {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 100;
+        }
+        #message-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 20px;
+            display: none; /* Hidden by default */
+            z-index: 200;
+        }
+        .controls {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <div id="info-box">
+        Level: <span id="level-count">1</span><br>
+        Collectibles: <span id="collectibles-count">0</span>/<span id="total-collectibles-display">5</span>
+    </div>
+    <div id="message-box">
+        <p id="message-text"></p>
+        <button id="message-button" style="display:none; padding: 8px 15px; margin-top: 10px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">OK</button>
+    </div>
+    <div class="controls">
+        Move: W A S D | Jump: Spacebar | Camera: Mouse Drag
+    </div>
+
+    <script type="module">
+        // Core game setup variables (Three.js and Cannon.js)
+        let scene, camera, renderer;
+        // Cannon.js physics world
+        let world;
+        // Player mesh and physics body
+        let playerMesh, playerBody;
+        // Keyboard state for movement
+        let keyboard = {};
+        // Flag to prevent multiple jumps
+        let canJump = true;
+        // Store all platforms and their physics bodies
+        let platforms = [];
+        // Store collectibles
+        let collectibles = [];
+        let collectedCount = 0;
+        let totalCollectiblesInLevel = 5; // This will be set per level
+        let currentLevel = 1;
+
+        // Global light references
+        let ambientLight;
+        let directionalLight;
+
+        // Array to queue physics bodies for safe removal
+        let bodiesToRemove = [];
+
+        // Camera control variables
+        let isMouseDown = false;
+        let mouseX = 0, mouseY = 0;
+        let cameraPhi = Math.PI / 4; // Vertical angle (from top, 0 to PI)
+        let cameraTheta = -Math.PI / 2; // Horizontal angle (around Y axis)
+        const cameraDistance = 15; // Distance of camera from player
+        const cameraSensitivity = 0.005; // How fast camera moves with mouse
+
+        // Constants for game
+        const PLAYER_SPEED = 5 * 1.2; // Player speed increased by 1.2x
+        const JUMP_VELOCITY = 10;
+        const RESET_HEIGHT = -50; // Y-coordinate below which player resets
+
+        // Initial player position
+        const initialPlayerPosition = new THREE.Vector3(0, 5, 0);
+
+        // Function to show messages
+        function showMessage(text, showButton = false, buttonCallback = null) {
+            const messageBox = document.getElementById('message-box');
+            const messageText = document.getElementById('message-text');
+            const messageButton = document.getElementById('message-button');
+
+            messageText.textContent = text;
+            messageBox.style.display = 'block';
+
+            if (showButton) {
+                messageButton.style.display = 'inline-block';
+                messageButton.onclick = () => {
+                    messageBox.style.display = 'none';
+                    if (buttonCallback) buttonCallback();
+                };
+            } else {
+                messageButton.style.display = 'none';
+                messageButton.onclick = null;
+            }
+        }
+
+        // Function to update collectibles display
+        function updateCollectiblesDisplay() {
+            document.getElementById('collectibles-count').textContent = `${collectedCount}`;
+            document.getElementById('total-collectibles-display').textContent = `${totalCollectiblesInLevel}`;
+        }
+
+        // Initialize the scene, camera, and renderer
+        function init() {
+            console.log("Initializing game...");
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x050510); // Dark space background
+
+            // Camera (PerspectiveCamera: FOV, Aspect Ratio, Near, Far)
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            // Initial camera position will be set in animate based on player and angles
+            camera.position.set(0, 10, 20); // Placeholder, will be updated by mouse control
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true; // Enable shadow maps
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Softer shadows
+            document.body.appendChild(renderer.domElement);
+
+            // Cannon.js world setup
+            world = new CANNON.World();
+            world.gravity.set(0, -20, 0); // Stronger gravity for platforming feel
+            world.broadphase = new CANNON.SAPBroadphase(world); // Better performance for many objects
+
+            // Set up a contact material for player-platform interaction
+            const defaultMaterial = new CANNON.Material("default");
+            const platformMaterial = new CANNON.Material("platform");
+            const playerMaterial = new CANNON.Material("player");
+
+            const defaultContactMaterial = new CANNON.ContactMaterial(
+                defaultMaterial,
+                defaultMaterial,
+                { friction: 0.5, restitution: 0.2 }
+            );
+            world.addContactMaterial(defaultContactMaterial);
+
+            const playerPlatformContactMaterial = new CANNON.ContactMaterial(
+                playerMaterial,
+                platformMaterial,
+                { friction: 0.05, restitution: 0.1 } // Little friction, slight bounce
+            );
+            world.addContactMaterial(playerPlatformContactMaterial);
+
+            // Lighting - Initialized once, properties changed per level
+            ambientLight = new THREE.AmbientLight(0x404040, 0.5); // Soft white light
+            scene.add(ambientLight);
+
+            directionalLight = new THREE.DirectionalLight(0xffffff, 1.5); // White light, bright
+            directionalLight.position.set(50, 100, 50); // Position of the light source
+            directionalLight.castShadow = true; // Enable shadows for this light
+            directionalLight.shadow.mapSize.width = 2048; // Higher resolution shadows
+            directionalLight.shadow.mapSize.height = 2048;
+            directionalLight.shadow.camera.near = 0.5;
+            directionalLight.shadow.camera.far = 200;
+            directionalLight.shadow.camera.left = -100;
+            directionalLight.shadow.camera.right = 100;
+            directionalLight.shadow.camera.top = 100;
+            directionalLight.shadow.camera.bottom = -100;
+            scene.add(directionalLight);
+
+            // Starry background
+            createStars();
+
+            // Create player
+            createPlayer();
+
+            // Create the first level
+            createLevel(currentLevel);
+
+            // Event listeners
+            window.addEventListener('resize', onWindowResize);
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+
+            // Mouse control event listeners
+            renderer.domElement.addEventListener('mousedown', onMouseDown);
+            renderer.domElement.addEventListener('mouseup', onMouseUp);
+            renderer.domElement.addEventListener('mousemove', onMouseMove);
+
+            // Set up initial collectibles count
+            updateCollectiblesDisplay();
+            console.log("Game initialized.");
+        }
+
+        // Function to create a starry background
+        function createStars() {
+            const starGeometry = new THREE.BufferGeometry();
+            const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.5 });
+            const starVertices = [];
+
+            for (let i = 0; i < 10000; i++) {
+                const x = (Math.random() - 0.5) * 2000;
+                const y = (Math.random() - 0.5) * 2000;
+                const z = (Math.random() - 0.5) * 2000;
+                starVertices.push(x, y, z);
+            }
+
+            starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+            const stars = new THREE.Points(starGeometry, starMaterial);
+            scene.add(stars);
+        }
+
+        // Create the player character
+        function createPlayer() {
+            console.log("Creating player...");
+            // Player visual mesh (using BoxGeometry as CapsuleGeometry is not directly available in r128)
+            const playerGeometry = new THREE.BoxGeometry(1, 2, 1); // width, height, depth
+            const playerMaterial = new THREE.MeshStandardMaterial({ color: 0x007bff, metalness: 0.7, roughness: 0.3 });
+            playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
+            playerMesh.position.copy(initialPlayerPosition);
+            playerMesh.castShadow = true; // Player casts shadows
+            scene.add(playerMesh);
+
+            // Player physics body (using Box shape to match visual)
+            playerBody = new CANNON.Body({
+                mass: 5, // Player has mass
+                shape: new CANNON.Box(new CANNON.Vec3(0.5, 1, 0.5)), // Half extents of the box
+                position: new CANNON.Vec3(initialPlayerPosition.x, initialPlayerPosition.y, initialPlayerPosition.z),
+                material: new CANNON.Material("player")
+            });
+            playerBody.fixedRotation = true; // Prevent player from rotating uncontrollably
+            playerBody.allowSleep = false; // Prevent the player body from going to sleep
+            world.addBody(playerBody);
+
+            // Check if player is on the ground for jumping
+            playerBody.addEventListener("collide", function(e) {
+                const contact = e.contact;
+                let collidedBody = (contact.bi.id === playerBody.id) ? contact.bj : contact.bi;
+
+                // Check if the collided body has the 'platform' material
+                if (collidedBody.material && collidedBody.material.name === "platform") {
+                    // Check if the player's vertical velocity is close to zero or negative (meaning they are falling or standing)
+                    // A small positive velocity might occur on landing due to restitution, so check for <= 0.1
+                    if (playerBody.velocity.y <= 0.1) {
+                        canJump = true;
+                        console.log("Can jump: true (landed on platform)");
+                    }
+                }
+            });
+            console.log("Player created.");
+        }
+
+        // Function to create a platform
+        function createPlatform(shape, width, height, depth, x, y, z, rotation = 0, isKinematic = false) {
+            let geometry;
+            let bodyShape;
+
+            switch (shape) {
+                case 'box':
+                    geometry = new THREE.BoxGeometry(width, height, depth);
+                    bodyShape = new CANNON.Box(new CANNON.Vec3(width / 2, height / 2, depth / 2));
+                    break;
+                case 'cylinder':
+                    geometry = new THREE.CylinderGeometry(width / 2, width / 2, height, 32); // radiusTop, radiusBottom, height, radialSegments
+                    bodyShape = new CANNON.Cylinder(width / 2, width / 2, height, 32);
+                    break;
+                case 'pyramid': // Approximation using ConeGeometry
+                    geometry = new THREE.ConeGeometry(width / 2, height, 4); // radius, height, radialSegments (4 for pyramid base)
+                    // Use CANNON.Box as an approximation for pyramid's physics body
+                    bodyShape = new CANNON.Box(new CANNON.Vec3(width / 2, height / 2, width / 2)); // Use width for depth to make it square base
+                    break;
+                default:
+                    console.error("Unknown shape:", shape);
+                    return;
+            }
+
+            const material = new THREE.MeshStandardMaterial({
+                color: 0x808080, // Grey color for platforms
+                metalness: 0.9, // Very shiny
+                roughness: 0.1, // Very smooth
+                envMapIntensity: 1 // How much environment map affects the material
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(x, y, z);
+            mesh.receiveShadow = true; // Platforms receive shadows
+            mesh.castShadow = true; // Platforms can cast shadows
+            scene.add(mesh);
+
+            let bodyType = isKinematic ? CANNON.Body.KINEMATIC : CANNON.Body.STATIC;
+
+            const body = new CANNON.Body({
+                mass: 0, // Static objects have mass 0
+                shape: bodyShape,
+                position: new CANNON.Vec3(x, y, z),
+                material: new CANNON.Material("platform"),
+                type: bodyType
+            });
+            body.allowSleep = false; // Prevent platforms from going to sleep
+
+            // For cylinder and pyramid, adjust rotation to match THREE.js orientation
+            if (shape === 'cylinder' || shape === 'pyramid') {
+                const quaternion = new CANNON.Quaternion();
+                quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2); // Rotate 90 degrees around X-axis
+                body.quaternion.mult(quaternion, body.quaternion);
+            }
+
+            // Apply initial rotation if specified (for pyramid/cylinder)
+            if (rotation !== 0) {
+                const rotationQuaternion = new CANNON.Quaternion();
+                rotationQuaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), rotation); // Rotate around Y-axis
+                body.quaternion.mult(rotationQuaternion, body.quaternion);
+            }
+
+            world.addBody(body);
+            platforms.push({ mesh, body, shape, initialPosition: { x, y, z }, rotation }); // Store platform data
+            return mesh; // Return the mesh for grass placement
+        }
+
+        // Function to create collisionless grass
+        function createGrass(x, y, z, platformWidth, platformDepth) {
+            const grassHeight = 0.1;
+            const grassGeometry = new THREE.BoxGeometry(platformWidth, grassHeight, platformDepth);
+            const grassMaterial = new THREE.MeshStandardMaterial({ color: 0x228B22, roughness: 0.8, metalness: 0.1 }); // Forest Green
+            const grassMesh = new THREE.Mesh(grassGeometry, grassMaterial);
+            // Position grass slightly above the platform surface
+            grassMesh.position.set(x, y + (grassHeight / 2) + 0.5, z); // Adjusted y for platform height 1
+            scene.add(grassMesh);
+            // No physics body for grass, it's decorative
+        }
+
+        // Create a collectible item (glowing sphere)
+        function createCollectible(x, y, z) {
+            const geometry = new THREE.SphereGeometry(0.3, 16, 16);
+            const material = new THREE.MeshStandardMaterial({
+                color: 0xffd700, // Gold color
+                emissive: 0xffd700, // Emissive for glowing effect
+                emissiveIntensity: 0.5,
+                metalness: 0.8,
+                roughness: 0.2
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(x, y, z);
+            scene.add(mesh);
+
+            const body = new CANNON.Body({
+                mass: 0, // No mass
+                isTrigger: true, // It's a trigger, not a solid object
+                shape: new CANNON.Sphere(0.3),
+                position: new CANNON.Vec3(x, y, z)
+            });
+            body.allowSleep = false; // Prevent collectibles from going to sleep
+            world.addBody(body);
+
+            // Store the collectible with a flag for collection state
+            const collectible = { mesh, body, isCollected: false };
+
+            body.addEventListener('collide', function(e) {
+                if (e.body === playerBody) {
+                    // Player collided with collectible
+                    if (!collectible.isCollected) { // Ensure it's not already collected
+                        collectedCount++;
+                        updateCollectiblesDisplay();
+                        collectible.mesh.visible = false; // Hide the visual mesh
+                        collectible.isCollected = true; // Mark as collected
+                        
+                        // Add body to a queue for safe removal after physics step
+                        bodiesToRemove.push(collectible.body);
+
+                        console.log("Collectible collected. New collectedCount:", collectedCount, "Total needed:", totalCollectiblesInLevel);
+                    }
+                }
+            });
+
+            collectibles.push(collectible);
+        }
+
+
+        // Define the level layout
+        function createLevel(levelNumber) {
+            console.log(`Creating Level ${levelNumber}...`);
+
+            // Clear existing platforms, collectibles, and other level-specific objects
+            platforms.forEach(p => {
+                scene.remove(p.mesh);
+                world.removeBody(p.body);
+            });
+            platforms = [];
+
+            // For collectibles, ensure their bodies are removed from the world
+            collectibles.forEach(c => {
+                scene.remove(c.mesh);
+                world.removeBody(c.body);
+            });
+            collectibles = [];
+            collectedCount = 0;
+            
+            // Clear any other dynamic meshes that are not player, camera, or main lights, or stars
+            const objectsToRemove = [];
+            scene.children.forEach(child => {
+                if (child !== playerMesh && child !== camera && child !== ambientLight && child !== directionalLight && !(child instanceof THREE.Points)) {
+                    objectsToRemove.push(child);
+                }
+            });
+            objectsToRemove.forEach(obj => scene.remove(obj));
+
+
+            // Reset player position for the new level
+            playerBody.position.copy(new CANNON.Vec3(initialPlayerPosition.x, initialPlayerPosition.y, initialPlayerPosition.z));
+            playerBody.velocity.set(0, 0, 0);
+            playerBody.angularVelocity.set(0, 0, 0);
+            canJump = true;
+
+
+            if (levelNumber === 1) {
+                totalCollectiblesInLevel = 5; // Set total collectibles for Level 1
+                scene.background = new THREE.Color(0x050510); // Dark space background
+                ambientLight.intensity = 0.5;
+                directionalLight.color.set(0xffffff);
+                directionalLight.intensity = 1.5;
+                directionalLight.position.set(50, 100, 50);
+
+                // Level 1: Starting Platform
+                createPlatform('box', 10, 1, 10, 0, 0, 0); // Start
+
+                // Path 1: Simple jumps
+                createPlatform('box', 3, 1, 3, 0, 0, -10);
+                createPlatform('box', 3, 1, 3, 5, 0, -15);
+                createPlatform('box', 3, 1, 3, 10, 0, -10);
+                createPlatform('box', 3, 1, 3, 15, 0, -5);
+                createCollectible(15, 1.5, -5); // Collectible 1
+
+                // Path 2: Moving platform
+                const movingPlatform1 = createPlatform('box', 5, 1, 5, 20, 0, 0, 0, true); // Moving platform (kinematic)
+                platforms[platforms.length - 1].isMoving = true; // Mark for animation
+                platforms[platforms.length - 1].moveAxis = 'y';
+                platforms[platforms.length - 1].moveRange = 5;
+                platforms[platforms.length - 1].moveSpeed = 1;
+                createCollectible(20, 5, 0); // Collectible 2 (on moving platform)
+
+                createPlatform('box', 3, 1, 3, 25, 0, 5); // Landing platform after moving one
+
+                // Path 3: Rotating cylinder
+                const rotatingCylinder1 = createPlatform('cylinder', 4, 1, 4, 30, 0, 10, 0, true); // Rotating cylinder (kinematic)
+                platforms[platforms.length - 1].isRotating = true; // Mark for animation
+                platforms[platforms.length - 1].rotationSpeed = 0.5;
+                createCollectible(30, 1.5, 10); // Collectible 3
+
+                createPlatform('box', 3, 1, 3, 35, 0, 15);
+
+                // Path 4: Pyramid challenge
+                createPlatform('pyramid', 4, 3, 4, 40, 0, 20); // Pyramid platform
+                createCollectible(40, 3.5, 20); // Collectible 4 (on pyramid)
+
+                // Path 5: Final stretch with a larger jump
+                createPlatform('box', 3, 1, 3, 45, 0, 25);
+                createPlatform('box', 3, 1, 3, 50, 0, 30);
+                createCollectible(50, 1.5, 30); // Collectible 5 - Added!
+
+                // Goal platform for Level 1
+                const goalPlatform1 = createPlatform('box', 8, 1, 8, 55, 0, 35);
+                const goalIndicatorGeometry1 = new THREE.ConeGeometry(1, 3, 32);
+                const goalIndicatorMaterial1 = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.7 });
+                const goalIndicator1 = new THREE.Mesh(goalIndicatorGeometry1, goalIndicatorMaterial1);
+                goalIndicator1.position.set(55, 2.5, 35);
+                scene.add(goalIndicator1);
+
+                // Create physics body for goal indicator
+                const goalBody1 = new CANNON.Body({
+                    mass: 0, // Static
+                    isTrigger: true, // Only detects collision, no physical response
+                    shape: new CANNON.Box(new CANNON.Vec3(4, 1.5, 4)), // Half extents of the cone's base
+                    position: new CANNON.Vec3(55, 2.5, 35)
+                });
+                world.addBody(goalBody1);
+
+                goalBody1.addEventListener('collide', function(e) {
+                    if (e.body === playerBody) {
+                        if (collectedCount >= totalCollectiblesInLevel) {
+                            showMessage("Level Complete! You collected all the space gems!", true, () => {
+                                loadNextLevel(); // Load the next level
+                            });
+                        } else {
+                            showMessage(`Collect all ${totalCollectiblesInLevel} gems first! You have ${collectedCount}.`, false);
+                        }
+                    }
+                });
+
+
+            } else if (levelNumber === 2) {
+                totalCollectiblesInLevel = 5; // Set total collectibles for Level 2
+                scene.background = new THREE.Color(0x87CEEB); // Light blue sky for daytime
+                ambientLight.intensity = 0.6; // Slightly reduced ambient for better shadows
+                directionalLight.color.set(0xFFFFFF); // White sun
+                directionalLight.intensity = 2.0; // Slightly reduced intensity for better shadows
+                directionalLight.position.set(100, 200, 100); // New sun position for level 2
+
+                // Level 2 platforms
+                const p1 = createPlatform('box', 15, 1, 15, 0, 0, 0); // Start platform for Level 2
+                createGrass(p1.position.x, p1.position.y, p1.position.z, 15, 15); // Add grass to starting platform
+
+                const p2 = createPlatform('box', 5, 1, 5, -10, 0, -10);
+                createGrass(p2.position.x, p2.position.y, p2.position.z, 5, 5);
+                createCollectible(-10, 1.5, -10); // Collectible 1 (Level 2)
+
+                const p3 = createPlatform('cylinder', 6, 1, 6, -20, 0, 0, 0, true); // Rotating cylinder
+                platforms[platforms.length - 1].isRotating = true;
+                platforms[platforms.length - 1].rotationSpeed = 0.7;
+                createGrass(p3.position.x, p3.position.y, p3.position.z, 6, 6);
+                createCollectible(-20, 1.5, 0); // Collectible 2 (Level 2)
+
+                const p4 = createPlatform('box', 8, 1, 8, -10, 0, 10);
+                createGrass(p4.position.x, p4.position.y, p4.position.z, 8, 8);
+                createCollectible(-10, 1.5, 10); // Collectible 3 (Level 2)
+
+                const p5 = createPlatform('box', 12, 1, 12, 10, 0, 15); // Large platform
+                createGrass(p5.position.x, p5.position.y, p5.position.z, 12, 12);
+                createCollectible(10, 1.5, 15); // Collectible 4 (Level 2)
+
+                // Adjusted position for p6 to make the jump from p5 feasible
+                const p6 = createPlatform('box', 5, 1, 5, 20, 3.5, 10); // Elevated platform (moved closer to final cone)
+                createGrass(p6.position.x, p6.position.y, p6.position.z, 5, 5);
+                // No collectible on p6, it's now on the final platform
+
+                // Goal for Level 2
+                const goalPlatform2 = createPlatform('box', 10, 1, 10, 30, 0, 0);
+                createCollectible(30, 1.5, 0); // Collectible 5 (Level 2) - Moved to final platform!
+                const goalIndicatorGeometry2 = new THREE.ConeGeometry(1, 3, 32);
+                const goalIndicatorMaterial2 = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.7 }); // Cyan goal
+                const goalIndicator2 = new THREE.Mesh(goalIndicatorGeometry2, goalIndicatorMaterial2);
+                goalIndicator2.position.set(30, 2.5, 0);
+                scene.add(goalIndicator2);
+
+                // Create physics body for goal indicator
+                const goalBody2 = new CANNON.Body({
+                    mass: 0, // Static
+                    isTrigger: true, // Only detects collision, no physical response
+                    shape: new CANNON.Box(new CANNON.Vec3(5, 1.5, 5)), // Half extents of the cone's base
+                    position: new CANNON.Vec3(30, 2.5, 0)
+                });
+                world.addBody(goalBody2);
+
+                goalBody2.addEventListener('collide', function(e) {
+                    if (e.body === playerBody) {
+                        if (collectedCount >= totalCollectiblesInLevel) {
+                            showMessage("Level Complete! You collected all the space gems!", true, () => {
+                                loadNextLevel(); // Load the next level
+                            });
+                        } else {
+                            showMessage(`Collect all ${totalCollectiblesInLevel} gems first! You have ${collectedCount}.`, false);
+                        }
+                    }
+                });
+
+            } else {
+                showMessage("Congratulations! You've completed all levels!", true, () => {
+                    currentLevel = 1; // Reset to level 1 for replay
+                    resetGame(); // Start over
+                });
+            }
+            document.getElementById('level-count').textContent = `${currentLevel}`;
+            updateCollectiblesDisplay(); // Update the display with the correct total for the new level
+            console.log(`Level ${levelNumber} created.`);
+        }
+
+        function loadNextLevel() {
+            currentLevel++;
+            createLevel(currentLevel);
+        }
+
+        // Handle window resize
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Handle keyboard input (keydown)
+        function onKeyDown(event) {
+            keyboard[event.code] = true;
+            if (event.code === 'Space' && canJump) {
+                playerBody.velocity.y = JUMP_VELOCITY;
+                canJump = false; // Prevent continuous jumping immediately
+            }
+        }
+
+        // Handle keyboard input (keyup)
+        function onKeyUp(event) {
+            keyboard[event.code] = false;
+        }
+
+        // Mouse event handlers for camera control
+        function onMouseDown(event) {
+            isMouseDown = true;
+            mouseX = event.clientX;
+            mouseY = event.clientY;
+        }
+
+        function onMouseUp(event) {
+            isMouseDown = false;
+        }
+
+        function onMouseMove(event) {
+            if (!isMouseDown) return;
+
+            const deltaX = event.clientX - mouseX;
+            const deltaY = event.clientY - mouseY;
+
+            cameraTheta -= deltaX * cameraSensitivity;
+            cameraPhi -= deltaY * cameraSensitivity;
+
+            // Clamp vertical angle to prevent camera from going upside down
+            cameraPhi = Math.max(0.1, Math.min(Math.PI - 0.1, cameraPhi)); // Avoid exactly 0 or PI
+
+            mouseX = event.clientX;
+            mouseY = event.clientY;
+        }
+
+
+        // Reset player to initial position
+        function resetPlayer() {
+            console.log("Resetting player...");
+            playerBody.position.copy(new CANNON.Vec3(initialPlayerPosition.x, initialPlayerPosition.y, initialPlayerPosition.z));
+            playerBody.velocity.set(0, 0, 0); // Stop all movement
+            playerBody.angularVelocity.set(0, 0, 0); // Stop all rotation
+            canJump = true; // Allow jump immediately after reset
+            showMessage("You fell! Resetting...", false);
+            setTimeout(() => {
+                document.getElementById('message-box').style.display = 'none';
+            }, 1500); // Hide message after 1.5 seconds
+            console.log("Player reset.");
+        }
+
+        // Reset the entire game (for level completion or full restart)
+        function resetGame() {
+            console.log("Resetting game...");
+            // Ensure all bodies are removed from the world before recreating the level
+            // This is important for a clean state when restarting or changing levels
+            world.bodies.forEach(body => world.removeBody(body)); // Remove all bodies
+            
+            // Re-add player body after clearing all bodies
+            createPlayer(); 
+
+            resetPlayer();
+            createLevel(currentLevel); // Reset current level, not just level 1
+            console.log("Game reset.");
+        }
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Update physics world
+            world.step(1 / 60); // Fixed time step for physics
+
+            // Safely remove bodies that were marked for removal during the previous step
+            for (let i = 0; i < bodiesToRemove.length; i++) {
+                world.removeBody(bodiesToRemove[i]);
+                console.log("Removed body from world:", bodiesToRemove[i].id);
+            }
+            bodiesToRemove.length = 0; // Clear the array for the next frame
+
+            // Update player mesh position and rotation from physics body
+            playerMesh.position.copy(playerBody.position);
+            playerMesh.quaternion.copy(playerBody.quaternion);
+
+            // Player movement
+            let moveDirection = new THREE.Vector3();
+            let forward = new THREE.Vector3();
+            let right = new THREE.Vector3();
+
+            // Get camera's forward and right vectors, but flatten them to the XZ plane
+            // This ensures movement is relative to the camera's horizontal view
+            camera.getWorldDirection(forward);
+            forward.y = 0; // Ignore vertical component
+            forward.normalize();
+            right.crossVectors(forward, new THREE.Vector3(0, 1, 0)); // Right vector relative to camera
+
+            // Apply movement based on keyboard input
+            if (keyboard['KeyW']) {
+                moveDirection.add(forward);
+            }
+            if (keyboard['KeyS']) {
+                moveDirection.sub(forward);
+            }
+            if (keyboard['KeyA']) {
+                moveDirection.sub(right);
+            }
+            if (keyboard['KeyD']) {
+                moveDirection.add(right);
+            }
+
+            // Apply movement force to player body
+            if (moveDirection.lengthSq() > 0) {
+                moveDirection.normalize().multiplyScalar(PLAYER_SPEED);
+                // Apply force to change velocity, not just set it, for more realistic movement
+                playerBody.velocity.x = moveDirection.x;
+                playerBody.velocity.z = moveDirection.z;
+            } else {
+                // Dampen horizontal velocity when no keys are pressed
+                playerBody.velocity.x *= 0.9;
+                playerBody.velocity.z *= 0.9;
+            }
+
+
+            // Update moving platforms
+            platforms.forEach(p => {
+                if (p.isMoving) {
+                    const time = world.time * p.moveSpeed;
+                    if (p.moveAxis === 'y') {
+                        const newY = p.initialPosition.y + Math.sin(time) * p.moveRange;
+                        p.body.position.y = newY;
+                    } else if (p.moveAxis === 'x') {
+                        const newX = p.initialPosition.x + Math.sin(time) * p.moveRange;
+                        p.body.position.x = newX;
+                    } else if (p.moveAxis === 'z') {
+                        const newZ = p.initialPosition.z + Math.sin(time) * p.moveRange;
+                        p.body.position.z = newZ;
+                    }
+                }
+                if (p.isRotating) {
+                    const rotationSpeed = p.rotationSpeed * world.dt; // Rotate based on physics step
+                    const quaternion = new CANNON.Quaternion();
+                    quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), rotationSpeed); // Rotate around Y-axis
+                    p.body.quaternion.mult(quaternion, p.body.quaternion);
+                }
+                // Sync mesh with body
+                p.mesh.position.copy(p.body.position);
+                p.mesh.quaternion.copy(p.body.quaternion);
+            });
+
+            // Update camera position based on mouse control
+            const camX = playerMesh.position.x + cameraDistance * Math.sin(cameraPhi) * Math.sin(cameraTheta);
+            const camY = playerMesh.position.y + cameraDistance * Math.cos(cameraPhi);
+            const camZ = playerMesh.position.z + cameraDistance * Math.sin(cameraPhi) * Math.cos(cameraTheta);
+            camera.position.set(camX, camY, camZ);
+            camera.lookAt(playerMesh.position); // Always look at the player
+
+            // Check for fall and reset
+            if (playerBody.position.y < RESET_HEIGHT) {
+                resetPlayer();
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Start the animation on window load.
+        window.onload = function () {
+            init();
+            animate();
+        }
+    </script>
+</body>
+</html>
