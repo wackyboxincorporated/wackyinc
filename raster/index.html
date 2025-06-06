@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>cpumark raster</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Inter', sans-serif; }
+        canvas { display: block; }
+        #info-container {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+            color: white;
+            font-size: 16px;
+            text-shadow: 0 0 8px rgba(0,0,0,0.8);
+            z-index: 100;
+            padding: 10px;
+            background: rgba(0,0,0,0.25);
+            border-radius: 8px;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        #error-message {
+            color: white; 
+            font-family: sans-serif; 
+            text-align: center; 
+            padding: 40px;
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="info-container">
+        <div id="info-text">Loading Environment...</div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/",
+                "cannon-es": "https://unpkg.com/cannon-es@0.20.0/dist/cannon-es.js"
+            }
+        }
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+        import * as CANNON from 'cannon-es';
+
+        // --- Software Renderer Globals ---
+        let canvas, context;
+        let depthBuffer;
+        let frameBuffer;
+        let softwareDisplacementMap;
+        const DISPLACEMENT_MAP_SIZE = 128;
+
+        // --- Scene Globals ---
+        let scene, camera, controls;
+        let physicsWorld;
+        const meshes = [];
+        const bodies = [];
+        let hdrTexture, hdrData;
+        const globalLight = {
+            direction: new THREE.Vector3(-0.5, -0.8, -0.2).normalize(),
+            color: new THREE.Color(0xfffde0)
+        };
+        const ambientLightColor = new THREE.Color(0x406080);
+        const skyColorTop = new THREE.Color(0x87CEEB); // Bright sky blue
+        const skyColorBottom = new THREE.Color(0xE0FFFF); // Lighter horizon
+
+        // --- Core Setup ---
+        function init() {
+            canvas = document.createElement('canvas');
+            context = canvas.getContext('2d', { willReadFrequently: true });
+            document.body.appendChild(canvas);
+
+            scene = new THREE.Scene();
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(10, 10, 15);
+            camera.lookAt(0, 0, 0);
+
+            controls = new OrbitControls(camera, canvas);
+            controls.enableDamping = true;
+
+            const rgbeLoader = new RGBELoader();
+            rgbeLoader.load('https://file.garden/ZPjrzSdXf2vX5mNF/monkstown_castle_4k.hdr', (texture) => {
+                hdrTexture = texture;
+                hdrData = {
+                    width: texture.image.width,
+                    height: texture.image.height,
+                    data: texture.image.data 
+                };
+                // We no longer set scene.background. It's handled by the renderer.
+                runApp();
+            }, undefined, (err) => {
+                console.error('An error occurred loading the HDR.', err);
+                const infoText = document.getElementById('info-text');
+                infoText.textContent = "Error: Could not load environment map. Reflections will be dim.";
+                runApp(); 
+            });
+
+            window.addEventListener('resize', onWindowResize, false);
+            onWindowResize();
+        }
+        
+        function runApp() {
+            const infoText = document.getElementById('info-text');
+            infoText.textContent = "Click to drop a morphing metallic shape";
+
+            initPhysics();
+            createContainer();
+            createWater();
+            canvas.addEventListener('click', dropShape);
+
+            animate();
+        }
+        
+        function initPhysics() {
+            physicsWorld = new CANNON.World({ gravity: new CANNON.Vec3(0, -20, 0) });
+            physicsWorld.broadphase = new CANNON.SAPBroadphase(physicsWorld);
+            physicsWorld.allowSleep = true;
+        }
+
+        function createContainer() {
+            const containerThickness = 0.5;
+            const containerHeight = 10;
+            const containerSize = 12;
+            const containerMaterial = new CANNON.Material('container');
+            const containerMeshMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.7, metalness: 0.1 }); // SaddleBrown color
+            
+            const floorShape = new CANNON.Box(new CANNON.Vec3(containerSize / 2, containerThickness / 2, containerSize / 2));
+            const floorBody = new CANNON.Body({ mass: 0, material: containerMaterial });
+            floorBody.addShape(floorShape);
+            floorBody.position.set(0, -containerThickness / 2, 0);
+            physicsWorld.addBody(floorBody);
+            const floorMesh = new THREE.Mesh(new THREE.BoxGeometry(containerSize, containerThickness, containerSize), containerMeshMaterial);
+            floorMesh.position.copy(floorBody.position);
+            scene.add(floorMesh);
+            
+            const wallPositions = [
+                { x: 0, y: containerHeight/2, z: -containerSize/2, w: containerSize, h: containerHeight, d: containerThickness },
+                { x: 0, y: containerHeight/2, z: containerSize/2, w: containerSize, h: containerHeight, d: containerThickness },
+                { x: -containerSize/2, y: containerHeight/2, z: 0, w: containerThickness, h: containerHeight, d: containerSize },
+                { x: containerSize/2, y: containerHeight/2, z: 0, w: containerThickness, h: containerHeight, d: containerSize },
+            ];
+            wallPositions.forEach(p => {
+                const wallShape = new CANNON.Box(new CANNON.Vec3(p.w/2, p.h/2, p.d/2));
+                const wallBody = new CANNON.Body({ mass: 0, material: containerMaterial });
+                wallBody.addShape(wallShape);
+                wallBody.position.set(p.x, p.y, p.z);
+                physicsWorld.addBody(wallBody);
+                const wallMesh = new THREE.Mesh(new THREE.BoxGeometry(p.w, p.h, p.d), containerMeshMaterial);
+                wallMesh.position.copy(wallBody.position);
+                scene.add(wallMesh);
+            });
+        }
+        
+        function createWater() {
+            const waterSize = 11.5;
+            const waterGeometry = new THREE.PlaneGeometry(waterSize, waterSize, 32, 32);
+            const waterMaterial = new THREE.MeshStandardMaterial({ 
+                color: new THREE.Color(0x224488),
+                metalness: 0.1, 
+                roughness: 0.2,
+                opacity: 0.9 
+            });
+            waterMaterial.userData = { isWater: true };
+            const water = new THREE.Mesh(waterGeometry, waterMaterial);
+            water.rotation.x = -Math.PI / 2;
+            water.position.y = 2;
+            scene.add(water);
+
+            softwareDisplacementMap = {
+                width: DISPLACEMENT_MAP_SIZE,
+                height: DISPLACEMENT_MAP_SIZE,
+                data: new Float32Array(DISPLACEMENT_MAP_SIZE * DISPLACEMENT_MAP_SIZE),
+                ripples: []
+            };
+        }
+
+        function createRipple(impactPosition, strength) {
+            if (!softwareDisplacementMap) return;
+            softwareDisplacementMap.ripples.push({
+                x: impactPosition.x, z: impactPosition.z,
+                strength: strength * 1.5, life: 1.0, radius: 0.0
+            });
+        }
+
+        function updateSoftwareDisplacementMap() {
+            if (!softwareDisplacementMap) return;
+            softwareDisplacementMap.data.fill(0);
+            for (let i = softwareDisplacementMap.ripples.length - 1; i >= 0; i--) {
+                const ripple = softwareDisplacementMap.ripples[i];
+                ripple.life -= 0.015;
+                ripple.radius += ripple.strength * 0.4;
+                if (ripple.life <= 0) {
+                    softwareDisplacementMap.ripples.splice(i, 1);
+                    continue;
+                }
+                const waterSize = 11.5;
+                const mapU = (ripple.x / waterSize + 0.5) * DISPLACEMENT_MAP_SIZE;
+                const mapV = (ripple.z / waterSize + 0.5) * DISPLACEMENT_MAP_SIZE;
+                for (let y = 0; y < DISPLACEMENT_MAP_SIZE; y++) {
+                    for (let x = 0; x < DISPLACEMENT_MAP_SIZE; x++) {
+                        const dist = Math.sqrt((x - mapU) ** 2 + (y - mapV) ** 2);
+                        if (dist < ripple.radius && dist > ripple.radius - 20) {
+                            const falloff = 1.0 - Math.abs(dist - ripple.radius) / 20;
+                            const waveVal = Math.sin((dist - ripple.radius) * 0.5) * 0.5 + 0.5;
+                            const val = ripple.strength * falloff * waveVal * ripple.life;
+                            softwareDisplacementMap.data[y * DISPLACEMENT_MAP_SIZE + x] += val;
+                        }
+                    }
+                }
+            }
+        }
+
+        function getDisplacement(u, v) {
+            if (!softwareDisplacementMap || u < 0 || u > 1 || v < 0 || v > 1) return 0;
+            const x = Math.floor(u * (DISPLACEMENT_MAP_SIZE - 1));
+            const y = Math.floor(v * (DISPLACEMENT_MAP_SIZE - 1));
+            return softwareDisplacementMap.data[y * DISPLACEMENT_MAP_SIZE + x] || 0;
+        }
+
+        function dropShape() {
+            const shapeType = Math.floor(Math.random() * 4);
+            let geometry;
+            const size = Math.random() * 0.5 + 0.5;
+            switch(shapeType) {
+                case 0: geometry = new THREE.SphereGeometry(size, 16, 8); break;
+                case 1: geometry = new THREE.IcosahedronGeometry(size, 1); break;
+                case 2: geometry = new THREE.TorusKnotGeometry(size * 0.7, size * 0.2, 32, 8); break;
+                default: geometry = new THREE.BoxGeometry(size, size, size); break;
+            }
+            geometry.setAttribute('original_position', geometry.attributes.position.clone());
+            const material = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 1.0, roughness: 0.1 });
+            const mesh = new THREE.Mesh(geometry, material);
+            const cannonShape = new CANNON.Sphere(size); 
+            const body = new CANNON.Body({ mass: 5, shape: cannonShape, position: new CANNON.Vec3((Math.random() - 0.5) * 8, 15, (Math.random() - 0.5) * 8) });
+            body.angularVelocity.set(Math.random() * 4 - 2, Math.random() * 4 - 2, Math.random() * 4 - 2);
+            body.angularDamping = 0.1;
+            body.addEventListener('collide', (event) => {
+                const impactVelocity = event.contact.getImpactVelocityAlongNormal();
+                if (impactVelocity > 1.5) {
+                    const waterMesh = scene.children.find(c => c.material.userData.isWater);
+                    if (waterMesh && body.position.y < (waterMesh.position.y + 1)) {
+                        createRipple(body.position, Math.min(impactVelocity / 20.0, 1.0));
+                    }
+                }
+            });
+            scene.add(mesh);
+            physicsWorld.addBody(body);
+            meshes.push(mesh);
+            bodies.push(body);
+        }
+
+        const clock = new THREE.Clock();
+        let oldElapsedTime = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+            const elapsedTime = clock.getElapsedTime();
+            const deltaTime = elapsedTime - oldElapsedTime;
+            oldElapsedTime = elapsedTime;
+            physicsWorld.step(1 / 60, deltaTime, 3);
+            updateSoftwareDisplacementMap();
+            for (let i = 0; i < meshes.length; i++) {
+                meshes[i].position.copy(bodies[i].position);
+                meshes[i].quaternion.copy(bodies[i].quaternion);
+                const originalPositions = meshes[i].geometry.attributes.original_position.array;
+                const positions = meshes[i].geometry.attributes.position.array;
+                const time = elapsedTime + i;
+                for(let j=0; j < positions.length; j+=3) {
+                    const ox = originalPositions[j], oy = originalPositions[j+1], oz = originalPositions[j+2];
+                    const morph = 0.15 * (Math.sin(oy * 2 + time) + Math.sin(ox * 3.0 + time * 1.5));
+                    positions[j] = ox + ox * morph;
+                    positions[j+1] = oy + oy * morph;
+                    positions[j+2] = oz + oz * morph;
+                }
+                meshes[i].geometry.attributes.position.needsUpdate = true;
+                meshes[i].geometry.computeVertexNormals();
+            }
+            controls.update();
+            softwareRender(context, scene, camera, elapsedTime);
+        }
+
+        function softwareRender(ctx, scene, camera, time) {
+            const width = ctx.canvas.width;
+            const height = ctx.canvas.height;
+            if (width === 0 || height === 0 || !depthBuffer) return;
+            frameBuffer = ctx.getImageData(0, 0, width, height);
+            depthBuffer.fill(Infinity);
+            
+            // --- 
+            const data = frameBuffer.data;
+            for (let y = 0; y < height; y++) {
+                const yFactor = y / height;
+                const bgColor = skyColorTop.clone().lerp(skyColorBottom, yFactor);
+                for (let x = 0; x < width; x++) {
+                    const index = (y * width + x) * 4;
+                    data[index]     = bgColor.r * 255;
+                    data[index + 1] = bgColor.g * 255;
+                    data[index + 2] = bgColor.b * 255;
+                    data[index + 3] = 255;
+                }
+            }
+
+            camera.updateMatrixWorld();
+            const viewMatrix = camera.matrixWorldInverse;
+            const projectionMatrix = camera.projectionMatrix;
+            const mvpMatrix = new THREE.Matrix4();
+            scene.traverse(object => {
+                if (object.isMesh) {
+                    const geometry = object.geometry;
+                    const material = object.material;
+                    const positions = geometry.attributes.position.array;
+                    const uvs = geometry.attributes.uv ? geometry.attributes.uv.array : null;
+                    const index = geometry.index ? geometry.index.array : null;
+                    object.updateMatrixWorld();
+                    mvpMatrix.multiplyMatrices(projectionMatrix, viewMatrix).multiply(object.matrixWorld);
+                    const processTriangle = (vA, vB, vC) => {
+                        let pA_clip = new THREE.Vector4(vA.x, vA.y, vA.z, 1.0).applyMatrix4(mvpMatrix);
+                        let pB_clip = new THREE.Vector4(vB.x, vB.y, vB.z, 1.0).applyMatrix4(mvpMatrix);
+                        let pC_clip = new THREE.Vector4(vC.x, vC.y, vC.z, 1.0).applyMatrix4(mvpMatrix);
+                        if (pA_clip.w <= 0 || pB_clip.w <= 0 || pC_clip.w <= 0) return;
+                        pA_clip.divideScalar(pA_clip.w);
+                        pB_clip.divideScalar(pB_clip.w);
+                        pC_clip.divideScalar(pC_clip.w);
+                        const pA = { x: (pA_clip.x + 1) * 0.5 * width, y: (-pA_clip.y + 1) * 0.5 * height, z: pA_clip.z };
+                        const pB = { x: (pB_clip.x + 1) * 0.5 * width, y: (-pB_clip.y + 1) * 0.5 * height, z: pB_clip.z };
+                        const pC = { x: (pC_clip.x + 1) * 0.5 * width, y: (-pC_clip.y + 1) * 0.5 * height, z: pC_clip.z };
+                        rasterize(pA, pB, pC, material, object, vA, vB, vC);
+                    };
+                    if (index) {
+                        for (let i = 0; i < index.length; i += 3) {
+                            const iA = index[i], iB = index[i+1], iC = index[i+2];
+                            const vA = { x: positions[iA*3], y: positions[iA*3+1], z: positions[iA*3+2] };
+                            const vB = { x: positions[iB*3], y: positions[iB*3+1], z: positions[iB*3+2] };
+                            const vC = { x: positions[iC*3], y: positions[iC*3+1], z: positions[iC*3+2] };
+                            if (uvs) {
+                                vA.u = uvs[iA*2]; vA.v = uvs[iA*2+1];
+                                vB.u = uvs[iB*2]; vB.v = uvs[iB*2+1];
+                                vC.u = uvs[iC*2]; vC.v = uvs[iC*2+1];
+                            }
+                            processTriangle(vA, vB, vC);
+                        }
+                    }
+                }
+            });
+            ctx.putImageData(frameBuffer, 0, 0);
+        }
+
+        function edgeFunction(a, b, c) { return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x); }
+
+        function rasterize(vA, vB, vC, material, object, oA, oB, oC) {
+            const width = frameBuffer.width, height = frameBuffer.height;
+            const minX = Math.max(0, Math.floor(Math.min(vA.x, vB.x, vC.x)));
+            const maxX = Math.min(width - 1, Math.ceil(Math.max(vA.x, vB.x, vC.x)));
+            const minY = Math.max(0, Math.floor(Math.min(vA.y, vB.y, vC.y)));
+            const maxY = Math.min(height - 1, Math.ceil(Math.max(vA.y, vB.y, vC.y)));
+            const area = edgeFunction(vA, vB, vC);
+            if (area <= 0) return;
+            const normalMatrix = new THREE.Matrix3().getNormalMatrix(object.matrixWorld);
+            const faceNormal = new THREE.Vector3().crossVectors(new THREE.Vector3().subVectors(oB, oA), new THREE.Vector3().subVectors(oC, oA));
+            const worldNormal = faceNormal.applyMatrix3(normalMatrix).normalize();
+            for (let y = minY; y <= maxY; y++) {
+                for (let x = minX; x <= maxX; x++) {
+                    const p = {x: x + 0.5, y: y + 0.5};
+                    let w0 = edgeFunction(vB, vC, p), w1 = edgeFunction(vC, vA, p), w2 = edgeFunction(vA, vB, p);
+                    if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
+                        w0 /= area; w1 /= area; w2 /= area;
+                        const depth = vA.z * w0 + vB.z * w1 + vC.z * w2;
+                        const bufferIndex = (y * width + x);
+                        if (depth < depthBuffer[bufferIndex]) {
+                            depthBuffer[bufferIndex] = depth;
+                            const worldPos = new THREE.Vector3(oA.x, oA.y, oA.z).multiplyScalar(w0).add(new THREE.Vector3(oB.x, oB.y, oB.z).multiplyScalar(w1)).add(new THREE.Vector3(oC.x, oC.y, oC.z).multiplyScalar(w2)).applyMatrix4(object.matrixWorld);
+                            const viewDir = new THREE.Vector3().subVectors(camera.position, worldPos).normalize();
+                            let finalColor = new THREE.Color(0,0,0);
+                            let pixelNormal = worldNormal.clone();
+                            let u = 0, v = 0;
+                            if (oA.u !== undefined) {
+                                u = (oA.u * w0 + oB.u * w1 + oC.u * w2);
+                                v = (oA.v * w0 + oB.v * w1 + oC.v * w2);
+                            }
+                            if (material.userData.isWater) {
+                                const du = getDisplacement(u + 1/DISPLACEMENT_MAP_SIZE, 1.0 - v) - getDisplacement(u - 1/DISPLACEMENT_MAP_SIZE, 1.0 - v);
+                                const dv = getDisplacement(u, 1.0 - v - 1/DISPLACEMENT_MAP_SIZE) - getDisplacement(u, 1.0 - v + 1/DISPLACEMENT_MAP_SIZE);
+                                pixelNormal.add(new THREE.Vector3(du * 10, 0, dv * 10)).normalize();
+                                const reflectDir = new THREE.Vector3().reflect(viewDir.clone().negate(), pixelNormal);
+                                const reflectionColor = getEnvColor(reflectDir);
+                                const fresnel = 0.02 + 0.98 * Math.pow(1.0 - Math.max(0, viewDir.dot(pixelNormal)), 5.0);
+                                finalColor.copy(material.color).lerp(reflectionColor, fresnel);
+                                const yFactor = y / height;
+                                const bgColor = skyColorTop.clone().lerp(skyColorBottom, yFactor);
+                                finalColor.lerp(bgColor, 1.0 - material.opacity);
+                            } else {
+                                const reflectDir = new THREE.Vector3().reflect(viewDir.clone().negate(), pixelNormal);
+                                const envColor = getEnvColor(reflectDir);
+                                const fresnel = 0.02 + 0.98 * Math.pow(1.0 - Math.max(0, viewDir.dot(pixelNormal)), 5.0);
+                                
+                                // --- UPDATED LIGHTING CALCULATION ---
+                                const diffuseStrength = Math.max(0, pixelNormal.dot(globalLight.direction.clone().negate()));
+                                const diffuseColor = material.color.clone().multiply(globalLight.color).multiplyScalar(diffuseStrength);
+
+                                let specularColor = envColor;
+                                if (material.metalness > 0.5) {
+                                    specularColor.multiply(material.color);
+                                }
+                                
+                                finalColor.copy(ambientLightColor).multiply(material.color);
+                                finalColor.add(diffuseColor.multiplyScalar(1.0 - material.metalness));
+                                const reflection = specularColor.clone().lerp(diffuseColor, material.roughness);
+                                finalColor.lerp(reflection, fresnel);
+                            }
+                            const fbi = bufferIndex * 4;
+                            frameBuffer.data[fbi] = finalColor.r * 255;
+                            frameBuffer.data[fbi + 1] = finalColor.g * 255;
+                            frameBuffer.data[fbi + 2] = finalColor.b * 255;
+                        }
+                    }
+                }
+            }
+        }
+        
+        function getEnvColor(direction) {
+            if(!hdrData) return skyColorTop.clone().lerp(skyColorBottom, 0.5); // Fallback to mid-sky color
+            const u = 0.5 + Math.atan2(direction.z, direction.x) / (2 * Math.PI);
+            const v = 0.5 - Math.asin(direction.y) / Math.PI;
+            const x = Math.floor(u * (hdrData.width - 1));
+            const y = Math.floor(v * (hdrData.height - 1));
+            const index = (y * hdrData.width + x) * 4;
+            const r = hdrData.data[index], g = hdrData.data[index+1], b = hdrData.data[index+2];
+            return new THREE.Color(r / (r + 1), g / (g + 1), b / (b + 1));
+        }
+
+        function onWindowResize() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            if (camera) {
+                camera.aspect = width / height;
+                camera.updateProjectionMatrix();
+            }
+            depthBuffer = new Float32Array(width * height);
+        }
+        
+        init();
+    </script>
+</body>
+</html>
