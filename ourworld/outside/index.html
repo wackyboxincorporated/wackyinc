@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>outside</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Inter', sans-serif; }
+        canvas {
+            display: block;
+            /* Ensure the canvas itself is absolutely positioned for scaling */
+            position: absolute;
+            top: 0;
+            left: 0;
+            /* Set transform origin to top-left for consistent scaling */
+            transform-origin: 0 0;
+            image-rendering: pixelated; /* Optional: for a sharper pixelated look on upscaling */
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+        #blocker {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7); /* Slightly darker overlay */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100; /* Ensure it's on top */
+        }
+        #instructions {
+            width: 80%; /* Increased width for better readability on small screens */
+            max-width: 400px; /* Max width for desktop */
+            padding: 30px; /* More padding */
+            background-color: rgba(0,0,0,0.8);
+            border-radius: 15px; /* More rounded corners */
+            text-align: center;
+            color: white;
+            font-size: 20px; /* Slightly smaller for better fit */
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(0,255,0,0.5); 
+            transition: background-color 0.3s ease;
+        }
+        #instructions:hover {
+            background-color: rgba(0,0,0,0.9);
+        }
+        #background-music {
+            display: none; /* Hide audio element */
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="blocker">
+        <div id="instructions">
+            
+        </div>
+    </div>
+
+    <!-- Background Music -->
+    <audio id="background-music" loop>
+        <source src="https://file.garden/ZMbUnW5nmTe-x54m/cry.wav" type="audio/wav">
+        it isn't going to work
+    </audio>
+
+    <!-- Three.js Library (Updated to unpkg.com, r130) -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.130.0/build/three.min.js"></script>
+    <!-- PointerLockControls for first-person camera movement (Updated to unpkg.com, r130 for compatibility) -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.130.0/examples/js/controls/PointerLockControls.js"></script>
+    <!-- Simplex Noise for terrain generation (Changed to Cloudflare CDN and version 2.4.0) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>
+
+    <script>
+        // Declare global variables for Three.js components
+        let camera, scene, renderer, controls;
+        // The grassShader will now reference the material's internal shader property
+        let grassMaterial; // Declare grassMaterial globally
+        const noise = new SimplexNoise(); // Initialize SimplexNoise immediately after its script is loaded
+        let spotLight; // Declare spotLight globally
+        let isFlashlightOn = false; // State for flashlight toggle
+
+        // Movement state variables
+        let moveForward = false;
+        let moveBackward = false;
+        let moveLeft = false;
+        let moveRight = false;
+        const velocity = new THREE.Vector3(); // Player movement velocity
+        const direction = new THREE.Vector3(); // Player movement direction
+        const clock = new THREE.Clock(); // Clock for consistent animation timing
+
+        // World generation parameters
+        const chunks = new Map(); // Stores active terrain chunks
+        const chunkSize = 150; // Size of each square chunk in Three.js units
+        const renderDistance = 7; // Increased render distance (number of chunks to render around the player)
+        const grassCountPerChunk = 5000; // Number of grass blades per chunk
+
+        // Define fixed internal rendering dimensions
+        const RENDER_WIDTH = 720;
+        const RENDER_HEIGHT = 480;
+
+        // Global definition for grass blade geometry (reused for all instances)
+        const GRASS_BLADE_GEOMETRY = new THREE.PlaneGeometry(0.5, 5, 1, 4);
+        GRASS_BLADE_GEOMETRY.setAttribute('uv', new THREE.BufferAttribute(new Float32Array([0, 0, 0, 1, 1, 0, 1, 1]), 2));
+
+        // --- Initialization Function ---
+        function init() {
+            // Scene Setup
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x111111); // Dark background
+            scene.fog = new THREE.Fog(0x111111, 0, 400); // Fog to hide distant chunk loading
+
+            // Renderer Setup
+            renderer = new THREE.WebGLRenderer({ antialias: true }); // Enable anti-aliasing for smoother edges
+            renderer.setPixelRatio(window.devicePixelRatio); // Adjust for high-DPI screens
+            // Set renderer size to fixed internal resolution
+            renderer.setSize(RENDER_WIDTH, RENDER_HEIGHT, false); // false = do not update style
+            renderer.shadowMap.enabled = true; // Enable shadow maps
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Softer shadows
+            document.body.appendChild(renderer.domElement); // Add renderer to the DOM
+
+            // Camera Setup
+            // Use fixed aspect ratio for the internal rendering resolution
+            camera = new THREE.PerspectiveCamera(75, RENDER_WIDTH / RENDER_HEIGHT, 0.1, 1000); // FOV, Aspect, Near, Far
+            camera.position.y = 10; // Initial camera height above ground
+
+            // Lighting Setup
+            const ambientLight = new THREE.AmbientLight(0xcccccc, 0.5); // Soft ambient light
+            scene.add(ambientLight);
+
+            // Initialize the global spotLight variable for flashlight
+            spotLight = new THREE.SpotLight(0xffffff, 0, 300, Math.PI / 8, 0.5, 0); // Color, intensity (0 for off), distance (0=infinite), angle, penumbra, decay
+            spotLight.position.set(0, 100, 0); // Initial position (will be updated to camera)
+            spotLight.target.position.set(0, 0, 0); // Initial target (will be updated to camera's view direction)
+            spotLight.castShadow = true; // Enable shadow casting for the flashlight
+
+            // Configure shadow map for the spotlight
+            spotLight.shadow.mapSize.width = 1024;
+            spotLight.shadow.mapSize.height = 1024;
+            spotLight.shadow.camera.near = 0.5;
+            spotLight.shadow.camera.far = 500;
+            spotLight.shadow.camera.fov = 50;
+
+            scene.add(spotLight);
+            scene.add(spotLight.target); // The target Object3D must be added to the scene for the light to work
+
+            // Initialize grass material once
+            grassMaterial = new THREE.MeshPhongMaterial({
+                color: 0x00cc00, // Bright green grass color
+                side: THREE.DoubleSide, // Render both sides of the plane
+                shininess: 50, // Less shiny than ground
+                transparent: true, // Enable transparency for alpha map if needed
+                alphaTest: 0.5, // Discard pixels below this alpha value
+                onBeforeCompile: shader => {
+                    // This function modifies the shader program for wind effect
+                    // Store the compiled shader directly in the material for easy access
+                    grassMaterial.userData.shader = shader;
+
+                    // Add uniforms to the shader
+                    shader.uniforms.time = { value: 0 };
+                    shader.uniforms.windStrength = { value: 0.5 };
+                    shader.uniforms.windSpeed = { value: 0.5 };
+                    shader.uniforms.bladeHeight = { value: GRASS_BLADE_GEOMETRY.parameters.height }; // Use the global geometry's height
+
+                    // Inject the 'time' uniform declaration into the vertex shader
+                    shader.vertexShader = 'uniform float time;\nuniform float windStrength;\nuniform float windSpeed;\nuniform float bladeHeight;\n' + shader.vertexShader;
+                    shader.vertexShader = shader.vertexShader.replace(
+                        '#include <begin_vertex>',
+                        `
+                        // Original vertex position
+                        vec3 transformed = vec3(position);
+
+                        // Calculate wave effect based on X position, time, and blade height
+                        // The effect is stronger at the top of the blade (higher Y)
+                        float wave = sin(transformed.x * 0.5 + time * windSpeed) * windStrength * (transformed.y / bladeHeight);
+                        transformed.x += wave; // Apply wave distortion to X coordinate
+                        `
+                    );
+                }
+            });
+
+            // Set up a simple environment map for reflections
+            // Using a CubeTextureLoader with distinct colors for a more noticeable reflection
+            const cubeTextureLoader = new THREE.CubeTextureLoader();
+            const environmentMap = cubeTextureLoader.load([
+                // px (sky blue)
+                'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAAD5XJdVAAAAEklEQVQIHWNgYGBgYHB+fr5PAwIAp54E8L5BwR4AAAAASUVORK5CYII=',
+                // nx (dark blue)
+                'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAAD5XJdVAAAAEklEQVQIHWNgYGBgYHB+fr5PAwIAp54E8L5BwR4AAAAASUVORK5CYII=',
+                // py (light green)
+                'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAAD5XJdVAAAAEklEQVQIHWNgYGBgYHB+fr5PAwIAp54E8L5BwR4AAAAASUVORK5CYII=',
+                // ny (dark green)
+                'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAAD5XJdVAAAAEklEQVQIHWNgYGBgYHB+fr5PAwIAp54E8L5BwR4AAAAASUVORK5CYII=',
+                // pz (light grey)
+                'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAAD5XJdVAAAAEklEQVQIHWNgYGBgYHB+fr5PAwIAp54E8L5BwR4AAAAASUVORK5CYII=',
+                // nz (dark grey)
+                'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAAD5XJdVAAAAEklEQVQIHWNgYGBgYHB+fr5PAwIAp54E8L5BwR4AAAAASUVORK5CYII='
+            ]);
+            scene.environment = environmentMap; // Assign environment map to the scene
+
+            // Setup Pointer Lock Controls for first-person interaction
+            setupControls();
+
+            // Generate initial terrain chunks around the starting position
+            updateChunks();
+
+            // Add event listener for window resizing to maintain responsiveness
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        // --- Controls Setup ---
+        function setupControls() {
+            controls = new THREE.PointerLockControls(camera, document.body); // Attaches controls to camera and uses body for events
+            const blocker = document.getElementById('blocker');
+            const instructions = document.getElementById('instructions');
+            const backgroundMusic = document.getElementById('background-music');
+
+            // Event listener for clicking the instructions to activate controls
+            instructions.addEventListener('click', function () {
+                controls.lock(); // Lock pointer to enable first-person view
+            });
+
+            // Event listener for when pointer lock is activated
+            controls.addEventListener('lock', function () {
+                // Hide instruction overlay and start music
+                instructions.style.display = 'none';
+                blocker.style.display = 'none';
+                backgroundMusic.play().catch(e => console.log("Music auto-play prevented:", e)); // Catch and log potential auto-play errors
+            });
+
+            // Event listener for when pointer lock is deactivated (e.g., by pressing ESC)
+            controls.addEventListener('unlock', function () {
+                // Show instruction overlay and pause music
+                blocker.style.display = 'flex';
+                instructions.style.display = '';
+                backgroundMusic.pause();
+            });
+
+            scene.add(controls.getObject()); // Add the controls' camera object to the scene
+
+            // Keyboard input handling. So you can rub one out while you experience this
+            const onKeyDown = function (event) {
+                switch (event.code) {
+                    case 'ArrowUp':
+                    case 'KeyW':
+                        moveForward = true;
+                        break;
+                    case 'ArrowLeft':
+                    case 'KeyA':
+                        moveLeft = true;
+                        break;
+                    case 'ArrowDown':
+                    case 'KeyS':
+                        moveBackward = true;
+                        break;
+                    case 'ArrowRight':
+                    case 'KeyD':
+                        moveRight = true;
+                        break;
+                    case 'KeyE': // 'E' key for flashlight toggle
+                        if (controls.isLocked) { // Only toggle if controls are active
+                            isFlashlightOn = !isFlashlightOn;
+                            spotLight.intensity = isFlashlightOn ? 1.0 : 0; // Set intensity based on toggle state
+                        }
+                        break;
+                }
+            };
+
+            const onKeyUp = function (event) {
+                switch (event.code) {
+                    case 'ArrowUp':
+                    case 'KeyW':
+                        moveForward = false;
+                        break;
+                    case 'ArrowLeft':
+                    case 'KeyA':
+                        moveLeft = false;
+                        break;
+                    case 'ArrowDown':
+                    case 'KeyS':
+                        moveBackward = false;
+                        break;
+                    case 'ArrowRight':
+                    case 'KeyD':
+                        moveRight = false;
+                        break;
+                }
+            };
+
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+        }
+
+        // --- World Generation Functions ---
+        /**
+         * Generates a unique string key 
+         * @param {number} x - The X 
+         * @param {number} z - The Z 
+         * @returns {string} The...
+         */
+        function getChunkKey(x, z) {
+            return `${x},${z}`;
+        }
+
+        /**
+         * G populates it with grass.
+         * @param {number} chunkX - The X
+         * @param {number} chunkZ - The Z
+         */
+        function generateChunk(chunkX, chunkZ) {
+            const key = getChunkKey(chunkX, chunkZ);
+            if (chunks.has(key)) return; // Skip if chunk already exists
+
+            // Create Ground Geometry
+            const groundGeometry = new THREE.PlaneGeometry(chunkSize, chunkSize, 50, 50); // Segmented plane for height variation
+            const positionAttribute = groundGeometry.attributes.position;
+
+            // Apply Simplex Noise to vertices for terrain height
+            for (let i = 0; i < positionAttribute.count; i++) {
+                const x = positionAttribute.getX(i) + chunkX * chunkSize; // World X coordinate
+                const z = positionAttribute.getY(i) + chunkZ * chunkSize; // World Z coordinate (originally Y in PlaneGeometry)
+                const y = noise.noise2D(x / 200, z / 200) * 10; // Generate height based on noise
+                positionAttribute.setZ(i, y); // Set the vertex height (y in world space, but Z in PlaneGeometry's local space after rotation)
+            }
+            positionAttribute.needsUpdate = true; // Mark attribute as needing update
+            groundGeometry.computeVertexNormals(); // Recalculate normals for correct lighting
+            groundGeometry.rotateX(-Math.PI / 2); // Rotate plane to lie flat on XZ plane
+            groundGeometry.translate(chunkX * chunkSize, 0, chunkZ * chunkSize); // Position the chunk in world space
+
+            // Changed to MeshStandardMaterial for reflectivity
+            const groundMaterial = new THREE.MeshStandardMaterial({
+                color: 0x003300, // Dark green ground color
+                roughness: 0.2, // Low roughness for reflective surface
+                metalness: 0.8, // High metalness for a metallic/wet look
+                side: THREE.DoubleSide
+            });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.receiveShadow = true; // Ground can receive shadows
+            scene.add(ground); // Add ground mesh to the scene
+
+            // Create geass blades
+            // Use the globally defined GRASS_BLADE_GEOMETRY and grassMaterial
+            const grassMesh = new THREE.InstancedMesh(GRASS_BLADE_GEOMETRY, grassMaterial, grassCountPerChunk);
+            const dummy = new THREE.Object3D(); // Helper object for setting instance matrices
+
+            // Position and orient each grass  randomly within the chunk
+            for (let i = 0; i < grassCountPerChunk; i++) {
+                // Random position within the current chunk's bounds
+                const x = (Math.random() - 0.5) * chunkSize + chunkX * chunkSize;
+                const z = (Math.random() - 0.5) * chunkSize + chunkZ * chunkSize;
+                // Get ground with noise
+                const y = noise.noise2D(x / 200, z / 200) * 10;
+
+                dummy.position.set(x, y, z); // Set position
+                dummy.rotation.y = Math.random() * Math.PI; // Random Y rotation (orientation)
+                dummy.updateMatrix(); // Update the dummy object's matrix
+                grassMesh.setMatrixAt(i, dummy.matrix); // Set the instance's matrix
+            }
+            grassMesh.instanceMatrix.needsUpdate = true; // Mark instanced matrix as needing update
+            // grassMesh.castShadow = true; // Enabling this makes suck computer suck
+            scene.add(grassMesh); // Add the instanced grass mesh to the scene
+
+            // Store the chunk's meshes in the map
+            chunks.set(key, { ground, grass: grassMesh });
+        }
+
+        /**
+         * Manages chunk loading and unloading based on player position.
+         */
+        function updateChunks() {
+            // Determine the current chunk the camera is in
+            const currentChunkX = Math.round(camera.position.x / chunkSize);
+            const currentChunkZ = Math.round(camera.position.z / chunkSize);
+
+            // Add new chunks within render distance
+            for (let x = -renderDistance; x <= renderDistance; x++) {
+                for (let z = -renderDistance; z <= renderDistance; z++) {
+                    generateChunk(currentChunkX + x, currentChunkZ + z);
+                }
+            }
+
+            // Remove chunks that are outside the render distance
+            for (const [key, chunk] of chunks.entries()) {
+                const [x, z] = key.split(',').map(Number); // Parse chunk coordinates from key
+                // Check if chunk is too far from current camera position
+                if (Math.abs(x - currentChunkX) > renderDistance || Math.abs(z - currentChunkZ) > renderDistance) {
+                    scene.remove(chunk.ground); // Remove meshes from scene
+                    scene.remove(chunk.grass);
+
+                    // Dispose of geometries and materials to free up memory
+                    chunk.ground.geometry.dispose();
+                    chunk.ground.material.dispose();
+                    chunk.grass.geometry.dispose();
+                    // Do NOT dispose grassMaterial here as it's shared
+                    chunks.delete(key); // Remove chunk from map
+                }
+            }
+        }
+
+        // --- Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate); // Request next frame for continuous animation
+
+            const delta = clock.getDelta(); // Time elapsed since last frame
+
+            if (controls.isLocked === true) {
+                // --- Handle Player Movement ---
+                // Decelerate current velocity
+                velocity.x -= velocity.x * 10.0 * delta;
+                velocity.z -= velocity.z * 10.0 * delta;
+
+                // Calculate desired movement direction based on key presses
+                direction.z = Number(moveForward) - Number(moveBackward);
+                direction.x = Number(moveRight) - Number(moveLeft);
+                direction.normalize(); // Normalize for 
+
+                // Apply acceleration if moving (changed from 40.0 to 80.0 for 2x faster movement)
+                const movementSpeed = 80.0;
+                if (moveForward || moveBackward) velocity.z -= direction.z * movementSpeed * delta;
+                if (moveLeft || moveRight) velocity.x -= direction.x * movementSpeed * delta;
+
+                // Move the camera using PointerLockControls
+                controls.moveRight(-velocity.x * delta);
+                controls.moveForward(-velocity.z * delta);
+
+                // --- Prevent flying and adjust height to terrain ---
+                const camX = camera.position.x;
+                const camZ = camera.position.z;
+                // Set camera Y position based on terrain height at current XZ plus a fixed offset
+                camera.position.y = noise.noise2D(camX / 200, camZ / 200) * 10 + 10;
+
+                // --- Update World (Chunks) based on new camera position ---
+                updateChunks();
+
+                // --- Make spotlight follow camera and point forward ---
+                if (spotLight && spotLight.target) { // Check if both spotLight and its target are defined
+                    spotLight.position.copy(camera.position); // Flashlight originates from camera
+                    // Calculate a point slightly in front of the camera for the target
+                    const flashlightTarget = new THREE.Vector3();
+                    camera.getWorldDirection(flashlightTarget); // Get camera's forward direction
+                    flashlightTarget.multiplyScalar(100); // Point 100 units in front of camera
+                    flashlightTarget.add(camera.position); // Target is in front of camera
+                    spotLight.target.position.copy(flashlightTarget); // Copy the calculated target position
+                    spotLight.target.updateMatrixWorld(); // Update target's world matrix for the light
+                } else {
+                    // console.warn("SpotLight or its target is undefined in animate loop.");
+                }
+            }
+
+            // --- Animate Grass Wind Effect ---
+            // U grass material
+            if (grassMaterial && grassMaterial.userData.shader && grassMaterial.userData.shader.uniforms.time) {
+                grassMaterial.userData.shader.uniforms.time.value += delta;
+            }
+
+            // Render the scene from the camera's perspective
+            renderer.render(scene, camera);
+        }
+
+        // --- Window Resize Handler ---
+        function onWindowResize() {
+            // Update camera aspect ratio based on the fixed internal resolution
+            camera.aspect = RENDER_WIDTH / RENDER_HEIGHT;
+            camera.updateProjectionMatrix();
+
+            // Calculate scale factor to fit the fixed render resolution into the window
+            const scaleX = window.innerWidth / RENDER_WIDTH;
+            const scaleY = window.innerHeight / RENDER_HEIGHT;
+            const scale = Math.min(scaleX, scaleY);
+
+            // Apply scaling to the canvas element
+            renderer.domElement.style.transform = `scale(${scale})`;
+
+            // Center the canvas if it's smaller than the window in one dimension
+            const scaledWidth = RENDER_WIDTH * scale;
+            const scaledHeight = RENDER_HEIGHT * scale;
+            const offsetX = (window.innerWidth - scaledWidth) / 2;
+            const offsetY = (window.innerHeight - scaledHeight) / 2;
+
+            renderer.domElement.style.left = `${offsetX}px`;
+            renderer.domElement.style.top = `${offsetY}px`;
+        }
+
+        // --- Start the application ---
+        // Ensure initialization happens after the window and all resources are loaded
+        window.onload = function () {
+            init();
+            onWindowResize(); // Call after init to set initial scaling and positioning
+            animate(); // Start the main animation loop
+        };
+    </script>
+</body>
+</html>
