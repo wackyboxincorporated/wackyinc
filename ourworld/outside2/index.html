@@ -23,8 +23,10 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            pointer-events: none;
+            pointer-events: none; /* Allow interaction with canvas elements below default */
             z-index: 101;
+            /* Hide by default, will be shown by JS if on mobile */
+            display: none;
         }
 
         #joystick-base {
@@ -37,8 +39,8 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            pointer-events: auto;
-            touch-action: none;
+            pointer-events: auto; /* Enable interaction for joystick */
+            touch-action: none; /* Prevent browser default touch actions like scrolling */
             -webkit-tap-highlight-color: transparent;
         }
 
@@ -48,7 +50,7 @@
             background-color: rgba(255, 255, 255, 0.6);
             border-radius: 50%;
             position: absolute;
-            transition: transform 0.1s ease-out;
+            transition: transform 0.1s ease-out; /* Smooth return to center */
         }
 
         #flashlight-button {
@@ -62,13 +64,13 @@
             align-items: center;
             font-size: 40px;
             cursor: pointer;
-            pointer-events: auto;
+            pointer-events: auto; /* Enable interaction for button */
             box-shadow: 0 0 10px rgba(255,255,255,0.3);
             transition: background-color 0.2s ease, box-shadow 0.2s ease;
             -webkit-tap-highlight-color: transparent;
         }
         #flashlight-button.active {
-            background-color: rgba(255, 255, 0, 0.5);
+            background-color: rgba(255, 255, 0, 0.5); /* Yellowish when active */
             box-shadow: 0 0 20px rgba(255,255,0,0.7);
         }
     </style>
@@ -104,8 +106,8 @@
         let moveBackward = false;
         let moveLeft = false;
         let moveRight = false;
-        const velocity = new THREE.Vector3();
-        const direction = new THREE.Vector3();
+        const velocity = new THREE.Vector3(); // For decay, not direct movement application
+        const direction = new THREE.Vector3(); // For desired movement direction
         const clock = new THREE.Clock();
 
         const chunks = new Map();
@@ -121,9 +123,15 @@
         let joystickActive = false;
         let joystickCenter = { x: 0, y: 0 };
         let joystickRadius = 0;
-        const joystickDeadZone = 0.2;
+        const joystickDeadZone = 0.2; // Percentage of radius for dead zone
 
         let flashlightButton;
+        let isMobile = false; // Flag to determine control type
+
+        // Variables for mobile touch look
+        let touchStartX = 0;
+        let touchStartY = 0;
+        const touchLookSensitivity = 0.003; // Adjust as needed for mobile rotation
 
         function init() {
             scene = new THREE.Scene();
@@ -194,20 +202,29 @@
             ]);
             scene.environment = environmentMap;
 
-            setupControls();
-            setupMobileControls();
+            isMobile = window.matchMedia("(pointer: coarse)").matches;
+
+            if (isMobile) {
+                setupMobileControls();
+                // Play music immediately on mobile
+                const backgroundMusic = document.getElementById('background-music');
+                backgroundMusic.play().catch(e => console.log("Music auto-play prevented:", e));
+            } else {
+                setupDesktopControls();
+            }
+
             updateChunks();
             window.addEventListener('resize', onWindowResize);
-
-            // Auto-lock controls and play music on page load
-            controls.lock();
-            const backgroundMusic = document.getElementById('background-music');
-            backgroundMusic.play().catch(e => console.log("Music auto-play prevented:", e));
         }
 
-        function setupControls() {
+        function setupDesktopControls() {
             controls = new THREE.PointerLockControls(camera, document.body);
             const backgroundMusic = document.getElementById('background-music');
+
+            // Listen for a click on the canvas to activate Pointer Lock
+            renderer.domElement.addEventListener('click', function() {
+                controls.lock();
+            });
 
             controls.addEventListener('lock', function () {
                 backgroundMusic.play().catch(e => console.log("Music auto-play prevented:", e));
@@ -238,7 +255,7 @@
                         moveRight = true;
                         break;
                     case 'KeyE':
-                        if (controls.isLocked) {
+                        if (controls.isLocked) { // Only toggle if controls are active
                             isFlashlightOn = !isFlashlightOn;
                             spotLight.intensity = isFlashlightOn ? 1.0 : 0;
                             flashlightButton.classList.toggle('active', isFlashlightOn);
@@ -277,6 +294,8 @@
             joystickKnob = document.getElementById('joystick-knob');
             flashlightButton = document.getElementById('flashlight-button');
 
+            document.getElementById('mobile-controls').style.display = 'flex'; // Show mobile controls
+
             function updateJoystickMetrics() {
                 const rect = joystickBase.getBoundingClientRect();
                 joystickCenter.x = rect.left + rect.width / 2;
@@ -292,7 +311,40 @@
 
             flashlightButton.addEventListener('touchend', onFlashlightToggle);
 
+            // Touch look on the main canvas (excluding joystick and button areas)
+            renderer.domElement.addEventListener('touchstart', onTouchLookStart, { passive: false });
+            renderer.domElement.addEventListener('touchmove', onTouchLookMove, { passive: false });
+
             window.addEventListener('resize', updateJoystickMetrics);
+        }
+
+        function onTouchLookStart(event) {
+            // Check if the touch target is not part of the joystick or flashlight button
+            if (event.touches.length === 1 &&
+                !joystickBase.contains(event.target) &&
+                !flashlightButton.contains(event.target)) {
+                touchStartX = event.touches[0].clientX;
+                touchStartY = event.touches[0].clientY;
+                event.preventDefault(); // Prevent default touch actions like scrolling
+            }
+        }
+
+        function onTouchLookMove(event) {
+            if (event.touches.length === 1 &&
+                !joystickBase.contains(event.target) &&
+                !flashlightButton.contains(event.target)) {
+                const touch = event.touches[0];
+                const dx = touch.clientX - touchStartX;
+                const dy = touch.clientY - touchStartY;
+
+                camera.rotation.y -= dx * touchLookSensitivity;
+                camera.rotation.x -= dy * touchLookSensitivity;
+                camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
+
+                touchStartX = touch.clientX;
+                touchStartY = touch.clientY;
+                event.preventDefault();
+            }
         }
 
         function onJoystickStart(event) {
@@ -325,15 +377,23 @@
             moveRight = false;
 
             if (distance > currentSensitivityRadius) {
-                if (Math.abs(dx) > Math.abs(dy)) {
-                    if (dx > 0) moveRight = true;
-                    else moveLeft = true;
-                } else {
-                    if (dy < 0) moveForward = true;
-                    else moveBackward = true;
+                // Determine movement direction based on angle
+                const normalizedAngle = angle + Math.PI; // Map to 0-2PI for easier quadrant checks
+                const quarterPi = Math.PI / 4;
+
+                // 45 degrees dead zone for each direction
+                if (normalizedAngle >= 7 * quarterPi && normalizedAngle < 9 * quarterPi) { // 315 to 45 deg (forward)
+                    moveForward = true;
+                } else if (normalizedAngle >= 3 * quarterPi && normalizedAngle < 5 * quarterPi) { // 135 to 225 deg (backward)
+                    moveBackward = true;
+                } else if (normalizedAngle >= quarterPi && normalizedAngle < 3 * quarterPi) { // 45 to 135 deg (left)
+                    moveLeft = true;
+                } else { // 225 to 315 deg (right)
+                    moveRight = true;
                 }
             }
         }
+
 
         function onJoystickEnd(event) {
             joystickActive = false;
@@ -345,11 +405,10 @@
         }
 
         function onFlashlightToggle(event) {
-            if (controls.isLocked) {
-                isFlashlightOn = !isFlashlightOn;
-                spotLight.intensity = isFlashlightOn ? 1.0 : 0;
-                flashlightButton.classList.toggle('active', isFlashlightOn);
-            }
+            // For mobile, controls are effectively "locked" immediately
+            isFlashlightOn = !isFlashlightOn;
+            spotLight.intensity = isFlashlightOn ? 1.0 : 0;
+            flashlightButton.classList.toggle('active', isFlashlightOn);
         }
 
         function getChunkKey(x, z) {
@@ -432,36 +491,54 @@
 
             const delta = clock.getDelta();
 
-            if (controls.isLocked === true) {
-                velocity.x -= velocity.x * 10.0 * delta;
-                velocity.z -= velocity.z * 10.0 * delta;
+            const movementSpeed = 80.0; // Base movement speed
 
-                direction.z = Number(moveForward) - Number(moveBackward);
-                direction.x = Number(moveRight) - Number(moveLeft);
-                direction.normalize();
+            if (!isMobile && controls.isLocked) {
+                // Desktop: use PointerLockControls' internal movement logic
+                if (moveForward) controls.moveForward(movementSpeed * delta);
+                if (moveBackward) controls.moveForward(-movementSpeed * delta);
+                if (moveLeft) controls.moveRight(-movementSpeed * delta);
+                if (moveRight) controls.moveRight(movementSpeed * delta);
 
-                const movementSpeed = 80.0;
-                if (moveForward || moveBackward) velocity.z -= direction.z * movementSpeed * delta;
-                if (moveLeft || moveRight) velocity.x -= direction.x * movementSpeed * delta;
+            } else if (isMobile) {
+                // Mobile: manually apply movement relative to camera's orientation
+                const cameraForward = new THREE.Vector3();
+                camera.getWorldDirection(cameraForward);
+                cameraForward.y = 0;
+                cameraForward.normalize();
 
-                controls.moveRight(-velocity.x * delta);
-                controls.moveForward(-velocity.z * delta);
+                const cameraRight = new THREE.Vector3();
+                camera.matrix.extractBasis(new THREE.Vector3(), cameraRight, new THREE.Vector3());
+                cameraRight.y = 0;
+                cameraRight.normalize();
 
-                const camX = camera.position.x;
-                const camZ = camera.position.z;
-                camera.position.y = noise.noise2D(camX / 200, camZ / 200) * 10 + 10;
+                const moveVector = new THREE.Vector3();
+                if (moveForward) moveVector.add(cameraForward);
+                if (moveBackward) moveVector.sub(cameraForward);
+                if (moveLeft) moveVector.sub(cameraRight);
+                if (moveRight) moveVector.add(cameraRight);
 
-                updateChunks();
-
-                if (spotLight && spotLight.target) {
-                    spotLight.position.copy(camera.position);
-                    const flashlightTarget = new THREE.Vector3();
-                    camera.getWorldDirection(flashlightTarget);
-                    flashlightTarget.multiplyScalar(100);
-                    flashlightTarget.add(camera.position);
-                    spotLight.target.position.copy(flashlightTarget);
-                    spotLight.target.updateMatrixWorld();
+                if (moveVector.lengthSq() > 0) { // Only normalize if there's actual movement
+                    moveVector.normalize();
+                    moveVector.multiplyScalar(movementSpeed * delta);
+                    camera.position.add(moveVector);
                 }
+            }
+
+            const camX = camera.position.x;
+            const camZ = camera.position.z;
+            camera.position.y = noise.noise2D(camX / 200, camZ / 200) * 10 + 10;
+
+            updateChunks();
+
+            if (spotLight && spotLight.target) {
+                spotLight.position.copy(camera.position);
+                const flashlightTarget = new THREE.Vector3();
+                camera.getWorldDirection(flashlightTarget);
+                flashlightTarget.multiplyScalar(100);
+                flashlightTarget.add(camera.position);
+                spotLight.target.position.copy(flashlightTarget);
+                spotLight.target.updateMatrixWorld();
             }
 
             if (grassMaterial && grassMaterial.userData.shader && grassMaterial.userData.shader.uniforms.time) {
