@@ -88,6 +88,37 @@
     </main>
 
     <form id="messageForm" class="p-4 bg-white dark:bg-gray-800 shadow-md rounded-t-xl flex flex-col space-y-3">
+        <!-- WebRTC Call Controls - NEW STRUCTURE -->
+        <div class="flex items-center space-x-2">
+            <!-- The toggle button remains visible -->
+            <button id="webrtcToggleButton" class="p-1 rounded-full bg-blue-500 text-white shadow-md z-10 transition-transform duration-300 hover:scale-110">
+                <svg id="webrtcToggleIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform rotate-0" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+            </button>
+            <!-- The main WebRTC panel that will be hidden/shown -->
+            <div id="webrtcMainPanel" class="flex-1 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg shadow-inner">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">WebRTC Audio Call</h3>
+                <div class="flex items-center space-x-2 mb-2">
+                    <label for="targetUserIdInput" class="text-gray-700 dark:text-gray-300 text-sm">Target User ID:</label>
+                    <input
+                        type="text"
+                        id="targetUserIdInput"
+                        placeholder="Enter User ID to call"
+                        class="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                    />
+                </div>
+                <div class="flex space-x-2">
+                    <button type="button" id="startCallButton" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-300">Call</button>
+                    <button type="button" id="answerCallButton" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-300 hidden">Answer</button>
+                    <button type="button" id="endCallButton" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-300 hidden">Hang Up</button>
+                </div>
+                <div id="callStatus" class="text-sm text-gray-700 dark:text-gray-300 text-center mt-2">Idle</div>
+                <audio id="remoteAudio" controls class="w-full mt-2 hidden"></audio>
+            </div>
+        </div>
+
+
         <div id="imagePreviewContainer" class="hidden flex items-center justify-between p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
             <img id="imagePreview" src="" alt="Image Preview" class="max-w-xs max-h-24 rounded-md object-contain mr-4">
             <span id="imageFileName" class="text-sm text-gray-700 dark:text-gray-300 truncate flex-1"></span>
@@ -250,7 +281,7 @@
             apiKey: "AIzaSyCbIMQv9Z44Ms2zNZh2SAmELkS8AJKsYvo",
             authDomain: "chat-5c6f4.firebaseapp.com",
             projectId: "chat-5c6f4",
-            storageBucket: "chat-5c6f4.firebasestorage.app",
+            storageBucket: "chat-5c6f4.firebaseapp.com",
             messagingSenderId: "450004774412",
             appId: "1:450004774412:web:160c2275021b82745b4829",
             measurementId: "G-2Y6JBMK2CP"
@@ -271,7 +302,7 @@
         let originalMessageText = null;
         let unsubscribeMessages = null;
         let currentImageFile = null;
-        let currentVideoFile = null; // New: For video file
+        let currentVideoFile = null; // For video file
         let fileErrorTimeout = null;
         
         // Firestore document size limit in bytes (1 MiB)
@@ -322,7 +353,7 @@
         const audioFileName = document.getElementById('audioFileName');
         const cancelAudioUploadButton = document.getElementById('cancelAudioUploadButton');
 
-        // Video Upload elements (New)
+        // Video Upload elements
         const videoUploadPreviewContainer = document.getElementById('videoUploadPreviewContainer');
         const videoUploadPreview = document.getElementById('videoUploadPreview');
         const videoFileName = document.getElementById('videoFileName');
@@ -356,6 +387,32 @@
         const recordingMessage = document.getElementById('recordingMessage');
         const cancelRecordingButton = document.getElementById('cancelRecordingButton');
 
+        // WebRTC elements (New)
+        // Note: webrtcControls is now the outer container for the collapsible panel
+        const webrtcMainPanel = document.getElementById('webrtcMainPanel'); // The panel itself
+        const targetUserIdInput = document.getElementById('targetUserIdInput');
+        const startCallButton = document.getElementById('startCallButton');
+        const answerCallButton = document.getElementById('answerCallButton');
+        const endCallButton = document.getElementById('endCallButton');
+        const callStatus = document.getElementById('callStatus');
+        const remoteAudio = document.getElementById('remoteAudio');
+        const webrtcToggleButton = document.getElementById('webrtcToggleButton'); 
+        const webrtcToggleIcon = document.getElementById('webrtcToggleIcon');   
+
+        // WebRTC specific variables
+        let peerConnection;
+        let localStream;
+        let remoteStream;
+        let callTargetUserId = null;
+        let webrtcMessageListenerUnsubscribe = null;
+
+        // WebRTC configuration (STUN/TURN servers)
+        const rtcConfig = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+            ]
+        };
 
         // List of public channels available
         const publicChannels = [
@@ -441,7 +498,7 @@
         }
 
         /**
-         * Clears any selected video file and hides the video preview elements. (New)
+         * Clears any selected video file and hides the video preview elements.
          */
         function clearVideoSelection() {
             if (videoUploadPreview.src && videoUploadPreview.src.startsWith('blob:')) {
@@ -463,7 +520,7 @@
             fileInput.value = ''; // Crucially clears the single file input
             clearImageSelection();
             clearAudioFileSelection();
-            clearVideoSelection(); // New: Clear video selection
+            clearVideoSelection(); // Clear video selection
         }
 
         /**
@@ -526,12 +583,15 @@
                     if (user) {
                         currentUserId = user.uid;
                         userIdDisplay.textContent = `Your ID: ${currentUserId}`;
+                        // Once authenticated, setup WebRTC signaling listener
+                        setupWebRTCSignalingListener();
                     } else {
                         // If no user is signed in, sign in anonymously
                         try {
                             await signInAnonymously(auth);
                             currentUserId = auth.currentUser.uid; // Update currentUserId after anonymous sign-in
                             userIdDisplay.textContent = `Your ID: ${currentUserId}`;
+                            setupWebRTCSignalingListener();
                         } catch (error) {
                             console.error("Error during anonymous sign-in:", error);
                             currentUserId = null;
@@ -577,10 +637,12 @@
             audioRecordingStatus.classList.add('hidden'); // Ensure recording status is hidden
 
             // Create a query to fetch messages for the current channel, ordered by timestamp
+            // Exclude WebRTC signaling messages from the main chat display
             const q = query(
                 collection(db, `artifacts/${appId}/public/data/messages`),
                 where('channelId', '==', currentChannelId),
-                orderBy('timestamp') // Ordering by timestamp ensures messages are in order
+                where('type', '==', 'chat'), // Only display chat messages
+                orderBy('timestamp') 
             );
 
             // Set up the real-time listener
@@ -616,6 +678,11 @@
          */
         function renderMessages(messages) {
             messages.forEach(msg => {
+                // Skip WebRTC signaling messages from being displayed in the chat feed
+                if (msg.type && msg.type.startsWith('webrtc-')) {
+                    return;
+                }
+
                 const messageDiv = document.createElement('div');
                 // Align messages based on sender
                 messageDiv.className = `flex ${msg.userId === currentUserId ? 'justify-end' : 'justify-start'}`;
@@ -697,7 +764,7 @@
                     messageBubble.appendChild(audioPlayer);
                 }
 
-                // Display video if available (New)
+                // Display video if available
                 if (msg.videoDataUrl) {
                     const videoElement = document.createElement('video');
                     videoElement.controls = true;
@@ -776,6 +843,259 @@
         }
 
         /**
+         * Sends a WebRTC signaling message via Firestore.
+         * @param {string} type - Type of WebRTC message (offer, answer, candidate, hangup).
+         * @param {Object} data - The SDP or ICE candidate data.
+         * @param {string} targetUserId - The ID of the user to send the message to.
+         */
+        async function sendWebRTCSignalingMessage(type, data, targetId) {
+            if (!db || !currentUserId || !targetId) {
+                console.error("Cannot send WebRTC signaling message: DB, currentUserId, or targetId not available.");
+                return;
+            }
+
+            try {
+                // Send signaling messages to a specific subcollection for WebRTC signaling.
+                // This makes them private to the sender and receiver.
+                // Or, if public signaling is desired (like in a channel-based call),
+                // use the currentChannelId instead of a private path.
+                // For this example, we'll send it to the public messages collection
+                // but filter it out from the main chat display in renderMessages.
+                await addDoc(collection(db, `artifacts/${appId}/public/data/messages`), {
+                    type: `webrtc-${type}`, // e.g., 'webrtc-offer', 'webrtc-answer', 'webrtc-candidate', 'webrtc-hangup'
+                    senderUserId: currentUserId,
+                    targetUserId: targetId,
+                    data: JSON.stringify(data), // Stringify complex objects for Firestore
+                    timestamp: serverTimestamp(),
+                    channelId: currentChannelId // Still associate with the channel for general context/filtering
+                });
+                console.log(`WebRTC signaling message (${type}) sent to ${targetId}`);
+            } catch (error) {
+                console.error("Error sending WebRTC signaling message:", error);
+            }
+        }
+
+
+        /**
+         * Sets up a real-time listener for incoming WebRTC signaling messages
+         * targeted at the current user.
+         */
+        function setupWebRTCSignalingListener() {
+            if (webrtcMessageListenerUnsubscribe) {
+                webrtcMessageListenerUnsubscribe(); // Unsubscribe from previous listener
+            }
+
+            if (!db || !currentUserId) {
+                console.warn("Firestore or currentUserId not ready for WebRTC signaling listener.");
+                return;
+            }
+
+            // Listen for signaling messages where this user is the target
+            const q = query(
+                collection(db, `artifacts/${appId}/public/data/messages`),
+                where('targetUserId', '==', currentUserId)
+            );
+
+            webrtcMessageListenerUnsubscribe = onSnapshot(q, async (snapshot) => {
+                snapshot.docChanges().forEach(async (change) => {
+                    if (change.type === "added") {
+                        const msg = change.doc.data();
+                        // Only process WebRTC signaling messages
+                        if (msg.type && msg.type.startsWith('webrtc-')) {
+                            const signalingData = JSON.parse(msg.data);
+                            console.log(`Received WebRTC signaling message (${msg.type}) from ${msg.senderUserId}:`, signalingData);
+
+                            switch (msg.type) {
+                                case 'webrtc-offer':
+                                    if (callTargetUserId === null || callTargetUserId === msg.senderUserId) { // Allow new call or if already calling same person
+                                        callTargetUserId = msg.senderUserId;
+                                        callStatus.textContent = `Incoming call from ${msg.senderUserId}!`;
+                                        startCallButton.classList.add('hidden');
+                                        answerCallButton.classList.remove('hidden');
+                                        endCallButton.classList.remove('hidden');
+                                        await handleOffer(signalingData);
+                                    } else {
+                                        console.warn(`Already in a call with ${callTargetUserId}, rejecting offer from ${msg.senderUserId}`);
+                                        // Send a reject message or handle gracefully
+                                    }
+                                    break;
+                                case 'webrtc-answer':
+                                    if (peerConnection && peerConnection.remoteDescription === null) { // Only set answer if offer was sent by us
+                                        await peerConnection.setRemoteDescription(new RTCSessionDescription(signalingData));
+                                        callStatus.textContent = `Call established with ${msg.senderUserId}.`;
+                                    }
+                                    break;
+                                case 'webrtc-candidate':
+                                    if (peerConnection) {
+                                        try {
+                                            await peerConnection.addIceCandidate(new RTCIceCandidate(signalingData));
+                                        } catch (e) {
+                                            console.error('Error adding received ICE candidate:', e);
+                                        }
+                                    }
+                                    break;
+                                case 'webrtc-hangup':
+                                    handleHangup();
+                                    callStatus.textContent = `${msg.senderUserId} ended the call.`;
+                                    break;
+                            }
+                            // Delete the signaling message after processing to keep Firestore clean
+                            await deleteDoc(change.doc.ref);
+                        }
+                    }
+                });
+            }, (error) => {
+                console.error("Error listening for WebRTC signaling messages:", error);
+            });
+        }
+
+
+        /**
+         * Initializes WebRTC peer connection and gets local audio stream.
+         */
+        async function startCall() {
+            callTargetUserId = targetUserIdInput.value.trim();
+            if (!callTargetUserId || callTargetUserId === currentUserId) {
+                callStatus.textContent = "Please enter a valid target User ID (not your own).";
+                return;
+            }
+
+            callStatus.textContent = `Calling ${callTargetUserId}...`;
+            startCallButton.disabled = true;
+
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                remoteAudio.srcObject = null; // Clear any previous remote audio
+
+                peerConnection = new RTCPeerConnection(rtcConfig);
+
+                // Add local audio tracks to the peer connection
+                localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                });
+
+                // Event handler for when remote tracks are received
+                peerConnection.ontrack = (event) => {
+                    console.log('Remote track received:', event.streams[0]);
+                    if (remoteAudio.srcObject !== event.streams[0]) {
+                        remoteAudio.srcObject = event.streams[0];
+                        remoteAudio.play().catch(e => console.error("Error playing remote audio:", e));
+                        remoteAudio.classList.remove('hidden');
+                    }
+                };
+
+                // Event handler for ICE candidates (network information)
+                peerConnection.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        console.log('Sending ICE candidate:', event.candidate);
+                        sendWebRTCSignalingMessage('candidate', event.candidate.toJSON(), callTargetUserId);
+                    }
+                };
+                
+                // Create and send SDP offer
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                console.log('Sending SDP offer:', offer);
+                sendWebRTCSignalingMessage('offer', offer.toJSON(), callTargetUserId);
+
+                callStatus.textContent = `Waiting for ${callTargetUserId} to answer...`;
+                startCallButton.classList.add('hidden');
+                answerCallButton.classList.add('hidden'); // Initiator doesn't answer their own call
+                endCallButton.classList.remove('hidden');
+                endCallButton.disabled = false;
+
+            } catch (error) {
+                console.error("Error starting call:", error);
+                callStatus.textContent = `Call failed: ${error.message}`;
+                startCallButton.disabled = false;
+                handleHangup(); // Clean up if call fails to start
+            }
+        }
+
+        /**
+         * Handles an incoming SDP offer and sends back an answer.
+         * @param {Object} offer - The received SDP offer.
+         */
+        async function handleOffer(offer) {
+            if (!peerConnection) {
+                peerConnection = new RTCPeerConnection(rtcConfig);
+                // Set up handlers for the new peerConnection
+                peerConnection.ontrack = (event) => {
+                    console.log('Remote track received during answer:', event.streams[0]);
+                    if (remoteAudio.srcObject !== event.streams[0]) {
+                        remoteAudio.srcObject = event.streams[0];
+                        remoteAudio.play().catch(e => console.error("Error playing remote audio:", e));
+                        remoteAudio.classList.remove('hidden');
+                    }
+                };
+                peerConnection.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        console.log('Sending ICE candidate (answer):', event.candidate);
+                        sendWebRTCSignalingMessage('candidate', event.candidate.toJSON(), callTargetUserId);
+                    }
+                };
+
+                 // Add local audio tracks if we haven't already and the user has a microphone
+                try {
+                    if (!localStream) { // Only get stream if not already obtained
+                        localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    }
+                    localStream.getTracks().forEach(track => {
+                        peerConnection.addTrack(track, localStream);
+                    });
+                } catch (e) {
+                    console.warn("Could not get local audio stream for answering call. Continuing without sending audio:", e);
+                    // User might not have a mic or denied permission. The call can still be received.
+                }
+
+            }
+
+            try {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                console.log('Sending SDP answer:', answer);
+                sendWebRTCSignalingMessage('answer', answer.toJSON(), callTargetUserId);
+
+                callStatus.textContent = `Call established with ${callTargetUserId}.`;
+                startCallButton.classList.add('hidden');
+                answerCallButton.classList.add('hidden');
+                endCallButton.classList.remove('hidden');
+                endCallButton.disabled = false;
+
+            } catch (error) {
+                console.error("Error handling offer:", error);
+                callStatus.textContent = `Call failed: ${error.message}`;
+                handleHangup();
+            }
+        }
+
+        /**
+         * Ends the current WebRTC call and cleans up resources.
+         */
+        function handleHangup() {
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            if (remoteAudio.srcObject) {
+                remoteAudio.srcObject.getTracks().forEach(track => track.stop());
+                remoteAudio.srcObject = null;
+            }
+            remoteAudio.classList.add('hidden');
+            callTargetUserId = null;
+            callStatus.textContent = "Call ended.";
+            startCallButton.classList.remove('hidden');
+            startCallButton.disabled = false;
+            answerCallButton.classList.add('hidden');
+            endCallButton.classList.add('hidden');
+        }
+
+        /**
          * Handles sending or updating a message.
          * @param {Event} e - The submit event from the message form.
          */
@@ -813,7 +1133,7 @@
                     // Send a new message
                     let imageDataUrl = null;
                     let audioDataUrl = null;
-                    let videoDataUrl = null; // New: for video data URL
+                    let videoDataUrl = null; 
                     
                     // Show progress bar and disable send button during upload
                     uploadProgressBarContainer.classList.remove('hidden');
@@ -836,7 +1156,7 @@
                             reader.onerror = error => reject(error);
                             reader.readAsDataURL(currentAudioFile);
                         });
-                    } else if (currentVideoFile) { // New: handle video file
+                    } else if (currentVideoFile) { 
                         // Read video file as Data URL
                         const reader = new FileReader();
                         videoDataUrl = await new Promise((resolve, reject) => {
@@ -861,6 +1181,7 @@
                         text: messageText,
                         channelId: currentChannelId,
                         timestamp: serverTimestamp(), // Use server timestamp for consistency
+                        type: 'chat' // Explicitly mark as a chat message
                     };
 
                     if (imageDataUrl) {
@@ -870,7 +1191,7 @@
                         messageData.audioDataUrl = audioDataUrl;
                         messageData.audioMimeType = currentAudioFile.type; 
                     }
-                    if (videoDataUrl) { // New: add video data
+                    if (videoDataUrl) { 
                         messageData.videoDataUrl = videoDataUrl;
                         messageData.videoMimeType = currentVideoFile.type;
                     }
@@ -881,7 +1202,7 @@
                 resetEditMode(); // Clear input and reset button text
                 clearAllMediaSelections(); // Clear all media previews and inputs
                 currentAudioFile = null; // Ensure this is explicitly cleared as it can come from recording or upload
-                currentVideoFile = null; // New: Ensure video file is cleared
+                currentVideoFile = null; // Ensure video file is cleared
                 audioRecordingStatus.classList.add('hidden'); // Hide recording status if visible
             }
             catch (error) {
@@ -1004,6 +1325,24 @@
                 channelToggleIcon.classList.add('rotate-0');
             }
         }
+
+        /**
+         * Toggles the visibility of the WebRTC controls area.
+         */
+        function toggleWebRTCControls() {
+            const isHidden = webrtcMainPanel.classList.contains('hidden');
+
+            if (isHidden) {
+                webrtcMainPanel.classList.remove('hidden');
+                webrtcToggleIcon.classList.remove('rotate-180');
+                webrtcToggleIcon.classList.add('rotate-0');
+            } else {
+                webrtcMainPanel.classList.add('hidden');
+                webrtcToggleIcon.classList.remove('rotate-0');
+                webrtcToggleIcon.classList.add('rotate-180');
+            }
+        }
+
 
         /**
          * Opens the user settings modal.
@@ -1276,7 +1615,7 @@
                         // (duration - shortest) / (longest - shortest) gives a ratio from 0 to 1
                         // 1 - ratio makes it inversely proportional (shorter duration = higher ratio for quality)
                         const ratio = (videoDuration - SHORTEST_VIDEO_DURATION_FOR_MAX_QUALITY_SECONDS) /
-                                      (LONGEST_VIDEO_DURATION_FOR_FIXED_QUALITY_SECONDS - SHORTEST_VIDEO_DURATION_FOR_MAX_QUALITY_SECONDS); // FIX: Corrected variable name here
+                                      (LONGEST_VIDEO_DURATION_FOR_FIXED_QUALITY_SECONDS - SHORTEST_VIDEO_DURATION_FOR_MAX_QUALITY_SECONDS); 
                         targetBlobSizeBytes = (MAX_QUALITY_TARGET_SIZE_KB - BASE_QUALITY_TARGET_SIZE_KB) * (1 - ratio) * 1024 + (BASE_QUALITY_TARGET_SIZE_KB * 1024);
                     }
 
@@ -1505,6 +1844,8 @@
         sidebarToggle.addEventListener('click', toggleSidebar);
         // Toggle channel control area visibility
         channelToggleButton.addEventListener('click', toggleChannelControl);
+        // Toggle WebRTC control area visibility (NEW)
+        webrtcToggleButton.addEventListener('click', toggleWebRTCControls);
 
         // Confirmation modal for message deletion
         confirmDeleteYes.addEventListener('click', () => {
@@ -1700,6 +2041,45 @@
         });
         cancelRecordingButton.addEventListener('click', cancelRecording);
 
+        // WebRTC Call Button Listeners
+        startCallButton.addEventListener('click', startCall);
+        answerCallButton.addEventListener('click', async () => {
+            // handleOffer is called by the signaling listener, but we might need to explicitly answer if UI is already showing it
+            // For simplicity, we just trigger the offer handling (which also sends the answer)
+            if (peerConnection && peerConnection.remoteDescription) {
+                // If an offer is already set as remoteDescription, just try to create and send answer
+                // This means the handleOffer was likely already called when the signaling message was received.
+                try {
+                    // No need to re-handle offer as it's already set. Just ensure we have local audio and send answer.
+                    if (!localStream) {
+                        localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        localStream.getTracks().forEach(track => {
+                            peerConnection.addTrack(track, localStream);
+                        });
+                    }
+                    const answer = await peerConnection.createAnswer();
+                    await peerConnection.setLocalDescription(answer);
+                    sendWebRTCSignalingMessage('answer', answer.toJSON(), callTargetUserId);
+                    callStatus.textContent = `Call established with ${callTargetUserId}.`;
+                    startCallButton.classList.add('hidden');
+                    answerCallButton.classList.add('hidden');
+                    endCallButton.classList.remove('hidden');
+                    endCallButton.disabled = false;
+                } catch (e) {
+                    console.error("Error creating/sending answer on explicit click:", e);
+                    callStatus.textContent = `Error answering call: ${e.message}`;
+                    handleHangup();
+                }
+            } else {
+                callStatus.textContent = "No pending call to answer or peer connection not ready.";
+            }
+        });
+        endCallButton.addEventListener('click', () => {
+            sendWebRTCSignalingMessage('hangup', {}, callTargetUserId); // Inform the other party
+            handleHangup();
+            callStatus.textContent = "You ended the call.";
+        });
+
 
         // --- Initial Load Logic ---
         window.onload = () => {
@@ -1724,11 +2104,19 @@
                  channelControlArea.classList.add('max-h-full');
                  channelToggleIcon.classList.add('rotate-0');
                  channelToggleIcon.classList.remove('rotate-180');
+                 // Also ensure WebRTC controls are visible on larger screens by default
+                 webrtcMainPanel.classList.remove('hidden'); // Show the panel
+                 webrtcToggleIcon.classList.add('rotate-0');
+                 webrtcToggleIcon.classList.remove('rotate-180');
             } else {
                  channelControlArea.classList.add('max-h-0');
                  channelControlArea.classList.remove('max-h-full');
                  channelToggleIcon.classList.add('rotate-180');
                  channelToggleIcon.classList.remove('rotate-0');
+                 // Make WebRTC controls collapsible on smaller screens
+                 webrtcMainPanel.classList.add('hidden'); // Hide the panel
+                 webrtcToggleIcon.classList.add('rotate-180'); // Arrow points down
+                 webrtcToggleIcon.classList.remove('rotate-0');
             }
             // Ensure theme is applied correctly on load
             applyTheme(localStorage.getItem('wChatTheme') || 'dark');
