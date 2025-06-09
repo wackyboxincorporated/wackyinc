@@ -91,21 +91,43 @@
         <div id="imagePreviewContainer" class="hidden flex items-center justify-between p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
             <img id="imagePreview" src="" alt="Image Preview" class="max-w-xs max-h-24 rounded-md object-contain mr-4">
             <span id="imageFileName" class="text-sm text-gray-700 dark:text-gray-300 truncate flex-1"></span>
-            <button type="button" id="cancelImageButton" class="ml-4 p-1 rounded-full text-red-500 hover:bg-red-100 dark:hover:bg-red-900 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                </svg>
-            </button>
+            <div id="imageActions" class="flex flex-col space-y-2 ml-4">
+                <button type="button" id="cancelImageButton" class="p-1 rounded-full text-red-500 hover:bg-red-100 dark:hover:bg-red-900 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+                <button type="button" id="scaleImageButton" class="hidden bg-yellow-500 hover:bg-yellow-600 text-white text-xs py-1 px-2 rounded-lg shadow-sm transition-colors">
+                    Scale Down
+                </button>
+            </div>
         </div>
 
         <div id="audioUploadPreviewContainer" class="hidden flex items-center justify-between p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
             <audio id="audioUploadPreview" controls class="max-w-xs"></audio>
             <span id="audioFileName" class="text-sm text-gray-700 dark:text-gray-300 truncate flex-1 ml-4"></span>
-            <button type="button" id="cancelAudioUploadButton" class="ml-4 p-1 rounded-full text-red-500 hover:bg-red-100 dark:hover:bg-red-900 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                </svg>
-            </button>
+            <div id="audioActions" class="flex flex-col space-y-2 ml-4">
+                <button type="button" id="cancelAudioUploadButton" class="p-1 rounded-full text-red-500 hover:bg-red-100 dark:hover:bg-red-900 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div id="videoUploadPreviewContainer" class="hidden flex flex-col items-center justify-between p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
+            <video id="videoUploadPreview" controls class="max-w-full max-h-48 rounded-md object-contain mb-2"></video>
+            <span id="videoFileName" class="text-sm text-gray-700 dark:text-gray-300 truncate w-full text-center mb-2"></span>
+            <div id="videoActions" class="flex justify-center space-x-2 w-full">
+                <button type="button" id="cancelVideoButton" class="p-1 rounded-full text-red-500 hover:bg-red-100 dark:hover:bg-red-900 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+                <button type="button" id="scaleVideoButton" class="hidden bg-yellow-500 hover:bg-yellow-600 text-white text-xs py-1 px-2 rounded-lg shadow-sm transition-colors">
+                    Scale Down
+                </button>
+            </div>
         </div>
 
 
@@ -115,7 +137,7 @@
 
         <div id="fileSizeError" class="hidden bg-red-100 dark:bg-red-900 border border-red-400 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg relative text-sm" role="alert">
             <strong class="font-bold">Error:</strong>
-            <span class="block sm:inline" id="fileSizeErrorMessage">File size exceeds 1MB limit. Please choose a smaller file.</span>
+            <span class="block sm:inline" id="fileSizeErrorMessage">File size exceeds limit.</span>
         </div>
 
         <div id="audioRecordingStatus" class="hidden bg-blue-100 dark:bg-blue-900 border border-blue-400 text-blue-700 dark:text-blue-300 px-4 py-3 rounded-lg relative text-sm flex items-center justify-between" role="status">
@@ -135,9 +157,9 @@
             <input
                 type="file"
                 id="fileInput"
-                accept="image/*,audio/mpeg,audio/ogg,audio/webm"
+                accept="image/*,audio/mpeg,audio/ogg,audio/webm,video/mp4,video/webm"
                 class="hidden"
-                aria-hidden="true" style="display: none;" <!-- Added aria-hidden and inline style for maximum hiding -->
+                aria-hidden="true" style="display: none;"
             />
             <button type="button" id="attachFileButton" class="p-2 rounded-lg bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 shadow-sm transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -249,8 +271,14 @@
         let originalMessageText = null;
         let unsubscribeMessages = null;
         let currentImageFile = null;
-        let fileErrorTimeout = null; // Renamed from imageSizeErrorTimeout
-        const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB limit
+        let currentVideoFile = null; // New: For video file
+        let fileErrorTimeout = null;
+        
+        // Firestore document size limit in bytes (1 MiB)
+        const FIRESTORE_MAX_DOC_SIZE = 1048576; 
+        // Maximum raw file size before Base64 encoding to ensure it fits within Firestore's 1MB limit.
+        // Base64 encoding adds approximately 33% overhead.
+        const MAX_RAW_FILE_SIZE_BEFORE_ENCODING = Math.floor(FIRESTORE_MAX_DOC_SIZE * (3 / 4)); // Approx 786432 bytes
 
         // Voice Recording related variables
         let mediaRecorder;
@@ -286,6 +314,7 @@
         const imagePreview = document.getElementById('imagePreview');
         const imageFileName = document.getElementById('imageFileName');
         const cancelImageButton = document.getElementById('cancelImageButton');
+        const scaleImageButton = document.getElementById('scaleImageButton');
 
         // Audio Upload elements
         const audioUploadPreviewContainer = document.getElementById('audioUploadPreviewContainer');
@@ -293,15 +322,22 @@
         const audioFileName = document.getElementById('audioFileName');
         const cancelAudioUploadButton = document.getElementById('cancelAudioUploadButton');
 
+        // Video Upload elements (New)
+        const videoUploadPreviewContainer = document.getElementById('videoUploadPreviewContainer');
+        const videoUploadPreview = document.getElementById('videoUploadPreview');
+        const videoFileName = document.getElementById('videoFileName');
+        const cancelVideoButton = document.getElementById('cancelVideoButton');
+        const scaleVideoButton = document.getElementById('scaleVideoButton');
+
         // Unified File Input elements
-        const fileInput = document.getElementById('fileInput'); // New: Single input for image/audio
-        const attachFileButton = document.getElementById('attachFileButton'); // New: Single attach button
+        const fileInput = document.getElementById('fileInput');
+        const attachFileButton = document.getElementById('attachFileButton');
 
 
         const uploadProgressBarContainer = document.getElementById('uploadProgressBarContainer');
         const uploadProgressBar = document.getElementById('uploadProgressBar');
-        const fileSizeError = document.getElementById('fileSizeError'); // Renamed from imageSizeError
-        const fileSizeErrorMessage = document.getElementById('fileSizeErrorMessage'); // Renamed from imageSizeErrorMessage
+        const fileSizeError = document.getElementById('fileSizeError'); // This div holds the message
+        const fileSizeErrorMessage = document.getElementById('fileSizeErrorMessage'); // The span inside to put message
 
         const channelToggleButton = document.getElementById('channelToggleButton');
         const channelToggleIcon = document.getElementById('channelToggleIcon');
@@ -374,24 +410,29 @@
          * Clears any selected image file and hides the image preview elements.
          */
         function clearImageSelection() {
+            if (imagePreview.src && imagePreview.src.startsWith('blob:')) {
+                URL.revokeObjectURL(imagePreview.src); // Clean up old object URL
+            }
             currentImageFile = null;
-            // No need to clear fileInput.value here as it's handled by clearAllMediaSelections
             imagePreview.src = '';
             imageFileName.textContent = '';
             imagePreviewContainer.classList.add('hidden');
-            hideFileSizeError();
+            scaleImageButton.classList.add('hidden'); // Hide scale button
+            hideFileSizeMessage(); // Use the new hide function
         }
 
         /**
          * Clears any selected audio file (either uploaded or recorded) and hides related UI elements.
          */
         function clearAudioFileSelection() {
+            if (audioUploadPreview.src && audioUploadPreview.src.startsWith('blob:')) {
+                URL.revokeObjectURL(audioUploadPreview.src); // Clean up old object URL
+            }
             currentAudioFile = null;
-            // No need to clear fileInput.value here as it's handled by clearAllMediaSelections
             audioUploadPreview.src = '';
             audioFileName.textContent = '';
             audioUploadPreviewContainer.classList.add('hidden');
-            hideFileSizeError();
+            hideFileSizeMessage(); // Use the new hide function
             // Also ensure recording status is hidden if audio was recorded
             if (isRecording) {
                 stopRecording();
@@ -400,42 +441,68 @@
         }
 
         /**
+         * Clears any selected video file and hides the video preview elements. (New)
+         */
+        function clearVideoSelection() {
+            if (videoUploadPreview.src && videoUploadPreview.src.startsWith('blob:')) {
+                URL.revokeObjectURL(videoUploadPreview.src); // Clean up old object URL
+            }
+            currentVideoFile = null;
+            videoUploadPreview.src = '';
+            videoFileName.textContent = '';
+            videoUploadPreviewContainer.classList.add('hidden');
+            scaleVideoButton.classList.add('hidden'); // Hide scale button
+            hideFileSizeMessage(); // Use the new hide function
+        }
+
+
+        /**
          * Clears all media selections and associated UI elements.
          */
         function clearAllMediaSelections() {
             fileInput.value = ''; // Crucially clears the single file input
             clearImageSelection();
             clearAudioFileSelection();
+            clearVideoSelection(); // New: Clear video selection
         }
 
-
         /**
-         * Displays an error message related to file size.
-         * @param {string} message - The error message to display.
+         * Displays a message related to file size (error or success).
+         * @param {string} message - The message to display.
+         * @param {boolean} isSuccess - True if it's a success message, false for error.
          */
-        function showFileSizeError(message) {
+        function showFileSizeMessage(message, isSuccess = false) {
             fileSizeErrorMessage.textContent = message;
             fileSizeError.classList.remove('hidden');
-            // Clear any existing timeout to restart the timer
+            if (isSuccess) {
+                fileSizeError.classList.remove('bg-red-100', 'border-red-400', 'text-red-700', 'dark:bg-red-900', 'dark:text-red-300');
+                fileSizeError.classList.add('bg-green-100', 'border-green-400', 'text-green-700', 'dark:bg-green-900', 'dark:text-green-300');
+                fileSizeError.querySelector('strong').textContent = 'Success:';
+            } else {
+                fileSizeError.classList.remove('bg-green-100', 'border-green-400', 'text-green-700', 'dark:bg-green-900', 'dark:text-green-300');
+                fileSizeError.classList.add('bg-red-100', 'border-red-400', 'text-red-700', 'dark:bg-red-900', 'dark:text-red-300');
+                fileSizeError.querySelector('strong').textContent = 'Error:';
+            }
+
             if (fileErrorTimeout) {
                 clearTimeout(fileErrorTimeout);
             }
-            // Hide the error message after 5 seconds
             fileErrorTimeout = setTimeout(() => {
-                hideFileSizeError();
-            }, 5000);
+                hideFileSizeMessage();
+            }, 5000); // Message fades after 5 seconds
         }
 
         /**
-         * Hides the file size error message.
+         * Hides the file size message.
          */
-        function hideFileSizeError() {
+        function hideFileSizeMessage() {
             fileSizeError.classList.add('hidden');
             if (fileErrorTimeout) {
                 clearTimeout(fileErrorTimeout);
                 fileErrorTimeout = null;
             }
         }
+
 
         /**
          * Scrolls the messages container to the bottom.
@@ -556,6 +623,7 @@
                 const messageBubble = document.createElement('div');
                 const isImageMessage = msg.imageDataUrl && (!msg.text || msg.text.trim() === '');
                 const isAudioMessage = msg.audioDataUrl && (!msg.text || msg.text.trim() === '');
+                const isVideoMessage = msg.videoDataUrl && (!msg.text || msg.text.trim() === ''); // New: for video messages
 
                 // Apply styling based on sender and whether it's an image-only or audio-only message
                 messageBubble.className = `max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-xl shadow-lg relative break-words
@@ -563,7 +631,7 @@
                         ? 'bg-blue-500 text-white rounded-br-none'
                         : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-none'
                     }
-                    ${isImageMessage || isAudioMessage ? 'p-1' : ''} `; // Smaller padding for media-only messages
+                    ${isImageMessage || isAudioMessage || isVideoMessage ? 'p-1' : ''} `; // Smaller padding for media-only messages
 
                 // Display user's nickname
                 const userNameP = document.createElement('p');
@@ -627,6 +695,25 @@
                     });
 
                     messageBubble.appendChild(audioPlayer);
+                }
+
+                // Display video if available (New)
+                if (msg.videoDataUrl) {
+                    const videoElement = document.createElement('video');
+                    videoElement.controls = true;
+                    videoElement.src = msg.videoDataUrl;
+                    videoElement.className = "max-w-full h-auto rounded-lg mb-2 cursor-pointer";
+                    videoElement.style.maxWidth = '300px'; // Limit video size
+                    videoElement.style.maxHeight = '200px';
+                    videoElement.loading = "lazy"; // Lazy load videos
+                    videoElement.onerror = (e) => {
+                        // Fallback for broken videos
+                        e.target.onerror = null;
+                        e.target.src = "https://placehold.co/300x200/cccccc/333333?text=Video+Load+Error";
+                        e.target.alt = "Video failed to load.";
+                    };
+                    videoElement.onclick = () => window.open(msg.videoDataUrl, '_blank'); // Open video in new tab
+                    messageBubble.appendChild(videoElement);
                 }
 
                 // Display message text if available
@@ -707,9 +794,9 @@
                 return;
             }
 
-            // Don't send empty messages unless there's an image or audio
-            if (messageText === '' && !currentImageFile && !currentAudioFile) {
-                console.warn("Cannot send empty message or without an image/audio.");
+            // Don't send empty messages unless there's an image, audio, or video
+            if (messageText === '' && !currentImageFile && !currentAudioFile && !currentVideoFile) {
+                console.warn("Cannot send empty message or without an image/audio/video.");
                 return;
             }
 
@@ -719,20 +806,21 @@
                     const messageDocRef = doc(db, `artifacts/${appId}/public/data/messages`, messageIdToEdit);
                     await updateDoc(messageDocRef, {
                         text: messageText,
-                        // Image and audio data cannot be updated for existing messages in this current logic
+                        // Media data cannot be updated for existing messages in this current logic
                     });
                     console.log("Message updated successfully:", messageIdToEdit);
                 } else {
                     // Send a new message
                     let imageDataUrl = null;
                     let audioDataUrl = null;
+                    let videoDataUrl = null; // New: for video data URL
+                    
+                    // Show progress bar and disable send button during upload
+                    uploadProgressBarContainer.classList.remove('hidden');
+                    uploadProgressBar.style.width = '50%';
+                    sendButton.disabled = true;
 
                     if (currentImageFile) {
-                        // Show progress bar and disable send button during upload
-                        uploadProgressBarContainer.classList.remove('hidden');
-                        uploadProgressBar.style.width = '50%';
-                        sendButton.disabled = true;
-
                         // Read image file as Data URL
                         const reader = new FileReader();
                         imageDataUrl = await new Promise((resolve, reject) => {
@@ -740,47 +828,60 @@
                             reader.onerror = error => reject(error);
                             reader.readAsDataURL(currentImageFile);
                         });
-
-                        uploadProgressBar.style.width = '100%';
                     } else if (currentAudioFile) {
-                        // Handle audio file conversion to Base64
-                        uploadProgressBarContainer.classList.remove('hidden');
-                        uploadProgressBar.style.width = '50%';
-                        sendButton.disabled = true;
-
+                        // Read audio file as Data URL
                         const reader = new FileReader();
                         audioDataUrl = await new Promise((resolve, reject) => {
                             reader.onload = () => resolve(reader.result);
                             reader.onerror = error => reject(error);
                             reader.readAsDataURL(currentAudioFile);
                         });
-
-                        uploadProgressBar.style.width = '100%';
+                    } else if (currentVideoFile) { // New: handle video file
+                        // Read video file as Data URL
+                        const reader = new FileReader();
+                        videoDataUrl = await new Promise((resolve, reject) => {
+                            reader.onload = () => resolve(reader.result);
+                            reader.onerror = error => reject(error);
+                            reader.readAsDataURL(currentVideoFile);
+                        });
                     }
 
+                    uploadProgressBar.style.width = '100%';
+                    
                     // Re-enable send button after media processing
                     sendButton.disabled = false;
                     uploadProgressBarContainer.classList.add('hidden');
                     uploadProgressBar.style.width = '0%';
 
-
-                    // Add the new message to Firestore
-                    await addDoc(collection(db, `artifacts/${appId}/public/data/messages`), {
+                    // Construct the message object conditionally
+                    const messageData = {
                         userId: currentUserId,
                         userName: currentUserName || 'Anonymous',
                         senderColor: currentColor,
                         text: messageText,
                         channelId: currentChannelId,
                         timestamp: serverTimestamp(), // Use server timestamp for consistency
-                        imageDataUrl: imageDataUrl,
-                        audioDataUrl: audioDataUrl, // Store Base64 audio data
-                        audioMimeType: currentAudioFile ? currentAudioFile.type : undefined // Store actual MIME type for uploaded audio, undefined if not audio
-                    });
+                    };
+
+                    if (imageDataUrl) {
+                        messageData.imageDataUrl = imageDataUrl;
+                    }
+                    if (audioDataUrl) {
+                        messageData.audioDataUrl = audioDataUrl;
+                        messageData.audioMimeType = currentAudioFile.type; 
+                    }
+                    if (videoDataUrl) { // New: add video data
+                        messageData.videoDataUrl = videoDataUrl;
+                        messageData.videoMimeType = currentVideoFile.type;
+                    }
+
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/messages`), messageData);
                     console.log("Message sent successfully.");
                 }
                 resetEditMode(); // Clear input and reset button text
                 clearAllMediaSelections(); // Clear all media previews and inputs
                 currentAudioFile = null; // Ensure this is explicitly cleared as it can come from recording or upload
+                currentVideoFile = null; // New: Ensure video file is cleared
                 audioRecordingStatus.classList.add('hidden'); // Hide recording status if visible
             }
             catch (error) {
@@ -1034,6 +1135,288 @@
             }
         }
 
+        /**
+         * Attempts to scale down an image file to reduce its size.
+         * @param {File} file - The image file to scale.
+         * @returns {Promise<Blob>} A promise that resolves with the scaled image Blob.
+         */
+        async function scaleImage(file) {
+            scaleImageButton.disabled = true;
+            scaleImageButton.textContent = "Scaling...";
+            sendButton.disabled = true;
+            showFileSizeMessage("Scaling image...", false); // Indicate ongoing process
+
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+
+                        const MAX_DIMENSION = 1920; // Max width or height for scaling down
+                        let width = img.width;
+                        let height = img.height;
+
+                        // Calculate new dimensions while maintaining aspect ratio
+                        if (width > height) {
+                            if (width > MAX_DIMENSION) {
+                                height *= MAX_DIMENSION / width;
+                                width = MAX_DIMENSION;
+                            }
+                        } else {
+                            if (height > MAX_DIMENSION) {
+                                width *= MAX_DIMENSION / height;
+                                height = MAX_DIMENSION;
+                            }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        let quality = 0.9; // Start with high quality for JPEG
+                        let attempts = 0;
+                        const maxAttempts = 9; // Max 9 decrements of 0.1 quality (from 0.9 down to 0.1)
+
+                        const tryCompress = () => {
+                            // Using image/jpeg for compression as it allows quality adjustment.
+                            // If the original image is PNG, this will convert it to JPEG.
+                            canvas.toBlob((blob) => {
+                                if (!blob) { // Handle case where blob is null (e.g., security error, or canvas corrupted)
+                                    reject(new Error("Failed to create blob from canvas."));
+                                    return;
+                                }
+                                
+                                // Target the Firestore document size limit for the final blob
+                                if (blob.size <= FIRESTORE_MAX_DOC_SIZE || quality <= 0.1 || attempts >= maxAttempts) {
+                                    resolve(blob);
+                                    return;
+                                }
+                                quality -= 0.1;
+                                attempts++;
+                                tryCompress(); // Recursive call to try lower quality
+                            }, 'image/jpeg', quality);
+                        };
+                        
+                        tryCompress(); // Start the compression attempts
+                    };
+                    img.onerror = () => {
+                        reject("Failed to load image for scaling.");
+                        showFileSizeMessage("Error: Failed to load image for scaling.", false); // Use new function
+                    };
+                    img.src = e.target.result;
+                };
+                reader.onerror = () => {
+                    reject("Failed to read image file.");
+                    showFileSizeMessage("Error: Failed to read image file.", false); // Use new function
+                };
+                reader.readAsDataURL(file);
+            }).finally(() => {
+                scaleImageButton.disabled = false;
+                scaleImageButton.textContent = "Scale Down";
+                // After scaling attempt, check if the currentImageFile is now within Firestore limits
+                // This ensures send button is correctly enabled/disabled.
+                if (currentImageFile && currentImageFile.size <= FIRESTORE_MAX_DOC_SIZE) {
+                    sendButton.disabled = false; // Enable if successful
+                } else {
+                    sendButton.disabled = true; // Keep disabled if still too large
+                }
+            });
+        }
+
+        /**
+         * Attempts to re-encode a video file to reduce its size, preserving audio.
+         * Note: Client-side video compression is highly resource-intensive and limited.
+         * Success for typical video sizes is NOT guaranteed due to the 1MB Firestore limit.
+         * @param {File} videoFile - The video file to scale.
+         * @returns {Promise<Blob>} A promise that resolves with the scaled video Blob.
+         */
+        async function scaleVideo(videoFile) {
+            scaleVideoButton.disabled = true;
+            scaleVideoButton.textContent = "Scaling...";
+            sendButton.disabled = true;
+            showFileSizeMessage("Scaling video with audio (this may take time and reduce quality significantly). Please be patient...", false);
+
+            let videoElement = document.createElement('video');
+            videoElement.preload = 'metadata';
+            videoElement.muted = true; // Mute during processing
+            videoElement.autoplay = false;
+
+            let audioContext;
+            let audioSource;
+            let audioDestination;
+
+            let canvas;
+            let ctx;
+            let videoStream;
+            let audioStream;
+            let combinedStream;
+            let mediaRecorder;
+            let animationFrameId;
+
+            return new Promise((resolve, reject) => {
+                videoElement.onloadedmetadata = async () => {
+                    const videoDuration = videoElement.duration;
+                    const originalAudioTrack = videoElement.captureStream().getAudioTracks()[0]; // Get original audio track
+
+                    // Setup video canvas and stream
+                    canvas = document.createElement('canvas');
+                    ctx = canvas.getContext('2d');
+
+                    const MAX_VIDEO_WIDTH = 320; // Target low resolution for chat previews
+                    const MAX_VIDEO_HEIGHT = 240;
+                    const TARGET_VIDEO_BITRATE = 100000; // Very low video bitrate, e.g., 100 kbps
+                    const TARGET_AUDIO_BITRATE = 32000; // Opus audio bitrate, e.g., 32 kbps (total around 132kbps)
+                    const TOTAL_TARGET_BITRATE = TARGET_VIDEO_BITRATE + TARGET_AUDIO_BITRATE;
+
+
+                    let width = videoElement.videoWidth;
+                    let height = videoElement.videoHeight;
+
+                    // Downscale dimensions while maintaining aspect ratio
+                    if (width > height) {
+                        if (width > MAX_VIDEO_WIDTH) {
+                            height *= MAX_VIDEO_WIDTH / width;
+                            width = MAX_VIDEO_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_VIDEO_HEIGHT) {
+                            width *= MAX_VIDEO_HEIGHT / height;
+                            height = MAX_VIDEO_HEIGHT;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    try {
+                        // Video stream from canvas
+                        videoStream = canvas.captureStream(10); // Capture video from canvas at 10 FPS
+                        
+                        // Audio stream from original video if available
+                        if (originalAudioTrack) {
+                            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                            audioSource = audioContext.createMediaStreamSource(new MediaStream([originalAudioTrack]));
+                            audioDestination = audioContext.createMediaStreamDestination();
+                            audioSource.connect(audioDestination);
+                            audioStream = audioDestination.stream;
+                        }
+
+                        // Combine streams
+                        combinedStream = new MediaStream();
+                        if (videoStream.getVideoTracks().length > 0) {
+                            combinedStream.addTrack(videoStream.getVideoTracks()[0]);
+                        }
+                        if (audioStream && audioStream.getAudioTracks().length > 0) {
+                            combinedStream.addTrack(audioStream.getAudioTracks()[0]);
+                        } else if (originalAudioTrack) { // Fallback if audioStream couldn't be created directly
+                            combinedStream.addTrack(originalAudioTrack);
+                        }
+
+
+                        if (combinedStream.getTracks().length === 0) {
+                             throw new Error("No media tracks available for recording after combining streams.");
+                        }
+
+                        mediaRecorder = new MediaRecorder(combinedStream, {
+                            mimeType: 'video/webm;codecs=vp8,opus', // Specify both video and audio codecs
+                            bitsPerSecond: TOTAL_TARGET_BITRATE
+                        });
+
+                    } catch (e) {
+                        console.error("MediaRecorder video init error:", e);
+                        reject(new Error(`Failed to initialize video recorder: ${e.message}. Ensure your browser supports MediaRecorder for canvas streams with webm/vp8 and opus codecs.`));
+                        return;
+                    }
+                    
+                    let videoChunks = [];
+                    mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            videoChunks.push(event.data);
+                        }
+                    };
+
+                    const drawFrame = () => {
+                        if (videoElement.paused || videoElement.ended) {
+                            cancelAnimationFrame(animationFrameId);
+                            return;
+                        }
+                        ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+                        animationFrameId = requestAnimationFrame(drawFrame);
+                    };
+
+                    mediaRecorder.onstop = () => {
+                        const scaledBlob = new Blob(videoChunks, { type: 'video/webm' });
+                        
+                        // Clean up all resources
+                        videoElement.pause();
+                        videoElement.removeAttribute('src');
+                        videoElement.load();
+                        if (videoElement.src && videoElement.src.startsWith('blob:')) URL.revokeObjectURL(videoElement.src);
+                        if (videoStream) videoStream.getTracks().forEach(track => track.stop());
+                        if (audioStream) audioStream.getTracks().forEach(track => track.stop());
+                        if (combinedStream) combinedStream.getTracks().forEach(track => track.stop());
+                        if (audioSource) audioSource.disconnect();
+                        if (audioDestination) audioDestination.disconnect();
+                        if (audioContext) audioContext.close();
+                        cancelAnimationFrame(animationFrameId);
+
+                        if (scaledBlob.size <= FIRESTORE_MAX_DOC_SIZE) {
+                            resolve(scaledBlob);
+                        } else {
+                            reject(new Error(`Scaled video is still too large (${(scaledBlob.size / 1024).toFixed(2)} KB). Target: ${(FIRESTORE_MAX_DOC_SIZE / 1024).toFixed(2)} KB. Please try a much shorter or lower quality video.`));
+                        }
+                    };
+
+                    mediaRecorder.onerror = (event) => {
+                        const error = event.error;
+                        console.error("MediaRecorder video error:", error);
+                        reject(new Error(`Video recording error: ${error.message}.`));
+                        // Ensure cleanup on error as well
+                        videoElement.pause();
+                        if (videoElement.src && videoElement.src.startsWith('blob:')) URL.revokeObjectURL(videoElement.src);
+                        if (videoStream) videoStream.getTracks().forEach(track => track.stop());
+                        if (audioStream) audioStream.getTracks().forEach(track => track.stop());
+                        if (combinedStream) combinedStream.getTracks().forEach(track => track.stop());
+                        if (audioSource) audioSource.disconnect();
+                        if (audioDestination) audioDestination.disconnect();
+                        if (audioContext) audioContext.close();
+                        cancelAnimationFrame(animationFrameId);
+                    };
+
+                    videoElement.play().then(() => {
+                        mediaRecorder.start();
+                        drawFrame(); // Start drawing frames
+                        // Stop recording after video duration plus a small buffer
+                        setTimeout(() => {
+                            if (mediaRecorder.state === 'recording') {
+                                mediaRecorder.stop();
+                            }
+                        }, videoDuration * 1000 + 500); 
+                    }).catch(err => {
+                        console.error("Video playback error for scaling:", err);
+                        reject(new Error(`Video playback error: ${err.message}. Ensure the video file is not corrupted.`));
+                    });
+                };
+
+                videoElement.onerror = (e) => {
+                    console.error("Error loading video for scaling:", e);
+                    reject(new Error("Failed to load video for scaling. Check video file integrity or format compatibility."));
+                };
+
+                videoElement.src = URL.createObjectURL(videoFile);
+            }).finally(() => {
+                scaleVideoButton.disabled = false;
+                scaleVideoButton.textContent = "Scale Down";
+                // Send button state will be handled after the promise resolves/rejects
+                if (currentVideoFile && currentVideoFile.size <= FIRESTORE_MAX_DOC_SIZE) {
+                    sendButton.disabled = false;
+                } else {
+                    sendButton.disabled = true;
+                }
+            });
+        }
+
 
         // --- Event Listeners ---
 
@@ -1095,58 +1478,162 @@
             clearAllMediaSelections(); // Clear any other media selected
         });
 
-        fileInput.addEventListener('change', (e) => {
+        fileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
-            if (file) {
-                // Clear all media states first, as a new file is being selected
+            if (!file) {
                 clearAllMediaSelections();
+                return;
+            }
 
-                if (file.size > MAX_FILE_SIZE) {
-                    showFileSizeError(`File size exceeds 1MB limit. Please choose a smaller file.`);
-                    // fileInput.value = ''; // Already cleared by clearAllMediaSelections
-                    return;
+            // Clear all media states first, as a new file is being selected
+            clearAllMediaSelections();
+            resetEditMode(); // Clear any edit mode state
+            hideFileSizeMessage(); // Hide any previous message
+
+            if (file.type.startsWith('image/')) {
+                // Display the image immediately
+                if (imagePreview.src && imagePreview.src.startsWith('blob:')) {
+                    URL.revokeObjectURL(imagePreview.src);
                 }
+                imagePreview.src = URL.createObjectURL(file);
+                imageFileName.textContent = file.name;
+                imagePreviewContainer.classList.remove('hidden');
 
-                // Check file type to determine if it's an image or audio
-                if (file.type.startsWith('image/')) {
-                    currentImageFile = file;
-                    imageFileName.textContent = file.name;
-                    const reader = new FileReader();
-                    reader.onload = (event) => {
-                        imagePreview.src = event.target.result;
-                        imagePreviewContainer.classList.remove('hidden');
-                    };
-                    reader.readAsDataURL(file);
-                } else if (file.type.startsWith('audio/')) {
-                    const validAudioTypes = ['audio/mpeg', 'audio/ogg', 'audio/webm'];
-                    if (!validAudioTypes.includes(file.type)) {
-                        showFileSizeError("Invalid audio file type. Please upload MP3, Ogg/Opus, or WebM audio files.");
-                        // fileInput.value = ''; // Already cleared by clearAllMediaSelections
-                        return;
-                    }
-                    currentAudioFile = file;
-                    audioFileName.textContent = file.name;
-                    const reader = new FileReader();
-                    reader.onload = (event) => {
-                        audioUploadPreview.src = event.target.result;
-                        audioUploadPreviewContainer.classList.remove('hidden');
-                    };
-                    reader.readAsDataURL(file);
+                // Check size against MAX_RAW_FILE_SIZE_BEFORE_ENCODING
+                if (file.size > MAX_RAW_FILE_SIZE_BEFORE_ENCODING) {
+                    currentImageFile = file; // Store original oversized file
+                    showFileSizeMessage(`Image file is too large (${(file.size / 1024).toFixed(2)} KB). Max raw size is ${(MAX_RAW_FILE_SIZE_BEFORE_ENCODING / 1024).toFixed(2)} KB to fit Firestore's 1MB document limit after Base64 encoding.`, false);
+                    scaleImageButton.classList.remove('hidden');
+                    sendButton.disabled = true; // Disable send until scaled or cancelled
                 } else {
-                    showFileSizeError("Unsupported file type. Please upload an image or a supported audio file (MP3, Ogg/Opus, WebM).");
-                    // fileInput.value = ''; // Already cleared by clearAllMediaSelections
+                    currentImageFile = file; // Valid size image
+                    sendButton.disabled = false;
+                }
+            } else if (file.type.startsWith('audio/')) {
+                const validAudioTypes = ['audio/mpeg', 'audio/ogg', 'audio/webm'];
+                if (!validAudioTypes.includes(file.type)) {
+                    showFileSizeMessage("Invalid audio file type. Please upload MP3, Ogg/Opus, or WebM audio files.", false);
+                    sendButton.disabled = true; // Keep send button disabled for unsupported types
                     return;
                 }
+                currentAudioFile = file; // Store the audio file
+                audioFileName.textContent = file.name;
+                if (audioUploadPreview.src && audioUploadPreview.src.startsWith('blob:')) {
+                    URL.revokeObjectURL(audioUploadPreview.src);
+                }
+                audioUploadPreview.src = URL.createObjectURL(file);
+                audioUploadPreviewContainer.classList.remove('hidden');
 
-                resetEditMode(); // Clear any edit mode state
-                hideFileSizeError(); // Hide any previous error
-            } else {
-                clearAllMediaSelections(); // Clear if no file selected
+                // Check size against FIRESTORE_MAX_DOC_SIZE (no scaling, so check final size)
+                if (file.size > FIRESTORE_MAX_DOC_SIZE) { // Check directly against FIRESTORE_MAX_DOC_SIZE for unscaled audio
+                    showFileSizeMessage(`Audio file is too large (${(file.size / 1024).toFixed(2)} KB). Max direct upload size for audio is ${(FIRESTORE_MAX_DOC_SIZE / 1024).toFixed(2)} KB. Please try a smaller file.`, false);
+                    sendButton.disabled = true; // Disable send if audio is too large
+                } else {
+                    sendButton.disabled = false; // Enable send if audio is within direct limit
+                }
+            } else if (file.type.startsWith('video/')) { // New: handle video files
+                const validVideoTypes = ['video/mp4', 'video/webm']; // Add more as needed
+                if (!validVideoTypes.includes(file.type)) {
+                    showFileSizeMessage("Invalid video file type. Please upload MP4 or WebM video files.", false);
+                    sendButton.disabled = true;
+                    return;
+                }
+                currentVideoFile = file;
+                videoFileName.textContent = file.name;
+                if (videoUploadPreview.src && videoUploadPreview.src.startsWith('blob:')) {
+                    URL.revokeObjectURL(videoUploadPreview.src);
+                }
+                videoUploadPreview.src = URL.createObjectURL(file);
+                videoUploadPreviewContainer.classList.remove('hidden');
+
+                // Videos are almost certainly too large initially. Always show scale button.
+                if (file.size > MAX_RAW_FILE_SIZE_BEFORE_ENCODING) { // Use raw size before encoding for initial check
+                    showFileSizeMessage(`Video file is very large (${(file.size / 1024).toFixed(2)} KB). Max direct upload size for video is ${(MAX_RAW_FILE_SIZE_BEFORE_ENCODING / 1024).toFixed(2)} KB to fit Firestore's 1MB document limit after Base64 encoding. Scaling is recommended.`, false);
+                    scaleVideoButton.classList.remove('hidden');
+                    sendButton.disabled = true; // Disable send until scaled or cancelled
+                } else {
+                    showFileSizeMessage(`Video file size: ${(file.size / 1024).toFixed(2)} KB. Attempting to upload directly. Note: Base64 encoding will increase its size.`, true);
+                    sendButton.disabled = false; // Allow direct upload if raw size is small enough
+                }
+            }
+            else {
+                showFileSizeMessage("Unsupported file type. Please upload an image, audio, or video file.", false);
+                sendButton.disabled = true; // Disable for unsupported types
+                return;
             }
         });
 
+        // Handle image scaling attempt
+        scaleImageButton.addEventListener('click', async () => {
+            if (currentImageFile) {
+                try {
+                    const scaledBlob = await scaleImage(currentImageFile);
+                    if (scaledBlob.size <= FIRESTORE_MAX_DOC_SIZE) { // Check against new FIRESTORE_MAX_DOC_SIZE
+                        if (imagePreview.src && imagePreview.src.startsWith('blob:')) {
+                            URL.revokeObjectURL(imagePreview.src);
+                        }
+                        currentImageFile = scaledBlob; // Update currentImageFile with the scaled Blob
+                        imagePreview.src = URL.createObjectURL(scaledBlob); // Update preview
+                        imageFileName.textContent = `Scaled: ${currentImageFile.name || 'image'} (${(currentImageFile.size / 1024).toFixed(2)} KB)`;
+                        showFileSizeMessage("Image scaled successfully! Ready to send.", true);
+                        scaleImageButton.classList.add('hidden'); // Hide button on success
+                        sendButton.disabled = false; // Enable send button
+                    } else {
+                        // Even after scaling, still too big
+                        showFileSizeMessage(`Failed to scale image below ${(FIRESTORE_MAX_DOC_SIZE / 1024).toFixed(2)} KB. Current size: ${(scaledBlob.size / 1024).toFixed(2)} KB. Please choose a different image or try scaling again.`, false);
+                    }
+                } catch (error) {
+                    console.error("Image scaling failed:", error);
+                    showFileSizeMessage(`Image scaling failed: ${error.message || 'Unknown error'}. Please choose a different image.`, false);
+                } finally {
+                    scaleImageButton.disabled = false;
+                    scaleImageButton.textContent = "Scale Down";
+                    if (currentImageFile && currentImageFile.size <= FIRESTORE_MAX_DOC_SIZE) {
+                         sendButton.disabled = false;
+                    } else {
+                        sendButton.disabled = true;
+                    }
+                }
+            }
+        });
+
+        // Handle video scaling attempt (New)
+        scaleVideoButton.addEventListener('click', async () => {
+            if (currentVideoFile) {
+                try {
+                    const scaledBlob = await scaleVideo(currentVideoFile);
+                    if (scaledBlob.size <= FIRESTORE_MAX_DOC_SIZE) {
+                        if (videoUploadPreview.src && videoUploadPreview.src.startsWith('blob:')) {
+                            URL.revokeObjectURL(videoUploadPreview.src);
+                        }
+                        currentVideoFile = scaledBlob;
+                        videoUploadPreview.src = URL.createObjectURL(scaledBlob);
+                        videoFileName.textContent = `Scaled: ${currentVideoFile.name || 'video'} (${(currentVideoFile.size / 1024).toFixed(2)} KB)`;
+                        showFileSizeMessage("Video scaled successfully! Ready to send.", true);
+                        scaleVideoButton.classList.add('hidden');
+                        sendButton.disabled = false;
+                    } else {
+                        showFileSizeMessage(`Failed to scale video below ${(FIRESTORE_MAX_DOC_SIZE / 1024).toFixed(2)} KB. Current size: ${(scaledBlob.size / 1024).toFixed(2)} KB. Please try a much shorter or lower quality video.`, false);
+                    }
+                } catch (error) {
+                    console.error("Video scaling failed:", error);
+                    showFileSizeMessage(`Video scaling failed: ${error.message || 'Unknown error'}. This feature has extreme limitations due to file size.`, false);
+                } finally {
+                    scaleVideoButton.disabled = false;
+                    scaleVideoButton.textContent = "Scale Down";
+                    if (currentVideoFile && currentVideoFile.size <= FIRESTORE_MAX_DOC_SIZE) {
+                         sendButton.disabled = false;
+                    } else {
+                        sendButton.disabled = true;
+                    }
+                }
+            }
+        });
+
+
         cancelImageButton.addEventListener('click', clearAllMediaSelections);
         cancelAudioUploadButton.addEventListener('click', clearAllMediaSelections);
+        cancelVideoButton.addEventListener('click', clearAllMediaSelections); // New: Cancel video
 
 
         // User settings modal functionality
@@ -1175,11 +1662,13 @@
             if (window.innerWidth >= 768) {
                 sidebar.classList.add('w-64');
                 sidebar.classList.remove('w-0');
+                toggleIcon.classList.remove('rotate-0'); // Ensure initial state for desktop
                 toggleIcon.classList.add('rotate-180');
             } else {
                 sidebar.classList.remove('w-64');
                 sidebar.classList.add('w-0');
-                toggleIcon.classList.remove('rotate-180');
+                toggleIcon.classList.remove('rotate-180'); // Ensure initial state for mobile
+                toggleIcon.classList.add('rotate-0');
             }
             // Adjust channel control area visibility based on screen width on load
             if (window.innerWidth >= 768) {
