@@ -4,10 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>wChat 2</title>
-    <!-- Tailwind CSS CDN for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Custom scrollbar for better aesthetics */
         .custom-scrollbar::-webkit-scrollbar {
             width: 8px;
         }
@@ -26,7 +24,6 @@
             background: #555;
         }
 
-        /* Dark mode scrollbar styles */
         .dark .custom-scrollbar::-webkit-scrollbar-track {
             background: #333;
         }
@@ -42,15 +39,12 @@
 </head>
 <body class="flex flex-col h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans">
 
-    <!-- Header section -->
     <header class="bg-gradient-to-r from-blue-600 to-indigo-700 p-4 shadow-md rounded-b-xl flex justify-between items-center">
         <h1 class="text-3xl font-extrabold text-white">wChat 2</h1>
         <div class="flex items-center space-x-4">
-            <!-- User ID display for collaborative purposes -->
             <span id="userIdDisplay" class="text-sm text-white font-medium bg-blue-500 py-1 px-3 rounded-full shadow-inner">
                 Your ID: Loading...
             </span>
-            <!-- Nickname input -->
             <input
                 type="text"
                 id="nicknameInput"
@@ -61,67 +55,65 @@
         </div>
     </header>
 
-    <!-- Channel Management Section -->
-    <section class="bg-white dark:bg-gray-800 p-4 shadow-md flex flex-col md:flex-row items-center justify-between space-y-3 md:space-y-0 md:space-x-4 rounded-b-xl">
-        <div class="flex items-center space-x-2 w-full md:w-auto">
-            <label for="channelInput" class="text-gray-700 dark:text-gray-300 font-semibold text-sm">Channel:</label>
-            <input
-                type="text"
-                id="channelInput"
-                placeholder="Enter channel name (password)"
-                class="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 transition-all duration-300"
-                value="general-chat"
-            />
-        </div>
-        <button
-            id="joinChannelButton"
-            class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-300 transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 w-full md:w-auto"
-        >
-            Join/Create Channel
+    <section class="bg-white dark:bg-gray-800 p-4 shadow-md rounded-b-xl relative">
+        <button id="channelToggleButton" class="absolute top-4 right-4 p-1 rounded-full bg-blue-500 text-white shadow-md z-10 transition-transform duration-300 hover:scale-110">
+            <svg id="channelToggleIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform rotate-0" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
         </button>
-        <span id="currentChannelDisplay" class="text-blue-700 dark:text-blue-300 font-semibold text-sm w-full text-center md:text-right">
-            Current: #general-chat
-        </span>
+        <div id="channelControlArea" class="max-h-0 overflow-hidden transition-all duration-300 ease-in-out">
+            <div class="flex flex-col md:flex-row items-center justify-between space-y-3 md:space-y-0 md:space-x-4 pt-2">
+                <div class="flex items-center space-x-2 w-full md:w-auto">
+                    <label for="channelInput" class="text-gray-700 dark:text-gray-300 font-semibold text-sm">Channel:</label>
+                    <input
+                        type="text"
+                        id="channelInput"
+                        placeholder="Enter channel name (password)"
+                        class="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 transition-all duration-300"
+                        value="general-chat"
+                    />
+                </div>
+                <button
+                    id="joinChannelButton"
+                    class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-300 transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 w-full md:w-auto"
+                >
+                    Join/Create Channel
+                </button>
+                <span id="currentChannelDisplay" class="text-blue-700 dark:text-blue-300 font-semibold text-sm w-full text-center md:text-right">
+                    Current: #general-chat
+                </span>
+            </div>
+        </div>
     </section>
 
-    <!-- Main Content Area: Sidebar + Chat Window -->
     <main class="flex flex-1 overflow-hidden relative">
-        <!-- Sidebar toggle button moved here to stay visible -->
         <button id="sidebarToggle" class="absolute top-4 left-4 p-1 rounded-full bg-blue-500 text-white shadow-md z-10 transition-transform duration-300 hover:scale-110">
-            <!-- Chevron right icon for collapse, left for expand -->
             <svg id="toggleIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform rotate-0" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
             </svg>
         </button>
 
-        <!-- Collapsible Sidebar -->
         <aside id="sidebar" class="w-0 bg-gray-200 dark:bg-gray-800 transition-all duration-300 ease-in-out overflow-hidden flex-shrink-0">
             <div id="channelListContent" class="p-4 pt-10 h-full overflow-y-auto">
                 <h3 class="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-100">Public Channels</h3>
                 <ul id="publicChannelList" class="space-y-1">
-                    <!-- Channel list items will be injected here by JavaScript -->
                 </ul>
             </div>
         </aside>
 
-        <!-- Chat Content Area -->
         <div id="chatContentArea" class="flex-1 flex flex-col overflow-hidden">
             <div id="messagesListContainer" class="flex-1 relative overflow-y-auto p-4 space-y-3 custom-scrollbar">
-                <!-- These will be dynamically shown/hidden within this container -->
                 <div id="noMessagesPlaceholder" class="absolute inset-0 flex items-center justify-center hidden">
                     <p class="text-gray-600 dark:text-gray-400 text-lg">No messages yet. Start the conversation!</p>
                 </div>
                 <div id="loadingIndicator" class="absolute inset-0 flex items-center justify-center">
                     <div class="text-lg font-semibold animate-pulse">Loading chat...</div>
                 </div>
-                <!-- Actual messages will be appended here -->
             </div>
         </div>
     </main>
 
-    <!-- Message and Image Input Form -->
     <form id="messageForm" class="p-4 bg-white dark:bg-gray-800 shadow-md rounded-t-xl flex flex-col space-y-3">
-        <!-- Image Preview Area -->
         <div id="imagePreviewContainer" class="hidden flex items-center justify-between p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
             <img id="imagePreview" src="" alt="Image Preview" class="max-w-xs max-h-24 rounded-md object-contain mr-4">
             <span id="imageFileName" class="text-sm text-gray-700 dark:text-gray-300 truncate flex-1"></span>
@@ -131,12 +123,10 @@
                 </svg>
             </button>
         </div>
-        <!-- Upload progress bar -->
         <div id="uploadProgressBarContainer" class="hidden w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
             <div id="uploadProgressBar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
         </div>
 
-        <!-- Image Size Error Message -->
         <div id="imageSizeError" class="hidden bg-red-100 dark:bg-red-900 border border-red-400 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg relative text-sm" role="alert">
             <strong class="font-bold">Error:</strong>
             <span class="block sm:inline" id="imageSizeErrorMessage">Image size exceeds 1MB limit. Please choose a smaller image.</span>
@@ -170,7 +160,6 @@
         </div>
     </form>
 
-    <!-- Confirmation Modal (hidden by default) -->
     <div id="confirmationModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
         <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl text-center max-w-sm w-full">
             <p class="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Delete Message?</p>
@@ -186,41 +175,36 @@
         </div>
     </div>
 
-    <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, deleteDoc, updateDoc, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        // Firebase Storage imports are no longer needed as images are handled by Base64 in Firestore
 
-        // Firebase configuration provided by the user
         const firebaseConfig = {
             apiKey: "AIzaSyCbIMQv9Z44Ms2zNZh2SAmELkS8AJKsYvo",
             authDomain: "chat-5c6f4.firebaseapp.com",
             projectId: "chat-5c6f4",
-            storageBucket: "chat-5c6f4.firebasestorage.app", // This is no longer used for image storage
+            storageBucket: "chat-5c6f4.firebasestorage.app",
             messagingSenderId: "450004774412",
             appId: "1:450004774412:web:160c2275021b82745b4829",
             measurementId: "G-2Y6JBMK2CP"
         };
 
-        // Use the projectId from your config for the Firestore collection path
         const appId = firebaseConfig.projectId;
 
         let db;
         let auth;
         let currentUserId = null;
-        let currentUserName = localStorage.getItem('wChatUserName') || ''; // Load nickname from local storage
-        let currentChannelId = localStorage.getItem('wChatCurrentChannel') || 'general-chat'; // Load channel from local storage or default
-        let messageListenerInitialized = false; // Flag to ensure message listener is set up only once
-        let messageIdToDelete = null; // Stores the ID of the message to be deleted via modal
-        let messageIdToEdit = null; // Stores the ID of the message being edited
-        let originalMessageText = null; // Stores the original text of the message being edited
-        let unsubscribeMessages = null; // Stores the unsubscribe function for the Firestore listener
-        let currentImageFile = null; // Stores the currently selected image file for upload
-        let imageSizeErrorTimeout = null; // Timeout for hiding the image size error message
+        let currentUserName = localStorage.getItem('wChatUserName') || '';
+        let currentChannelId = localStorage.getItem('wChatCurrentChannel') || 'general-chat';
+        let messageListenerInitialized = false;
+        let messageIdToDelete = null;
+        let messageIdToEdit = null;
+        let originalMessageText = null;
+        let unsubscribeMessages = null;
+        let currentImageFile = null;
+        let imageSizeErrorTimeout = null;
 
-        // DOM element references
         const userIdDisplay = document.getElementById('userIdDisplay');
         const nicknameInput = document.getElementById('nicknameInput');
         const messagesListContainer = document.getElementById('messagesListContainer');
@@ -238,8 +222,8 @@
         const sidebarToggle = document.getElementById('sidebarToggle');
         const toggleIcon = document.getElementById('toggleIcon');
         const publicChannelList = document.getElementById('publicChannelList');
-        const sendButton = document.getElementById('sendButton'); // Reference to the Send button
-        const sendButtonText = document.getElementById('sendButtonText'); // Reference to the Send button's text span
+        const sendButton = document.getElementById('sendButton');
+        const sendButtonText = document.getElementById('sendButtonText');
         const imageInput = document.getElementById('imageInput');
         const attachImageButton = document.getElementById('attachImageButton');
         const imagePreviewContainer = document.getElementById('imagePreviewContainer');
@@ -248,11 +232,13 @@
         const cancelImageButton = document.getElementById('cancelImageButton');
         const uploadProgressBarContainer = document.getElementById('uploadProgressBarContainer');
         const uploadProgressBar = document.getElementById('uploadProgressBar');
-        const imageSizeError = document.getElementById('imageSizeError'); // New error message div
-        const imageSizeErrorMessage = document.getElementById('imageSizeErrorMessage'); // Span for error text
+        const imageSizeError = document.getElementById('imageSizeError');
+        const imageSizeErrorMessage = document.getElementById('imageSizeErrorMessage');
+        const channelToggleButton = document.getElementById('channelToggleButton');
+        const channelToggleIcon = document.getElementById('channelToggleIcon');
+        const channelControlArea = document.getElementById('channelControlArea');
 
 
-        // Predefined public channels
         const publicChannels = [
             'info-and-rules', 'general', 'general2', 'chat', 'public',
             'math', 'science', 'algebra', 'chemistry', 'studies',
@@ -260,40 +246,28 @@
             'paisley', 'rants'
         ];
 
-        // Set initial UI values
         nicknameInput.value = currentUserName;
         channelInput.value = currentChannelId;
         currentChannelDisplay.textContent = `Current: #${currentChannelId}`;
 
-        /**
-         * Resets the message input form from edit mode to send mode.
-         * Clears messageIdToEdit and reverts send button text.
-         */
         function resetEditMode() {
             messageIdToEdit = null;
             originalMessageText = null;
-            newMessageInput.value = ''; // Clear input if not already cleared
+            newMessageInput.value = '';
             sendButtonText.textContent = 'Send';
         }
 
-        /**
-         * Clears the selected image file and hides the preview.
-         */
         function clearImageSelection() {
             currentImageFile = null;
-            imageInput.value = ''; // Clear file input
-            imagePreview.src = ''; // Clear image preview src
-            imageFileName.textContent = ''; // Clear file name
-            imagePreviewContainer.classList.add('hidden'); // Hide container
-            uploadProgressBarContainer.classList.add('hidden'); // Hide progress bar
-            uploadProgressBar.style.width = '0%'; // Reset progress
-            hideImageSizeError(); // Also hide any error message when selection is cleared
+            imageInput.value = '';
+            imagePreview.src = '';
+            imageFileName.textContent = '';
+            imagePreviewContainer.classList.add('hidden');
+            uploadProgressBarContainer.classList.add('hidden');
+            uploadProgressBar.style.width = '0%';
+            hideImageSizeError();
         }
 
-        /**
-         * Shows the image size error message in the UI.
-         * @param {string} message - The error message to display.
-         */
         function showImageSizeError(message) {
             imageSizeErrorMessage.textContent = message;
             imageSizeError.classList.remove('hidden');
@@ -302,12 +276,9 @@
             }
             imageSizeErrorTimeout = setTimeout(() => {
                 hideImageSizeError();
-            }, 5000); // Hide after 5 seconds
+            }, 5000);
         }
 
-        /**
-         * Hides the image size error message.
-         */
         function hideImageSizeError() {
             imageSizeError.classList.add('hidden');
             if (imageSizeErrorTimeout) {
@@ -317,23 +288,16 @@
         }
 
 
-        /**
-         * Scrolls the messages list container to the bottom.
-         */
         function scrollToBottom() {
             messagesListContainer.scrollTop = messagesListContainer.scrollHeight;
         }
 
-        /**
-         * Initializes Firebase and handles user authentication.
-         */
         async function initializeFirebase() {
             try {
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
 
-                // Listen for authentication state changes
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         currentUserId = user.uid;
@@ -363,9 +327,6 @@
             }
         }
 
-        /**
-         * Sets up a real-time listener for messages from Firestore based on currentChannelId.
-         */
         function setupMessageListener() {
             if (unsubscribeMessages) {
                 unsubscribeMessages();
@@ -414,50 +375,42 @@
             console.log(`Listening for messages on channel: #${currentChannelId}`);
         }
 
-        /**
-         * Renders the given messages into the DOM.
-         * @param {Array<Object>} messages - Array of message objects.
-         */
         function renderMessages(messages) {
             messages.forEach(msg => {
                 const messageDiv = document.createElement('div');
                 messageDiv.className = `flex ${msg.userId === currentUserId ? 'justify-end' : 'justify-start'}`;
 
                 const messageBubble = document.createElement('div');
-                // Adjust styling based on whether it's an image message or text message
-                // Now checking for 'imageDataUrl' instead of 'imageUrl'
                 const isImageMessage = msg.imageDataUrl && (!msg.text || msg.text.trim() === '');
                 messageBubble.className = `max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-xl shadow-lg relative break-words
                     ${msg.userId === currentUserId
                         ? 'bg-blue-500 text-white rounded-br-none'
                         : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-none'
                     }
-                    ${isImageMessage ? 'p-1' : ''} `; // Smaller padding for image messages
+                    ${isImageMessage ? 'p-1' : ''} `;
 
                 const userNameP = document.createElement('p');
                 userNameP.className = `text-xs font-semibold mb-1 ${msg.userId === currentUserId ? 'text-blue-200' : 'text-gray-500 dark:text-gray-400'}`;
                 userNameP.textContent = msg.userName || 'Anonymous';
                 messageBubble.appendChild(userNameP);
 
-                // Display image if available (now checks for imageDataUrl)
                 if (msg.imageDataUrl) {
                     const imgElement = document.createElement('img');
-                    imgElement.src = msg.imageDataUrl; // Use the Base64 data URL directly
+                    imgElement.src = msg.imageDataUrl;
                     imgElement.alt = "Shared Image";
                     imgElement.className = "max-w-full h-auto rounded-lg mb-2 cursor-pointer";
-                    imgElement.style.maxWidth = '250px'; // Limit max width for display
-                    imgElement.style.maxHeight = '250px'; // Limit max height for display
-                    imgElement.loading = "lazy"; // Lazy load images
-                    imgElement.onerror = (e) => { // Fallback for broken images
-                        e.target.onerror = null; // Prevent infinite loop
+                    imgElement.style.maxWidth = '250px';
+                    imgElement.style.maxHeight = '250px';
+                    imgElement.loading = "lazy";
+                    imgElement.onerror = (e) => {
+                        e.target.onerror = null;
                         e.target.src = "https://placehold.co/200x200/cccccc/333333?text=Image+Load+Error";
                         e.target.alt = "Image failed to load.";
                     };
-                    imgElement.onclick = () => window.open(msg.imageDataUrl, '_blank'); // Open full image in new tab
+                    imgElement.onclick = () => window.open(msg.imageDataUrl, '_blank');
                     messageBubble.appendChild(imgElement);
                 }
 
-                // Display text message if available
                 if (msg.text && msg.text.trim() !== '') {
                     const messageTextP = document.createElement('p');
                     messageTextP.className = 'text-base';
@@ -475,9 +428,7 @@
                 messageBubble.appendChild(timestampSpan);
                 messageDiv.appendChild(messageBubble);
 
-                // Add edit and delete buttons if the message belongs to the current user
                 if (msg.userId === currentUserId) {
-                    // Edit Button
                     const editButton = document.createElement('button');
                     editButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                                               <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zm-6.071 6.071l-1.414 1.414 4.243 4.243 1.414-1.414-4.243-4.243z" />
@@ -496,7 +447,6 @@
                     };
                     messageBubble.appendChild(editButton);
 
-                    // Delete Button
                     const deleteButton = document.createElement('button');
                     deleteButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                                                 <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1  0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1zm1 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1zm1 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clip-rule="evenodd" />
@@ -504,7 +454,6 @@
                     deleteButton.className = 'absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full shadow-md transition-transform duration-200 transform hover:scale-110';
                     deleteButton.title = 'Delete Message';
                     deleteButton.onclick = () => {
-                        // For Base64 images, deletion only involves deleting the Firestore document.
                         messageIdToDelete = { id: msg.id };
                         confirmationModal.classList.remove('hidden');
                     };
@@ -515,11 +464,6 @@
             });
         }
 
-        /**
-         * Handles sending a new message or saving edits.
-         * Includes logic for in-line Base64 image storage.
-         * @param {Event} e - The submit event.
-         */
         async function sendMessage(e) {
             e.preventDefault();
 
@@ -544,7 +488,6 @@
                     const messageDocRef = doc(db, `artifacts/${appId}/public/data/messages`, messageIdToEdit);
                     await updateDoc(messageDocRef, {
                         text: messageText,
-                        // imageDataUrl will not be updated via text edit
                     });
                     console.log("Message updated successfully:", messageIdToEdit);
                 } else {
@@ -555,7 +498,6 @@
                         uploadProgressBar.style.width = '50%';
                         sendButton.disabled = true;
 
-                        // Read file as Base64 Data URL
                         const reader = new FileReader();
                         imageDataUrl = await new Promise((resolve, reject) => {
                             reader.onload = () => resolve(reader.result);
@@ -563,7 +505,7 @@
                             reader.readAsDataURL(currentImageFile);
                         });
 
-                        uploadProgressBar.style.width = '100%'; // Simulate completion
+                        uploadProgressBar.style.width = '100%';
                         sendButton.disabled = false;
                         uploadProgressBarContainer.classList.add('hidden');
                         uploadProgressBar.style.width = '0%';
@@ -575,7 +517,7 @@
                         text: messageText,
                         channelId: currentChannelId,
                         timestamp: serverTimestamp(),
-                        imageDataUrl: imageDataUrl // Store the Base64 string directly
+                        imageDataUrl: imageDataUrl
                     });
                 }
                 resetEditMode();
@@ -587,11 +529,6 @@
             }
         }
 
-        /**
-         * Deletes a message from Firestore.
-         * For Base64 images, deleting the document implicitly deletes the image data.
-         * @param {object} msgInfo - An object containing the message ID.
-         */
         async function performDeleteMessage(msgInfo) {
             if (!db || !msgInfo || !msgInfo.id) {
                 console.error("Database or message ID not valid for deletion.");
@@ -608,9 +545,6 @@
             }
         }
 
-        /**
-         * Handles joining or creating a channel.
-         */
         function joinChannel() {
             const newChannel = channelInput.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
             if (!newChannel) {
@@ -633,9 +567,6 @@
             }
         }
 
-        /**
-         * Populates the sidebar with predefined channels and sets up click listeners.
-         */
         function populateChannelList() {
             publicChannelList.innerHTML = '';
             publicChannels.forEach(channel => {
@@ -659,9 +590,6 @@
             });
         }
 
-        /**
-         * Toggles the visibility of the sidebar.
-         */
         function toggleSidebar() {
             const isExpanded = sidebar.classList.contains('w-64');
 
@@ -676,13 +604,27 @@
             }
         }
 
-        // Event listener for nickname input change
+        function toggleChannelControl() {
+            const isExpanded = !channelControlArea.classList.contains('max-h-0');
+
+            if (isExpanded) {
+                channelControlArea.classList.add('max-h-0');
+                channelControlArea.classList.remove('max-h-full'); // Remove expanded height
+                channelToggleIcon.classList.remove('rotate-0'); // Point down (collapsed)
+                channelToggleIcon.classList.add('rotate-180'); // Point up (collapsed)
+            } else {
+                channelControlArea.classList.remove('max-h-0');
+                channelControlArea.classList.add('max-h-full'); // Set to full height
+                channelToggleIcon.classList.remove('rotate-180'); // Point up (expanded)
+                channelToggleIcon.classList.add('rotate-0'); // Point down (expanded)
+            }
+        }
+
         nicknameInput.addEventListener('input', (e) => {
             currentUserName = e.target.value;
             localStorage.setItem('wChatUserName', currentUserName);
         });
 
-        // Event listener for new message input change (to reset edit mode if user starts typing a new message)
         newMessageInput.addEventListener('input', () => {
             if (messageIdToEdit && newMessageInput.value.trim() !== originalMessageText) {
                  sendButtonText.textContent = 'Send';
@@ -691,13 +633,10 @@
             }
         });
 
-        // Event listener for message form submission
         messageForm.addEventListener('submit', sendMessage);
 
-        // Event listener for join channel button
         joinChannelButton.addEventListener('click', joinChannel);
 
-        // Allow pressing Enter in channel input to join
         channelInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -705,10 +644,9 @@
             }
         });
 
-        // Event listener for sidebar toggle button
         sidebarToggle.addEventListener('click', toggleSidebar);
+        channelToggleButton.addEventListener('click', toggleChannelControl);
 
-        // Event listeners for confirmation modal buttons
         confirmDeleteYes.addEventListener('click', () => {
             if (messageIdToDelete) {
                 performDeleteMessage(messageIdToDelete);
@@ -722,20 +660,17 @@
             confirmationModal.classList.add('hidden');
         });
 
-        // Event listener for Attach Image button
         attachImageButton.addEventListener('click', () => {
             imageInput.click();
         });
 
-        // Event listener for image file selection
         imageInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
-                // Check file size (1MB limit)
-                const maxSize = 1 * 1024 * 1024; // 1 MB in bytes
+                const maxSize = 1 * 1024 * 1024;
                 if (file.size > maxSize) {
                     showImageSizeError("Image size exceeds 1MB limit. Please choose a smaller image.");
-                    clearImageSelection(); // Clear the file input and preview
+                    clearImageSelection();
                     return;
                 }
 
@@ -746,19 +681,17 @@
                     imagePreview.src = event.target.result;
                     imagePreviewContainer.classList.remove('hidden');
                 };
-                reader.readAsDataURL(file); // Read file as DataURL for preview and storage
+                reader.readAsDataURL(file);
                 resetEditMode();
-                hideImageSizeError(); // Hide error if a valid image is selected
+                hideImageSizeError();
             } else {
                 clearImageSelection();
             }
         });
 
-        // Event listener for Cancel Image button
         cancelImageButton.addEventListener('click', clearImageSelection);
 
 
-        // Initialize Firebase and populate channels when the DOM is fully loaded
         window.onload = () => {
             initializeFirebase();
             populateChannelList();
@@ -770,6 +703,18 @@
                 sidebar.classList.remove('w-64');
                 sidebar.classList.add('w-0');
                 toggleIcon.classList.remove('rotate-180');
+            }
+            // Initialize channel control area to be expanded by default on larger screens, collapsed on small
+            if (window.innerWidth >= 768) {
+                 channelControlArea.classList.remove('max-h-0');
+                 channelControlArea.classList.add('max-h-full');
+                 channelToggleIcon.classList.add('rotate-0'); // Point down
+                 channelToggleIcon.classList.remove('rotate-180'); // ensure it's not pointing up
+            } else {
+                 channelControlArea.classList.add('max-h-0');
+                 channelControlArea.classList.remove('max-h-full');
+                 channelToggleIcon.classList.add('rotate-180'); // Point up
+                 channelToggleIcon.classList.remove('rotate-0'); // ensure it's not pointing down
             }
         };
     </script>
