@@ -136,6 +136,12 @@
             <div id="uploadProgressBar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
         </div>
 
+        <!-- Image Size Error Message -->
+        <div id="imageSizeError" class="hidden bg-red-100 dark:bg-red-900 border border-red-400 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg relative text-sm" role="alert">
+            <strong class="font-bold">Error:</strong>
+            <span class="block sm:inline" id="imageSizeErrorMessage">Image size exceeds 1MB limit. Please choose a smaller image.</span>
+        </div>
+
         <div class="flex items-center space-x-3">
             <input
                 type="file"
@@ -185,33 +191,24 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, deleteDoc, updateDoc, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        // Removed Firebase Storage imports as we are using Cloudinary for images
-        // import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+        // Firebase Storage imports are no longer needed as images are handled by Base64 in Firestore
 
         // Firebase configuration provided by the user
         const firebaseConfig = {
             apiKey: "AIzaSyCbIMQv9Z44Ms2zNZh2SAmELkS8AJKsYvo",
             authDomain: "chat-5c6f4.firebaseapp.com",
             projectId: "chat-5c6f4",
-            storageBucket: "chat-5c6f4.firebasestorage.app",
+            storageBucket: "chat-5c6f4.firebasestorage.app", // This is no longer used for image storage
             messagingSenderId: "450004774412",
             appId: "1:450004774412:web:160c2275021b82745b4829",
             measurementId: "G-2Y6JBMK2CP"
         };
-
-        // --- Cloudinary Configuration ---
-        // IMPORTANT: Replace 'YOUR_CLOUD_NAME' and 'YOUR_UNSIGNED_UPLOAD_PRESET'
-        // with your actual Cloudinary credentials obtained from Step 1.
-        const CLOUDINARY_CLOUD_NAME = 'YOUR_CLOUD_NAME'; // e.g., 'dwpysf0j9'
-        const CLOUDINARY_UPLOAD_PRESET = 'YOUR_UNSIGNED_UPLOAD_PRESET'; // e.g., 'wchat_unsigned_upload'
-        // -------------------------------
 
         // Use the projectId from your config for the Firestore collection path
         const appId = firebaseConfig.projectId;
 
         let db;
         let auth;
-        // let storage; // Firebase Storage instance removed
         let currentUserId = null;
         let currentUserName = localStorage.getItem('wChatUserName') || ''; // Load nickname from local storage
         let currentChannelId = localStorage.getItem('wChatCurrentChannel') || 'general-chat'; // Load channel from local storage or default
@@ -221,6 +218,7 @@
         let originalMessageText = null; // Stores the original text of the message being edited
         let unsubscribeMessages = null; // Stores the unsubscribe function for the Firestore listener
         let currentImageFile = null; // Stores the currently selected image file for upload
+        let imageSizeErrorTimeout = null; // Timeout for hiding the image size error message
 
         // DOM element references
         const userIdDisplay = document.getElementById('userIdDisplay');
@@ -250,6 +248,8 @@
         const cancelImageButton = document.getElementById('cancelImageButton');
         const uploadProgressBarContainer = document.getElementById('uploadProgressBarContainer');
         const uploadProgressBar = document.getElementById('uploadProgressBar');
+        const imageSizeError = document.getElementById('imageSizeError'); // New error message div
+        const imageSizeErrorMessage = document.getElementById('imageSizeErrorMessage'); // Span for error text
 
 
         // Predefined public channels
@@ -287,7 +287,35 @@
             imagePreviewContainer.classList.add('hidden'); // Hide container
             uploadProgressBarContainer.classList.add('hidden'); // Hide progress bar
             uploadProgressBar.style.width = '0%'; // Reset progress
+            hideImageSizeError(); // Also hide any error message when selection is cleared
         }
+
+        /**
+         * Shows the image size error message in the UI.
+         * @param {string} message - The error message to display.
+         */
+        function showImageSizeError(message) {
+            imageSizeErrorMessage.textContent = message;
+            imageSizeError.classList.remove('hidden');
+            if (imageSizeErrorTimeout) {
+                clearTimeout(imageSizeErrorTimeout);
+            }
+            imageSizeErrorTimeout = setTimeout(() => {
+                hideImageSizeError();
+            }, 5000); // Hide after 5 seconds
+        }
+
+        /**
+         * Hides the image size error message.
+         */
+        function hideImageSizeError() {
+            imageSizeError.classList.add('hidden');
+            if (imageSizeErrorTimeout) {
+                clearTimeout(imageSizeErrorTimeout);
+                imageSizeErrorTimeout = null;
+            }
+        }
+
 
         /**
          * Scrolls the messages list container to the bottom.
@@ -304,37 +332,29 @@
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
-                // storage = getStorage(app); // Firebase Storage initialization removed
 
                 // Listen for authentication state changes
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
-                        // User is signed in (either existing anonymous user or newly signed-in)
                         currentUserId = user.uid;
                         userIdDisplay.textContent = `Your ID: ${currentUserId}`;
                         console.log("User signed in:", user.uid);
                     } else {
-                        // No user is signed in, attempt to sign in anonymously
                         try {
                             console.log("Attempting anonymous sign-in...");
                             await signInAnonymously(auth);
-                            // The onAuthStateChanged listener will be triggered again if sign-in succeeds
-                            // and the 'if (user)' block above will handle setting currentUserId.
                         } catch (error) {
                             console.error("Error during anonymous sign-in:", error);
-                            // If anonymous sign-in fails, ensure ID is null
                             currentUserId = null;
                             userIdDisplay.textContent = `Your ID: Not authenticated`;
                             console.warn("Authentication failed. User will be able to read messages but not send.");
                         }
                     }
 
-                    // Once authentication state is resolved (user is null or has a uid)
-                    // and message listener hasn't been initialized yet, proceed to hide loading and setup listener.
                     if (!messageListenerInitialized) {
-                        loadingIndicator.classList.add('hidden'); // Hide loading indicator
-                        setupMessageListener(); // Call setupMessageListener with currentChannelId
-                        messageListenerInitialized = true; // Set flag to prevent re-initialization
+                        loadingIndicator.classList.add('hidden');
+                        setupMessageListener();
+                        messageListenerInitialized = true;
                     }
                 });
             } catch (error) {
@@ -348,7 +368,7 @@
          */
         function setupMessageListener() {
             if (unsubscribeMessages) {
-                unsubscribeMessages(); // Unsubscribe from previous listener if it exists
+                unsubscribeMessages();
                 console.log("Unsubscribed from previous channel listener.");
             }
 
@@ -357,24 +377,21 @@
                 return;
             }
 
-            // Show loading indicator before fetching new channel messages
             loadingIndicator.classList.remove('hidden');
-            noMessagesPlaceholder.classList.add('hidden'); // Ensure placeholder is hidden
-            messagesListContainer.innerHTML = ''; // Clear old messages immediately
-            resetEditMode(); // Clear any ongoing edit when changing channels
-            clearImageSelection(); // Clear any selected image when changing channels
+            noMessagesPlaceholder.classList.add('hidden');
+            messagesListContainer.innerHTML = '';
+            resetEditMode();
+            clearImageSelection();
 
-            // Create a query to get messages for the current channel, ordered by timestamp
             const q = query(
                 collection(db, `artifacts/${appId}/public/data/messages`),
-                where('channelId', '==', currentChannelId), // Filter by channelId
+                where('channelId', '==', currentChannelId),
                 orderBy('timestamp')
             );
 
-            // Set up real-time listener for messages
             unsubscribeMessages = onSnapshot(q, (snapshot) => {
-                loadingIndicator.classList.add('hidden'); // Hide loading once snapshot arrives
-                messagesListContainer.innerHTML = ''; // Clear again to ensure no duplicates if initial render was slow
+                loadingIndicator.classList.add('hidden');
+                messagesListContainer.innerHTML = '';
                 const messages = [];
 
                 if (snapshot.empty) {
@@ -388,11 +405,10 @@
                 });
 
                 renderMessages(messages);
-                scrollToBottom(); // Scroll to the bottom after rendering new messages
+                scrollToBottom();
             }, (error) => {
                 console.error("Error fetching messages:", error);
-                loadingIndicator.classList.add('hidden'); // Hide loading on error
-                // Optionally display an error message to the user within the messagesListContainer
+                loadingIndicator.classList.add('hidden');
                 messagesListContainer.innerHTML = `<div class="text-center text-red-500 dark:text-red-400">Error loading messages: ${error.message}</div>`;
             });
             console.log(`Listening for messages on channel: #${currentChannelId}`);
@@ -409,7 +425,8 @@
 
                 const messageBubble = document.createElement('div');
                 // Adjust styling based on whether it's an image message or text message
-                const isImageMessage = msg.imageUrl && (!msg.text || msg.text.trim() === '');
+                // Now checking for 'imageDataUrl' instead of 'imageUrl'
+                const isImageMessage = msg.imageDataUrl && (!msg.text || msg.text.trim() === '');
                 messageBubble.className = `max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-xl shadow-lg relative break-words
                     ${msg.userId === currentUserId
                         ? 'bg-blue-500 text-white rounded-br-none'
@@ -422,10 +439,10 @@
                 userNameP.textContent = msg.userName || 'Anonymous';
                 messageBubble.appendChild(userNameP);
 
-                // Display image if available
-                if (msg.imageUrl) {
+                // Display image if available (now checks for imageDataUrl)
+                if (msg.imageDataUrl) {
                     const imgElement = document.createElement('img');
-                    imgElement.src = msg.imageUrl;
+                    imgElement.src = msg.imageDataUrl; // Use the Base64 data URL directly
                     imgElement.alt = "Shared Image";
                     imgElement.className = "max-w-full h-auto rounded-lg mb-2 cursor-pointer";
                     imgElement.style.maxWidth = '250px'; // Limit max width for display
@@ -436,7 +453,7 @@
                         e.target.src = "https://placehold.co/200x200/cccccc/333333?text=Image+Load+Error";
                         e.target.alt = "Image failed to load.";
                     };
-                    imgElement.onclick = () => window.open(msg.imageUrl, '_blank'); // Open full image in new tab
+                    imgElement.onclick = () => window.open(msg.imageDataUrl, '_blank'); // Open full image in new tab
                     messageBubble.appendChild(imgElement);
                 }
 
@@ -450,12 +467,10 @@
 
                 const timestampSpan = document.createElement('span');
                 timestampSpan.className = 'text-xs text-opacity-75 block text-right mt-1';
-                // Convert Firestore Timestamp to Date object and format
                 if (msg.timestamp && typeof msg.timestamp.toDate === 'function') {
                     timestampSpan.textContent = msg.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 } else if (msg.timestamp) {
-                     // Fallback for cases where timestamp might not be a Firestore Timestamp object
-                    timestampSpan.textContent = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                     timestampSpan.textContent = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 }
                 messageBubble.appendChild(timestampSpan);
                 messageDiv.appendChild(messageBubble);
@@ -472,46 +487,44 @@
                     editButton.title = 'Edit Message';
                     editButton.onclick = () => {
                         messageIdToEdit = msg.id;
-                        originalMessageText = msg.text; // Store original text for potential cancel
-                        newMessageInput.value = msg.text || ''; // If message is only an image, input will be empty
-                        sendButtonText.textContent = 'Save Edits'; // Change button text
-                        newMessageInput.focus(); // Focus on the input field
-                        clearImageSelection(); // Clear any selected image if user is editing text
-                        scrollToBottom(); // Scroll to input if needed
+                        originalMessageText = msg.text;
+                        newMessageInput.value = msg.text || '';
+                        sendButtonText.textContent = 'Save Edits';
+                        newMessageInput.focus();
+                        clearImageSelection();
+                        scrollToBottom();
                     };
                     messageBubble.appendChild(editButton);
 
                     // Delete Button
                     const deleteButton = document.createElement('button');
-                    // SVG for a trash icon
                     deleteButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                                                 <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1  0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1zm1 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1zm1 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clip-rule="evenodd" />
                                               </svg>`;
                     deleteButton.className = 'absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full shadow-md transition-transform duration-200 transform hover:scale-110';
                     deleteButton.title = 'Delete Message';
                     deleteButton.onclick = () => {
-                        // Store the message ID for deletion. storagePath is not used for Cloudinary client-side deletion.
+                        // For Base64 images, deletion only involves deleting the Firestore document.
                         messageIdToDelete = { id: msg.id };
-                        confirmationModal.classList.remove('hidden'); // Show the confirmation modal
+                        confirmationModal.classList.remove('hidden');
                     };
                     messageBubble.appendChild(deleteButton);
                 }
 
-                messagesListContainer.appendChild(messageDiv); // Append to messagesListContainer
+                messagesListContainer.appendChild(messageDiv);
             });
         }
 
         /**
          * Handles sending a new message or saving edits.
-         * Includes logic for image upload to Cloudinary.
+         * Includes logic for in-line Base64 image storage.
          * @param {Event} e - The submit event.
          */
         async function sendMessage(e) {
-            e.preventDefault(); // Prevent default form submission
+            e.preventDefault();
 
             const messageText = newMessageInput.value.trim();
 
-            // Check if user is authenticated and channel is selected
             if (!currentUserId || !db || !currentChannelId) {
                 if (!currentUserId) {
                     console.error("Cannot send message: User is not authenticated.");
@@ -521,89 +534,62 @@
                 return;
             }
 
-            // Must have either text or an image
             if (messageText === '' && !currentImageFile) {
                 console.warn("Cannot send empty message or without an image.");
                 return;
             }
 
             try {
-                // If in edit mode, update the existing message
                 if (messageIdToEdit) {
                     const messageDocRef = doc(db, `artifacts/${appId}/public/data/messages`, messageIdToEdit);
                     await updateDoc(messageDocRef, {
                         text: messageText,
-                        // Cloudinary images are not updated via edit, only text.
+                        // imageDataUrl will not be updated via text edit
                     });
                     console.log("Message updated successfully:", messageIdToEdit);
                 } else {
-                    // Otherwise, add a new message (possibly with an image)
-                    let imageUrl = null;
-                    let publicId = null; // Cloudinary's public ID for the image
+                    let imageDataUrl = null;
 
                     if (currentImageFile) {
-                        uploadProgressBarContainer.classList.remove('hidden'); // Show progress bar
-                        uploadProgressBar.style.width = '50%'; // Indicate active upload (simplified)
-                        sendButton.disabled = true; // Disable send button during upload
+                        uploadProgressBarContainer.classList.remove('hidden');
+                        uploadProgressBar.style.width = '50%';
+                        sendButton.disabled = true;
 
-                        const formData = new FormData();
-                        formData.append('file', currentImageFile);
-                        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                        // Read file as Base64 Data URL
+                        const reader = new FileReader();
+                        imageDataUrl = await new Promise((resolve, reject) => {
+                            reader.onload = () => resolve(reader.result);
+                            reader.onerror = error => reject(error);
+                            reader.readAsDataURL(currentImageFile);
+                        });
 
-                        try {
-                            const response = await fetch(
-                                `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-                                {
-                                    method: 'POST',
-                                    body: formData,
-                                }
-                            );
-
-                            if (!response.ok) {
-                                throw new Error(`Cloudinary upload failed: ${response.statusText}`);
-                            }
-
-                            const data = await response.json();
-                            imageUrl = data.secure_url;
-                            publicId = data.public_id;
-                            console.log('Image uploaded to Cloudinary:', imageUrl);
-                            uploadProgressBar.style.width = '100%'; // Complete progress
-
-                        } catch (error) {
-                            console.error("Error uploading image to Cloudinary:", error);
-                            alert("Failed to upload image. Please try again."); // User feedback
-                            clearImageSelection(); // Clear selected image
-                            return; // Stop message sending if image upload fails
-                        } finally {
-                            sendButton.disabled = false; // Re-enable send button
-                        }
+                        uploadProgressBar.style.width = '100%'; // Simulate completion
+                        sendButton.disabled = false;
+                        uploadProgressBarContainer.classList.add('hidden');
+                        uploadProgressBar.style.width = '0%';
                     }
 
-                    // Add a new document to the messages collection
                     await addDoc(collection(db, `artifacts/${appId}/public/data/messages`), {
                         userId: currentUserId,
                         userName: currentUserName || 'Anonymous',
                         text: messageText,
                         channelId: currentChannelId,
                         timestamp: serverTimestamp(),
-                        imageUrl: imageUrl, // Store image URL from Cloudinary
-                        publicId: publicId // Store Cloudinary public_id if available (for potential future backend deletion)
+                        imageDataUrl: imageDataUrl // Store the Base64 string directly
                     });
                 }
-                resetEditMode(); // Always reset edit mode after send/save
-                clearImageSelection(); // Clear selected image after send/save
+                resetEditMode();
+                clearImageSelection();
             } catch (error) {
                 console.error("Error sending/updating message or uploading image:", error);
-                // Optionally display an error message to the user
-                uploadProgressBarContainer.classList.add('hidden'); // Hide progress bar on error
-                uploadProgressBar.style.width = '0%'; // Reset progress
+                uploadProgressBarContainer.classList.add('hidden');
+                uploadProgressBar.style.width = '0%';
             }
         }
 
         /**
          * Deletes a message from Firestore.
-         * Note: Image deletion from Cloudinary for unsigned uploads is not handled here
-         * due to security requirements (requires a signed request from a backend).
+         * For Base64 images, deleting the document implicitly deletes the image data.
          * @param {object} msgInfo - An object containing the message ID.
          */
         async function performDeleteMessage(msgInfo) {
@@ -613,18 +599,12 @@
             }
 
             try {
-                // For now, only delete the Firestore document.
-                // If you need to delete the image from Cloudinary, you'll need a backend
-                // service to make a signed deletion request using Cloudinary's Admin API.
-                // Example (NOT client-side): cloudinary.v2.uploader.destroy(msgInfo.publicId);
-                console.log("Deleting message from Firestore (image will remain on Cloudinary if it was an image message).");
-
                 const messageDocRef = doc(db, `artifacts/${appId}/public/data/messages`, msgInfo.id);
                 await deleteDoc(messageDocRef);
-                console.log("Message deleted successfully:", msgInfo.id);
+                console.log("Message deleted successfully from Firestore:", msgInfo.id);
             } catch (error) {
                 console.error("Error deleting message:", error);
-                // Optionally display error to user
+                window.alert("Failed to delete message. Please check console for details.");
             }
         }
 
@@ -632,20 +612,19 @@
          * Handles joining or creating a channel.
          */
         function joinChannel() {
-            const newChannel = channelInput.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, ''); // Sanitize channel name
+            const newChannel = channelInput.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
             if (!newChannel) {
                 console.warn("Channel name cannot be empty or contain only special characters.");
-                // Optionally provide user feedback in UI
                 return;
             }
 
             if (newChannel && newChannel !== currentChannelId) {
                 currentChannelId = newChannel;
-                localStorage.setItem('wChatCurrentChannel', currentChannelId); // Persist channel
+                localStorage.setItem('wChatCurrentChannel', currentChannelId);
                 currentChannelDisplay.textContent = `Current: #${currentChannelId}`;
                 console.log(`Attempting to join channel: #${currentChannelId}`);
-                if (db) { // Ensure db is initialized before setting up listener
-                    setupMessageListener(); // Re-setup listener for the new channel
+                if (db) {
+                    setupMessageListener();
                 } else {
                     console.warn("Firebase DB not initialized yet, cannot join channel immediately.");
                 }
@@ -658,22 +637,21 @@
          * Populates the sidebar with predefined channels and sets up click listeners.
          */
         function populateChannelList() {
-            publicChannelList.innerHTML = ''; // Clear existing list
+            publicChannelList.innerHTML = '';
             publicChannels.forEach(channel => {
                 const listItem = document.createElement('li');
                 const channelLink = document.createElement('a');
-                channelLink.href = '#'; // Prevent full page reload
+                channelLink.href = '#';
                 channelLink.className = 'block p-2 rounded-lg text-gray-800 dark:text-gray-200 hover:bg-blue-300 dark:hover:bg-blue-700 transition-colors duration-200';
                 channelLink.textContent = `#${channel}`;
                 channelLink.onclick = (e) => {
                     e.preventDefault();
                     channelInput.value = channel;
                     joinChannel();
-                    // Collapse sidebar after selection on small screens
-                    if (window.innerWidth < 768) { // md breakpoint in Tailwind is 768px
-                        sidebar.classList.remove('w-64'); // Ensure it collapses
+                    if (window.innerWidth < 768) {
+                        sidebar.classList.remove('w-64');
                         sidebar.classList.add('w-0');
-                        toggleIcon.classList.remove('rotate-180'); // Icon points right (collapsed)
+                        toggleIcon.classList.remove('rotate-180');
                     }
                 };
                 listItem.appendChild(channelLink);
@@ -688,38 +666,30 @@
             const isExpanded = sidebar.classList.contains('w-64');
 
             if (isExpanded) {
-                // Collapse it
                 sidebar.classList.remove('w-64');
                 sidebar.classList.add('w-0');
-                toggleIcon.classList.remove('rotate-180'); // Point right (collapsed)
+                toggleIcon.classList.remove('rotate-180');
             } else {
-                // Expand it
                 sidebar.classList.remove('w-0');
                 sidebar.classList.add('w-64');
-                toggleIcon.classList.add('rotate-180'); // Point left (expanded)
+                toggleIcon.classList.add('rotate-180');
             }
         }
 
         // Event listener for nickname input change
         nicknameInput.addEventListener('input', (e) => {
             currentUserName = e.target.value;
-            localStorage.setItem('wChatUserName', currentUserName); // Persist nickname
+            localStorage.setItem('wChatUserName', currentUserName);
         });
 
         // Event listener for new message input change (to reset edit mode if user starts typing a new message)
         newMessageInput.addEventListener('input', () => {
-            // If messageIdToEdit is set and the user starts typing something different than original message text
             if (messageIdToEdit && newMessageInput.value.trim() !== originalMessageText) {
-                 // You might want to add a "Cancel Edit" button instead of immediate reset
-                 // For now, we'll just reset the "Save Edits" button text to "Send"
-                 // without clearing the input, allowing the user to continue typing
                  sendButtonText.textContent = 'Send';
             } else if (!messageIdToEdit && newMessageInput.value.trim() === '') {
-                // If input is empty and not in edit mode, ensure button is "Send"
                 sendButtonText.textContent = 'Send';
             }
         });
-
 
         // Event listener for message form submission
         messageForm.addEventListener('submit', sendMessage);
@@ -730,7 +700,7 @@
         // Allow pressing Enter in channel input to join
         channelInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
-                e.preventDefault(); // Prevent form submission
+                e.preventDefault();
                 joinChannel();
             }
         });
@@ -742,33 +712,30 @@
         confirmDeleteYes.addEventListener('click', () => {
             if (messageIdToDelete) {
                 performDeleteMessage(messageIdToDelete);
-                messageIdToDelete = null; // Clear the stored ID
+                messageIdToDelete = null;
             }
-            confirmationModal.classList.add('hidden'); // Hide the modal
+            confirmationModal.classList.add('hidden');
         });
 
         confirmDeleteNo.addEventListener('click', () => {
-            messageIdToDelete = null; // Clear the stored ID
-            confirmationModal.classList.add('hidden'); // Hide the modal
+            messageIdToDelete = null;
+            confirmationModal.classList.add('hidden');
         });
 
         // Event listener for Attach Image button
         attachImageButton.addEventListener('click', () => {
-            imageInput.click(); // Programmatically click the hidden file input
+            imageInput.click();
         });
 
         // Event listener for image file selection
         imageInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
-                // Check file size (2MB limit)
-                const maxSize = 2 * 1024 * 1024; // 2 MB in bytes
+                // Check file size (1MB limit)
+                const maxSize = 1 * 1024 * 1024; // 1 MB in bytes
                 if (file.size > maxSize) {
-                    console.error("Image file size exceeds 2MB limit.");
-                    // Using window.alert for quick feedback as per original code structure,
-                    // but a custom modal is preferable in a full application.
-                    window.alert("Image size exceeds 2MB limit. Please choose a smaller image.");
-                    clearImageSelection();
+                    showImageSizeError("Image size exceeds 1MB limit. Please choose a smaller image.");
+                    clearImageSelection(); // Clear the file input and preview
                     return;
                 }
 
@@ -779,8 +746,9 @@
                     imagePreview.src = event.target.result;
                     imagePreviewContainer.classList.remove('hidden');
                 };
-                reader.readAsDataURL(file); // Read file as DataURL for preview
-                resetEditMode(); // Exit edit mode when new image is selected
+                reader.readAsDataURL(file); // Read file as DataURL for preview and storage
+                resetEditMode();
+                hideImageSizeError(); // Hide error if a valid image is selected
             } else {
                 clearImageSelection();
             }
@@ -794,14 +762,11 @@
         window.onload = () => {
             initializeFirebase();
             populateChannelList();
-            // Set initial state of sidebar based on screen size
-            // By default, it's w-0 in HTML, so expand it if on medium/large screens
             if (window.innerWidth >= 768) {
-                sidebar.classList.add('w-64'); // Set to expanded width
-                sidebar.classList.remove('w-0'); // Remove collapsed width
-                toggleIcon.classList.add('rotate-180'); // Icon points left (expanded)
+                sidebar.classList.add('w-64');
+                sidebar.classList.remove('w-0');
+                toggleIcon.classList.add('rotate-180');
             } else {
-                // Keep it collapsed on small screens, icon points right
                 sidebar.classList.remove('w-64');
                 sidebar.classList.add('w-0');
                 toggleIcon.classList.remove('rotate-180');
