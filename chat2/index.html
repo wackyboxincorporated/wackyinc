@@ -97,14 +97,39 @@
                 </svg>
             </button>
         </div>
+
+        <div id="audioUploadPreviewContainer" class="hidden flex items-center justify-between p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
+            <audio id="audioUploadPreview" controls class="max-w-xs"></audio>
+            <span id="audioFileName" class="text-sm text-gray-700 dark:text-gray-300 truncate flex-1 ml-4"></span>
+            <button type="button" id="cancelAudioUploadButton" class="ml-4 p-1 rounded-full text-red-500 hover:bg-red-100 dark:hover:bg-red-900 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+            </button>
+        </div>
+
+
         <div id="uploadProgressBarContainer" class="hidden w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
             <div id="uploadProgressBar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
         </div>
 
-        <div id="imageSizeError" class="hidden bg-red-100 dark:bg-red-900 border border-red-400 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg relative text-sm" role="alert">
+        <div id="fileSizeError" class="hidden bg-red-100 dark:bg-red-900 border border-red-400 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg relative text-sm" role="alert">
             <strong class="font-bold">Error:</strong>
-            <span class="block sm:inline" id="imageSizeErrorMessage">Image size exceeds 1MB limit. Please choose a smaller image.</span>
+            <span class="block sm:inline" id="fileSizeErrorMessage">File size exceeds 1MB limit. Please choose a smaller file.</span>
         </div>
+
+        <div id="audioRecordingStatus" class="hidden bg-blue-100 dark:bg-blue-900 border border-blue-400 text-blue-700 dark:text-blue-300 px-4 py-3 rounded-lg relative text-sm flex items-center justify-between" role="status">
+            <span id="recordingMessage" class="flex items-center">
+                <svg class="animate-pulse h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0c0 3.042 1.135 5.824 3 7.938V19a1 1 0 102 0v-2.062A8.001 8.001 0 0014 12c0-2.454-1.192-4.636-3-6.065V10a1 1 0 102 0V5a1 1 0 10-2 0v5.935z" clip-rule="evenodd"></path></svg>
+                Recording voice message...
+            </span>
+            <button type="button" id="cancelRecordingButton" class="ml-4 p-1 rounded-full text-red-500 hover:bg-red-100 dark:hover:bg-red-900 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+            </button>
+        </div>
+
 
         <div class="flex items-center space-x-3">
             <input
@@ -117,6 +142,20 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
+            </button>
+            <input
+                type="file"
+                id="audioFileInput"
+                accept="audio/mpeg,audio/opus"
+                class="hidden"
+            />
+            <button type="button" id="attachAudioFileButton" class="p-2 rounded-lg bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 shadow-sm transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+            </button>
+            <button type="button" id="recordButton" class="p-2 rounded-lg bg-red-500 hover:bg-red-600 text-white shadow-sm transition-colors flex items-center justify-center text-2xl">
+                🎙️
             </button>
             <input
                 type="text"
@@ -220,7 +259,17 @@
         let originalMessageText = null;
         let unsubscribeMessages = null;
         let currentImageFile = null;
-        let imageSizeErrorTimeout = null;
+        let fileErrorTimeout = null; // Renamed from imageSizeErrorTimeout
+        const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB limit
+
+        // Voice Recording related variables
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+        let recordingTimeout;
+        const MAX_RECORDING_TIME_MS = 60000; // 1 minute maximum recording
+        let currentAudioFile = null; // To hold the recorded audio Blob or uploaded audio file
+
 
         const userIdDisplay = document.getElementById('userIdDisplay');
         const nicknameInput = document.getElementById('nicknameInput');
@@ -241,16 +290,28 @@
         const publicChannelList = document.getElementById('publicChannelList');
         const sendButton = document.getElementById('sendButton');
         const sendButtonText = document.getElementById('sendButtonText');
+
+        // Image elements
         const imageInput = document.getElementById('imageInput');
         const attachImageButton = document.getElementById('attachImageButton');
         const imagePreviewContainer = document.getElementById('imagePreviewContainer');
         const imagePreview = document.getElementById('imagePreview');
         const imageFileName = document.getElementById('imageFileName');
         const cancelImageButton = document.getElementById('cancelImageButton');
+
+        // Audio Upload elements
+        const audioFileInput = document.getElementById('audioFileInput');
+        const attachAudioFileButton = document.getElementById('attachAudioFileButton');
+        const audioUploadPreviewContainer = document.getElementById('audioUploadPreviewContainer');
+        const audioUploadPreview = document.getElementById('audioUploadPreview');
+        const audioFileName = document.getElementById('audioFileName');
+        const cancelAudioUploadButton = document.getElementById('cancelAudioUploadButton');
+
+
         const uploadProgressBarContainer = document.getElementById('uploadProgressBarContainer');
         const uploadProgressBar = document.getElementById('uploadProgressBar');
-        const imageSizeError = document.getElementById('imageSizeError');
-        const imageSizeErrorMessage = document.getElementById('imageSizeErrorMessage');
+        const fileSizeError = document.getElementById('fileSizeError'); // Renamed from imageSizeError
+        const fileSizeErrorMessage = document.getElementById('fileSizeErrorMessage'); // Renamed from imageSizeErrorMessage
 
         const channelToggleButton = document.getElementById('channelToggleButton');
         const channelToggleIcon = document.getElementById('channelToggleIcon');
@@ -262,6 +323,12 @@
         const userColorInput = document.getElementById('userColorInput');
         const themeSelect = document.getElementById('themeSelect');
         const saveUserSettingsButton = document.getElementById('saveUserSettingsButton');
+
+        // Voice Recording elements
+        const recordButton = document.getElementById('recordButton');
+        const audioRecordingStatus = document.getElementById('audioRecordingStatus');
+        const recordingMessage = document.getElementById('recordingMessage');
+        const cancelRecordingButton = document.getElementById('cancelRecordingButton');
 
 
         // List of public channels available
@@ -322,36 +389,46 @@
             imagePreview.src = '';
             imageFileName.textContent = '';
             imagePreviewContainer.classList.add('hidden');
-            uploadProgressBarContainer.classList.add('hidden');
-            uploadProgressBar.style.width = '0%';
-            hideImageSizeError();
+            hideFileSizeError();
         }
 
         /**
-         * Displays an error message related to image size.
+         * Clears any selected audio file and hides the audio preview elements.
+         */
+        function clearAudioFileSelection() {
+            currentAudioFile = null;
+            audioFileInput.value = ''; // Clear the file input
+            audioUploadPreview.src = '';
+            audioFileName.textContent = '';
+            audioUploadPreviewContainer.classList.add('hidden');
+            hideFileSizeError();
+        }
+
+        /**
+         * Displays an error message related to file size.
          * @param {string} message - The error message to display.
          */
-        function showImageSizeError(message) {
-            imageSizeErrorMessage.textContent = message;
-            imageSizeError.classList.remove('hidden');
+        function showFileSizeError(message) {
+            fileSizeErrorMessage.textContent = message;
+            fileSizeError.classList.remove('hidden');
             // Clear any existing timeout to restart the timer
-            if (imageSizeErrorTimeout) {
-                clearTimeout(imageSizeErrorTimeout);
+            if (fileErrorTimeout) {
+                clearTimeout(fileErrorTimeout);
             }
             // Hide the error message after 5 seconds
-            imageSizeErrorTimeout = setTimeout(() => {
-                hideImageSizeError();
+            fileErrorTimeout = setTimeout(() => {
+                hideFileSizeError();
             }, 5000);
         }
 
         /**
-         * Hides the image size error message.
+         * Hides the file size error message.
          */
-        function hideImageSizeError() {
-            imageSizeError.classList.add('hidden');
-            if (imageSizeErrorTimeout) {
-                clearTimeout(imageSizeErrorTimeout);
-                imageSizeErrorTimeout = null;
+        function hideFileSizeError() {
+            fileSizeError.classList.add('hidden');
+            if (fileErrorTimeout) {
+                clearTimeout(fileErrorTimeout);
+                fileErrorTimeout = null;
             }
         }
 
@@ -425,6 +502,9 @@
             messagesListContainer.innerHTML = ''; // Clear existing messages
             resetEditMode(); // Reset input field
             clearImageSelection(); // Clear any image selection
+            clearAudioFileSelection(); // Clear any uploaded audio file
+            currentAudioFile = null; // Clear any recorded audio
+            audioRecordingStatus.classList.add('hidden'); // Ensure recording status is hidden
 
             // Create a query to fetch messages for the current channel, ordered by timestamp
             const q = query(
@@ -472,13 +552,15 @@
 
                 const messageBubble = document.createElement('div');
                 const isImageMessage = msg.imageDataUrl && (!msg.text || msg.text.trim() === '');
-                // Apply styling based on sender and whether it's an image-only message
+                const isAudioMessage = msg.audioDataUrl && (!msg.text || msg.text.trim() === '');
+
+                // Apply styling based on sender and whether it's an image-only or audio-only message
                 messageBubble.className = `max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-xl shadow-lg relative break-words
                     ${msg.userId === currentUserId
                         ? 'bg-blue-500 text-white rounded-br-none'
                         : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-none'
                     }
-                    ${isImageMessage ? 'p-1' : ''} `; // Smaller padding for image-only messages
+                    ${isImageMessage || isAudioMessage ? 'p-1' : ''} `; // Smaller padding for media-only messages
 
                 // Display user's nickname
                 const userNameP = document.createElement('p');
@@ -504,6 +586,44 @@
                     };
                     imgElement.onclick = () => window.open(msg.imageDataUrl, '_blank'); // Open image in new tab
                     messageBubble.appendChild(imgElement);
+                }
+
+                // Display audio if available
+                if (msg.audioDataUrl) {
+                    const audioPlayer = document.createElement('audio');
+                    audioPlayer.controls = true;
+                    audioPlayer.src = msg.audioDataUrl;
+                    audioPlayer.className = "my-2 rounded-lg"; // Tailwind classes for styling, removed w-full
+
+                    // Define min/max widths and max duration for scaling
+                    const minAudioWidthPx = 150; // Minimum width in pixels
+                    const maxAudioWidthPx = 350; // Maximum width in pixels
+                    const maxAudioDurationForScaling = 60; // Max duration (seconds) for full width scaling
+
+                    // Set an initial minimum width while metadata loads
+                    audioPlayer.style.width = `${minAudioWidthPx}px`;
+
+                    // Listen for metadata to load to get the duration and adjust width proportionally
+                    audioPlayer.addEventListener('loadedmetadata', () => {
+                        let duration = audioPlayer.duration; // Duration in seconds
+
+                        if (isNaN(duration) || duration <= 0) {
+                            // If duration is invalid, keep min width
+                            audioPlayer.style.width = `${minAudioWidthPx}px`;
+                            return;
+                        }
+
+                        // Calculate width based on duration, clamped between min and max
+                        let calculatedWidth = minAudioWidthPx +
+                            (duration / maxAudioDurationForScaling) * (maxAudioWidthPx - minAudioWidthPx);
+
+                        calculatedWidth = Math.max(minAudioWidthPx, Math.min(maxAudioWidthPx, calculatedWidth));
+
+                        audioPlayer.style.width = `${calculatedWidth}px`;
+                        console.log(`Audio duration: ${duration.toFixed(2)}s, Calculated width: ${calculatedWidth.toFixed(2)}px`);
+                    });
+
+                    messageBubble.appendChild(audioPlayer);
                 }
 
                 // Display message text if available
@@ -543,6 +663,9 @@
                         sendButtonText.textContent = 'Save Edits'; // Change button text
                         newMessageInput.focus(); // Focus on the input field
                         clearImageSelection(); // Clear any existing image selection for editing text
+                        clearAudioFileSelection(); // Clear any uploaded audio file
+                        currentAudioFile = null; // Clear any recorded audio
+                        audioRecordingStatus.classList.add('hidden'); // Hide recording status if visible
                         scrollToBottom(); // Scroll to the input area
                     };
                     messageBubble.appendChild(editButton);
@@ -583,9 +706,9 @@
                 return;
             }
 
-            // Don't send empty messages unless there's an image
-            if (messageText === '' && !currentImageFile) {
-                console.warn("Cannot send empty message or without an image.");
+            // Don't send empty messages unless there's an image or audio
+            if (messageText === '' && !currentImageFile && !currentAudioFile) {
+                console.warn("Cannot send empty message or without an image/audio.");
                 return;
             }
 
@@ -595,12 +718,13 @@
                     const messageDocRef = doc(db, `artifacts/${appId}/public/data/messages`, messageIdToEdit);
                     await updateDoc(messageDocRef, {
                         text: messageText,
-                        // No image data can be updated for existing messages in this current logic, only text
+                        // Image and audio data cannot be updated for existing messages in this current logic
                     });
                     console.log("Message updated successfully:", messageIdToEdit);
                 } else {
                     // Send a new message
                     let imageDataUrl = null;
+                    let audioDataUrl = null;
 
                     if (currentImageFile) {
                         // Show progress bar and disable send button during image upload
@@ -616,12 +740,28 @@
                             reader.readAsDataURL(currentImageFile);
                         });
 
-                        // Update progress bar and re-enable send button
                         uploadProgressBar.style.width = '100%';
-                        sendButton.disabled = false;
-                        uploadProgressBarContainer.classList.add('hidden');
-                        uploadProgressBar.style.width = '0%';
+                    } else if (currentAudioFile) {
+                        // Handle audio file conversion to Base64
+                        uploadProgressBarContainer.classList.remove('hidden');
+                        uploadProgressBar.style.width = '50%';
+                        sendButton.disabled = true;
+
+                        const reader = new FileReader();
+                        audioDataUrl = await new Promise((resolve, reject) => {
+                            reader.onload = () => resolve(reader.result);
+                            reader.onerror = error => reject(error);
+                            reader.readAsDataURL(currentAudioFile);
+                        });
+
+                        uploadProgressBar.style.width = '100%';
                     }
+
+                    // Re-enable send button after media processing
+                    sendButton.disabled = false;
+                    uploadProgressBarContainer.classList.add('hidden');
+                    uploadProgressBar.style.width = '0%';
+
 
                     // Add the new message to Firestore
                     await addDoc(collection(db, `artifacts/${appId}/public/data/messages`), {
@@ -631,18 +771,23 @@
                         text: messageText,
                         channelId: currentChannelId,
                         timestamp: serverTimestamp(), // Use server timestamp for consistency
-                        imageDataUrl: imageDataUrl
+                        imageDataUrl: imageDataUrl,
+                        audioDataUrl: audioDataUrl // Store Base64 audio data
                     });
                     console.log("Message sent successfully.");
                 }
                 resetEditMode(); // Clear input and reset button text
                 clearImageSelection(); // Clear image preview if any
+                clearAudioFileSelection(); // Clear uploaded audio file if any
+                currentAudioFile = null; // Clear any recorded audio
+                audioRecordingStatus.classList.add('hidden'); // Hide recording status if visible
             }
             catch (error) {
-                console.error("Error sending/updating message or uploading image:", error);
+                console.error("Error sending/updating message or uploading media:", error);
                 // Hide progress bar and re-enable send button on error
                 uploadProgressBarContainer.classList.add('hidden');
                 uploadProgressBar.style.width = '0%';
+                sendButton.disabled = false;
             }
         }
 
@@ -788,6 +933,108 @@
             closeUserSettingsModal();
         }
 
+        /**
+         * Starts recording audio from the microphone.
+         */
+        async function startRecording() {
+            try {
+                // Request microphone access
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        sampleRate: 12000, // Desired sample rate
+                        bitsPerSample: 8,  // Desired bit depth (not directly controllable via MediaRecorder, but good to indicate intent)
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+                
+                // Set up MediaRecorder with desired mimeType
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' }); // opus codec provides good compression
+
+                audioChunks = [];
+                mediaRecorder.ondataavailable = event => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm;codecs=opus' });
+                    currentAudioFile = audioBlob; // Store the audio blob
+                    
+                    // The actual sending happens in sendMessage when the form is submitted
+                    console.log("Audio recording finished. Audio data ready for sending.");
+                    audioRecordingStatus.classList.add('hidden');
+                    isRecording = false;
+                    recordButton.classList.remove('bg-gray-500', 'animate-pulse');
+                    recordButton.classList.add('bg-red-500', 'hover:bg-red-600');
+                    clearTimeout(recordingTimeout);
+                    
+                    // If no text, auto-send the audio
+                    if (newMessageInput.value.trim() === '') {
+                        sendMessage(new Event('submit'));
+                    }
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                audioRecordingStatus.classList.remove('hidden');
+                recordButton.classList.remove('bg-red-500', 'hover:bg-red-600');
+                recordButton.classList.add('bg-gray-500', 'animate-pulse');
+                newMessageInput.value = ''; // Clear text input if starting a new recording
+                clearImageSelection(); // Clear image if starting a new recording
+                clearAudioFileSelection(); // Clear any uploaded audio file
+                console.log("Recording started...");
+
+                // Stop recording automatically after MAX_RECORDING_TIME_MS
+                recordingTimeout = setTimeout(() => {
+                    if (isRecording) {
+                        stopRecording();
+                        console.log("Recording stopped automatically after 1 minute.");
+                        recordingMessage.textContent = "Recording stopped automatically (1 min limit).";
+                    }
+                }, MAX_RECORDING_TIME_MS);
+
+            } catch (err) {
+                console.error("Error accessing microphone:", err);
+                // Use a modal for error messages if possible, instead of alert
+                // For now, keeping alert for direct user feedback on critical permission denial
+                alert("Could not access microphone. Please ensure it's connected and permissions are granted.");
+            }
+        }
+
+        /**
+         * Stops recording audio.
+         */
+        function stopRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                // Stopping the stream tracks explicitly to turn off mic indicator
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            }
+        }
+
+        /**
+         * Cancels the current recording and clears audio data.
+         */
+        function cancelRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.onstop = null; // Prevent onstop from firing final processing
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                audioChunks = [];
+                currentAudioFile = null; // Clear recorded audio
+                isRecording = false;
+                audioRecordingStatus.classList.add('hidden');
+                recordButton.classList.remove('bg-gray-500', 'animate-pulse');
+                recordButton.classList.add('bg-red-500', 'hover:bg-red-600');
+                clearTimeout(recordingTimeout);
+                console.log("Recording cancelled.");
+            }
+        }
+
+
         // --- Event Listeners ---
 
         // Update nickname in localStorage on input
@@ -802,6 +1049,15 @@
                  sendButtonText.textContent = 'Save Edits';
             } else if (!messageIdToEdit && newMessageInput.value.trim() === '') {
                 sendButtonText.textContent = 'Send';
+            }
+            // If user types, clear any active media states
+            if (newMessageInput.value.trim() !== '') {
+                if (isRecording) {
+                    stopRecording();
+                    cancelRecording(); // Stop and clear recording if typing
+                }
+                clearImageSelection(); // Clear image if typing
+                clearAudioFileSelection(); // Clear uploaded audio if typing
             }
         });
 
@@ -841,14 +1097,19 @@
         // Image attachment functionality
         attachImageButton.addEventListener('click', () => {
             imageInput.click(); // Trigger file input click
+            // Clear other media states
+            if (isRecording) {
+                stopRecording();
+                cancelRecording();
+            }
+            clearAudioFileSelection();
         });
 
         imageInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
-                const maxSize = 1 * 1024 * 1024; // 1MB limit
-                if (file.size > maxSize) {
-                    showImageSizeError("Image size exceeds 1MB limit. Please choose a smaller image.");
+                if (file.size > MAX_FILE_SIZE) {
+                    showFileSizeError("Image size exceeds 1MB limit. Please choose a smaller image.");
                     clearImageSelection(); // Clear the invalid selection
                     return;
                 }
@@ -861,8 +1122,13 @@
                     imagePreviewContainer.classList.remove('hidden');
                 };
                 reader.readAsDataURL(file);
-                resetEditMode(); // Clear any edit mode state when attaching an image
-                hideImageSizeError(); // Hide any previous error
+                resetEditMode(); // Clear any edit mode state
+                hideFileSizeError(); // Hide any previous error
+                
+                // Clear other media states
+                currentAudioFile = null;
+                audioRecordingStatus.classList.add('hidden');
+                clearAudioFileSelection();
             } else {
                 clearImageSelection(); // Clear if no file selected
             }
@@ -870,10 +1136,75 @@
 
         cancelImageButton.addEventListener('click', clearImageSelection);
 
+        // Audio File Upload functionality
+        attachAudioFileButton.addEventListener('click', () => {
+            audioFileInput.click(); // Trigger file input click
+            // Clear other media states
+            if (isRecording) {
+                stopRecording();
+                cancelRecording();
+            }
+            clearImageSelection();
+        });
+
+        audioFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                // Validate file type and size
+                const validAudioTypes = ['audio/mpeg', 'audio/opus'];
+                if (!validAudioTypes.includes(file.type)) {
+                    showFileSizeError("Invalid audio file type. Please upload MP3 or OPUS files.");
+                    clearAudioFileSelection();
+                    return;
+                }
+                if (file.size > MAX_FILE_SIZE) {
+                    showFileSizeError("Audio file size exceeds 1MB limit. Please choose a smaller file.");
+                    clearAudioFileSelection();
+                    return;
+                }
+
+                currentAudioFile = file; // Store the uploaded audio file
+                audioFileName.textContent = file.name;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    audioUploadPreview.src = event.target.result;
+                    audioUploadPreviewContainer.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+                resetEditMode(); // Clear any edit mode state
+                hideFileSizeError(); // Hide any previous error
+
+                // Clear other media states
+                clearImageSelection();
+                if (isRecording) {
+                    stopRecording();
+                    cancelRecording();
+                }
+            } else {
+                clearAudioFileSelection(); // Clear if no file selected
+            }
+        });
+
+        cancelAudioUploadButton.addEventListener('click', clearAudioFileSelection);
+
+
         // User settings modal functionality
         userSettingsButton.addEventListener('click', openUserSettingsModal);
         closeSettingsModalButton.addEventListener('click', closeUserSettingsModal);
         saveUserSettingsButton.addEventListener('click', saveUserSettings);
+
+        // Voice Recording Event Listeners
+        recordButton.addEventListener('click', () => {
+            if (isRecording) {
+                stopRecording(); // If already recording, stop
+            } else {
+                startRecording(); // If not recording, start
+            }
+            // Clear other media states
+            clearImageSelection();
+            clearAudioFileSelection();
+        });
+        cancelRecordingButton.addEventListener('click', cancelRecording);
 
 
         // --- Initial Load Logic ---
@@ -909,4 +1240,3 @@
     </script>
 </body>
 </html>
-
