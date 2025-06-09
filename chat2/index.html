@@ -331,7 +331,7 @@
         let fileErrorTimeout = null;
         
         // Firestore document size limit in bytes (1 MiB)
-        const FIRESTORE_MAX_DOC_SIZE = 1040000; 
+        const FIRESTORE_MAX_DOC_SIZE = 728000; 
         // Maximum raw file size before Base64 encoding to ensure it fits within Firestore's 1MB limit.
         // Base64 encoding adds approximately 33% overhead.
         const MAX_RAW_FILE_SIZE_BEFORE_ENCODING = Math.floor(FIRESTORE_MAX_DOC_SIZE * 2); // Increased initial check for videos
