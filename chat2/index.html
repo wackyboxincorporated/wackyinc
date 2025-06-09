@@ -98,23 +98,48 @@
             </button>
             <!-- The main WebRTC panel that will be hidden/shown -->
             <div id="webrtcMainPanel" class="flex-1 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg shadow-inner">
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">WebRTC Audio Call</h3>
-                <div class="flex items-center space-x-2 mb-2">
-                    <label for="targetUserIdInput" class="text-gray-700 dark:text-gray-300 text-sm">Target User ID:</label>
-                    <input
-                        type="text"
-                        id="targetUserIdInput"
-                        placeholder="Enter User ID to call"
-                        class="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
-                    />
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">WebRTC Audio/Video Call</h3>
+                <div class="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-4 mb-2">
+                    <div class="flex items-center space-x-2 w-full">
+                        <label for="targetUserIdInput" class="text-gray-700 dark:text-gray-300 text-sm whitespace-nowrap">Target User ID:</label>
+                        <input
+                            type="text"
+                            id="targetUserIdInput"
+                            placeholder="Enter User ID to call"
+                            class="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                        />
+                    </div>
+                    <span class="text-gray-500 dark:text-gray-400 font-semibold">OR</span>
+                    <div class="flex items-center space-x-2 w-full">
+                        <label for="callCodeInput" class="text-gray-700 dark:text-gray-300 text-sm whitespace-nowrap">4-Digit Code:</label>
+                        <input
+                            type="text"
+                            id="callCodeInput"
+                            placeholder="Enter 4-digit code to join"
+                            class="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 text-center font-mono text-lg"
+                            maxlength="4"
+                        />
+                        <button type="button" id="generateCallCodeButton" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-300 whitespace-nowrap">Generate Code</button>
+                    </div>
                 </div>
-                <div class="flex space-x-2">
+                <div class="text-sm font-semibold text-gray-800 dark:text-gray-100 text-center mb-2">
+                    Your generated code: <span id="generatedCallCodeDisplay" class="text-green-600 dark:text-green-400 font-bold">N/A</span>
+                </div>
+                <div class="flex flex-wrap gap-2 mb-2">
                     <button type="button" id="startCallButton" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-300">Call</button>
                     <button type="button" id="answerCallButton" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-300 hidden">Answer</button>
                     <button type="button" id="endCallButton" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-300 hidden">Hang Up</button>
+                    <button type="button" id="toggleVideoButton" class="flex-1 bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-300 hidden">Enable Video</button>
+                    <button type="button" id="toggleAudioButton" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-300 hidden">Mute Audio</button>
+                    <button type="button" id="enlargeRemoteVideoButton" class="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-300 hidden">Enlarge Remote Video</button>
+                    <button type="button" id="hideLocalVideoButton" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-300 hidden">Hide My Video</button>
                 </div>
                 <div id="callStatus" class="text-sm text-gray-700 dark:text-gray-300 text-center mt-2">Idle</div>
-                <audio id="remoteAudio" controls class="w-full mt-2 hidden"></audio>
+                <div class="flex flex-col md:flex-row gap-2 mt-2" id="videoFeedsContainer">
+                    <video id="localVideo" class="w-full md:w-1/2 h-32 rounded-lg bg-gray-200 dark:bg-gray-600 object-cover hidden" autoplay muted></video>
+                    <video id="remoteVideo" class="w-full md:w-1/2 h-32 rounded-lg bg-gray-200 dark:bg-gray-600 object-cover hidden" autoplay></video>
+                    <audio id="remoteAudio" controls class="w-full md:w-1/2 mt-2 hidden"></audio>
+                </div>
             </div>
         </div>
 
@@ -273,7 +298,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, deleteDoc, updateDoc, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, deleteDoc, updateDoc, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"; // Added getDocs
 
         // IMPORTANT: In a real application, consider externalizing Firebase config securely.
         // This config is exposed for the purpose of this interactive demo.
@@ -395,8 +420,20 @@
         const endCallButton = document.getElementById('endCallButton');
         const callStatus = document.getElementById('callStatus');
         const remoteAudio = document.getElementById('remoteAudio');
+        const localVideo = document.getElementById('localVideo'); // New: Local video element
+        const remoteVideo = document.getElementById('remoteVideo'); // New: Remote video element
+        const toggleVideoButton = document.getElementById('toggleVideoButton'); // New: Toggle video button
+        const toggleAudioButton = document.getElementById('toggleAudioButton'); // New: Toggle audio button
+        const enlargeRemoteVideoButton = document.getElementById('enlargeRemoteVideoButton'); // New: Enlarge remote video button
+        const hideLocalVideoButton = document.getElementById('hideLocalVideoButton'); // New: Hide local video button
+        const videoFeedsContainer = document.getElementById('videoFeedsContainer'); // New: Container for video elements
         const webrtcToggleButton = document.getElementById('webrtcToggleButton'); 
         const webrtcToggleIcon = document.getElementById('webrtcToggleIcon');   
+        
+        // New: 4-digit code elements
+        const generatedCallCodeDisplay = document.getElementById('generatedCallCodeDisplay');
+        const generateCallCodeButton = document.getElementById('generateCallCodeButton');
+        const callCodeInput = document.getElementById('callCodeInput');
 
         // WebRTC specific variables
         let peerConnection;
@@ -404,6 +441,10 @@
         let remoteStream;
         let callTargetUserId = null;
         let webrtcMessageListenerUnsubscribe = null;
+        let iceCandidatesQueue = []; // New: Queue for ICE candidates
+        let isRemoteVideoEnlarged = false; // State for remote video size
+        let isLocalVideoHidden = false; // State for local video display
+        let currentGeneratedCallCode = null; // Store the currently generated 4-digit code
 
         // WebRTC configuration (STUN/TURN servers)
         const rtcConfig = {
@@ -412,6 +453,10 @@
                 { urls: 'stun:stun1.l.google.com:19302' },
             ]
         };
+
+        // Audio elements for connect and disconnect sounds
+        const connectSound = new Audio('https://file.garden/ZMbUnW5nmTe-x54m/connect.mp3');
+        const disconnectSound = new Audio('https://file.garden/ZMbUnW5nmTe-x54m/disconnect.mp3');
 
         // List of public channels available
         const publicChannels = [
@@ -645,7 +690,7 @@
             );
 
             // Set up the real-time listener
-            unsubscribeMessages = onSnapshot(q, (snapshot) => {
+            onSnapshot(q, (snapshot) => {
                 loadingIndicator.classList.add('hidden'); // Hide loading indicator once data is received
                 messagesListContainer.innerHTML = ''; // Clear messages again before rendering
                 const messages = [];
@@ -846,28 +891,29 @@
          * @param {string} type - Type of WebRTC message (offer, answer, candidate, hangup).
          * @param {Object} data - The SDP or ICE candidate data.
          * @param {string} targetUserId - The ID of the user to send the message to.
+         * @param {string|null} callCode - Optional 4-digit code used for call initiation.
          */
-        async function sendWebRTCSignalingMessage(type, data, targetId) {
+        async function sendWebRTCSignalingMessage(type, data, targetId, callCode = null) {
             if (!db || !currentUserId || !targetId) {
                 console.error("Cannot send WebRTC signaling message: DB, currentUserId, or targetId not available.");
                 return;
             }
 
             try {
-                // Send signaling messages to a specific subcollection for WebRTC signaling.
-                // This makes them private to the sender and receiver.
-                // Or, if public signaling is desired (like in a channel-based call),
-                // use the currentChannelId instead of a private path.
-                // For this example, we'll send it to the public messages collection
-                // but filter it out from the main chat display in renderMessages.
-                await addDoc(collection(db, `artifacts/${appId}/public/data/messages`), {
+                const messagePayload = {
                     type: `webrtc-${type}`, // e.g., 'webrtc-offer', 'webrtc-answer', 'webrtc-candidate', 'webrtc-hangup'
                     senderUserId: currentUserId,
                     targetUserId: targetId,
                     data: JSON.stringify(data), // Stringify complex objects for Firestore
                     timestamp: serverTimestamp(),
                     channelId: currentChannelId // Still associate with the channel for general context/filtering
-                });
+                };
+
+                if (callCode) {
+                    messagePayload.callCode = callCode; // Add callCode if present
+                }
+
+                await addDoc(collection(db, `artifacts/${appId}/public/data/messages`), messagePayload);
                 console.log(`WebRTC signaling message (${type}) sent to ${targetId}`);
             } catch (error) {
                 console.error("Error sending WebRTC signaling message:", error);
@@ -906,9 +952,14 @@
 
                             switch (msg.type) {
                                 case 'webrtc-offer':
-                                    if (callTargetUserId === null || callTargetUserId === msg.senderUserId) { // Allow new call or if already calling same person
+                                    // Check if this is a new call or if already calling same person
+                                    if (callTargetUserId === null || callTargetUserId === msg.senderUserId) { 
                                         callTargetUserId = msg.senderUserId;
-                                        callStatus.textContent = `Incoming call from ${msg.senderUserId}!`;
+                                        let statusText = `Incoming call from ${msg.senderUserId}!`;
+                                        if (msg.callCode) {
+                                            statusText += ` (Code: ${msg.callCode})`;
+                                        }
+                                        callStatus.textContent = statusText;
                                         startCallButton.classList.add('hidden');
                                         answerCallButton.classList.remove('hidden');
                                         endCallButton.classList.remove('hidden');
@@ -919,23 +970,53 @@
                                     }
                                     break;
                                 case 'webrtc-answer':
-                                    if (peerConnection && peerConnection.remoteDescription === null) { // Only set answer if offer was sent by us
+                                    if (peerConnection) {
                                         await peerConnection.setRemoteDescription(new RTCSessionDescription(signalingData));
+                                        // Process any queued ICE candidates after setting remote description
+                                        while (iceCandidatesQueue.length > 0) {
+                                            const candidate = iceCandidatesQueue.shift();
+                                            try {
+                                                await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+                                            } catch (e) {
+                                                console.error('Error adding queued ICE candidate:', e);
+                                            }
+                                        }
                                         callStatus.textContent = `Call established with ${msg.senderUserId}.`;
+                                        connectSound.play().catch(e => console.warn("Connect sound play failed:", e)); // Play connect sound
+                                        // If an answer is received, it means the code was successfully used to establish a call
+                                        // Delete the code from firestore if it was used by THIS user (the one who generated it)
+                                        if (currentGeneratedCallCode) {
+                                            deleteCallCode(currentGeneratedCallCode);
+                                            generatedCallCodeDisplay.textContent = 'N/A';
+                                            currentGeneratedCallCode = null;
+                                        }
                                     }
                                     break;
                                 case 'webrtc-candidate':
                                     if (peerConnection) {
-                                        try {
-                                            await peerConnection.addIceCandidate(new RTCIceCandidate(signalingData));
-                                        } catch (e) {
-                                            console.error('Error adding received ICE candidate:', e);
+                                        // Add candidate directly if remote description is already set
+                                        if (peerConnection.remoteDescription) {
+                                            try {
+                                                await peerConnection.addIceCandidate(new RTCIceCandidate(signalingData));
+                                            } catch (e) {
+                                                console.error('Error adding received ICE candidate:', e);
+                                            }
+                                        } else {
+                                            // Queue candidate if remote description is not yet set
+                                            console.log('Queueing ICE candidate (remote description not set yet):', signalingData);
+                                            iceCandidatesQueue.push(signalingData);
                                         }
                                     }
                                     break;
                                 case 'webrtc-hangup':
                                     handleHangup();
                                     callStatus.textContent = `${msg.senderUserId} ended the call.`;
+                                    // If a hangup is received, also clear any generated code for this user
+                                    if (currentGeneratedCallCode) {
+                                        deleteCallCode(currentGeneratedCallCode);
+                                        generatedCallCodeDisplay.textContent = 'N/A';
+                                        currentGeneratedCallCode = null;
+                                    }
                                     break;
                             }
                             // Delete the signaling message after processing to keep Firestore clean
@@ -948,26 +1029,147 @@
             });
         }
 
-
         /**
-         * Initializes WebRTC peer connection and gets local audio stream.
+         * Generates a unique 4-digit code and stores it in Firestore.
          */
-        async function startCall() {
-            callTargetUserId = targetUserIdInput.value.trim();
-            if (!callTargetUserId || callTargetUserId === currentUserId) {
-                callStatus.textContent = "Please enter a valid target User ID (not your own).";
+        async function generateFourDigitCode() {
+            if (!db || !currentUserId) {
+                callStatus.textContent = "Error: Not authenticated to generate code.";
                 return;
             }
 
-            callStatus.textContent = `Calling ${callTargetUserId}...`;
-            startCallButton.disabled = true;
+            // Clear any previously generated code for this user from Firestore
+            if (currentGeneratedCallCode) {
+                await deleteCallCode(currentGeneratedCallCode);
+                currentGeneratedCallCode = null; // Clear local state
+            }
+            
+            generatedCallCodeDisplay.textContent = 'Generating...';
+            generateCallCodeButton.disabled = true;
+
+            let newCode;
+            let isUnique = false;
+            let attempts = 0;
+            const MAX_ATTEMPTS = 10;
+
+            while (!isUnique && attempts < MAX_ATTEMPTS) {
+                newCode = String(Math.floor(1000 + Math.random() * 9000)); // Generate 4-digit number
+                
+                // Check if code already exists and is active
+                const q = query(collection(db, `artifacts/${appId}/public/data/call_codes`), where('code', '==', newCode));
+                const querySnapshot = await getDocs(q);
+                
+                if (querySnapshot.empty) {
+                    isUnique = true;
+                } else {
+                    console.log(`Code ${newCode} already exists, retrying...`);
+                    attempts++;
+                }
+            }
+
+            if (!isUnique) {
+                callStatus.textContent = "Failed to generate a unique code. Please try again.";
+                generatedCallCodeDisplay.textContent = 'Error';
+                generateCallCodeButton.disabled = false;
+                return;
+            }
 
             try {
+                await addDoc(collection(db, `artifacts/${appId}/public/data/call_codes`), {
+                    code: newCode,
+                    userId: currentUserId,
+                    timestamp: serverTimestamp(),
+                    active: true // Mark as active
+                });
+                currentGeneratedCallCode = newCode;
+                generatedCallCodeDisplay.textContent = newCode;
+                callStatus.textContent = `Share code ${newCode} to receive a call.`;
+            } catch (error) {
+                console.error("Error saving call code:", error);
+                callStatus.textContent = `Error generating code: ${error.message}`;
+                generatedCallCodeDisplay.textContent = 'Error';
+            } finally {
+                generateCallCodeButton.disabled = false;
+            }
+        }
+
+        /**
+         * Deletes a specific call code from Firestore.
+         * @param {string} codeToDelete - The 4-digit code to delete.
+         */
+        async function deleteCallCode(codeToDelete) {
+            if (!db) return;
+            try {
+                const q = query(collection(db, `artifacts/${appId}/public/data/call_codes`), where('code', '==', codeToDelete));
+                const querySnapshot = await getDocs(q);
+                querySnapshot.forEach(async (docRef) => {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/call_codes`, docRef.id));
+                    console.log(`Call code ${codeToDelete} deleted from Firestore.`);
+                });
+            } catch (error) {
+                console.error(`Error deleting call code ${codeToDelete}:`, error);
+            }
+        }
+
+
+        /**
+         * Initializes WebRTC peer connection and gets local audio stream.
+         * Now handles both direct User ID calls and 4-digit code calls.
+         */
+        async function startCall() {
+            let targetId = targetUserIdInput.value.trim();
+            const codeToJoin = callCodeInput.value.trim();
+            let isCodeBasedCall = false;
+
+            // Determine call type
+            if (targetId && codeToJoin) {
+                callStatus.textContent = "Please use either User ID or 4-digit code, not both.";
+                return;
+            } else if (codeToJoin) {
+                isCodeBasedCall = true;
+                // Lookup targetUserId from the code
+                callStatus.textContent = `Looking up code ${codeToJoin}...`;
+                try {
+                    const q = query(collection(db, `artifacts/${appId}/public/data/call_codes`), where('code', '==', codeToJoin));
+                    const querySnapshot = await getDocs(q);
+                    if (querySnapshot.empty) {
+                        callStatus.textContent = `Code ${codeToJoin} not found or expired.`;
+                        return;
+                    }
+                    const codeDoc = querySnapshot.docs[0].data();
+                    targetId = codeDoc.userId;
+                    // Delete the code immediately after successful lookup for single-use logic
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/call_codes`, querySnapshot.docs[0].id));
+                    console.log(`Code ${codeToJoin} used and deleted.`);
+                } catch (error) {
+                    console.error("Error looking up call code:", error);
+                    callStatus.textContent = `Error with code lookup: ${error.message}`;
+                    return;
+                }
+            }
+
+            if (!targetId || targetId === currentUserId) {
+                callStatus.textContent = "Please enter a valid target User ID or 4-digit code (not your own).";
+                return;
+            }
+
+            callTargetUserId = targetId; // Set the actual target user ID
+            callStatus.textContent = `Calling ${callTargetUserId}...`;
+            startCallButton.disabled = true;
+            toggleVideoButton.classList.remove('hidden'); // Show video toggle
+            toggleAudioButton.classList.remove('hidden'); // Show audio toggle
+            enlargeRemoteVideoButton.classList.remove('hidden'); // Show enlarge remote video button
+            hideLocalVideoButton.classList.remove('hidden'); // Show hide local video button
+
+            try {
+                // Request audio only initially
                 localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 if (!localStream) {
                     throw new Error("Failed to get local audio stream. Microphone access denied or not available.");
                 }
+                localVideo.srcObject = null; // Ensure local video is clear
                 remoteAudio.srcObject = null; // Clear any previous remote audio
+                remoteVideo.srcObject = null; // Clear any previous remote video
 
                 peerConnection = new RTCPeerConnection(rtcConfig);
 
@@ -975,11 +1177,11 @@
                 peerConnection.onconnectionstatechange = () => {
                     console.log('Peer connection state changed:', peerConnection.connectionState);
                     callStatus.textContent = `Call status: ${peerConnection.connectionState}`; // Update UI with more detail
-                    if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
+                    if (peerConnection.connectionState === 'connected') {
+                        connectSound.play().catch(e => console.warn("Connect sound play failed:", e)); // Play connect sound
+                    } else if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
                         handleHangup();
                         callStatus.textContent = `Call ended due to ${peerConnection.connectionState} state.`;
-                    } else if (peerConnection.connectionState === 'connected') {
-                        callStatus.textContent = `Call connected with ${callTargetUserId}.`;
                     }
                 };
 
@@ -994,17 +1196,39 @@
                 };
 
                 // Add local audio tracks to the peer connection
-                localStream.getTracks().forEach(track => {
+                localStream.getAudioTracks().forEach(track => { // Explicitly get audio tracks
                     peerConnection.addTrack(track, localStream);
                 });
 
                 // Event handler for when remote tracks are received
                 peerConnection.ontrack = (event) => {
-                    console.log('Remote track received:', event.streams[0]);
-                    if (remoteAudio.srcObject !== event.streams[0]) {
-                        remoteAudio.srcObject = event.streams[0];
-                        remoteAudio.play().catch(e => console.error("Error playing remote audio:", e));
-                        remoteAudio.classList.remove('hidden');
+                    console.log('Remote track received:', event.track.kind, event.streams[0]);
+                    if (event.track.kind === 'audio') {
+                        if (remoteAudio.srcObject !== event.streams[0]) {
+                            remoteAudio.srcObject = event.streams[0];
+                            remoteAudio.play().catch(e => console.error("Error playing remote audio:", e));
+                            remoteAudio.classList.remove('hidden');
+                        }
+                    } else if (event.track.kind === 'video') {
+                        if (remoteVideo.srcObject !== event.streams[0]) {
+                            remoteVideo.srcObject = event.streams[0];
+                            remoteVideo.play().catch(e => console.error("Error playing remote video:", e));
+                            remoteVideo.classList.remove('hidden');
+                            // If remote video appears, ensure buttons are visible and reset their states
+                            enlargeRemoteVideoButton.classList.remove('hidden');
+                            hideLocalVideoButton.classList.remove('hidden');
+                            // Reset video display states
+                            isRemoteVideoEnlarged = false;
+                            enlargeRemoteVideoButton.textContent = 'Enlarge Remote Video';
+                            localVideo.classList.remove('hidden'); // Ensure local video is visible by default
+                            isLocalVideoHidden = false;
+                            hideLocalVideoButton.textContent = 'Hide My Video';
+                            // Apply initial sizes
+                            remoteVideo.classList.remove('w-full', 'h-full');
+                            remoteVideo.classList.add('w-full', 'md:w-1/2', 'h-32');
+                            localVideo.classList.remove('w-full', 'h-full');
+                            localVideo.classList.add('w-full', 'md:w-1/2', 'h-32');
+                        }
                     }
                 };
 
@@ -1012,7 +1236,8 @@
                 peerConnection.onicecandidate = (event) => {
                     if (event.candidate) {
                         console.log('Sending ICE candidate:', event.candidate);
-                        sendWebRTCSignalingMessage('candidate', event.candidate.toJSON(), callTargetUserId);
+                        // Send the 4-digit code if this was a code-based call
+                        sendWebRTCSignalingMessage('candidate', event.candidate.toJSON(), callTargetUserId, isCodeBasedCall ? codeToJoin : null);
                     }
                 };
                 
@@ -1020,8 +1245,8 @@
                 const offer = await peerConnection.createOffer();
                 await peerConnection.setLocalDescription(offer);
                 console.log('Sending SDP offer:', offer);
-                // Removed .toJSON() as RTCSessionDescription is already a plain object
-                sendWebRTCSignalingMessage('offer', offer, callTargetUserId);
+                // Send the 4-digit code if this was a code-based call
+                sendWebRTCSignalingMessage('offer', offer, callTargetUserId, isCodeBasedCall ? codeToJoin : null);
 
                 callStatus.textContent = `Waiting for ${callTargetUserId} to answer...`;
                 startCallButton.classList.add('hidden');
@@ -1029,10 +1254,17 @@
                 endCallButton.classList.remove('hidden');
                 endCallButton.disabled = false;
 
+                targetUserIdInput.value = ''; // Clear target ID input after call initiation
+                callCodeInput.value = ''; // Clear call code input
+
             } catch (error) {
                 console.error("Error starting call:", error);
                 callStatus.textContent = `Call failed: ${error.message}. Please check microphone permissions and try again.`;
                 startCallButton.disabled = false;
+                toggleVideoButton.classList.add('hidden'); // Hide video toggle on error
+                toggleAudioButton.classList.add('hidden'); // Hide audio toggle on error
+                enlargeRemoteVideoButton.classList.add('hidden'); // Hide enlarge remote video button
+                hideLocalVideoButton.classList.add('hidden'); // Hide hide local video button
                 handleHangup(); // Clean up if call fails to start
             }
         }
@@ -1048,11 +1280,11 @@
                 peerConnection.onconnectionstatechange = () => {
                     console.log('Peer connection state changed (answer):', peerConnection.connectionState);
                     callStatus.textContent = `Call status: ${peerConnection.connectionState}`;
-                    if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
+                    if (peerConnection.connectionState === 'connected') {
+                        connectSound.play().catch(e => console.warn("Connect sound play failed:", e)); // Play connect sound
+                    } else if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
                         handleHangup();
                         callStatus.textContent = `Call ended due to ${peerConnection.connectionState} state.`;
-                    } else if (peerConnection.connectionState === 'connected') {
-                        callStatus.textContent = `Call connected with ${callTargetUserId}.`;
                     }
                 };
                 peerConnection.oniceconnectionstatechange = () => {
@@ -1064,29 +1296,52 @@
                     }
                 };
                 peerConnection.ontrack = (event) => {
-                    console.log('Remote track received during answer:', event.streams[0]);
-                    if (remoteAudio.srcObject !== event.streams[0]) {
-                        remoteAudio.srcObject = event.streams[0];
-                        remoteAudio.play().catch(e => console.error("Error playing remote audio:", e));
-                        remoteAudio.classList.remove('hidden');
+                    console.log('Remote track received during answer:', event.track.kind, event.streams[0]);
+                    if (event.track.kind === 'audio') {
+                        if (remoteAudio.srcObject !== event.streams[0]) {
+                            remoteAudio.srcObject = event.streams[0];
+                            remoteAudio.play().catch(e => console.error("Error playing remote audio:", e));
+                            remoteAudio.classList.remove('hidden');
+                        }
+                    } else if (event.track.kind === 'video') {
+                        if (remoteVideo.srcObject !== event.streams[0]) {
+                            remoteVideo.srcObject = event.streams[0];
+                            remoteVideo.play().catch(e => console.error("Error playing remote video:", e));
+                            remoteVideo.classList.remove('hidden');
+                            // If remote video appears, ensure buttons are visible and reset their states
+                            enlargeRemoteVideoButton.classList.remove('hidden');
+                            hideLocalVideoButton.classList.remove('hidden');
+                            // Reset video display states
+                            isRemoteVideoEnlarged = false;
+                            enlargeRemoteVideoButton.textContent = 'Enlarge Remote Video';
+                            localVideo.classList.remove('hidden'); // Ensure local video is visible by default
+                            isLocalVideoHidden = false;
+                            hideLocalVideoButton.textContent = 'Hide My Video';
+                            // Apply initial sizes
+                            remoteVideo.classList.remove('w-full', 'h-full');
+                            remoteVideo.classList.add('w-full', 'md:w-1/2', 'h-32');
+                            localVideo.classList.remove('w-full', 'h-full');
+                            localVideo.classList.add('w-full', 'md:w-1/2', 'h-32');
+                        }
                     }
                 };
                 peerConnection.onicecandidate = (event) => {
                     if (event.candidate) {
                         console.log('Sending ICE candidate (answer):', event.candidate);
-                        sendWebRTCSignalingMessage('candidate', event.candidate.toJSON(), callTargetUserId);
+                        // Send the 4-digit code if this was a code-based call
+                        sendWebRTCSignalingMessage('candidate', event.candidate.toJSON(), callTargetUserId); // Code not needed in candidate if handled by offer/answer
                     }
                 };
 
                  // Add local audio tracks if we haven't already and the user has a microphone
                 try {
                     if (!localStream) { // Only get stream if not already obtained
-                        localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        localStream = await navigator.mediaDevices.getUserMedia({ audio: true }); // Request audio only
                         if (!localStream) {
                             throw new Error("Failed to get local audio stream for answering call. Microphone access denied or not available.");
                         }
                     }
-                    localStream.getTracks().forEach(track => {
+                    localStream.getAudioTracks().forEach(track => { // Explicitly get audio tracks
                         peerConnection.addTrack(track, localStream);
                     });
                 } catch (e) {
@@ -1099,17 +1354,31 @@
 
             try {
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+                // Process any queued ICE candidates after setting remote description
+                while (iceCandidatesQueue.length > 0) {
+                    const candidate = iceCandidatesQueue.shift();
+                    try {
+                        await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+                    } catch (e) {
+                        console.error('Error adding queued ICE candidate:', e);
+                    }
+                }
+
                 const answer = await peerConnection.createAnswer();
                 await peerConnection.setLocalDescription(answer);
                 console.log('Sending SDP answer:', answer);
-                // Removed .toJSON() as RTCSessionDescription is already a plain object
-                sendWebRTCSignalingMessage('answer', answer, callTargetUserId);
+                // Include the code from the received offer if it exists
+                sendWebRTCSignalingMessage('answer', answer, callTargetUserId, offer.callCode || null);
 
                 callStatus.textContent = `Call established with ${callTargetUserId}.`;
                 startCallButton.classList.add('hidden');
                 answerCallButton.classList.add('hidden');
                 endCallButton.classList.remove('hidden');
                 endCallButton.disabled = false;
+                toggleVideoButton.classList.remove('hidden'); // Show video toggle
+                toggleAudioButton.classList.remove('hidden'); // Show audio toggle
+                enlargeRemoteVideoButton.classList.remove('hidden'); // Show enlarge remote video button
+                hideLocalVideoButton.classList.remove('hidden'); // Show hide local video button
 
             } catch (error) {
                 console.error("Error handling offer:", error);
@@ -1134,14 +1403,222 @@
                 remoteAudio.srcObject.getTracks().forEach(track => track.stop());
                 remoteAudio.srcObject = null;
             }
+            if (remoteVideo.srcObject) { // New: Stop remote video tracks
+                remoteVideo.srcObject.getTracks().forEach(track => track.stop());
+                remoteVideo.srcObject = null;
+            }
             remoteAudio.classList.add('hidden');
+            localVideo.classList.add('hidden'); // Hide local video
+            remoteVideo.classList.add('hidden'); // Hide remote video
+            iceCandidatesQueue = []; // Clear queue on hangup
+
             callTargetUserId = null;
             callStatus.textContent = "Call ended.";
             startCallButton.classList.remove('hidden');
             startCallButton.disabled = false;
             answerCallButton.classList.add('hidden');
             endCallButton.classList.add('hidden');
+            toggleVideoButton.classList.add('hidden'); // Hide video toggle
+            toggleAudioButton.classList.add('hidden'); // Hide audio toggle
+            enlargeRemoteVideoButton.classList.add('hidden'); // Hide enlarge remote video button
+            hideLocalVideoButton.classList.add('hidden'); // Hide hide local video button
+            toggleVideoButton.textContent = 'Enable Video'; // Reset button text
+            toggleAudioButton.textContent = 'Mute Audio'; // Reset button text
+            enlargeRemoteVideoButton.textContent = 'Enlarge Remote Video'; // Reset enlarge button text
+            hideLocalVideoButton.textContent = 'Hide My Video'; // Reset hide button text
+
+            // Reset video display states and classes
+            isRemoteVideoEnlarged = false;
+            isLocalVideoHidden = false;
+            localVideo.classList.remove('w-full', 'h-full', 'absolute', 'top-2', 'left-2', 'z-20', 'md:w-1/4', 'md:h-1/4');
+            localVideo.classList.add('w-full', 'md:w-1/2', 'h-32');
+            remoteVideo.classList.remove('w-full', 'h-full');
+            remoteVideo.classList.add('w-full', 'md:w-1/2', 'h-32');
+            videoFeedsContainer.classList.remove('relative'); // Remove relative positioning if added for picture-in-picture
+
+            // Play disconnect sound
+            disconnectSound.play().catch(e => console.warn("Disconnect sound play failed:", e));
+
+            // If a generated code was active, delete it on hangup
+            if (currentGeneratedCallCode) {
+                deleteCallCode(currentGeneratedCallCode);
+                generatedCallCodeDisplay.textContent = 'N/A';
+                currentGeneratedCallCode = null;
+            }
         }
+
+        /**
+         * Toggles the local video stream (on/off). If no video stream exists, attempts to acquire one.
+         */
+        async function toggleLocalVideo() {
+            if (!peerConnection || !localStream) {
+                console.warn("Cannot toggle video: Call not active or no local stream.");
+                callStatus.textContent = "Cannot toggle video: Call not active.";
+                return;
+            }
+
+            const videoTracks = localStream.getVideoTracks();
+            if (videoTracks.length > 0) {
+                // Video track already exists, toggle its enabled state
+                const isEnabled = videoTracks[0].enabled;
+                videoTracks[0].enabled = !isEnabled;
+                // Only hide the actual video element if the track is disabled
+                localVideo.classList.toggle('hidden', isEnabled); 
+                toggleVideoButton.textContent = isEnabled ? 'Enable Video' : 'Disable Video';
+                console.log(`Local video track enabled: ${!isEnabled}`);
+                callStatus.textContent = isEnabled ? 'Video Off' : 'Video On';
+
+                // If local video stream is disabled, ensure hideLocalVideoButton reflects "Show My Video"
+                if (isEnabled) { // if it was enabled and now is becoming disabled
+                    isLocalVideoHidden = true; // functionally hidden
+                    hideLocalVideoButton.textContent = 'Show My Video';
+                } else { // if it was disabled and now is becoming enabled
+                    isLocalVideoHidden = false; // functionally visible
+                    hideLocalVideoButton.textContent = 'Hide My Video';
+                }
+
+            } else {
+                // No video track currently, try to add one
+                try {
+                    const newVideoStream = await navigator.mediaDevices.getUserMedia({ video: { width: 128, height: 128 } });
+                    const newVideoTrack = newVideoStream.getVideoTracks()[0];
+
+                    // Add the new video track to the existing localStream
+                    localStream.addTrack(newVideoTrack);
+
+                    // Add it to the peer connection (this creates a new transceiver or reuses one)
+                    peerConnection.addTrack(newVideoTrack, localStream);
+
+                    // Update local video preview
+                    localVideo.srcObject = localStream; // Reassigning srcObject might be needed to reflect the new track
+                    localVideo.classList.remove('hidden');
+                    toggleVideoButton.textContent = 'Disable Video';
+                    console.log("Local video track added.");
+                    callStatus.textContent = 'Video On';
+                    isLocalVideoHidden = false; // Video is now visible
+                    hideLocalVideoButton.textContent = 'Hide My Video';
+
+                    // Trigger renegotiation if necessary (for peers to detect new track)
+                    // This is often handled by WebRTC's internal auto-negotiation, but can be forced:
+                    if (peerConnection.signalingState !== 'stable') {
+                        console.log("Signaling state not stable, waiting for renegotiation...");
+                    } else {
+                        const offer = await peerConnection.createOffer();
+                        await peerConnection.setLocalDescription(offer);
+                        sendWebRTCSignalingMessage('offer', offer, callTargetUserId);
+                    }
+
+                } catch (error) {
+                    console.error("Error enabling local video:", error);
+                    callStatus.textContent = `Video error: ${error.message}`;
+                    // Revert button state if enabling fails
+                    toggleVideoButton.textContent = 'Enable Video';
+                    localVideo.classList.add('hidden');
+                    isLocalVideoHidden = true; // Video is now hidden
+                    hideLocalVideoButton.textContent = 'Show My Video';
+                }
+            }
+        }
+
+        /**
+         * Toggles the local audio stream (mute/unmute).
+         */
+        function toggleLocalAudio() {
+            if (!localStream) {
+                console.warn("Cannot toggle audio: No local stream.");
+                callStatus.textContent = "Cannot toggle audio: No local stream.";
+                return;
+            }
+            const audioTracks = localStream.getAudioTracks();
+            if (audioTracks.length > 0) {
+                const isMuted = !audioTracks[0].enabled;
+                audioTracks[0].enabled = isMuted;
+                toggleAudioButton.textContent = isMuted ? 'Unmute Audio' : 'Mute Audio';
+                console.log(`Local audio muted: ${!isMuted}`);
+                callStatus.textContent = isMuted ? 'Audio Muted' : 'Audio Unmuted';
+            } else {
+                console.warn("No audio track found in local stream.");
+                callStatus.textContent = "No audio track to mute/unmute.";
+            }
+        }
+
+        /**
+         * Toggles the size of the remote video feed.
+         * If enlarged, it takes more space and hides the local video temporarily.
+         */
+        function toggleRemoteVideoSize() {
+            if (remoteVideo.classList.contains('hidden')) {
+                callStatus.textContent = "Remote video is not active.";
+                return;
+            }
+
+            if (isRemoteVideoEnlarged) {
+                // Shrink remote video
+                remoteVideo.classList.remove('w-full', 'h-full');
+                remoteVideo.classList.add('w-full', 'md:w-1/2', 'h-32');
+                
+                // Show local video if it wasn't hidden by hideLocalVideoButton
+                if (!isLocalVideoHidden) {
+                    localVideo.classList.remove('hidden');
+                }
+                localVideo.classList.remove('absolute', 'top-2', 'left-2', 'z-20', 'md:w-1/4', 'md:h-1/4');
+                localVideo.classList.add('w-full', 'md:w-1/2', 'h-32');
+
+                videoFeedsContainer.classList.remove('relative');
+
+                enlargeRemoteVideoButton.textContent = 'Enlarge Remote Video';
+                isRemoteVideoEnlarged = false;
+                callStatus.textContent = 'Remote Video Normal Size';
+            } else {
+                // Enlarge remote video
+                remoteVideo.classList.remove('w-full', 'md:w-1/2', 'h-32');
+                remoteVideo.classList.add('w-full', 'h-full'); // Make it fill the container
+                
+                // Hide local video when remote is enlarged, unless explicitly desired to be shown (future enhancement)
+                localVideo.classList.add('hidden');
+                
+                videoFeedsContainer.classList.add('relative'); // Add relative positioning to container
+
+                enlargeRemoteVideoButton.textContent = 'Shrink Remote Video';
+                isRemoteVideoEnlarged = true;
+                callStatus.textContent = 'Remote Video Enlarged';
+            }
+        }
+
+        /**
+         * Toggles the display (visibility) of the local video feed.
+         * This does NOT stop sending the video stream.
+         */
+        function toggleLocalVideoDisplay() {
+            if (localVideo.classList.contains('hidden') && !isLocalVideoHidden) {
+                // If the video element is hidden (e.g., due to stream not being active) but our state says it should be visible,
+                // then this button should attempt to show it if a stream is active.
+                if (localStream && localStream.getVideoTracks().length > 0 && localStream.getVideoTracks()[0].enabled) {
+                    localVideo.classList.remove('hidden');
+                    hideLocalVideoButton.textContent = 'Hide My Video';
+                    isLocalVideoHidden = false;
+                    callStatus.textContent = 'My Video Visible';
+                } else {
+                    callStatus.textContent = 'No local video stream active to display.';
+                }
+                return;
+            }
+
+            if (isLocalVideoHidden) {
+                // Show local video if it was hidden by this function
+                localVideo.classList.remove('hidden');
+                hideLocalVideoButton.textContent = 'Hide My Video';
+                isLocalVideoHidden = false;
+                callStatus.textContent = 'My Video Visible';
+            } else {
+                // Hide local video
+                localVideo.classList.add('hidden');
+                hideLocalVideoButton.textContent = 'Show My Video';
+                isLocalVideoHidden = true;
+                callStatus.textContent = 'My Video Hidden';
+            }
+        }
+
 
         /**
          * Handles sending or updating a message.
@@ -1660,6 +2137,7 @@
                         targetBlobSizeBytes = BASE_QUALITY_TARGET_SIZE_KB * 1024;
                     } else {
                         // Linear interpolation for target size between max and base quality
+                        
                         // (duration - shortest) / (longest - shortest) gives a ratio from 0 to 1
                         // 1 - ratio makes it inversely proportional (shorter duration = higher ratio for quality)
                         const ratio = (videoDuration - SHORTEST_VIDEO_DURATION_FOR_MAX_QUALITY_SECONDS) /
@@ -2101,19 +2579,27 @@
                     // No need to re-handle offer as it's already set. Just ensure we have local audio and send answer.
                     if (!localStream) {
                         localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                        localStream.getTracks().forEach(track => {
+                        localStream.getAudioTracks().forEach(track => { // Explicitly get audio tracks
                             peerConnection.addTrack(track, localStream);
                         });
                     }
                     const answer = await peerConnection.createAnswer();
                     await peerConnection.setLocalDescription(answer);
-                    // Removed .toJSON()
+                    // Include the code from the received offer if it exists (this requires retrieving the original message with the code)
+                    // For now, we'll assume the `callCode` is not critical for the answer itself, but for UI/logging.
+                    // If the answer needs to carry the code, it would need to be passed here.
                     sendWebRTCSignalingMessage('answer', answer, callTargetUserId);
                     callStatus.textContent = `Call established with ${callTargetUserId}.`;
+                    connectSound.play().catch(e => console.warn("Connect sound play failed:", e)); // Play connect sound
                     startCallButton.classList.add('hidden');
                     answerCallButton.classList.add('hidden');
                     endCallButton.classList.remove('hidden');
                     endCallButton.disabled = false;
+                    toggleVideoButton.classList.remove('hidden'); // Show video toggle
+                    toggleAudioButton.classList.remove('hidden'); // Show audio toggle
+                    enlargeRemoteVideoButton.classList.remove('hidden'); // Show enlarge remote video button
+                    hideLocalVideoButton.classList.remove('hidden'); // Show hide local video button
+
                 } catch (e) {
                     console.error("Error creating/sending answer on explicit click:", e);
                     callStatus.textContent = `Error answering call: ${e.message}`;
@@ -2129,6 +2615,12 @@
             callStatus.textContent = "You ended the call.";
         });
 
+        // New: Video and Audio toggle buttons
+        toggleVideoButton.addEventListener('click', toggleLocalVideo);
+        toggleAudioButton.addEventListener('click', toggleLocalAudio);
+        enlargeRemoteVideoButton.addEventListener('click', toggleRemoteVideoSize); // New: Enlarge remote video button
+        hideLocalVideoButton.addEventListener('click', toggleLocalVideoDisplay); // New: Hide local video button
+        generateCallCodeButton.addEventListener('click', generateFourDigitCode); // New: Generate 4-digit code
 
         // --- Initial Load Logic ---
         window.onload = () => {
