@@ -134,24 +134,14 @@
         <div class="flex items-center space-x-3">
             <input
                 type="file"
-                id="imageInput"
-                accept="image/*"
+                id="fileInput"
+                accept="image/*,audio/mpeg,audio/ogg,audio/webm"
                 class="hidden"
+                aria-hidden="true" style="display: none;" <!-- Added aria-hidden and inline style for maximum hiding -->
             />
-            <button type="button" id="attachImageButton" class="p-2 rounded-lg bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 shadow-sm transition-colors">
+            <button type="button" id="attachFileButton" class="p-2 rounded-lg bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 shadow-sm transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-            </button>
-            <input
-                type="file"
-                id="audioFileInput"
-                accept="audio/mpeg,audio/opus"
-                class="hidden"
-            />
-            <button type="button" id="attachAudioFileButton" class="p-2 rounded-lg bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 shadow-sm transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
             </button>
             <button type="button" id="recordButton" class="p-2 rounded-lg bg-red-500 hover:bg-red-600 text-white shadow-sm transition-colors flex items-center justify-center text-2xl">
@@ -292,20 +282,20 @@
         const sendButtonText = document.getElementById('sendButtonText');
 
         // Image elements
-        const imageInput = document.getElementById('imageInput');
-        const attachImageButton = document.getElementById('attachImageButton');
         const imagePreviewContainer = document.getElementById('imagePreviewContainer');
         const imagePreview = document.getElementById('imagePreview');
         const imageFileName = document.getElementById('imageFileName');
         const cancelImageButton = document.getElementById('cancelImageButton');
 
         // Audio Upload elements
-        const audioFileInput = document.getElementById('audioFileInput');
-        const attachAudioFileButton = document.getElementById('attachAudioFileButton');
         const audioUploadPreviewContainer = document.getElementById('audioUploadPreviewContainer');
         const audioUploadPreview = document.getElementById('audioUploadPreview');
         const audioFileName = document.getElementById('audioFileName');
         const cancelAudioUploadButton = document.getElementById('cancelAudioUploadButton');
+
+        // Unified File Input elements
+        const fileInput = document.getElementById('fileInput'); // New: Single input for image/audio
+        const attachFileButton = document.getElementById('attachFileButton'); // New: Single attach button
 
 
         const uploadProgressBarContainer = document.getElementById('uploadProgressBarContainer');
@@ -385,7 +375,7 @@
          */
         function clearImageSelection() {
             currentImageFile = null;
-            imageInput.value = ''; // Clear the file input
+            // No need to clear fileInput.value here as it's handled by clearAllMediaSelections
             imagePreview.src = '';
             imageFileName.textContent = '';
             imagePreviewContainer.classList.add('hidden');
@@ -393,16 +383,31 @@
         }
 
         /**
-         * Clears any selected audio file and hides the audio preview elements.
+         * Clears any selected audio file (either uploaded or recorded) and hides related UI elements.
          */
         function clearAudioFileSelection() {
             currentAudioFile = null;
-            audioFileInput.value = ''; // Clear the file input
+            // No need to clear fileInput.value here as it's handled by clearAllMediaSelections
             audioUploadPreview.src = '';
             audioFileName.textContent = '';
             audioUploadPreviewContainer.classList.add('hidden');
             hideFileSizeError();
+            // Also ensure recording status is hidden if audio was recorded
+            if (isRecording) {
+                stopRecording();
+                cancelRecording();
+            }
         }
+
+        /**
+         * Clears all media selections and associated UI elements.
+         */
+        function clearAllMediaSelections() {
+            fileInput.value = ''; // Crucially clears the single file input
+            clearImageSelection();
+            clearAudioFileSelection();
+        }
+
 
         /**
          * Displays an error message related to file size.
@@ -501,9 +506,7 @@
             noMessagesPlaceholder.classList.add('hidden');
             messagesListContainer.innerHTML = ''; // Clear existing messages
             resetEditMode(); // Reset input field
-            clearImageSelection(); // Clear any image selection
-            clearAudioFileSelection(); // Clear any uploaded audio file
-            currentAudioFile = null; // Clear any recorded audio
+            clearAllMediaSelections(); // Clear any media selection
             audioRecordingStatus.classList.add('hidden'); // Ensure recording status is hidden
 
             // Create a query to fetch messages for the current channel, ordered by timestamp
@@ -662,9 +665,7 @@
                         newMessageInput.value = msg.text || ''; // Pre-fill input with message text
                         sendButtonText.textContent = 'Save Edits'; // Change button text
                         newMessageInput.focus(); // Focus on the input field
-                        clearImageSelection(); // Clear any existing image selection for editing text
-                        clearAudioFileSelection(); // Clear any uploaded audio file
-                        currentAudioFile = null; // Clear any recorded audio
+                        clearAllMediaSelections(); // Clear any existing media selections for editing text
                         audioRecordingStatus.classList.add('hidden'); // Hide recording status if visible
                         scrollToBottom(); // Scroll to the input area
                     };
@@ -727,7 +728,7 @@
                     let audioDataUrl = null;
 
                     if (currentImageFile) {
-                        // Show progress bar and disable send button during image upload
+                        // Show progress bar and disable send button during upload
                         uploadProgressBarContainer.classList.remove('hidden');
                         uploadProgressBar.style.width = '50%';
                         sendButton.disabled = true;
@@ -772,14 +773,14 @@
                         channelId: currentChannelId,
                         timestamp: serverTimestamp(), // Use server timestamp for consistency
                         imageDataUrl: imageDataUrl,
-                        audioDataUrl: audioDataUrl // Store Base64 audio data
+                        audioDataUrl: audioDataUrl, // Store Base64 audio data
+                        audioMimeType: currentAudioFile ? currentAudioFile.type : undefined // Store actual MIME type for uploaded audio, undefined if not audio
                     });
                     console.log("Message sent successfully.");
                 }
                 resetEditMode(); // Clear input and reset button text
-                clearImageSelection(); // Clear image preview if any
-                clearAudioFileSelection(); // Clear uploaded audio file if any
-                currentAudioFile = null; // Clear any recorded audio
+                clearAllMediaSelections(); // Clear all media previews and inputs
+                currentAudioFile = null; // Ensure this is explicitly cleared as it can come from recording or upload
                 audioRecordingStatus.classList.add('hidden'); // Hide recording status if visible
             }
             catch (error) {
@@ -983,8 +984,7 @@
                 recordButton.classList.remove('bg-red-500', 'hover:bg-red-600');
                 recordButton.classList.add('bg-gray-500', 'animate-pulse');
                 newMessageInput.value = ''; // Clear text input if starting a new recording
-                clearImageSelection(); // Clear image if starting a new recording
-                clearAudioFileSelection(); // Clear any uploaded audio file
+                clearAllMediaSelections(); // Clear any existing file selections
                 console.log("Recording started...");
 
                 // Stop recording automatically after MAX_RECORDING_TIME_MS
@@ -1052,12 +1052,7 @@
             }
             // If user types, clear any active media states
             if (newMessageInput.value.trim() !== '') {
-                if (isRecording) {
-                    stopRecording();
-                    cancelRecording(); // Stop and clear recording if typing
-                }
-                clearImageSelection(); // Clear image if typing
-                clearAudioFileSelection(); // Clear uploaded audio if typing
+                clearAllMediaSelections(); // Clear any pending media upload/recording
             }
         });
 
@@ -1094,98 +1089,64 @@
             confirmationModal.classList.add('hidden');
         });
 
-        // Image attachment functionality
-        attachImageButton.addEventListener('click', () => {
-            imageInput.click(); // Trigger file input click
-            // Clear other media states
-            if (isRecording) {
-                stopRecording();
-                cancelRecording();
-            }
-            clearAudioFileSelection();
+        // Unified File Attachment functionality
+        attachFileButton.addEventListener('click', () => {
+            fileInput.click(); // Trigger the single file input click
+            clearAllMediaSelections(); // Clear any other media selected
         });
 
-        imageInput.addEventListener('change', (e) => {
+        fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
+                // Clear all media states first, as a new file is being selected
+                clearAllMediaSelections();
+
                 if (file.size > MAX_FILE_SIZE) {
-                    showFileSizeError("Image size exceeds 1MB limit. Please choose a smaller image.");
-                    clearImageSelection(); // Clear the invalid selection
+                    showFileSizeError(`File size exceeds 1MB limit. Please choose a smaller file.`);
+                    // fileInput.value = ''; // Already cleared by clearAllMediaSelections
                     return;
                 }
 
-                currentImageFile = file;
-                imageFileName.textContent = file.name;
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    imagePreview.src = event.target.result;
-                    imagePreviewContainer.classList.remove('hidden');
-                };
-                reader.readAsDataURL(file);
+                // Check file type to determine if it's an image or audio
+                if (file.type.startsWith('image/')) {
+                    currentImageFile = file;
+                    imageFileName.textContent = file.name;
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        imagePreview.src = event.target.result;
+                        imagePreviewContainer.classList.remove('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                } else if (file.type.startsWith('audio/')) {
+                    const validAudioTypes = ['audio/mpeg', 'audio/ogg', 'audio/webm'];
+                    if (!validAudioTypes.includes(file.type)) {
+                        showFileSizeError("Invalid audio file type. Please upload MP3, Ogg/Opus, or WebM audio files.");
+                        // fileInput.value = ''; // Already cleared by clearAllMediaSelections
+                        return;
+                    }
+                    currentAudioFile = file;
+                    audioFileName.textContent = file.name;
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        audioUploadPreview.src = event.target.result;
+                        audioUploadPreviewContainer.classList.remove('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    showFileSizeError("Unsupported file type. Please upload an image or a supported audio file (MP3, Ogg/Opus, WebM).");
+                    // fileInput.value = ''; // Already cleared by clearAllMediaSelections
+                    return;
+                }
+
                 resetEditMode(); // Clear any edit mode state
                 hideFileSizeError(); // Hide any previous error
-                
-                // Clear other media states
-                currentAudioFile = null;
-                audioRecordingStatus.classList.add('hidden');
-                clearAudioFileSelection();
             } else {
-                clearImageSelection(); // Clear if no file selected
+                clearAllMediaSelections(); // Clear if no file selected
             }
         });
 
-        cancelImageButton.addEventListener('click', clearImageSelection);
-
-        // Audio File Upload functionality
-        attachAudioFileButton.addEventListener('click', () => {
-            audioFileInput.click(); // Trigger file input click
-            // Clear other media states
-            if (isRecording) {
-                stopRecording();
-                cancelRecording();
-            }
-            clearImageSelection();
-        });
-
-        audioFileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                // Validate file type and size
-                const validAudioTypes = ['audio/mpeg', 'audio/opus'];
-                if (!validAudioTypes.includes(file.type)) {
-                    showFileSizeError("Invalid audio file type. Please upload MP3 or OPUS files.");
-                    clearAudioFileSelection();
-                    return;
-                }
-                if (file.size > MAX_FILE_SIZE) {
-                    showFileSizeError("Audio file size exceeds 1MB limit. Please choose a smaller file.");
-                    clearAudioFileSelection();
-                    return;
-                }
-
-                currentAudioFile = file; // Store the uploaded audio file
-                audioFileName.textContent = file.name;
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    audioUploadPreview.src = event.target.result;
-                    audioUploadPreviewContainer.classList.remove('hidden');
-                };
-                reader.readAsDataURL(file);
-                resetEditMode(); // Clear any edit mode state
-                hideFileSizeError(); // Hide any previous error
-
-                // Clear other media states
-                clearImageSelection();
-                if (isRecording) {
-                    stopRecording();
-                    cancelRecording();
-                }
-            } else {
-                clearAudioFileSelection(); // Clear if no file selected
-            }
-        });
-
-        cancelAudioUploadButton.addEventListener('click', clearAudioFileSelection);
+        cancelImageButton.addEventListener('click', clearAllMediaSelections);
+        cancelAudioUploadButton.addEventListener('click', clearAllMediaSelections);
 
 
         // User settings modal functionality
@@ -1200,9 +1161,7 @@
             } else {
                 startRecording(); // If not recording, start
             }
-            // Clear other media states
-            clearImageSelection();
-            clearAudioFileSelection();
+            clearAllMediaSelections(); // Clear any other media selected
         });
         cancelRecordingButton.addEventListener('click', cancelRecording);
 
