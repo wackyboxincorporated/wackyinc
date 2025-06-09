@@ -61,14 +61,61 @@
         </div>
     </header>
 
-    <!-- Main chat messages area -->
-    <main id="messagesContainer" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-        <!-- Messages will be injected here by JavaScript -->
-        <div id="noMessagesPlaceholder" class="flex items-center justify-center h-full hidden">
-            <p class="text-gray-600 dark:text-gray-400 text-lg">No messages yet. Start the conversation!</p>
+    <!-- Channel Management Section -->
+    <section class="bg-white dark:bg-gray-800 p-4 shadow-md flex flex-col md:flex-row items-center justify-between space-y-3 md:space-y-0 md:space-x-4 rounded-b-xl">
+        <div class="flex items-center space-x-2 w-full md:w-auto">
+            <label for="channelInput" class="text-gray-700 dark:text-gray-300 font-semibold text-sm">Channel:</label>
+            <input
+                type="text"
+                id="channelInput"
+                placeholder="Enter channel name (password)"
+                class="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 transition-all duration-300"
+                value="general-chat"
+            />
         </div>
-        <div id="loadingIndicator" class="flex items-center justify-center h-full">
-            <div class="text-lg font-semibold animate-pulse">Loading chat...</div>
+        <button
+            id="joinChannelButton"
+            class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-300 transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 w-full md:w-auto"
+        >
+            Join/Create Channel
+        </button>
+        <span id="currentChannelDisplay" class="text-blue-700 dark:text-blue-300 font-semibold text-sm w-full text-center md:text-right">
+            Current: #general-chat
+        </span>
+    </section>
+
+    <!-- Main Content Area: Sidebar + Chat Window -->
+    <main class="flex flex-1 overflow-hidden relative">
+        <!-- Sidebar toggle button moved here to stay visible -->
+        <button id="sidebarToggle" class="absolute top-4 left-4 p-1 rounded-full bg-blue-500 text-white shadow-md z-10 transition-transform duration-300 hover:scale-110">
+            <!-- Chevron right icon for collapse, left for expand -->
+            <svg id="toggleIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform rotate-0" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+            </svg>
+        </button>
+
+        <!-- Collapsible Sidebar -->
+        <aside id="sidebar" class="w-0 bg-gray-200 dark:bg-gray-800 transition-all duration-300 ease-in-out overflow-hidden flex-shrink-0">
+            <div id="channelListContent" class="p-4 pt-10 h-full overflow-y-auto">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-100">Public Channels</h3>
+                <ul id="publicChannelList" class="space-y-1">
+                    <!-- Channel list items will be injected here by JavaScript -->
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Chat Content Area -->
+        <div id="chatContentArea" class="flex-1 flex flex-col overflow-hidden">
+            <div id="messagesListContainer" class="flex-1 relative overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                <!-- These will be dynamically shown/hidden within this container -->
+                <div id="noMessagesPlaceholder" class="absolute inset-0 flex items-center justify-center hidden">
+                    <p class="text-gray-600 dark:text-gray-400 text-lg">No messages yet. Start the conversation!</p>
+                </div>
+                <div id="loadingIndicator" class="absolute inset-0 flex items-center justify-center">
+                    <div class="text-lg font-semibold animate-pulse">Loading chat...</div>
+                </div>
+                <!-- Actual messages will be appended here -->
+            </div>
         </div>
     </main>
 
@@ -108,7 +155,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, deleteDoc, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Firebase configuration provided by the user
         const firebaseConfig = {
@@ -127,13 +174,17 @@
         let db;
         let auth;
         let currentUserId = null;
-        let currentUserName = '';
+        let currentUserName = localStorage.getItem('wChatUserName') || ''; // Load nickname from local storage
+        let currentChannelId = localStorage.getItem('wChatCurrentChannel') || 'general-chat'; // Load channel from local storage or default
         let messageListenerInitialized = false; // Flag to ensure message listener is set up only once
         let messageIdToDelete = null; // Stores the ID of the message to be deleted via modal
+        let unsubscribeMessages = null; // Stores the unsubscribe function for the Firestore listener
 
+        // DOM element references
         const userIdDisplay = document.getElementById('userIdDisplay');
         const nicknameInput = document.getElementById('nicknameInput');
-        const messagesContainer = document.getElementById('messagesContainer');
+        // Renamed from messagesContainer to messagesListContainer for clarity of its content
+        const messagesListContainer = document.getElementById('messagesListContainer');
         const newMessageInput = document.getElementById('newMessageInput');
         const messageForm = document.getElementById('messageForm');
         const noMessagesPlaceholder = document.getElementById('noMessagesPlaceholder');
@@ -141,13 +192,32 @@
         const confirmationModal = document.getElementById('confirmationModal');
         const confirmDeleteYes = document.getElementById('confirmDeleteYes');
         const confirmDeleteNo = document.getElementById('confirmDeleteNo');
+        const channelInput = document.getElementById('channelInput');
+        const joinChannelButton = document.getElementById('joinChannelButton');
+        const currentChannelDisplay = document.getElementById('currentChannelDisplay');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const toggleIcon = document.getElementById('toggleIcon');
+        const publicChannelList = document.getElementById('publicChannelList');
 
+        // Predefined public channels
+        const publicChannels = [
+            'info-and-rules', 'general', 'general2', 'chat', 'public',
+            'math', 'science', 'algebra', 'chemistry', 'studies',
+            'history', 'trig', 'ffa', 'geometry', 'geography',
+            'paisley', 'rants'
+        ];
+
+        // Set initial UI values
+        nicknameInput.value = currentUserName;
+        channelInput.value = currentChannelId;
+        currentChannelDisplay.textContent = `Current: #${currentChannelId}`;
 
         /**
-         * Scrolls the messages container to the bottom.
+         * Scrolls the messages list container to the bottom.
          */
         function scrollToBottom() {
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            messagesListContainer.scrollTop = messagesListContainer.scrollHeight;
         }
 
         /**
@@ -186,7 +256,7 @@
                     // and message listener hasn't been initialized yet, proceed to hide loading and setup listener.
                     if (!messageListenerInitialized) {
                         loadingIndicator.classList.add('hidden'); // Hide loading indicator
-                        setupMessageListener();
+                        setupMessageListener(); // Call setupMessageListener with currentChannelId
                         messageListenerInitialized = true; // Set flag to prevent re-initialization
                     }
                 });
@@ -197,24 +267,35 @@
         }
 
         /**
-         * Sets up a real-time listener for messages from Firestore.
+         * Sets up a real-time listener for messages from Firestore based on currentChannelId.
          */
         function setupMessageListener() {
-            if (!db) {
-                console.warn("Firestore not ready for message listener.");
+            if (unsubscribeMessages) {
+                unsubscribeMessages(); // Unsubscribe from previous listener if it exists
+                console.log("Unsubscribed from previous channel listener.");
+            }
+
+            if (!db || !currentChannelId) {
+                console.warn("Firestore or currentChannelId not ready for message listener.");
                 return;
             }
 
-            // Create a query to get messages ordered by timestamp
+            // Show loading indicator before fetching new channel messages
+            loadingIndicator.classList.remove('hidden');
+            noMessagesPlaceholder.classList.add('hidden'); // Ensure placeholder is hidden
+            messagesListContainer.innerHTML = ''; // Clear old messages immediately
+
+            // Create a query to get messages for the current channel, ordered by timestamp
             const q = query(
                 collection(db, `artifacts/${appId}/public/data/messages`),
+                where('channelId', '==', currentChannelId), // Filter by channelId
                 orderBy('timestamp')
             );
 
             // Set up real-time listener for messages
-            onSnapshot(q, (snapshot) => {
-                // Clear existing messages before rendering new ones
-                messagesContainer.innerHTML = '';
+            unsubscribeMessages = onSnapshot(q, (snapshot) => {
+                loadingIndicator.classList.add('hidden'); // Hide loading once snapshot arrives
+                messagesListContainer.innerHTML = ''; // Clear again to ensure no duplicates if initial render was slow
                 const messages = [];
 
                 if (snapshot.empty) {
@@ -231,8 +312,11 @@
                 scrollToBottom(); // Scroll to the bottom after rendering new messages
             }, (error) => {
                 console.error("Error fetching messages:", error);
-                // Optionally display an error message to the user
+                loadingIndicator.classList.add('hidden'); // Hide loading on error
+                // Optionally display an error message to the user within the messagesListContainer
+                messagesListContainer.innerHTML = `<div class="text-center text-red-500 dark:text-red-400">Error loading messages: ${error.message}</div>`;
             });
+            console.log(`Listening for messages on channel: #${currentChannelId}`);
         }
 
         /**
@@ -280,7 +364,7 @@
                     const deleteButton = document.createElement('button');
                     // SVG for a trash icon
                     deleteButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1zm1 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1zm1 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clip-rule="evenodd" />
+                                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1  0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1zm1 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1zm1 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clip-rule="evenodd" />
                                               </svg>`;
                     deleteButton.className = 'absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full shadow-md transition-transform duration-200 transform hover:scale-110';
                     deleteButton.title = 'Delete Message';
@@ -291,7 +375,8 @@
                     messageBubble.appendChild(deleteButton);
                 }
 
-                messagesContainer.appendChild(messageDiv);
+                messageDiv.appendChild(messageBubble);
+                messagesListContainer.appendChild(messageDiv); // Append to messagesListContainer
             });
         }
 
@@ -304,10 +389,11 @@
 
             const messageText = newMessageInput.value.trim();
             // Check if currentUserId is null (authentication failed or not ready)
-            if (messageText === '' || !currentUserId || !db) {
+            if (messageText === '' || !currentUserId || !db || !currentChannelId) {
                 if (!currentUserId) {
                     console.error("Cannot send message: User is not authenticated. Please ensure Firebase Anonymous Authentication is enabled.");
-                    // You might want to display a user-friendly message on the UI here.
+                } else if (!currentChannelId) {
+                    console.error("Cannot send message: No channel selected.");
                 }
                 return;
             }
@@ -318,6 +404,7 @@
                     userId: currentUserId,
                     userName: currentUserName || 'Anonymous', // Use 'Anonymous' if no name is set
                     text: messageText,
+                    channelId: currentChannelId, // Add channel ID to the message
                     timestamp: serverTimestamp(), // Firestore generates server timestamp
                 });
                 newMessageInput.value = ''; // Clear the message input after sending
@@ -347,13 +434,100 @@
             }
         }
 
+        /**
+         * Handles joining or creating a channel.
+         */
+        function joinChannel() {
+            const newChannel = channelInput.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, ''); // Sanitize channel name
+            if (!newChannel) {
+                console.warn("Channel name cannot be empty or contain only special characters.");
+                // Optionally provide user feedback in UI
+                return;
+            }
+
+            if (newChannel && newChannel !== currentChannelId) {
+                currentChannelId = newChannel;
+                localStorage.setItem('wChatCurrentChannel', currentChannelId); // Persist channel
+                currentChannelDisplay.textContent = `Current: #${currentChannelId}`;
+                console.log(`Attempting to join channel: #${currentChannelId}`);
+                if (db) { // Ensure db is initialized before setting up listener
+                    setupMessageListener(); // Re-setup listener for the new channel
+                } else {
+                    console.warn("Firebase DB not initialized yet, cannot join channel immediately.");
+                }
+            } else if (newChannel === currentChannelId) {
+                console.log("Already in this channel.");
+            }
+        }
+
+        /**
+         * Populates the sidebar with predefined channels and sets up click listeners.
+         */
+        function populateChannelList() {
+            publicChannelList.innerHTML = ''; // Clear existing list
+            publicChannels.forEach(channel => {
+                const listItem = document.createElement('li');
+                const channelLink = document.createElement('a');
+                channelLink.href = '#'; // Prevent full page reload
+                channelLink.className = 'block p-2 rounded-lg text-gray-800 dark:text-gray-200 hover:bg-blue-300 dark:hover:bg-blue-700 transition-colors duration-200';
+                channelLink.textContent = `#${channel}`;
+                channelLink.onclick = (e) => {
+                    e.preventDefault();
+                    channelInput.value = channel;
+                    joinChannel();
+                    // Collapse sidebar after selection on small screens
+                    if (window.innerWidth < 768) { // md breakpoint in Tailwind is 768px
+                        sidebar.classList.remove('w-64'); // Ensure it collapses
+                        sidebar.classList.add('w-0');
+                        toggleIcon.classList.remove('rotate-180'); // Icon points right (collapsed)
+                    }
+                };
+                listItem.appendChild(channelLink);
+                publicChannelList.appendChild(listItem);
+            });
+        }
+
+        /**
+         * Toggles the visibility of the sidebar.
+         */
+        function toggleSidebar() {
+            const isExpanded = sidebar.classList.contains('w-64');
+
+            if (isExpanded) {
+                // Collapse it
+                sidebar.classList.remove('w-64');
+                sidebar.classList.add('w-0');
+                toggleIcon.classList.remove('rotate-180'); // Point right (collapsed)
+            } else {
+                // Expand it
+                sidebar.classList.remove('w-0');
+                sidebar.classList.add('w-64');
+                toggleIcon.classList.add('rotate-180'); // Point left (expanded)
+            }
+        }
+
         // Event listener for nickname input change
         nicknameInput.addEventListener('input', (e) => {
             currentUserName = e.target.value;
+            localStorage.setItem('wChatUserName', currentUserName); // Persist nickname
         });
 
         // Event listener for message form submission
         messageForm.addEventListener('submit', sendMessage);
+
+        // Event listener for join channel button
+        joinChannelButton.addEventListener('click', joinChannel);
+
+        // Allow pressing Enter in channel input to join
+        channelInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Prevent form submission
+                joinChannel();
+            }
+        });
+
+        // Event listener for sidebar toggle button
+        sidebarToggle.addEventListener('click', toggleSidebar);
 
         // Event listeners for confirmation modal buttons
         confirmDeleteYes.addEventListener('click', () => {
@@ -369,8 +543,23 @@
             confirmationModal.classList.add('hidden'); // Hide the modal
         });
 
-        // Initialize Firebase when the DOM is fully loaded
-        window.onload = initializeFirebase;
+        // Initialize Firebase and populate channels when the DOM is fully loaded
+        window.onload = () => {
+            initializeFirebase();
+            populateChannelList();
+            // Set initial state of sidebar based on screen size
+            // By default, it's w-0 in HTML, so expand it if on medium/large screens
+            if (window.innerWidth >= 768) {
+                sidebar.classList.add('w-64'); // Set to expanded width
+                sidebar.classList.remove('w-0'); // Remove collapsed width
+                toggleIcon.classList.add('rotate-180'); // Icon points left (expanded)
+            } else {
+                // Keep it collapsed on small screens, icon points right
+                sidebar.classList.remove('w-64');
+                sidebar.classList.add('w-0');
+                toggleIcon.classList.remove('rotate-180');
+            }
+        };
     </script>
 </body>
 </html>
