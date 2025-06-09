@@ -331,10 +331,10 @@
         let fileErrorTimeout = null;
         
         // Firestore document size limit in bytes (1 MiB)
-        const FIRESTORE_MAX_DOC_SIZE = 728000; 
+        const FIRESTORE_MAX_DOC_SIZE = 1048576; // Corrected to 1 MiB
         // Maximum raw file size before Base64 encoding to ensure it fits within Firestore's 1MB limit.
-        // Base64 encoding adds approximately 33% overhead.
-        const MAX_RAW_FILE_SIZE_BEFORE_ENCODING = Math.floor(FIRESTORE_MAX_DOC_SIZE * 2); // Increased initial check for videos
+        // Base64 encoding adds approximately 33% overhead (multiply by 0.75 for safety).
+        const MAX_RAW_FILE_SIZE_BEFORE_ENCODING = Math.floor(FIRESTORE_MAX_DOC_SIZE * 0.75);
 
         // Voice Recording related variables
         let mediaRecorder;
@@ -535,9 +535,9 @@
             audioUploadPreviewContainer.classList.add('hidden');
             hideFileSizeMessage(); // Use the new hide function
             // Also ensure recording status is hidden if audio was recorded
-            if (isRecording) {
-                stopRecording();
-                cancelRecording();
+            if (isRecording) { // This condition was incorrect; isRecording is about actual mic activity
+                // This function should only deal with uploaded files, not recording state
+                // The recording state should be handled by cancelRecording and stopRecording
             }
         }
 
@@ -563,8 +563,11 @@
         function clearAllMediaSelections() {
             fileInput.value = ''; // Crucially clears the single file input
             clearImageSelection();
-            clearAudioFileSelection();
+            clearAudioFileSelection(); // Clears uploaded audio preview
             clearVideoSelection(); // Clear video selection
+            audioRecordingStatus.classList.add('hidden'); // Ensure recording status is hidden if a new media type is selected or text is typed
+            // Do NOT call cancelRecording here as it stops the active stream.
+            // This function is for clearing previews, not controlling recording state.
         }
 
         /**
@@ -677,8 +680,8 @@
             noMessagesPlaceholder.classList.add('hidden');
             messagesListContainer.innerHTML = ''; // Clear existing messages
             resetEditMode(); // Reset input field
-            clearAllMediaSelections(); // Clear any media selection
-            audioRecordingStatus.classList.add('hidden'); // Ensure recording status is hidden
+            clearAllMediaSelections(); // Clear any media selection and recording status visual
+            // audioRecordingStatus.classList.add('hidden'); // This is now handled by clearAllMediaSelections
 
             // Create a query to fetch messages for the current channel, ordered by timestamp
             // Exclude WebRTC signaling messages from the main chat display
@@ -864,7 +867,7 @@
                         sendButtonText.textContent = 'Save Edits'; // Change button text
                         newMessageInput.focus(); // Focus on the input field
                         clearAllMediaSelections(); // Clear any existing media selections for editing text
-                        audioRecordingStatus.classList.add('hidden'); // Hide recording status if visible
+                        // audioRecordingStatus.classList.add('hidden'); // No longer needed here, handled by clearAllMediaSelections
                         scrollToBottom(); // Scroll to the input area
                     };
                     messageBubble.appendChild(editButton);
@@ -1725,10 +1728,10 @@
                     console.log("Message sent successfully.");
                 }
                 resetEditMode(); // Clear input and reset button text
-                clearAllMediaSelections(); // Clear all media previews and inputs
+                clearAllMediaSelections(); // Clear all media previews and inputs (including hiding audioRecordingStatus)
                 currentAudioFile = null; // Ensure this is explicitly cleared as it can come from recording or upload
                 currentVideoFile = null; // Ensure video file is cleared
-                audioRecordingStatus.classList.add('hidden'); // Hide recording status if visible
+                // audioRecordingStatus.classList.add('hidden'); // Redundant, handled by clearAllMediaSelections
             }
             catch (error) {
                 console.error("Error sending/updating message or uploading media:", error);
@@ -1931,7 +1934,7 @@
                     
                     // The actual sending happens in sendMessage when the form is submitted
                     console.log("Audio recording finished. Audio data ready for sending.");
-                    audioRecordingStatus.classList.add('hidden');
+                    audioRecordingStatus.classList.add('hidden'); // Hide status when recording stops
                     isRecording = false;
                     recordButton.classList.remove('bg-gray-500', 'animate-pulse');
                     recordButton.classList.add('bg-red-500', 'hover:bg-red-600');
@@ -1945,12 +1948,17 @@
 
                 mediaRecorder.start();
                 isRecording = true;
-                audioRecordingStatus.classList.remove('hidden');
+                audioRecordingStatus.classList.remove('hidden'); // Make status visible
+                console.log("Audio recording status after class removal:");
+                console.log("  classList:", audioRecordingStatus.classList.value);
+                console.log("  Computed display:", window.getComputedStyle(audioRecordingStatus).display);
+                console.log("  Offset height:", audioRecordingStatus.offsetHeight);
+                console.log("  Offset width:", audioRecordingStatus.offsetWidth);
+                
                 recordButton.classList.remove('bg-red-500', 'hover:bg-red-600');
                 recordButton.classList.add('bg-gray-500', 'animate-pulse');
-                newMessageInput.value = ''; // Clear text input if starting a new recording
-                clearAllMediaSelections(); // Clear any existing file selections
-                console.log("Recording started...");
+                
+                console.log("Recording started..."); 
 
                 // Stop recording automatically after MAX_RECORDING_TIME_MS
                 recordingTimeout = setTimeout(() => {
@@ -2146,7 +2154,7 @@
                     }
 
                     // Ensure targetBlobSizeBytes does not exceed FIRESTORE_MAX_DOC_SIZE directly
-                    targetBlobSizeBytes = Math.min(targetBlobSizeBytes,  - 50 * 1024); // Leave a small buffer, e.g., 50KB
+                    targetBlobSizeBytes = Math.min(targetBlobSizeBytes, FIRESTORE_MAX_DOC_SIZE - 50 * 1024); // Leave a small buffer, e.g., 50KB
 
                     // Calculate desired total bitrate based on target size and duration
                     let calculatedTotalBitrate = (targetBlobSizeBytes * 8) / videoDuration;
@@ -2346,9 +2354,12 @@
             } else if (!messageIdToEdit && newMessageInput.value.trim() === '') {
                 sendButtonText.textContent = 'Send';
             }
-            // If user types, clear any active media states
+            // If user types, clear any active media states, including hiding recording status
             if (newMessageInput.value.trim() !== '') {
-                clearAllMediaSelections(); // Clear any pending media upload/recording
+                clearAllMediaSelections(); 
+                if (isRecording) { // If currently recording, also cancel it
+                    cancelRecording();
+                }
             }
         });
 
@@ -2390,7 +2401,10 @@
         // Unified File Attachment functionality
         attachFileButton.addEventListener('click', () => {
             fileInput.click(); // Trigger the single file input click
-            clearAllMediaSelections(); // Clear any other media selected
+            clearAllMediaSelections(); // Clear any other media selected and hide recording status
+            if (isRecording) { // If currently recording, also cancel it
+                cancelRecording();
+            }
         });
 
         fileInput.addEventListener('change', async (e) => {
@@ -2400,8 +2414,11 @@
                 return;
             }
 
-            // Clear all media states first, as a new file is being selected
+            // Clear all media states first, as a new file is being selected, and hide recording status
             clearAllMediaSelections();
+            if (isRecording) { // If currently recording, also cancel it
+                cancelRecording();
+            }
             resetEditMode(); // Clear any edit mode state
             hideFileSizeMessage(); // Hide any previous message
 
@@ -2558,12 +2575,15 @@
 
         // Voice Recording Event Listeners
         recordButton.addEventListener('click', () => {
+            // Clear any other media selected and text input BEFORE starting or stopping recording
+            clearAllMediaSelections(); // This will also hide audioRecordingStatus initially
+            newMessageInput.value = ''; 
+
             if (isRecording) {
-                stopRecording(); // If already recording, stop
+                stopRecording(); // If already recording, stop (this will hide the status via onstop callback)
             } else {
-                startRecording(); // If not recording, start
+                startRecording(); // If not recording, start (this will make the status visible)
             }
-            clearAllMediaSelections(); // Clear any other media selected
         });
         cancelRecordingButton.addEventListener('click', cancelRecording);
 
