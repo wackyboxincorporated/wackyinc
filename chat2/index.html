@@ -91,13 +91,22 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Global variables provided by the Canvas environment
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // Firebase configuration provided by the user
+        const firebaseConfig = {
+            apiKey: "AIzaSyBZkcLg8FgW7jKe70HqP8CIkhzkk8hx_wQ",
+            authDomain: "chat-8ed3f.firebaseapp.com",
+            projectId: "chat-8ed3f",
+            storageBucket: "chat-8ed3f.firebasestorage.app",
+            messagingSenderId: "85452728479",
+            appId: "1:85452728479:web:8e1cfa353c6d7814865aaa",
+            measurementId: "G-BNR85XC62S"
+        };
+
+        // Use the projectId from your config for the Firestore collection path
+        const appId = firebaseConfig.projectId;
 
         let db;
         let auth;
@@ -132,30 +141,28 @@
                 // Listen for authentication state changes
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
-                        // User is signed in (either existing or newly signed-in anonymous)
+                        // User is signed in (either existing anonymous user or newly signed-in)
                         currentUserId = user.uid;
                         userIdDisplay.textContent = `Your ID: ${currentUserId}`;
                         console.log("User signed in:", user.uid);
                     } else {
                         // No user is signed in, attempt to sign in anonymously
                         try {
-                            if (initialAuthToken) {
-                                await signInWithCustomToken(auth, initialAuthToken);
-                            } else {
-                                await signInAnonymously(auth);
-                            }
-                            // The onAuthStateChanged listener will be triggered again with the newly signed-in user,
-                            // so the 'if (user)' block above will handle setting currentUserId.
+                            console.log("Attempting anonymous sign-in...");
+                            await signInAnonymously(auth);
+                            // The onAuthStateChanged listener will be triggered again if sign-in succeeds
+                            // and the 'if (user)' block above will handle setting currentUserId.
                         } catch (error) {
-                            console.error("Error during anonymous sign-in or custom token sign-in:", error);
-                            // Set currentUserId to null if authentication fails, indicating no authenticated user
+                            console.error("Error during anonymous sign-in:", error);
+                            // If anonymous sign-in fails, ensure ID is null
                             currentUserId = null;
                             userIdDisplay.textContent = `Your ID: Not authenticated`;
                             console.warn("Authentication failed. User will be able to read messages but not send.");
                         }
                     }
 
-                    // Ensure currentUserId status is known and message listener is initialized only once
+                    // Once authentication state is resolved (user is null or has a uid)
+                    // and message listener hasn't been initialized yet, proceed to hide loading and setup listener.
                     if (!messageListenerInitialized) {
                         loadingIndicator.classList.add('hidden'); // Hide loading indicator
                         setupMessageListener();
@@ -164,7 +171,7 @@
                 });
             } catch (error) {
                 console.error("Error initializing Firebase App:", error);
-                loadingIndicator.textContent = "Error loading chat: Firebase App init failed.";
+                loadingIndicator.textContent = "Error loading chat: Firebase App init failed. Check your Firebase config and network.";
             }
         }
 
@@ -261,10 +268,8 @@
             // Check if currentUserId is null (authentication failed or not ready)
             if (messageText === '' || !currentUserId || !db) {
                 if (!currentUserId) {
-                    console.error("Cannot send message: User is not authenticated.");
-                    // Provide visual feedback to the user, e.g., a temporary message
-                    // You could add a div like: <div id="authError" class="text-red-500 text-center">Please wait for authentication or ensure you're authenticated to send messages.</div>
-                    // And then update its text.
+                    console.error("Cannot send message: User is not authenticated. Please ensure Firebase Anonymous Authentication is enabled.");
+                    // You might want to display a user-friendly message on the UI here.
                 }
                 return;
             }
