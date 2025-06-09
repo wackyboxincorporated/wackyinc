@@ -388,8 +388,7 @@
         const cancelRecordingButton = document.getElementById('cancelRecordingButton');
 
         // WebRTC elements (New)
-        // Note: webrtcControls is now the outer container for the collapsible panel
-        const webrtcMainPanel = document.getElementById('webrtcMainPanel'); // The panel itself
+        const webrtcMainPanel = document.getElementById('webrtcMainPanel'); 
         const targetUserIdInput = document.getElementById('targetUserIdInput');
         const startCallButton = document.getElementById('startCallButton');
         const answerCallButton = document.getElementById('answerCallButton');
@@ -965,9 +964,34 @@
 
             try {
                 localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                if (!localStream) {
+                    throw new Error("Failed to get local audio stream. Microphone access denied or not available.");
+                }
                 remoteAudio.srcObject = null; // Clear any previous remote audio
 
                 peerConnection = new RTCPeerConnection(rtcConfig);
+
+                // Log peer connection state changes
+                peerConnection.onconnectionstatechange = () => {
+                    console.log('Peer connection state changed:', peerConnection.connectionState);
+                    callStatus.textContent = `Call status: ${peerConnection.connectionState}`; // Update UI with more detail
+                    if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
+                        handleHangup();
+                        callStatus.textContent = `Call ended due to ${peerConnection.connectionState} state.`;
+                    } else if (peerConnection.connectionState === 'connected') {
+                        callStatus.textContent = `Call connected with ${callTargetUserId}.`;
+                    }
+                };
+
+                // Log ICE connection state changes
+                peerConnection.oniceconnectionstatechange = () => {
+                    console.log('ICE connection state changed:', peerConnection.iceConnectionState);
+                    callStatus.textContent = `ICE status: ${peerConnection.iceConnectionState}`; // Update UI
+                    if (peerConnection.iceConnectionState === 'failed' || peerConnection.iceConnectionState === 'disconnected') {
+                        handleHangup();
+                        callStatus.textContent = `Call ended: ICE connection ${peerConnection.iceConnectionState}.`;
+                    }
+                };
 
                 // Add local audio tracks to the peer connection
                 localStream.getTracks().forEach(track => {
@@ -996,7 +1020,8 @@
                 const offer = await peerConnection.createOffer();
                 await peerConnection.setLocalDescription(offer);
                 console.log('Sending SDP offer:', offer);
-                sendWebRTCSignalingMessage('offer', offer.toJSON(), callTargetUserId);
+                // Removed .toJSON() as RTCSessionDescription is already a plain object
+                sendWebRTCSignalingMessage('offer', offer, callTargetUserId);
 
                 callStatus.textContent = `Waiting for ${callTargetUserId} to answer...`;
                 startCallButton.classList.add('hidden');
@@ -1006,7 +1031,7 @@
 
             } catch (error) {
                 console.error("Error starting call:", error);
-                callStatus.textContent = `Call failed: ${error.message}`;
+                callStatus.textContent = `Call failed: ${error.message}. Please check microphone permissions and try again.`;
                 startCallButton.disabled = false;
                 handleHangup(); // Clean up if call fails to start
             }
@@ -1020,6 +1045,24 @@
             if (!peerConnection) {
                 peerConnection = new RTCPeerConnection(rtcConfig);
                 // Set up handlers for the new peerConnection
+                peerConnection.onconnectionstatechange = () => {
+                    console.log('Peer connection state changed (answer):', peerConnection.connectionState);
+                    callStatus.textContent = `Call status: ${peerConnection.connectionState}`;
+                    if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
+                        handleHangup();
+                        callStatus.textContent = `Call ended due to ${peerConnection.connectionState} state.`;
+                    } else if (peerConnection.connectionState === 'connected') {
+                        callStatus.textContent = `Call connected with ${callTargetUserId}.`;
+                    }
+                };
+                peerConnection.oniceconnectionstatechange = () => {
+                    console.log('ICE connection state changed (answer):', peerConnection.iceConnectionState);
+                    callStatus.textContent = `ICE status: ${peerConnection.iceConnectionState}`;
+                    if (peerConnection.iceConnectionState === 'failed' || peerConnection.iceConnectionState === 'disconnected') {
+                        handleHangup();
+                        callStatus.textContent = `Call ended: ICE connection ${peerConnection.iceConnectionState}.`;
+                    }
+                };
                 peerConnection.ontrack = (event) => {
                     console.log('Remote track received during answer:', event.streams[0]);
                     if (remoteAudio.srcObject !== event.streams[0]) {
@@ -1039,12 +1082,16 @@
                 try {
                     if (!localStream) { // Only get stream if not already obtained
                         localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        if (!localStream) {
+                            throw new Error("Failed to get local audio stream for answering call. Microphone access denied or not available.");
+                        }
                     }
                     localStream.getTracks().forEach(track => {
                         peerConnection.addTrack(track, localStream);
                     });
                 } catch (e) {
                     console.warn("Could not get local audio stream for answering call. Continuing without sending audio:", e);
+                    callStatus.textContent = `Incoming call (no mic): ${e.message}`; // Inform user about mic issue
                     // User might not have a mic or denied permission. The call can still be received.
                 }
 
@@ -1055,7 +1102,8 @@
                 const answer = await peerConnection.createAnswer();
                 await peerConnection.setLocalDescription(answer);
                 console.log('Sending SDP answer:', answer);
-                sendWebRTCSignalingMessage('answer', answer.toJSON(), callTargetUserId);
+                // Removed .toJSON() as RTCSessionDescription is already a plain object
+                sendWebRTCSignalingMessage('answer', answer, callTargetUserId);
 
                 callStatus.textContent = `Call established with ${callTargetUserId}.`;
                 startCallButton.classList.add('hidden');
@@ -2059,7 +2107,8 @@
                     }
                     const answer = await peerConnection.createAnswer();
                     await peerConnection.setLocalDescription(answer);
-                    sendWebRTCSignalingMessage('answer', answer.toJSON(), callTargetUserId);
+                    // Removed .toJSON()
+                    sendWebRTCSignalingMessage('answer', answer, callTargetUserId);
                     callStatus.textContent = `Call established with ${callTargetUserId}.`;
                     startCallButton.classList.add('hidden');
                     answerCallButton.classList.add('hidden');
