@@ -88,11 +88,27 @@
         </button>
     </form>
 
+    <!-- Confirmation Modal (hidden by default) -->
+    <div id="confirmationModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl text-center max-w-sm w-full">
+            <p class="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Delete Message?</p>
+            <p class="text-gray-700 dark:text-gray-300 mb-6">Are you sure you want to delete your message?</p>
+            <div class="flex justify-center space-x-4">
+                <button id="confirmDeleteYes" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-300 transform hover:scale-105 active:scale-95">
+                    Yes, Delete
+                </button>
+                <button id="confirmDeleteNo" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-300 transform hover:scale-105 active:scale-95">
+                    No, Keep
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Firebase configuration provided by the user
         const firebaseConfig = {
@@ -113,6 +129,7 @@
         let currentUserId = null;
         let currentUserName = '';
         let messageListenerInitialized = false; // Flag to ensure message listener is set up only once
+        let messageIdToDelete = null; // Stores the ID of the message to be deleted via modal
 
         const userIdDisplay = document.getElementById('userIdDisplay');
         const nicknameInput = document.getElementById('nicknameInput');
@@ -121,6 +138,10 @@
         const messageForm = document.getElementById('messageForm');
         const noMessagesPlaceholder = document.getElementById('noMessagesPlaceholder');
         const loadingIndicator = document.getElementById('loadingIndicator');
+        const confirmationModal = document.getElementById('confirmationModal');
+        const confirmDeleteYes = document.getElementById('confirmDeleteYes');
+        const confirmDeleteNo = document.getElementById('confirmDeleteNo');
+
 
         /**
          * Scrolls the messages container to the bottom.
@@ -253,6 +274,23 @@
                 messageBubble.appendChild(messageTextP);
                 messageBubble.appendChild(timestampSpan);
                 messageDiv.appendChild(messageBubble);
+
+                // Add delete button if the message belongs to the current user
+                if (msg.userId === currentUserId) {
+                    const deleteButton = document.createElement('button');
+                    // SVG for a trash icon
+                    deleteButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1zm1 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1zm1 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clip-rule="evenodd" />
+                                              </svg>`;
+                    deleteButton.className = 'absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full shadow-md transition-transform duration-200 transform hover:scale-110';
+                    deleteButton.title = 'Delete Message';
+                    deleteButton.onclick = () => {
+                        messageIdToDelete = msg.id; // Store the ID of the message to delete
+                        confirmationModal.classList.remove('hidden'); // Show the confirmation modal
+                    };
+                    messageBubble.appendChild(deleteButton);
+                }
+
                 messagesContainer.appendChild(messageDiv);
             });
         }
@@ -289,6 +327,26 @@
             }
         }
 
+        /**
+         * Deletes a message from Firestore.
+         * @param {string} msgId - The ID of the message to delete.
+         */
+        async function performDeleteMessage(msgId) {
+            if (!db || !msgId) {
+                console.error("Database or message ID not valid for deletion.");
+                return;
+            }
+
+            try {
+                const messageDocRef = doc(db, `artifacts/${appId}/public/data/messages`, msgId);
+                await deleteDoc(messageDocRef);
+                console.log("Message deleted successfully:", msgId);
+            } catch (error) {
+                console.error("Error deleting message:", error);
+                // Optionally display error to user
+            }
+        }
+
         // Event listener for nickname input change
         nicknameInput.addEventListener('input', (e) => {
             currentUserName = e.target.value;
@@ -296,6 +354,20 @@
 
         // Event listener for message form submission
         messageForm.addEventListener('submit', sendMessage);
+
+        // Event listeners for confirmation modal buttons
+        confirmDeleteYes.addEventListener('click', () => {
+            if (messageIdToDelete) {
+                performDeleteMessage(messageIdToDelete);
+                messageIdToDelete = null; // Clear the stored ID
+            }
+            confirmationModal.classList.add('hidden'); // Hide the modal
+        });
+
+        confirmDeleteNo.addEventListener('click', () => {
+            messageIdToDelete = null; // Clear the stored ID
+            confirmationModal.classList.add('hidden'); // Hide the modal
+        });
 
         // Initialize Firebase when the DOM is fully loaded
         window.onload = initializeFirebase;
