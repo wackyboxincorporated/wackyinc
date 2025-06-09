@@ -5,954 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>wChat 2</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 10px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-
-        .dark .custom-scrollbar::-webkit-scrollbar-track {
-            background: #333;
-        }
-
-        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #666;
-        }
-
-        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #999;
-        }
-
-        body.light {
-            background-color: #f3f4f6;
-            color: #1f2937;
-        }
-
-        body.dark {
-            background-color: #111827;
-            color: #f9fafb;
-        }
-
-        body.midnight {
-            background-color: #000000;
-            color: #f9fafb;
-        }
-        body.midnight header {
-            background-image: linear-gradient(to right, #1a202c, #2d3748);
-        }
-        body.midnight .bg-white {
-            background-color: #0a0a0a;
-        }
-        body.midnight .text-gray-900 {
-            color: #f9fafb;
-        }
-        body.midnight .text-gray-700 {
-            color: #d1d5db;
-        }
-        body.midnight .border-gray-300 {
-            border-color: #374151;
-        }
-        body.midnight .placeholder-gray-200::placeholder {
-            color: #6b7280;
-        }
-        body.midnight .bg-blue-500 {
-            background-color: #1f2937;
-        }
-        body.midnight .bg-blue-600 {
-            background-color: #2d3748;
-        }
-        body.midnight .bg-blue-500:hover {
-            background-color: #2d3748;
-        }
-        body.midnight .bg-blue-600:hover {
-            background-color: #1f2937;
-        }
-        body.midnight .text-blue-200 {
-            color: #9ca3af;
-        }
-        body.midnight .text-gray-500 {
-            color: #9ca3af;
-        }
-        body.midnight .bg-gray-200 {
-            background-color: #1a202c;
-        }
-        body.midnight .hover\:bg-gray-300:hover {
-            background-color: #2d3748;
-        }
-        body.midnight .dark\:bg-gray-700 {
-            background-color: #1f2937;
-        }
-        body.midnight .dark\:hover\:bg-gray-600:hover {
-            background-color: #2d3748;
-        }
-        body.midnight .dark\:text-gray-100 {
-            color: #f9fafb;
-        }
-        body.midnight .dark\:text-gray-200 {
-            color: #e5e7eb;
-        }
-        body.midnight .dark\:text-gray-300 {
-            color: #d1d5db;
-        }
-        body.midnight .dark\:text-gray-400 {
-            color: #9ca3af;
-        }
-        body.midnight .dark\:border-gray-600 {
-            border-color: #374151;
-        }
-        body.midnight .dark\:bg-gray-800 {
-            background-color: #0a0a0a;
-        }
-
-        body.autumn {
-            background-color: #EAE7DC;
-            color: #2A2A2A;
-        }
-        body.autumn header {
-            background-image: linear-gradient(to right, #B83B00, #8F2D00);
-        }
-        body.autumn .bg-white {
-            background-color: #F8F4E3;
-        }
-        body.autumn .text-gray-900 {
-            color: #2A2A2A;
-        }
-        body.autumn .text-gray-700 {
-            color: #5C5C5C;
-        }
-        body.autumn .border-gray-300 {
-            border-color: #C7BCA1;
-        }
-        body.autumn .placeholder-gray-200::placeholder {
-            color: #8D8B84;
-        }
-        body.autumn .bg-blue-500 {
-            background-color: #D2691E;
-        }
-        body.autumn .bg-blue-600 {
-            background-color: #C04000;
-        }
-        body.autumn .bg-blue-500:hover {
-            background-color: #C04000;
-        }
-        body.autumn .bg-blue-600:hover {
-            background-color: #D2691E;
-        }
-        body.autumn .text-blue-200 {
-            color: #FAEBD7;
-        }
-        body.autumn .text-gray-500 {
-            color: #7D7D7D;
-        }
-        body.autumn .bg-gray-200 {
-            background-color: #D4CDBC;
-        }
-        body.autumn .hover\:bg-gray-300:hover {
-            background-color: #C7BCA1;
-        }
-        body.autumn .dark\:bg-gray-800 {
-            background-color: #F8F4E3;
-        }
-        body.autumn .dark\:text-gray-100 {
-            color: #2A2A2A;
-        }
-        body.autumn .dark\:text-gray-300 {
-            color: #5C5C5C;
-        }
-        body.autumn .dark\:border-gray-600 {
-            border-color: #C7BCA1;
-        }
-        body.autumn .dark\:bg-gray-700 {
-             background-color: #D4CDBC;
-        }
-        body.autumn .dark\:hover\:bg-gray-600:hover {
-             background-color: #C7BCA1;
-        }
-        body.autumn .text-blue-700 {
-            color: #C04000;
-        }
-        body.autumn .bg-green-600 {
-            background-color: #8B4513;
-        }
-        body.autumn .bg-green-600:hover {
-            background-color: #A0522D;
-        }
-        body.autumn .bg-red-600 {
-            background-color: #A52A2A;
-        }
-        body.autumn .bg-red-600:hover {
-            background-color: #CD5C5C;
-        }
-
-
-        body.terminal {
-            background-color: #000000;
-            color: #00FF00;
-            font-family: 'Courier New', Courier, monospace;
-        }
-        body.terminal header {
-            background-image: linear-gradient(to right, #001f00, #003300);
-        }
-        body.terminal .bg-white {
-            background-color: #000000;
-        }
-        body.terminal .text-gray-900 {
-            color: #00FF00;
-        }
-        body.terminal .text-gray-700 {
-            color: #00CC00;
-        }
-        body.terminal .border-gray-300 {
-            border-color: #006600;
-        }
-        body.terminal .placeholder-gray-200::placeholder {
-            color: #006600;
-        }
-        body.terminal .bg-blue-500 {
-            background-color: #008000;
-        }
-        body.terminal .bg-blue-600 {
-            background-color: #006600;
-        }
-        body.terminal .bg-blue-500:hover {
-            background-color: #006600;
-        }
-        body.terminal .bg-blue-600:hover {
-            background-color: #008000;
-        }
-        body.terminal .text-blue-200 {
-            color: #00FF00;
-        }
-        body.terminal .text-gray-500 {
-            color: #00FF00;
-        }
-        body.terminal .bg-gray-200 {
-            background-color: #000000;
-        }
-        body.terminal .hover\:bg-gray-300:hover {
-            background-color: #001a00;
-        }
-        body.terminal .dark\:bg-gray-800 {
-            background-color: #000000;
-        }
-        body.terminal .dark\:text-gray-100 {
-            color: #00FF00;
-        }
-        body.terminal .dark\:text-gray-300 {
-            color: #00CC00;
-        }
-        body.terminal .dark\:border-gray-600 {
-            border-color: #006600;
-        }
-        body.terminal .dark\:bg-gray-700 {
-            background-color: #001a00;
-        }
-        body.terminal .dark\:hover\:bg-gray-600:hover {
-            background-color: #003300;
-        }
-        body.terminal .text-blue-700 {
-            color: #00FF00;
-        }
-        body.terminal .bg-green-600 {
-            background-color: #00AA00;
-        }
-        body.terminal .bg-green-600:hover {
-            background-color: #008800;
-        }
-        body.terminal .bg-red-600 {
-            background-color: #880000;
-        }
-        body.terminal .bg-red-600:hover {
-            background-color: #BB0000;
-        }
-
-        body.mario {
-            background-color: #6B85F1;
-            color: #2D2D2D;
-            font-family: 'Press Start 2P', cursive;
-        }
-        body.mario header {
-            background-image: linear-gradient(to right, #B83B00, #E44D26);
-        }
-        body.mario .bg-white {
-            background-color: #F7E4B3;
-        }
-        body.mario .text-gray-900 {
-            color: #2D2D2D;
-        }
-        body.mario .text-gray-700 {
-            color: #5D5D5D;
-        }
-        body.mario .border-gray-300 {
-            border-color: #A06634;
-        }
-        body.mario .placeholder-gray-200::placeholder {
-            color: #888888;
-        }
-        body.mario .bg-blue-500 {
-            background-color: #8B4513;
-        }
-        body.mario .bg-blue-600 {
-            background-color: #6B2E0A;
-        }
-        body.mario .bg-blue-500:hover {
-            background-color: #6B2E0A;
-        }
-        body.mario .bg-blue-600:hover {
-            background-color: #8B4513;
-        }
-        body.mario .text-blue-200 {
-            color: #FFFFFF;
-        }
-        body.mario .text-gray-500 {
-            color: #5D5D5D;
-        }
-        body.mario .bg-gray-200 {
-            background-color: #92CD40;
-        }
-        body.mario .hover\:bg-gray-300:hover {
-            background-color: #79B335;
-        }
-        body.mario .dark\:bg-gray-800 {
-            background-color: #F7E4B3;
-        }
-        body.mario .dark\:text-gray-100 {
-            color: #2D2D2D;
-        }
-        body.mario .dark\:text-gray-300 {
-            color: #5D5D5D;
-        }
-        body.mario .dark\:border-gray-600 {
-            border-color: #A06634;
-        }
-        body.mario .dark\:bg-gray-700 {
-            background-color: #92CD40;
-        }
-        body.mario .dark\:hover\:bg-gray-600:hover {
-            background-color: #79B335;
-        }
-        body.mario .text-blue-700 {
-            color: #B83B00;
-        }
-        body.mario .bg-green-600 {
-            background-color: #008000;
-        }
-        body.mario .bg-green-600:hover {
-            background-color: #006400;
-        }
-        body.mario .bg-red-600 {
-            background-color: #CC0000;
-        }
-        body.mario .bg-red-600:hover {
-            background-color: #FF0000;
-        }
-
-        body.windows95 {
-            background-color: #008080;
-            color: #000000;
-            font-family: 'MS Sans Serif', 'Arial', sans-serif;
-        }
-        body.windows95 header {
-            background-image: linear-gradient(to right, #C0C0C0, #808080);
-            color: #000000;
-            border-bottom: 2px solid #000000;
-            border-right: 2px solid #FFFFFF;
-            border-left: 2px solid #FFFFFF;
-            border-top: 2px solid #FFFFFF;
-        }
-        body.windows95 h1 {
-            color: #000000;
-            text-shadow: 1px 1px 0px #FFFFFF;
-        }
-        body.windows95 .bg-white {
-            background-color: #C0C0C0;
-            border: 2px solid #000000;
-            border-right-color: #FFFFFF;
-            border-bottom-color: #FFFFFF;
-        }
-        body.windows95 .text-gray-900 {
-            color: #000000;
-        }
-        body.windows95 .text-gray-700 {
-            color: #000000;
-        }
-        body.windows95 .border-gray-300 {
-            border-color: #808080;
-            border-right-color: #FFFFFF;
-            border-bottom-color: #FFFFFF;
-        }
-        body.windows95 .placeholder-gray-200::placeholder {
-            color: #404040;
-        }
-        body.windows95 .bg-blue-500 {
-            background-color: #000080;
-            color: #FFFFFF;
-            border: none;
-        }
-        body.windows95 .bg-blue-600 {
-            background-color: #000080;
-            color: #FFFFFF;
-            border: none;
-        }
-        body.windows95 .bg-blue-500:hover {
-            background-color: #0000B0;
-        }
-        body.windows95 .bg-blue-600:hover {
-            background-color: #0000B0;
-        }
-        body.windows95 .text-blue-200 {
-            color: #FFFFFF;
-        }
-        body.windows95 .text-gray-500 {
-            color: #404040;
-        }
-        body.windows95 .bg-gray-200 {
-            background-color: #C0C0C0;
-            border: 2px solid #000000;
-            border-right-color: #FFFFFF;
-            border-bottom-color: #FFFFFF;
-        }
-        body.windows95 .hover\:bg-gray-300:hover {
-            background-color: #A0A0A0;
-        }
-        body.windows95 .dark\:bg-gray-800 {
-            background-color: #C0C0C0;
-        }
-        body.windows95 .dark\:text-gray-100 {
-            color: #000000;
-        }
-        body.windows95 .dark\:text-gray-300 {
-            color: #000000;
-        }
-        body.windows95 .dark\:border-gray-600 {
-            border-color: #808080;
-        }
-        body.windows95 .dark\:bg-gray-700 {
-            background-color: #A0A0A0;
-        }
-        body.windows95 .dark\:hover\:bg-gray-600:hover {
-            background-color: #808080;
-        }
-        body.windows95 .text-blue-700 {
-            color: #000080;
-        }
-        body.windows95 .bg-green-600 {
-            background-color: #C0C0C0;
-            color: #000000;
-            border: 2px solid #000000;
-            border-right-color: #FFFFFF;
-            border-bottom-color: #FFFFFF;
-        }
-        body.windows95 .bg-green-600:hover {
-            background-color: #A0A0A0;
-        }
-        body.windows95 .bg-red-600 {
-            background-color: #C0C0C0;
-            color: #000000;
-            border: 2px solid #000000;
-            border-right-color: #FFFFFF;
-            border-bottom-color: #FFFFFF;
-        }
-        body.windows95 .bg-red-600:hover {
-            background-color: #A0A0A0;
-        }
-        body.windows95 button {
-            border-radius: 0;
-            box-shadow: none;
-        }
-        body.windows95 button:active {
-            border: 2px solid #FFFFFF;
-            border-right-color: #000000;
-            border-bottom-color: #000000;
-            background-image: none;
-            background-color: #A0A0A0;
-            transform: none;
-        }
-        body.windows95 .rounded-lg {
-            border-radius: 0;
-        }
-        body.windows95 .rounded-xl {
-            border-radius: 0;
-        }
-        body.windows95 .rounded-b-xl {
-            border-bottom-left-radius: 0;
-            border-bottom-right-radius: 0;
-        }
-        body.windows95 .rounded-t-xl {
-            border-top-left-radius: 0;
-            border-top-right-radius: 0;
-        }
-        body.windows95 .rounded-full {
-            border-radius: 0;
-        }
-
-
-        body.windowsxp {
-            background-image: linear-gradient(to bottom right, #3A6EA5, #4A8EDC);
-            color: #000000;
-            font-family: 'Tahoma', sans-serif;
-        }
-        body.windowsxp header {
-            background-image: linear-gradient(to right, #003399, #0077EE);
-            color: #FFFFFF;
-            border-bottom: 1px solid #111111;
-        }
-        body.windowsxp .bg-white {
-            background-color: #EFF3F9;
-            border: 1px solid #ACACAC;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
-        }
-        body.windowsxp .text-gray-900 {
-            color: #000000;
-        }
-        body.windowsxp .text-gray-700 {
-            color: #333333;
-        }
-        body.windowsxp .border-gray-300 {
-            border-color: #ACACAC;
-        }
-        body.windowsxp .placeholder-gray-200::placeholder {
-            color: #777777;
-        }
-        body.windowsxp .bg-blue-500 {
-            background-image: linear-gradient(to top, #3A6EA5, #4A8EDC);
-            color: #FFFFFF;
-        }
-        body.windowsxp .bg-blue-600 {
-            background-image: linear-gradient(to top, #003399, #0077EE);
-            color: #FFFFFF;
-        }
-        body.windowsxp .bg-blue-500:hover {
-            background-image: linear-gradient(to top, #4A8EDC, #3A6EA5);
-        }
-        body.windowsxp .bg-blue-600:hover {
-            background-image: linear-gradient(to top, #0077EE, #003399);
-        }
-        body.windowsxp .text-blue-200 {
-            color: #EEFFFF;
-        }
-        body.windowsxp .text-gray-500 {
-            color: #555555;
-        }
-        body.windowsxp .bg-gray-200 {
-            background-color: #DDE8F3;
-            border: 1px solid #ACACAC;
-        }
-        body.windowsxp .hover\:bg-gray-300:hover {
-            background-color: #CCDCEB;
-        }
-        body.windowsxp .dark\:bg-gray-800 {
-            background-color: #EFF3F9;
-        }
-        body.windowsxp .dark\:text-gray-100 {
-            color: #000000;
-        }
-        body.windowsxp .dark\:text-gray-300 {
-            color: #333333;
-        }
-        body.windowsxp .dark\:border-gray-600 {
-            border-color: #ACACAC;
-        }
-        body.windowsxp .dark\:bg-gray-700 {
-            background-color: #CCDCEB;
-        }
-        body.windowsxp .dark\:hover\:bg-gray-600:hover {
-            background-color: #DDE8F3;
-        }
-        body.windowsxp .text-blue-700 {
-            color: #003399;
-        }
-        body.windowsxp .bg-green-600 {
-            background-image: linear-gradient(to top, #3A8E3A, #4CBF4C);
-            color: #FFFFFF;
-        }
-        body.windowsxp .bg-green-600:hover {
-            background-image: linear-gradient(to top, #4CBF4C, #3A8E3A);
-        }
-        body.windowsxp .bg-red-600 {
-            background-image: linear-gradient(to top, #B83B00, #E44D26);
-            color: #FFFFFF;
-        }
-        body.windowsxp .bg-red-600:hover {
-            background-image: linear-gradient(to top, #E44D26, #B83B00);
-        }
-
-
-        body.windows7 {
-            background-image: radial-gradient(circle at top left, #B9D2EF, #7EA5D9);
-            color: #333333;
-            font-family: 'Segoe UI', sans-serif;
-        }
-        body.windows7 header {
-            background-image: linear-gradient(to right, #004D8C, #007ACC);
-            color: #FFFFFF;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-        }
-        body.windows7 .bg-white {
-            background-color: #E8EDF4;
-            border: 1px solid #C0C0C0;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        body.windows7 .text-gray-900 {
-            color: #333333;
-        }
-        body.windows7 .text-gray-700 {
-            color: #555555;
-        }
-        body.windows7 .border-gray-300 {
-            border-color: #C0C0C0;
-        }
-        body.windows7 .placeholder-gray-200::placeholder {
-            color: #888888;
-        }
-        body.windows7 .bg-blue-500 {
-            background-image: linear-gradient(to top, #007ACC, #00A3EF);
-            color: #FFFFFF;
-            border: 1px solid #005691;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.15);
-        }
-        body.windows7 .bg-blue-600 {
-            background-image: linear-gradient(to top, #005691, #007ACC);
-            color: #FFFFFF;
-            border: 1px solid #003F6B;
-        }
-        body.windows7 .bg-blue-500:hover {
-            background-image: linear-gradient(to top, #00A3EF, #007ACC);
-        }
-        body.windows7 .bg-blue-600:hover {
-            background-image: linear-gradient(to top, #007ACC, #005691);
-        }
-        body.windows7 .text-blue-200 {
-            color: #EEF8FF;
-        }
-        body.windows7 .text-gray-500 {
-            color: #777777;
-        }
-        body.windows7 .bg-gray-200 {
-            background-color: #D0E0F0;
-            border: 1px solid #C0C0C0;
-        }
-        body.windows7 .hover\:bg-gray-300:hover {
-            background-color: #C0D0E0;
-        }
-        body.windows7 .dark\:bg-gray-800 {
-            background-color: #E8EDF4;
-        }
-        body.windows7 .dark\:text-gray-100 {
-            color: #333333;
-        }
-        body.windows7 .dark\:text-gray-300 {
-            color: #555555;
-        }
-        body.windows7 .dark\:border-gray-600 {
-            border-color: #C0C0C0;
-        }
-        body.windows7 .dark\:bg-gray-700 {
-            background-color: #C0D0E0;
-        }
-        body.windows7 .dark\:hover\:bg-gray-600:hover {
-            background-color: #D0E0F0;
-        }
-        body.windows7 .text-blue-700 {
-            color: #007ACC;
-        }
-        body.windows7 .bg-green-600 {
-            background-image: linear-gradient(to top, #62B82F, #7CD34B);
-            border: 1px solid #4F8E26;
-            color: #FFFFFF;
-        }
-        body.windows7 .bg-green-600:hover {
-            background-image: linear-gradient(to top, #7CD34B, #62B82F);
-        }
-        body.windows7 .bg-red-600 {
-            background-image: linear-gradient(to top, #D93B3B, #E44D4D);
-            border: 1px solid #A52D2D;
-            color: #FFFFFF;
-        }
-        body.windows7 .bg-red-600:hover {
-            background-image: linear-gradient(to top, #E44D4D, #D93B3B);
-        }
-        body.windows7 button {
-            border-radius: 3px;
-        }
-        body.windows7 .rounded-lg {
-            border-radius: 3px;
-        }
-        body.windows7 .rounded-xl {
-            border-radius: 4px;
-        }
-        body.windows7 .rounded-b-xl {
-            border-bottom-left-radius: 4px;
-            border-bottom-right-radius: 4px;
-        }
-        body.windows7 .rounded-t-xl {
-            border-top-left-radius: 4px;
-            border-top-right-radius: 4px;
-        }
-
-
-        body.windows10 {
-            background-color: #262626;
-            color: #FFFFFF;
-            font-family: 'Segoe UI', sans-serif;
-        }
-        body.windows10 header {
-            background-color: #2F2F2F;
-            background-image: none;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-            border-bottom: 1px solid #444444;
-        }
-        body.windows10 .bg-white {
-            background-color: #1A1A1A;
-            border: 1px solid #333333;
-            box-shadow: none;
-        }
-        body.windows10 .text-gray-900 {
-            color: #FFFFFF;
-        }
-        body.windows10 .text-gray-700 {
-            color: #CCCCCC;
-        }
-        body.windows10 .border-gray-300 {
-            border-color: #444444;
-        }
-        body.windows10 .placeholder-gray-200::placeholder {
-            color: #AAAAAA;
-        }
-        body.windows10 .bg-blue-500 {
-            background-color: #0078D7;
-            color: #FFFFFF;
-            border: none;
-            box-shadow: none;
-        }
-        body.windows10 .bg-blue-600 {
-            background-color: #005BA1;
-            color: #FFFFFF;
-            border: none;
-        }
-        body.windows10 .bg-blue-500:hover {
-            background-color: #108DE0;
-        }
-        body.windows10 .bg-blue-600:hover {
-            background-color: #0078D7;
-        }
-        body.windows10 .text-blue-200 {
-            color: #FFFFFF;
-        }
-        body.windows10 .text-gray-500 {
-            color: #999999;
-        }
-        body.windows10 .bg-gray-200 {
-            background-color: #202020;
-            border: 1px solid #333333;
-        }
-        body.windows10 .hover\:bg-gray-300:hover {
-            background-color: #333333;
-        }
-        body.windows10 .dark\:bg-gray-800 {
-            background-color: #1A1A1A;
-        }
-        body.windows10 .dark\:text-gray-100 {
-            color: #FFFFFF;
-        }
-        body.windows10 .dark\:text-gray-300 {
-            color: #CCCCCC;
-        }
-        body.windows10 .dark\:border-gray-600 {
-            border-color: #444444;
-        }
-        body.windows10 .dark\:bg-gray-700 {
-            background-color: #202020;
-        }
-        body.windows10 .dark\:hover\:bg-gray-600:hover {
-            background-color: #333333;
-        }
-        body.windows10 .text-blue-700 {
-            color: #0078D7;
-        }
-        body.windows10 .bg-green-600 {
-            background-color: #107C10;
-            color: #FFFFFF;
-            border: none;
-        }
-        body.windows10 .bg-green-600:hover {
-            background-color: #14A014;
-        }
-        body.windows10 .bg-red-600 {
-            background-color: #E81123;
-            color: #FFFFFF;
-            border: none;
-        }
-        body.windows10 .bg-red-600:hover {
-            background-color: #F04F5C;
-        }
-        body.windows10 button {
-            border-radius: 3px;
-        }
-        body.windows10 .rounded-lg {
-            border-radius: 3px;
-        }
-        body.windows10 .rounded-xl {
-            border-radius: 4px;
-        }
-        body.windows10 .rounded-b-xl {
-            border-bottom-left-radius: 4px;
-            border-bottom-right-radius: 4px;
-        }
-        body.windows10 .rounded-t-xl {
-            border-top-left-radius: 4px;
-            border-top-right-radius: 4px;
-        }
-
-        body.wackybox {
-            background-color: #FF00FF;
-            color: #00FFFF;
-            font-family: 'Comic Sans MS', cursive;
-        }
-        body.wackybox header {
-            background-image: linear-gradient(to right, #FFFF00, #FF0000);
-            color: #0000FF;
-            text-shadow: 2px 2px 0px #00FF00;
-            border: 5px dashed #800080;
-        }
-        body.wackybox h1 {
-            color: #0000FF;
-        }
-        body.wackybox .bg-white {
-            background-color: #00FF00;
-            color: #FF00FF;
-            border: 3px double #FFD700;
-            box-shadow: 5px 5px 0px 0px #FF4500;
-        }
-        body.wackybox .text-gray-900 {
-            color: #FF00FF;
-        }
-        body.wackybox .text-gray-700 {
-            color: #00FFFF;
-        }
-        body.wackybox .border-gray-300 {
-            border-color: #FF00FF;
-        }
-        body.wackybox .placeholder-gray-200::placeholder {
-            color: #800080;
-        }
-        body.wackybox .bg-blue-500 {
-            background-color: #FF69B4;
-            color: #000080;
-            border: 2px solid #00FFFF;
-        }
-        body.wackybox .bg-blue-600 {
-            background-color: #FF1493;
-            color: #FFFFFF;
-            border: 2px outset #000080;
-        }
-        body.wackybox .bg-blue-500:hover {
-            background-color: #00FFFF;
-            color: #FF00FF;
-        }
-        body.wackybox .bg-blue-600:hover {
-            background-color: #FF00FF;
-            color: #FFFF00;
-        }
-        body.wackybox .text-blue-200 {
-            color: #FFA500;
-        }
-        body.wackybox .text-gray-500 {
-            color: #8A2BE2;
-        }
-        body.wackybox .bg-gray-200 {
-            background-color: #008000;
-            border: 4px groove #FFD700;
-        }
-        body.wackybox .hover\:bg-gray-300:hover {
-            background-color: #FF00FF;
-            color: #00FF00;
-        }
-        body.wackybox .dark\:bg-gray-800 {
-            background-color: #00FF00;
-        }
-        body.wackybox .dark\:text-gray-100 {
-            color: #FF00FF;
-        }
-        body.wackybox .dark\:text-gray-300 {
-            color: #00FFFF;
-        }
-        body.wackybox .dark\:border-gray-600 {
-            border-color: #FF00FF;
-        }
-        body.wackybox .dark\:bg-gray-700 {
-            background-color: #008000;
-        }
-        body.wackybox .dark\:hover\:bg-gray-600:hover {
-            background-color: #FF00FF;
-        }
-        body.wackybox .text-blue-700 {
-            color: #FF8C00;
-        }
-        body.wackybox .bg-green-600 {
-            background-color: #FF4500;
-            color: #0000FF;
-            border: 3px ridge #ADFF2F;
-        }
-        body.wackybox .bg-green-600:hover {
-            background-color: #ADFF2F;
-            color: #FF4500;
-        }
-        body.wackybox .bg-red-600 {
-            background-color: #000080;
-            color: #FFD700;
-            border: 3px inset #FF00FF;
-        }
-        body.wackybox .bg-red-600:hover {
-            background-color: #FF00FF;
-            color: #000080;
-        }
-        body.wackybox button {
-            border-radius: 15px;
-            transition: all 0.1s ease-in-out;
-            box-shadow: 0px 0px 10px 5px rgba(255,0,255,0.7);
-        }
-        body.wackybox button:active {
-            transform: scale(0.95) rotate(5deg);
-            box-shadow: none;
-        }
-        body.wackybox .rounded-lg,
-        body.wackybox .rounded-xl,
-        body.wackybox .rounded-b-xl,
-        body.wackybox .rounded-t-xl,
-        body.wackybox .rounded-full {
-            border-radius: 15px;
-        }
-
-        .dark .bg-white {
-            background-color: #1f2937;
-        }
-        .dark .text-gray-900 {
-            color: #f9fafb;
-        }
-        .dark .text-gray-700 {
-            color: #d1d5db;
-        }
-        .dark .border-gray-300 {
-            border-color: #4b5563;
-        }
-        .dark .placeholder-gray-200::placeholder {
-            color: #9ca3af;
-        }
-    </style>
+    <!-- Link to the external CSS file -->
+    <link rel="stylesheet" href="main.css">
 </head>
 <body class="flex flex-col h-screen bg-gray-100 text-gray-900 font-sans">
 
@@ -1139,6 +193,8 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, deleteDoc, updateDoc, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // IMPORTANT: In a real application, consider externalizing Firebase config securely.
+        // This config is exposed for the purpose of this interactive demo.
         const firebaseConfig = {
             apiKey: "AIzaSyCbIMQv9Z44Ms2zNZh2SAmELkS8AJKsYvo",
             authDomain: "chat-5c6f4.firebaseapp.com",
@@ -1208,6 +264,7 @@
         const saveUserSettingsButton = document.getElementById('saveUserSettingsButton');
 
 
+        // List of public channels available
         const publicChannels = [
             'info-and-rules', 'general', 'general2', 'chat', 'public',
             'math', 'science', 'algebra', 'chemistry', 'studies',
@@ -1215,28 +272,40 @@
             'paisley', 'rants'
         ];
 
+        /**
+         * Applies the selected theme to the body element.
+         * Handles both predefined themes and system preference.
+         * @param {string} theme - The name of the theme to apply.
+         */
         function applyTheme(theme) {
             const body = document.body;
+            // Remove all existing theme classes to prevent conflicts
             body.classList.remove('light', 'dark', 'midnight', 'autumn', 'terminal', 'mario', 'windows95', 'windowsxp', 'windows7', 'windows10', 'wackybox');
 
             if (theme === 'system') {
+                // Apply 'dark' or 'light' based on user's system preference
                 if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
                     body.classList.add('dark');
                 } else {
                     body.classList.add('light');
                 }
             } else {
+                // Apply the selected custom theme
                 body.classList.add(theme);
             }
         }
 
+        // Apply theme on initial load based on localStorage or default to 'dark'
         applyTheme(localStorage.getItem('wChatTheme') || 'dark');
 
+        // Initialize input fields with stored values
         nicknameInput.value = currentUserName;
         channelInput.value = currentChannelId;
         currentChannelDisplay.textContent = `Current: #${currentChannelId}`;
 
-
+        /**
+         * Resets the message input area from edit mode to send mode.
+         */
         function resetEditMode() {
             messageIdToEdit = null;
             originalMessageText = null;
@@ -1244,9 +313,12 @@
             sendButtonText.textContent = 'Send';
         }
 
+        /**
+         * Clears any selected image file and hides the image preview elements.
+         */
         function clearImageSelection() {
             currentImageFile = null;
-            imageInput.value = '';
+            imageInput.value = ''; // Clear the file input
             imagePreview.src = '';
             imageFileName.textContent = '';
             imagePreviewContainer.classList.add('hidden');
@@ -1255,17 +327,26 @@
             hideImageSizeError();
         }
 
+        /**
+         * Displays an error message related to image size.
+         * @param {string} message - The error message to display.
+         */
         function showImageSizeError(message) {
             imageSizeErrorMessage.textContent = message;
             imageSizeError.classList.remove('hidden');
+            // Clear any existing timeout to restart the timer
             if (imageSizeErrorTimeout) {
                 clearTimeout(imageSizeErrorTimeout);
             }
+            // Hide the error message after 5 seconds
             imageSizeErrorTimeout = setTimeout(() => {
                 hideImageSizeError();
             }, 5000);
         }
 
+        /**
+         * Hides the image size error message.
+         */
         function hideImageSizeError() {
             imageSizeError.classList.add('hidden');
             if (imageSizeErrorTimeout) {
@@ -1274,24 +355,34 @@
             }
         }
 
-
+        /**
+         * Scrolls the messages container to the bottom.
+         */
         function scrollToBottom() {
             messagesListContainer.scrollTop = messagesListContainer.scrollHeight;
         }
 
+        /**
+         * Initializes Firebase authentication and Firestore.
+         * Sets up the authentication state listener.
+         */
         async function initializeFirebase() {
             try {
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
 
+                // Listen for authentication state changes
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         currentUserId = user.uid;
                         userIdDisplay.textContent = `Your ID: ${currentUserId}`;
                     } else {
+                        // If no user is signed in, sign in anonymously
                         try {
                             await signInAnonymously(auth);
+                            currentUserId = auth.currentUser.uid; // Update currentUserId after anonymous sign-in
+                            userIdDisplay.textContent = `Your ID: ${currentUserId}`;
                         } catch (error) {
                             console.error("Error during anonymous sign-in:", error);
                             currentUserId = null;
@@ -1300,6 +391,7 @@
                         }
                     }
 
+                    // Once authentication is ready, set up the message listener
                     if (!messageListenerInitialized) {
                         loadingIndicator.classList.add('hidden');
                         setupMessageListener();
@@ -1312,7 +404,12 @@
             }
         }
 
+        /**
+         * Sets up a real-time listener for messages in the current channel.
+         * Unsubscribes from previous listeners if any.
+         */
         function setupMessageListener() {
+            // Unsubscribe from previous listener if it exists
             if (unsubscribeMessages) {
                 unsubscribeMessages();
             }
@@ -1322,35 +419,40 @@
                 return;
             }
 
+            // Show loading indicator and hide placeholder
             loadingIndicator.classList.remove('hidden');
             noMessagesPlaceholder.classList.add('hidden');
-            messagesListContainer.innerHTML = '';
-            resetEditMode();
-            clearImageSelection();
+            messagesListContainer.innerHTML = ''; // Clear existing messages
+            resetEditMode(); // Reset input field
+            clearImageSelection(); // Clear any image selection
 
+            // Create a query to fetch messages for the current channel, ordered by timestamp
             const q = query(
                 collection(db, `artifacts/${appId}/public/data/messages`),
                 where('channelId', '==', currentChannelId),
-                orderBy('timestamp')
+                orderBy('timestamp') // Ordering by timestamp ensures messages are in order
             );
 
+            // Set up the real-time listener
             unsubscribeMessages = onSnapshot(q, (snapshot) => {
-                loadingIndicator.classList.add('hidden');
-                messagesListContainer.innerHTML = '';
+                loadingIndicator.classList.add('hidden'); // Hide loading indicator once data is received
+                messagesListContainer.innerHTML = ''; // Clear messages again before rendering
                 const messages = [];
 
+                // Show/hide no messages placeholder based on snapshot emptiness
                 if (snapshot.empty) {
                     noMessagesPlaceholder.classList.remove('hidden');
                 } else {
                     noMessagesPlaceholder.classList.add('hidden');
                 }
 
+                // Populate messages array with data and document IDs
                 snapshot.forEach((doc) => {
                     messages.push({ ...doc.data(), id: doc.id });
                 });
 
-                renderMessages(messages);
-                scrollToBottom();
+                renderMessages(messages); // Render the fetched messages
+                scrollToBottom(); // Scroll to the latest message
             }, (error) => {
                 console.error("Error fetching messages:", error);
                 loadingIndicator.classList.add('hidden');
@@ -1358,44 +460,53 @@
             });
         }
 
+        /**
+         * Renders an array of message objects into the messages list container.
+         * @param {Array<Object>} messages - An array of message objects to render.
+         */
         function renderMessages(messages) {
             messages.forEach(msg => {
                 const messageDiv = document.createElement('div');
+                // Align messages based on sender
                 messageDiv.className = `flex ${msg.userId === currentUserId ? 'justify-end' : 'justify-start'}`;
 
                 const messageBubble = document.createElement('div');
                 const isImageMessage = msg.imageDataUrl && (!msg.text || msg.text.trim() === '');
+                // Apply styling based on sender and whether it's an image-only message
                 messageBubble.className = `max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-xl shadow-lg relative break-words
                     ${msg.userId === currentUserId
                         ? 'bg-blue-500 text-white rounded-br-none'
                         : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-none'
                     }
-                    ${isImageMessage ? 'p-1' : ''} `;
+                    ${isImageMessage ? 'p-1' : ''} `; // Smaller padding for image-only messages
 
+                // Display user's nickname
                 const userNameP = document.createElement('p');
                 userNameP.className = `text-xs font-semibold mb-1`;
                 userNameP.textContent = msg.userName || 'Anonymous';
-                userNameP.style.color = msg.senderColor || '#000000';
-
+                userNameP.style.color = msg.senderColor || '#000000'; // Apply custom color
                 messageBubble.appendChild(userNameP);
 
+                // Display image if available
                 if (msg.imageDataUrl) {
                     const imgElement = document.createElement('img');
                     imgElement.src = msg.imageDataUrl;
                     imgElement.alt = "Shared Image";
                     imgElement.className = "max-w-full h-auto rounded-lg mb-2 cursor-pointer";
-                    imgElement.style.maxWidth = '250px';
+                    imgElement.style.maxWidth = '250px'; // Limit image size
                     imgElement.style.maxHeight = '250px';
-                    imgElement.loading = "lazy";
+                    imgElement.loading = "lazy"; // Lazy load images
                     imgElement.onerror = (e) => {
+                        // Fallback for broken images
                         e.target.onerror = null;
                         e.target.src = "https://placehold.co/200x200/cccccc/333333?text=Image+Load+Error";
                         e.target.alt = "Image failed to load.";
                     };
-                    imgElement.onclick = () => window.open(msg.imageDataUrl, '_blank');
+                    imgElement.onclick = () => window.open(msg.imageDataUrl, '_blank'); // Open image in new tab
                     messageBubble.appendChild(imgElement);
                 }
 
+                // Display message text if available
                 if (msg.text && msg.text.trim() !== '') {
                     const messageTextP = document.createElement('p');
                     messageTextP.className = 'text-base';
@@ -1403,16 +514,20 @@
                     messageBubble.appendChild(messageTextP);
                 }
 
+                // Display timestamp
                 const timestampSpan = document.createElement('span');
                 timestampSpan.className = 'text-xs text-opacity-75 block text-right mt-1';
                 if (msg.timestamp && typeof msg.timestamp.toDate === 'function') {
+                    // Firestore Timestamp object
                     timestampSpan.textContent = msg.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 } else if (msg.timestamp) {
+                     // Fallback for plain timestamp (e.g., from initial object)
                      timestampSpan.textContent = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 }
                 messageBubble.appendChild(timestampSpan);
                 messageDiv.appendChild(messageBubble);
 
+                // Add edit and delete buttons for the current user's messages
                 if (msg.userId === currentUserId) {
                     const editButton = document.createElement('button');
                     editButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -1424,11 +539,11 @@
                     editButton.onclick = () => {
                         messageIdToEdit = msg.id;
                         originalMessageText = msg.text;
-                        newMessageInput.value = msg.text || '';
-                        sendButtonText.textContent = 'Save Edits';
-                        newMessageInput.focus();
-                        clearImageSelection();
-                        scrollToBottom();
+                        newMessageInput.value = msg.text || ''; // Pre-fill input with message text
+                        sendButtonText.textContent = 'Save Edits'; // Change button text
+                        newMessageInput.focus(); // Focus on the input field
+                        clearImageSelection(); // Clear any existing image selection for editing text
+                        scrollToBottom(); // Scroll to the input area
                     };
                     messageBubble.appendChild(editButton);
 
@@ -1439,8 +554,8 @@
                     deleteButton.className = 'absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full shadow-md transition-transform duration-200 transform hover:scale-110';
                     deleteButton.title = 'Delete Message';
                     deleteButton.onclick = () => {
-                        messageIdToDelete = { id: msg.id };
-                        confirmationModal.classList.remove('hidden');
+                        messageIdToDelete = { id: msg.id }; // Store message ID for deletion
+                        confirmationModal.classList.remove('hidden'); // Show confirmation modal
                     };
                     messageBubble.appendChild(deleteButton);
                 }
@@ -1449,11 +564,16 @@
             });
         }
 
+        /**
+         * Handles sending or updating a message.
+         * @param {Event} e - The submit event from the message form.
+         */
         async function sendMessage(e) {
-            e.preventDefault();
+            e.preventDefault(); // Prevent default form submission
 
             const messageText = newMessageInput.value.trim();
 
+            // Basic validation for authentication and channel
             if (!currentUserId || !db || !currentChannelId) {
                 if (!currentUserId) {
                     console.error("Cannot send message: User is not authenticated.");
@@ -1463,6 +583,7 @@
                 return;
             }
 
+            // Don't send empty messages unless there's an image
             if (messageText === '' && !currentImageFile) {
                 console.warn("Cannot send empty message or without an image.");
                 return;
@@ -1470,19 +591,24 @@
 
             try {
                 if (messageIdToEdit) {
+                    // Update existing message
                     const messageDocRef = doc(db, `artifacts/${appId}/public/data/messages`, messageIdToEdit);
                     await updateDoc(messageDocRef, {
                         text: messageText,
+                        // No image data can be updated for existing messages in this current logic, only text
                     });
                     console.log("Message updated successfully:", messageIdToEdit);
                 } else {
+                    // Send a new message
                     let imageDataUrl = null;
 
                     if (currentImageFile) {
+                        // Show progress bar and disable send button during image upload
                         uploadProgressBarContainer.classList.remove('hidden');
                         uploadProgressBar.style.width = '50%';
                         sendButton.disabled = true;
 
+                        // Read image file as Data URL
                         const reader = new FileReader();
                         imageDataUrl = await new Promise((resolve, reject) => {
                             reader.onload = () => resolve(reader.result);
@@ -1490,32 +616,40 @@
                             reader.readAsDataURL(currentImageFile);
                         });
 
+                        // Update progress bar and re-enable send button
                         uploadProgressBar.style.width = '100%';
                         sendButton.disabled = false;
                         uploadProgressBarContainer.classList.add('hidden');
                         uploadProgressBar.style.width = '0%';
                     }
 
+                    // Add the new message to Firestore
                     await addDoc(collection(db, `artifacts/${appId}/public/data/messages`), {
                         userId: currentUserId,
                         userName: currentUserName || 'Anonymous',
                         senderColor: currentColor,
                         text: messageText,
                         channelId: currentChannelId,
-                        timestamp: serverTimestamp(),
+                        timestamp: serverTimestamp(), // Use server timestamp for consistency
                         imageDataUrl: imageDataUrl
                     });
+                    console.log("Message sent successfully.");
                 }
-                resetEditMode();
-                clearImageSelection();
+                resetEditMode(); // Clear input and reset button text
+                clearImageSelection(); // Clear image preview if any
             }
             catch (error) {
                 console.error("Error sending/updating message or uploading image:", error);
+                // Hide progress bar and re-enable send button on error
                 uploadProgressBarContainer.classList.add('hidden');
                 uploadProgressBar.style.width = '0%';
             }
         }
 
+        /**
+         * Deletes a message from Firestore.
+         * @param {Object} msgInfo - An object containing the ID of the message to delete.
+         */
         async function performDeleteMessage(msgInfo) {
             if (!db || !msgInfo || !msgInfo.id) {
                 console.error("Database or message ID not valid for deletion.");
@@ -1528,23 +662,30 @@
                 console.log("Message deleted successfully from Firestore:", msgInfo.id);
             } catch (error) {
                 console.error("Error deleting message:", error);
-                window.alert("Failed to delete message. Please check console for details.");
+                // Use a custom modal or message box instead of window.alert
+                // For this example, logging to console and a simple alert for visibility
+                // In a production app, replace with a better UI notification
+                console.error("Failed to delete message. Please check console for details.");
             }
         }
 
+        /**
+         * Joins or creates a chat channel based on the input field.
+         */
         function joinChannel() {
-            const newChannel = channelInput.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+            const newChannel = channelInput.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, ''); // Sanitize input
             if (!newChannel) {
                 console.warn("Channel name cannot be empty or contain only special characters.");
                 return;
             }
 
+            // Only switch if the new channel is different from the current one
             if (newChannel && newChannel !== currentChannelId) {
                 currentChannelId = newChannel;
-                localStorage.setItem('wChatCurrentChannel', currentChannelId);
+                localStorage.setItem('wChatCurrentChannel', currentChannelId); // Save to local storage
                 currentChannelDisplay.textContent = `Current: #${currentChannelId}`;
                 if (db) {
-                    setupMessageListener();
+                    setupMessageListener(); // Re-initialize message listener for the new channel
                 } else {
                     console.warn("Firebase DB not initialized yet, cannot join channel immediately.");
                 }
@@ -1553,18 +694,23 @@
             }
         }
 
+        /**
+         * Populates the public channels list in the sidebar.
+         */
         function populateChannelList() {
-            publicChannelList.innerHTML = '';
+            publicChannelList.innerHTML = ''; // Clear existing list items
             publicChannels.forEach(channel => {
                 const listItem = document.createElement('li');
                 const channelLink = document.createElement('a');
                 channelLink.href = '#';
-                channelLink.className = 'block p-2 rounded-lg text-gray-800 dark:text-gray-200 hover:bg-blue-300 dark:hover:bg-blue-700 transition-colors duration-200';
+                // Apply the new combined class for default and theme-specific styling
+                channelLink.className = 'public-channel-item';
                 channelLink.textContent = `#${channel}`;
                 channelLink.onclick = (e) => {
                     e.preventDefault();
-                    channelInput.value = channel;
-                    joinChannel();
+                    channelInput.value = channel; // Set channel input value
+                    joinChannel(); // Join the selected channel
+                    // Close sidebar on mobile after selecting a channel
                     if (window.innerWidth < 768) {
                         sidebar.classList.remove('w-64');
                         sidebar.classList.add('w-0');
@@ -1576,6 +722,9 @@
             });
         }
 
+        /**
+         * Toggles the visibility of the sidebar.
+         */
         function toggleSidebar() {
             const isExpanded = sidebar.classList.contains('w-64');
 
@@ -1590,6 +739,9 @@
             }
         }
 
+        /**
+         * Toggles the visibility of the channel control area.
+         */
         function toggleChannelControl() {
             const isExpanded = !channelControlArea.classList.contains('max-h-0');
 
@@ -1606,33 +758,45 @@
             }
         }
 
+        /**
+         * Opens the user settings modal.
+         */
         function openUserSettingsModal() {
             userSettingsModal.classList.remove('hidden');
-            userColorInput.value = currentColor;
-            themeSelect.value = localStorage.getItem('wChatTheme') || 'dark';
+            userColorInput.value = currentColor; // Set current color
+            themeSelect.value = localStorage.getItem('wChatTheme') || 'dark'; // Set current theme
         }
 
+        /**
+         * Closes the user settings modal.
+         */
         function closeUserSettingsModal() {
             userSettingsModal.classList.add('hidden');
         }
 
+        /**
+         * Saves user settings (nickname color and app theme) to localStorage.
+         */
         function saveUserSettings() {
             currentColor = userColorInput.value;
             localStorage.setItem('wChatUserColor', currentColor);
 
             currentTheme = themeSelect.value;
             localStorage.setItem('wChatTheme', currentTheme);
-            applyTheme(currentTheme);
+            applyTheme(currentTheme); // Apply the newly selected theme
 
             closeUserSettingsModal();
         }
 
+        // --- Event Listeners ---
 
+        // Update nickname in localStorage on input
         nicknameInput.addEventListener('input', (e) => {
             currentUserName = e.target.value;
             localStorage.setItem('wChatUserName', currentUserName);
         });
 
+        // Change send button text if message is being edited
         newMessageInput.addEventListener('input', () => {
             if (messageIdToEdit && newMessageInput.value.trim() !== originalMessageText) {
                  sendButtonText.textContent = 'Save Edits';
@@ -1641,20 +805,26 @@
             }
         });
 
+        // Handle message form submission
         messageForm.addEventListener('submit', sendMessage);
 
+        // Join channel on button click
         joinChannelButton.addEventListener('click', joinChannel);
 
+        // Join channel on Enter key press in channel input
         channelInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
-                e.preventDefault();
+                e.preventDefault(); // Prevent form submission
                 joinChannel();
             }
         });
 
+        // Toggle sidebar visibility
         sidebarToggle.addEventListener('click', toggleSidebar);
+        // Toggle channel control area visibility
         channelToggleButton.addEventListener('click', toggleChannelControl);
 
+        // Confirmation modal for message deletion
         confirmDeleteYes.addEventListener('click', () => {
             if (messageIdToDelete) {
                 performDeleteMessage(messageIdToDelete);
@@ -1668,17 +838,18 @@
             confirmationModal.classList.add('hidden');
         });
 
+        // Image attachment functionality
         attachImageButton.addEventListener('click', () => {
-            imageInput.click();
+            imageInput.click(); // Trigger file input click
         });
 
         imageInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
-                const maxSize = 1 * 1024 * 1024;
+                const maxSize = 1 * 1024 * 1024; // 1MB limit
                 if (file.size > maxSize) {
                     showImageSizeError("Image size exceeds 1MB limit. Please choose a smaller image.");
-                    clearImageSelection();
+                    clearImageSelection(); // Clear the invalid selection
                     return;
                 }
 
@@ -1690,23 +861,27 @@
                     imagePreviewContainer.classList.remove('hidden');
                 };
                 reader.readAsDataURL(file);
-                resetEditMode();
-                hideImageSizeError();
+                resetEditMode(); // Clear any edit mode state when attaching an image
+                hideImageSizeError(); // Hide any previous error
             } else {
-                clearImageSelection();
+                clearImageSelection(); // Clear if no file selected
             }
         });
 
         cancelImageButton.addEventListener('click', clearImageSelection);
 
+        // User settings modal functionality
         userSettingsButton.addEventListener('click', openUserSettingsModal);
         closeSettingsModalButton.addEventListener('click', closeUserSettingsModal);
         saveUserSettingsButton.addEventListener('click', saveUserSettings);
 
 
+        // --- Initial Load Logic ---
         window.onload = () => {
-            initializeFirebase();
-            populateChannelList();
+            initializeFirebase(); // Initialize Firebase when the window loads
+            populateChannelList(); // Populate the public channel list
+
+            // Adjust sidebar visibility based on screen width on load
             if (window.innerWidth >= 768) {
                 sidebar.classList.add('w-64');
                 sidebar.classList.remove('w-0');
@@ -1716,6 +891,7 @@
                 sidebar.classList.add('w-0');
                 toggleIcon.classList.remove('rotate-180');
             }
+            // Adjust channel control area visibility based on screen width on load
             if (window.innerWidth >= 768) {
                  channelControlArea.classList.remove('max-h-0');
                  channelControlArea.classList.add('max-h-full');
@@ -1727,8 +903,10 @@
                  channelToggleIcon.classList.add('rotate-180');
                  channelToggleIcon.classList.remove('rotate-0');
             }
+            // Ensure theme is applied correctly on load
             applyTheme(localStorage.getItem('wChatTheme') || 'dark');
         };
     </script>
 </body>
 </html>
+
