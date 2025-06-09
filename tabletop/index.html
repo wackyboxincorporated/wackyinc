@@ -21,19 +21,19 @@
             border-radius: 0.75rem;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15); /* Darker shadow */
             width: 100%;
-            height: 70vh; /* Adaptive height based on viewport height */
+            height: 85vh; /* Adaptive height based on viewport height */
             background-color: #2d3748; /* Darker background for iframes */
             border: none;
         }
 
         @media (min-width: 768px) {
             iframe {
-                height: 75vh; /* Slightly more height for tablet screens */
+                height: 90vh; /* Slightly more height for tablet screens */
             }
         }
         @media (min-width: 1024px) {
             iframe {
-                height: 80vh; /* Even more height for desktop screens */
+                height: 95vh; /* Even more height for desktop screens */
             }
         }
 
@@ -132,7 +132,7 @@
                         Load URL
                     </button>
                 </div>
-                <iframe id="customIframe" class="w-full h-96"></iframe>
+                <iframe id="customIframe" class="w-full"></iframe>
                 <p class="mt-4 text-gray-400 text-center">
                     Load any public URL into this iframe. Please note that some websites may prevent embedding for security reasons.
                 </p>
@@ -149,7 +149,7 @@
                 >
                     open wChat
                 </button>
-                <iframe id="wackyboxIframe" class="w-full h-96"></iframe>
+                <iframe id="wackyboxIframe" class="w-full"></iframe>
                 <p class="mt-4 text-gray-400 text-center">
                     Click the button above to open wChat.
                 </p>
@@ -200,7 +200,6 @@
                 return null;
             }
 
-            // Function to show a specific section and hide others
             function showSection(targetId) {
                 functionSections.forEach(section => {
                     if (section.id === targetId) {
@@ -212,7 +211,6 @@
                     }
                 });
 
-                // Update active button styling
                 tabButtons.forEach(button => {
                     if (button.dataset.target === targetId) {
                         button.classList.add('active');
@@ -222,7 +220,6 @@
                 });
             }
 
-            // Add event listeners to tab buttons
             tabButtons.forEach(button => {
                 button.addEventListener('click', () => {
                     const targetId = button.dataset.target;
