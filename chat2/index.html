@@ -331,7 +331,7 @@
         let fileErrorTimeout = null;
         
         // Firestore document size limit in bytes (1 MiB)
-        const FIRESTORE_MAX_DOC_SIZE = 1048576; 
+        const FIRESTORE_MAX_DOC_SIZE = 1040000; 
         // Maximum raw file size before Base64 encoding to ensure it fits within Firestore's 1MB limit.
         // Base64 encoding adds approximately 33% overhead.
         const MAX_RAW_FILE_SIZE_BEFORE_ENCODING = Math.floor(FIRESTORE_MAX_DOC_SIZE * 2); // Increased initial check for videos
@@ -456,7 +456,7 @@
 
         // Audio elements for connect and disconnect sounds
         const connectSound = new Audio('https://file.garden/ZMbUnW5nmTe-x54m/connect.mp3');
-        const disconnectSound = new Audio('https://file.garden/ZMbUnW5nmTe-x54m/disconnect.mp3');
+        const disconnectSound = new Audio('https://file.garden/ZPjrzSdXf2vX5mNF/disconnect.mp3');
 
         // List of public channels available
         const publicChannels = [
@@ -2146,7 +2146,7 @@
                     }
 
                     // Ensure targetBlobSizeBytes does not exceed FIRESTORE_MAX_DOC_SIZE directly
-                    targetBlobSizeBytes = Math.min(targetBlobSizeBytes, FIRESTORE_MAX_DOC_SIZE - 50 * 1024); // Leave a small buffer, e.g., 50KB
+                    targetBlobSizeBytes = Math.min(targetBlobSizeBytes,  - 50 * 1024); // Leave a small buffer, e.g., 50KB
 
                     // Calculate desired total bitrate based on target size and duration
                     let calculatedTotalBitrate = (targetBlobSizeBytes * 8) / videoDuration;
