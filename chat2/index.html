@@ -278,7 +278,7 @@
         const FIRESTORE_MAX_DOC_SIZE = 1048576; 
         // Maximum raw file size before Base64 encoding to ensure it fits within Firestore's 1MB limit.
         // Base64 encoding adds approximately 33% overhead.
-        const MAX_RAW_FILE_SIZE_BEFORE_ENCODING = Math.floor(FIRESTORE_MAX_DOC_SIZE * (3 / 4)); // Approx 786432 bytes
+        const MAX_RAW_FILE_SIZE_BEFORE_ENCODING = Math.floor(FIRESTORE_MAX_DOC_SIZE * 2); // Increased initial check for videos
 
         // Voice Recording related variables
         let mediaRecorder;
@@ -1257,7 +1257,58 @@
 
             return new Promise((resolve, reject) => {
                 videoElement.onloadedmetadata = async () => {
-                    const videoDuration = videoElement.duration;
+                    const videoDuration = videoElement.duration; // in seconds
+
+                    // Define target sizes for different durations
+                    const SHORTEST_VIDEO_DURATION_FOR_MAX_QUALITY_SECONDS = 5; // e.g., for videos 5s or less
+                    const LONGEST_VIDEO_DURATION_FOR_FIXED_QUALITY_SECONDS = 60; // e.g., for videos 60s or more
+                    const MAX_QUALITY_TARGET_SIZE_KB = 800; // Max target for very short videos (800KB for the blob)
+                    const BASE_QUALITY_TARGET_SIZE_KB = 200; // Base target for very long videos (200KB for the blob)
+
+                    let targetBlobSizeBytes;
+
+                    if (videoDuration <= SHORTEST_VIDEO_DURATION_FOR_MAX_QUALITY_SECONDS) {
+                        targetBlobSizeBytes = MAX_QUALITY_TARGET_SIZE_KB * 1024;
+                    } else if (videoDuration >= LONGEST_VIDEO_DURATION_FOR_FIXED_QUALITY_SECONDS) {
+                        targetBlobSizeBytes = BASE_QUALITY_TARGET_SIZE_KB * 1024;
+                    } else {
+                        // Linear interpolation for target size between max and base quality
+                        // (duration - shortest) / (longest - shortest) gives a ratio from 0 to 1
+                        // 1 - ratio makes it inversely proportional (shorter duration = higher ratio for quality)
+                        const ratio = (videoDuration - SHORTEST_VIDEO_DURATION_FOR_MAX_QUALITY_SECONDS) /
+                                      (LONGEST_VIDEO_DURATION_FOR_FIXED_QUALITY_SECONDS - SHORTEST_VIDEO_DURATION_FOR_MAX_QUALITY_SECONDS); // FIX: Corrected variable name here
+                        targetBlobSizeBytes = (MAX_QUALITY_TARGET_SIZE_KB - BASE_QUALITY_TARGET_SIZE_KB) * (1 - ratio) * 1024 + (BASE_QUALITY_TARGET_SIZE_KB * 1024);
+                    }
+
+                    // Ensure targetBlobSizeBytes does not exceed FIRESTORE_MAX_DOC_SIZE directly
+                    targetBlobSizeBytes = Math.min(targetBlobSizeBytes, FIRESTORE_MAX_DOC_SIZE - 50 * 1024); // Leave a small buffer, e.g., 50KB
+
+                    // Calculate desired total bitrate based on target size and duration
+                    let calculatedTotalBitrate = (targetBlobSizeBytes * 8) / videoDuration;
+
+                    // Cap bitrate to avoid excessively high or low values
+                    const MAX_BITRATE = 800000; // e.g., 800 kbps (for very high quality short clips)
+                    const MIN_BITRATE = 50000;  // e.g., 50 kbps (for very long videos, ensures some data)
+
+                    calculatedTotalBitrate = Math.max(MIN_BITRATE, Math.min(MAX_BITRATE, calculatedTotalBitrate));
+
+                    // Distribute bitrate between video and audio. A common ratio is 80% video, 20% audio.
+                    const videoBitrateRatio = 0.8;
+                    const audioBitrateRatio = 0.2;
+
+                    let TARGET_VIDEO_BITRATE = calculatedTotalBitrate * videoBitrateRatio;
+                    let TARGET_AUDIO_BITRATE = calculatedTotalBitrate * audioBitrateRatio;
+
+                    // Ensure minimum audio bitrate for intelligibility if it falls too low
+                    const MIN_AUDIO_BITRATE = 24000; // e.g., 24 kbps for Opus
+                    TARGET_AUDIO_BITRATE = Math.max(MIN_AUDIO_BITRATE, TARGET_AUDIO_BITRATE);
+
+                    // Adjust video bitrate downwards if audio minimum pushed it too high
+                    TARGET_VIDEO_BITRATE = Math.max(0, calculatedTotalBitrate - TARGET_AUDIO_BITRATE); // Ensure it's not negative
+
+                    const ACTUAL_TOTAL_BITRATE = TARGET_VIDEO_BITRATE + TARGET_AUDIO_BITRATE;
+
+
                     const originalAudioTrack = videoElement.captureStream().getAudioTracks()[0]; // Get original audio track
 
                     // Setup video canvas and stream
@@ -1266,9 +1317,6 @@
 
                     const MAX_VIDEO_WIDTH = 320; // Target low resolution for chat previews
                     const MAX_VIDEO_HEIGHT = 240;
-                    const TARGET_VIDEO_BITRATE = 100000; // Very low video bitrate, e.g., 100 kbps
-                    const TARGET_AUDIO_BITRATE = 32000; // Opus audio bitrate, e.g., 32 kbps (total around 132kbps)
-                    const TOTAL_TARGET_BITRATE = TARGET_VIDEO_BITRATE + TARGET_AUDIO_BITRATE;
 
 
                     let width = videoElement.videoWidth;
@@ -1320,7 +1368,7 @@
 
                         mediaRecorder = new MediaRecorder(combinedStream, {
                             mimeType: 'video/webm;codecs=vp8,opus', // Specify both video and audio codecs
-                            bitsPerSecond: TOTAL_TARGET_BITRATE
+                            bitsPerSecond: ACTUAL_TOTAL_BITRATE // Use the calculated adaptive bitrate
                         });
 
                     } catch (e) {
