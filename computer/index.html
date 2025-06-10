@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>turing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Georgia', sans-serif;
+            background-color: #111827;
+        }
+        .font-fira {
+            font-family: 'Fira Code', monospace;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+        .ram-cell {
+            transition: all 0.2s ease-in-out;
+        }
+        .ram-cell.highlight-read {
+            animation: highlight-read 0.5s ease-out;
+        }
+        .ram-cell.highlight-write {
+            animation: highlight-write 0.5s ease-out;
+        }
+        @keyframes highlight-read {
+            50% { background-color: #2563eb; transform: scale(1.1); }
+        }
+        @keyframes highlight-write {
+            50% { background-color: #db2777; transform: scale(1.1); }
+        }
+        .register {
+            transition: all 0.2s ease-in-out;
+        }
+        .register.highlight-update {
+             animation: highlight-update 0.5s ease-out;
+        }
+        @keyframes highlight-update {
+            50% { background-color: #16a34a; }
+        }
+        .code-line {
+            transition: background-color 0.2s;
+        }
+        .active-instruction {
+            background-color: #3b82f6 !important;
+            color: white;
+        }
+        .control-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        #code-editor-container {
+            position: relative;
+        }
+        #line-numbers {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            padding: 1rem;
+            background-color: #374151; /* bg-gray-700 */
+            text-align: right;
+            color: #9ca3af; /* text-gray-400 */
+            user-select: none;
+            overflow: hidden;
+        }
+        #code-input {
+            padding-left: 4.5rem; /* Adjust based on line-numbers width */
+            white-space: pre;
+            overflow-wrap: normal;
+            overflow-x: auto;
+        }
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.75);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: #1f2937; /* bg-gray-800 */
+            padding: 2rem;
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3);
+            max-width: 80%;
+            max-height: 90%;
+            overflow-y: auto;
+            color: #d1d5db; /* text-gray-200 */
+            position: relative;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.open .modal-content {
+            transform: translateY(0);
+        }
+        .modal-close-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #9ca3af;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .modal-close-btn:hover {
+            color: #e5e7eb;
+        }
+    </style>
+</head>
+<body class="text-gray-200">
+
+    <div class="min-h-screen flex flex-col p-4 sm:p-6 lg:p-8">
+        <!-- Header -->
+        <header class="text-center mb-6 relative">
+            <h1 class="text-4xl font-bold text-white tracking-tight">Turing Machine Incrementer</h1>
+            <p class="text-lg text-gray-400 mt-2">A simple Turing Machine simulated on the CPU, increments a binary number on the tape (RAM).</p>
+            <button id="info-btn" class="absolute top-0 right-0 sm:right-6 lg:right-8 bg-blue-600 hover:bg-blue-700 text-white font-bold p-2 rounded-full text-lg w-10 h-10 flex items-center justify-center shadow-lg transition-colors">
+                i
+            </button>
+        </header>
+
+        <!-- Main Grid Layout -->
+        <main class="flex-grow grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- Left Column: Code & Controls -->
+            <div class="lg:col-span-1 flex flex-col gap-6">
+                <!-- Code Editor -->
+                <div class="bg-gray-800 rounded-xl shadow-lg flex flex-col h-full">
+                    <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+                        <div>
+                           <h2 class="text-xl font-semibold text-white">Program Code</h2>
+                           <p class="text-sm text-gray-400">Write your assembly code below.</p>
+                        </div>
+                         <a href="#" id="load-example" class="text-sm text-blue-400 hover:underline">Load Example</a>
+                    </div>
+                    <div id="code-editor-container" class="font-fira text-base bg-gray-900 flex-grow rounded-b-xl overflow-hidden">
+                        <div id="line-numbers">1</div>
+                        <textarea id="code-input" class="w-full h-full p-4 bg-transparent text-white resize-none" spellcheck="false" rows="15"></textarea>
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="bg-gray-800 p-4 rounded-xl shadow-lg">
+                    <h2 class="text-xl font-semibold mb-4 text-white">Controls</h2>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <button id="run-btn" class="control-button bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors">Run</button>
+                        <button id="step-btn" class="control-button bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors">Step</button>
+                        <button id="pause-btn" class="control-button bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors" disabled>Pause</button>
+                        <button id="reset-btn" class="control-button bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors">Reset</button>
+                    </div>
+                    <div class="mt-4">
+                        <label for="speed-slider" class="block mb-2 text-sm font-medium text-gray-300">Execution Speed</label>
+                        <input id="speed-slider" type="range" min="0" max="1000" value="800" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Machine State -->
+            <div class="lg:col-span-2 flex flex-col gap-6">
+                <!-- Status & CPU State -->
+                <div class="bg-gray-800 p-4 rounded-xl shadow-lg">
+                    <h2 class="text-xl font-semibold mb-4 text-white">CPU State</h2>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-400">Status</h3>
+                            <p id="status-display" class="text-lg font-semibold text-blue-400">Idle</p>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-400">Program Counter</h3>
+                            <p id="pc-display" class="text-lg font-semibold text-green-400 font-fira">0</p>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-400">Compare Flag</h3>
+                            <p id="flag-display" class="text-lg font-semibold text-yellow-400 font-fira">0</p>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-400">Error</h3>
+                            <p id="error-display" class="text-sm font-semibold text-red-400 h-6 truncate" title="">-</p>
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <h3 class="text-lg font-semibold text-center mb-2 text-white">Registers</h3>
+                        <div id="registers-container" class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <!-- Registers injected here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Memory -->
+                <div class="bg-gray-800 rounded-xl shadow-lg p-4 flex-grow flex flex-col">
+                    <h2 class="text-xl font-semibold mb-4 text-white">RAM</h2>
+                    <div id="ram-container" class="w-full overflow-x-auto pb-4">
+                        <div class="flex space-x-2">
+                            <!-- Memory cells will be injected here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- I/O Section -->
+                <div class="bg-gray-800 p-4 rounded-xl shadow-lg">
+                    <h2 class="text-xl font-semibold mb-2 text-white">I/O</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                           <h3 class="text-lg mb-2 text-gray-300">Input</h3>
+                           <textarea id="input-area" class="font-fira w-full h-24 p-2 bg-gray-900 rounded-md text-white resize-none" placeholder="Provide one number per line for the INP command..."></textarea>
+                        </div>
+                         <div>
+                            <h3 class="text-lg mb-2 text-gray-300">Output</h3>
+                            <pre id="output-area" class="font-fira w-full h-24 p-2 bg-gray-900 rounded-md text-white overflow-y-auto whitespace-pre-wrap break-word"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Info Modal -->
+    <div id="info-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-btn" id="close-modal-btn">&times;</button>
+            <h2 class="text-3xl font-bold text-white mb-4">About This Simulation</h2>
+
+            <section class="mb-6">
+                <h3 class="text-2xl font-semibold text-blue-300 mb-2">What is a Turing-Complete Computer?</h3>
+                <p class="mb-2">A **Turing-complete** system is one that can simulate any Turing machine. A Turing machine is a theoretical model of computation that consists of a tape (infinite memory), a head that can read and write symbols on the tape, and a set of rules (program) that dictate its behavior. If a system can simulate a Turing machine, it means it can perform any computation that any other computer can perform, given enough time and memory.</p>
+                <p class="mb-2">However, real-world computers (like this simulation) have **finite memory**. This fundamental limitation means they are technically not truly Turing-complete. But, for practical purposes, if their instruction set and control flow capabilities are rich enough, they are considered "mostly" Turing-complete because they can simulate the *computational aspects* of a Turing machine, assuming the problem fits within their memory constraints.</p>
+                <p>This CPU simulation, despite its finite RAM, possesses the necessary instructions (arithmetic, data movement, conditional jumps) to simulate other computational models like a Register Machine, which in turn are known to be Turing-equivalent. Therefore, in theory (ignoring memory limits), it can perform universal computation.</p>
+            </section>
+
+            <section class="mb-6">
+                <h3 class="text-2xl font-semibold text-blue-300 mb-2">How This CPU Simulation Works</h3>
+                <p class="mb-2">This interactive application simulates a very basic Central Processing Unit (CPU) with a small set of assembly-like instructions:</p>
+                <ul class="list-disc list-inside ml-4 mb-2">
+                    <li><strong>Registers (A, B, C, D):</strong> These are small, fast storage locations within the CPU used for computations.</li>
+                    <li><strong>RAM (Random Access Memory):</strong> This is the main memory, a larger storage area where data and program instructions can be stored. This simulation has 64 RAM cells.</li>
+                    <li><strong>Program Counter (PC):</strong> Points to the current instruction being executed in the program.</li>
+                    <li><strong>Compare Flag:</strong> Set by the `CMP` instruction to indicate if the first value was less than (-1), equal to (0), or greater than (1) the second value.</li>
+                </ul>
+                <p class="mb-2">Key Instructions:</p>
+                <ul class="list-disc list-inside ml-4 mb-4">
+                    <li>`MOV REG, VAL/REG`: Move a value or register content into a register.</li>
+                    <li>`ADD REG, VAL/REG`: Add a value or register content to a register.</li>
+                    <li>`SUB REG, VAL/REG`: Subtract a value or register content from a register.</li>
+                    <li>`LOAD REG, ADDR`: Load content from a RAM address into a register.</li>
+                    <li>`STOR REG, ADDR`: Store content from a register into a RAM address. **Note:** After a `STOR` operation, all registers (A, B, C, D) are cleared to 0 in this specific simulation. This necessitates careful programming to preserve important register values.</li>
+                    <li>`INP REG`: Read a number from the input area into a register.</li>
+                    <li>`OUT REG/VAL`: Output a register content or value to the output area.</li>
+                    <li>`CMP VAL/REG, VAL/REG`: Compare two values and set the Compare Flag.</li>
+                    <li>`JMP LABEL`: Unconditionally jump to a program label.</li>
+                    <li>`JEZ LABEL`: Jump if the Compare Flag is Zero (equal).</li>
+                    <li>`JNE LABEL`: Jump if the Compare Flag is Not Zero (not equal).</li>
+                    <li>`JGT LABEL`: Jump if the Compare Flag is Greater Than Zero.</li>
+                    <li>`JLT LABEL`: Jump if the Compare Flag is Less Than Zero.</li>
+                    <li>`HLT`: Halt the program execution.</li>
+                </ul>
+            </section>
+
+            <section>
+                <h3 class="text-2xl font-semibold text-blue-300 mb-2">The Turing Machine Incrementer Example Program</h3>
+                <p class="mb-2">The example program loaded by default demonstrates how to simulate a simple Turing Machine. This TM's purpose is to **increment a binary number** stored on a "tape" within the CPU's RAM.</p>
+                <h4 class="text-xl font-semibold text-gray-300 mb-1">Tape Representation:</h4>
+                <p class="mb-2">The "tape" is a segment of RAM starting at address `RAM[10]`. Each cell contains a `0` or `1` for binary digits, and `2` represents a blank symbol. For example, the initial tape `0, 1, 1, 2, 2` represents the binary number "011".</p>
+                <h4 class="text-xl font-semibold text-gray-300 mb-1">Turing Machine Logic (Incrementing):</h4>
+                <p class="mb-2">The TM works by starting its "tape head" (Register A) at the rightmost digit of the binary number. It then processes the digits from right to left, performing additions with carry, similar to how you would manually increment a binary number:</p>
+                <ul class="list-disc list-inside ml-4 mb-2">
+                    <li>**If the current symbol is '1':** It changes the '1' to a '0' and moves the tape head one position to the left. This simulates a "carry-over" in binary addition.</li>
+                    <li>**If the current symbol is '0':** It changes the '0' to a '1' and then halts. This signifies the end of the increment operation (no more carry).</li>
+                    <li>**If the current symbol is 'BLANK' (2):** This means the entire number was '11...1' (e.g., '11'). It changes the blank to a '1' (creating a new most significant bit) and then halts. This handles overflows (e.g., '11' becomes '100').</li>
+                </ul>
+                <h4 class="text-xl font-semibold text-gray-300 mb-1">Register Management for `STOR` Side Effect:</h4>
+                <p class="mb-2">Due to the unique feature of this CPU where `STOR` clears all registers, the Turing machine program employs a specific strategy:</p>
+                <ul class="list-disc list-inside ml-4">
+                    <li>The tape head position (originally in Register A) is always saved to a dedicated RAM location (`RAM[0]`) just before a `STOR` instruction is executed.</li>
+                    <li>Immediately after a `STOR` instruction, the tape head position is re-loaded from `RAM[0]` back into Register A.</li>
+                    <li>This ensures that the tape head's position is correctly maintained throughout the TM's execution, despite registers being cleared by `STOR`.</li>
+                </ul>
+                <p class="mt-2">After the increment operation completes, the program iterates through the modified tape (RAM[10] to RAM[14]) and outputs each symbol to the I/O output area, showing the result of the Turing machine's work.</p>
+            </section>
+        </div>
+    </div>
+
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DOM Elements ---
+        const runBtn = document.getElementById('run-btn');
+        const stepBtn = document.getElementById('step-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const speedSlider = document.getElementById('speed-slider');
+        const codeInput = document.getElementById('code-input');
+        const lineNumbersDiv = document.getElementById('line-numbers');
+        const inputArea = document.getElementById('input-area');
+        const outputArea = document.getElementById('output-area');
+        const ramContainer = document.querySelector('#ram-container > div');
+        const registersContainer = document.getElementById('registers-container');
+        const statusDisplay = document.getElementById('status-display');
+        const pcDisplay = document.getElementById('pc-display');
+        const flagDisplay = document.getElementById('flag-display');
+        const errorDisplay = document.getElementById('error-display');
+        const loadExampleBtn = document.getElementById('load-example');
+        // Modal elements
+        const infoBtn = document.getElementById('info-btn');
+        const infoModal = document.getElementById('info-modal');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+
+
+        // --- Machine State ---
+        let ram = new Int32Array(64);
+        let registers = { 'A': 0, 'B': 0, 'C': 0, 'D': 0 };
+        const registerNames = Object.keys(registers);
+        let pc = 0; // Program Counter
+        let compareFlag = 0; // -1 (less), 0 (equal), 1 (greater)
+        
+        let program = [];
+        let labelMap = {};
+        let inputBuffer = [];
+
+        let isRunning = false;
+        let isPaused = false;
+        let timeoutId = null;
+        let executionSpeed = 1000 - parseInt(speedSlider.value, 10);
+
+        // --- Turing Machine Example Program ---
+        const EXAMPLE_PROGRAM = `; --- Turing Machine Simulation: Increment Binary Number ---
+; This program simulates a simple Turing Machine that increments a binary number
+; stored on a "tape" within the CPU's RAM.
+;
+; Tape Layout:
+;   Tape starts at RAM address 10 (TAPE_START_ADDR)
+;   Each cell holds a 0 or 1. A '2' represents a blank symbol.
+;
+; Initial Tape Example (binary "011" followed by blanks):
+;   RAM[10] = 0
+;   RAM[11] = 1
+;   RAM[12] = 1 (Rightmost digit)
+;   RAM[13] = 2 (Blank)
+;   RAM[14] = 2 (Blank)
+;
+; Initial Tape Head Position: RAM[12] (rightmost digit)
+; Expected Output: The tape contents after incrementing ("100", then blanks)
+
+; Registers used:
+;   A: Tape Head Position (RAM address)
+;   B: Current Symbol read from tape
+;   C: Temporary register for writing values (0, 1, or 2)
+;   D: General purpose temporary register (currently unused in core logic)
+;
+; Dedicated RAM for saving Tape Head Position:
+;   RAM[0]: Stores the Tape Head Position (Register A) across STOR calls
+
+; --- Program Start ---
+
+START:
+    ; Initialize Tape in RAM (Hardcoded for this example: 011__)
+    ; Make sure these addresses are within RAM bounds (0-63)
+    MOV D, 0    ; Set D to 0 (for initializing RAM cells)
+    STOR D, 10  ; RAM[10] = 0 (Registers are cleared after STOR)
+    MOV D, 1    ; Set D to 1
+    STOR D, 11  ; RAM[11] = 1
+    MOV D, 1    ; Set D to 1
+    STOR D, 12  ; RAM[12] = 1
+    MOV D, 2    ; Set D to BLANK_SYMBOL (2)
+    STOR D, 13  ; RAM[13] = 2
+    MOV D, 2    ; Set D to BLANK_SYMBOL (2)
+    STOR D, 14  ; RAM[14] = 2
+
+    ; Set initial Tape Head Position to the rightmost digit (RAM[12])
+    MOV A, 12   ; Register A holds the tape head address
+    STOR A, 0   ; Save initial tape head position to RAM[0] (because A will be cleared by next STOR)
+
+LOOP:
+    LOAD A, 0   ; Restore A from RAM[0] at the start of each loop iteration (important because STOR clears A)
+    LOAD B, A   ; B = RAM[A]
+
+    ; --- Turing Machine Transition Logic ---
+
+    ; If Current Symbol (B) is 1
+    CMP B, 1
+    JEZ HANDLE_ONE
+
+    ; If Current Symbol (B) is 0
+    CMP B, 0
+    JEZ HANDLE_ZERO
+
+    ; If Current Symbol (B) is BLANK (2)
+    CMP B, 2
+    JEZ HANDLE_BLANK
+
+    ; Error: Unexpected symbol on tape (should not happen in this TM)
+    OUT B       ; Output the unexpected symbol for debugging
+    HLT         ; Halt on error
+
+HANDLE_ONE:
+    ; Action for '1': Write 0, Move Left
+    MOV C, 0    ; Set C to 0
+    STOR C, A   ; Write 0 to RAM[A]. All registers (including A) are cleared.
+                ; A is now 0 due to STOR.
+    LOAD A, 0   ; Restore A (tape head position) from RAM[0]
+    SUB A, 1    ; Move tape head left (A = A - 1)
+    STOR A, 0   ; Save new A (tape head position) to RAM[0] for next iteration
+    JMP LOOP    ; Go back to LOOP to process next symbol
+
+HANDLE_ZERO:
+    ; Action for '0': Write 1, Halt
+    MOV C, 1    ; Set C to 1
+    STOR C, A   ; Write 1 to RAM[A]. All registers (including A) are cleared.
+    LOAD A, 0   ; Restore A (tape head position) from RAM[0] (not strictly needed for final halt, but clean)
+    JMP HALT_SUCCESS ; Program finished successfully
+
+HANDLE_BLANK:
+    ; Action for 'BLANK': Write 1, Move Left, Halt (Handles overflow, e.g., 11 -> 100)
+    MOV C, 1    ; Set C to 1
+    STOR C, A   ; Write 1 to RAM[A]. All registers (including A) are cleared.
+    LOAD A, 0   ; Restore A (tape head position) from RAM[0]
+    SUB A, 1    ; Move tape head left (A = A - 1)
+    STOR A, 0   ; Save new A (tape head position) to RAM[0] for next iteration
+    JMP HALT_SUCCESS ; Program finished successfully
+
+HALT_SUCCESS:
+    ; Output the final state of the tape (RAM[10] to RAM[14])
+    ; This shows the result of the Turing Machine's operation
+    MOV C, 10   ; Initialize C with the starting address of the tape
+PRINT_TAPE_LOOP:
+    LOAD D, C   ; Load content of RAM[C] into Register D
+    OUT D       ; Output the symbol
+    ADD C, 1    ; Move to the next tape cell address (C = C + 1)
+    CMP C, 15   ; Compare C with the address after the last tape cell (RAM[14] + 1)
+    JLT PRINT_TAPE_LOOP ; If C is less than 15, continue printing
+    HLT         ; End of program
+`;
+
+        // --- Core Functions ---
+        function resetMachine() {
+            if (timeoutId) clearTimeout(timeoutId);
+            ram.fill(0);
+            for (const reg of registerNames) registers[reg] = 0;
+            pc = 0;
+            compareFlag = 0;
+
+            inputBuffer = inputArea.value.trim().split('\n').map(n => parseInt(n, 10)).filter(n => !isNaN(n));
+            outputArea.textContent = ''; // Clear output area on reset
+            
+            isRunning = false;
+            isPaused = false;
+            
+            parseAndLoadProgram();
+            updateUI();
+            updateControls();
+            setStatus('Idle', 'text-blue-400');
+            setError('-');
+        }
+        
+        function parseAndLoadProgram() {
+            const code = codeInput.value;
+            program = code.split('\n').map((line, index) => {
+                const cleanLine = line.split(';')[0].trim(); // Remove comments and trim
+                // Normalize commas: replace all commas with spaces to ensure arguments are correctly separated
+                const normalizedLine = cleanLine.replace(/,/g, ' '); 
+
+                if (!normalizedLine) return null;
+
+                // Use normalizedLine for matching parts
+                const parts = normalizedLine.match(/(".*?"|'.*?'|\S+)/g) || [];
+                const [opcode, ...args] = parts;
+
+                return {
+                    line: index,
+                    opcode: opcode.toUpperCase(),
+                    args: args
+                };
+            }).filter(Boolean); // Remove empty lines
+
+            // Pre-scan for labels
+            labelMap = {};
+            program.forEach((instr, index) => {
+                if (instr.opcode.endsWith(':')) {
+                    const label = instr.opcode.slice(0, -1);
+                    labelMap[label.toUpperCase()] = index;
+                    instr.isLabel = true; // Mark as label to be skipped during execution
+                }
+            });
+            setError('-'); // Clear previous errors
+        }
+        
+        function highlightElement(element, className) {
+            if (!element) return;
+            element.classList.add(className);
+            setTimeout(() => element.classList.remove(className), 500);
+        }
+
+        function updateUI() {
+            // Update displays
+            pcDisplay.textContent = pc;
+            flagDisplay.textContent = compareFlag;
+
+            // Update Registers
+            registersContainer.innerHTML = '';
+            registerNames.forEach(name => {
+                const regDiv = document.createElement('div');
+                regDiv.className = 'register bg-gray-700 p-2 rounded-lg';
+                regDiv.id = `reg-${name}`;
+                regDiv.innerHTML = `
+                    <div class="text-sm text-gray-400">${name}</div>
+                    <div class="text-xl font-bold font-fira">${registers[name]}</div>
+                `;
+                registersContainer.appendChild(regDiv);
+            });
+            
+            // Update RAM
+            ramContainer.innerHTML = '';
+            for (let i = 0; i < ram.length; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'ram-cell w-16 h-16 flex-shrink-0 bg-gray-700 rounded-lg flex flex-col items-center justify-center';
+                cell.id = `ram-${i}`;
+                cell.innerHTML = `
+                    <div class="text-xs text-gray-400">${i}</div>
+                    <div class="text-2xl font-bold">${ram[i]}</div>
+                `;
+                ramContainer.appendChild(cell);
+            }
+            
+            // Update code highlighting
+            document.querySelectorAll('#code-input').forEach(el => el.classList.remove('active-instruction'));
+            const activeLine = program.find(p => p.line === pc);
+            if(activeLine) {
+                 // This part is tricky with a textarea. A div overlay would be better.
+                 // For now, we just update the PC. Highlighting a single line in a textarea is not simple.
+            }
+            updateLineNumbers();
+        }
+        
+        function setStatus(text, colorClass) {
+            statusDisplay.textContent = text;
+            statusDisplay.className = `text-lg font-semibold ${colorClass}`;
+        }
+        
+        function setError(text) {
+             errorDisplay.textContent = text;
+             errorDisplay.title = text;
+             if (text !== '-') {
+                 setStatus('Error', 'text-red-400');
+                 if (timeoutId) clearTimeout(timeoutId);
+                 isRunning = false;
+                 updateControls();
+             }
+        }
+
+        function updateControls() {
+            runBtn.disabled = isRunning;
+            stepBtn.disabled = isRunning;
+            pauseBtn.disabled = !isRunning || isPaused;
+            codeInput.disabled = isRunning || isPaused;
+            
+            if (isPaused) {
+                pauseBtn.textContent = 'Resume';
+                setStatus('Paused', 'text-yellow-400');
+            } else {
+                pauseBtn.textContent = 'Pause';
+            }
+        }
+        
+        function getValue(arg) {
+            const upperArg = arg.toUpperCase();
+            if (registerNames.includes(upperArg)) {
+                return registers[upperArg];
+            }
+            const num = parseInt(arg, 10);
+            if(isNaN(num)) {
+                setError(`Invalid number: ${arg}`);
+                return null;
+            }
+            return num;
+        }
+
+        function step() {
+            if (pc >= program.length) {
+                setStatus('Halted', 'text-purple-400');
+                isRunning = false;
+                updateControls();
+                return false;
+            }
+
+            const instr = program[pc];
+            if (!instr || instr.isLabel) {
+                pc++;
+                return true; // Skip labels/empty lines
+            }
+            
+            let pcShouldIncrement = true;
+            const [op, args] = [instr.opcode, instr.args];
+
+            try {
+                switch (op) {
+                    case 'MOV': { // MOV REG, VALUE | MOV REG, REG
+                        if (args.length !== 2) throw new Error("MOV needs 2 args");
+                        const destReg = args[0].toUpperCase();
+                        if (!registerNames.includes(destReg)) throw new Error(`Invalid register: ${args[0]}`);
+                        const val = getValue(args[1]);
+                        if(val === null) return false;
+                        registers[destReg] = val;
+                        highlightElement(document.getElementById(`reg-${destReg}`), 'highlight-update');
+                        break;
+                    }
+                    case 'ADD':
+                    case 'SUB': {
+                        if (args.length !== 2) throw new Error(`${op} needs 2 args`);
+                        const destReg = args[0].toUpperCase();
+                        if (!registerNames.includes(destReg)) throw new Error(`Invalid register: ${args[0]}`);
+                        const val = getValue(args[1]);
+                        if(val === null) return false;
+                        registers[destReg] += (op === 'ADD' ? val : -val);
+                        highlightElement(document.getElementById(`reg-${destReg}`), 'highlight-update');
+                        break;
+                    }
+                    case 'LOAD': { // LOAD REG, ADDR
+                        if (args.length !== 2) throw new Error("LOAD needs 2 args");
+                        const destReg = args[0].toUpperCase();
+                        if (!registerNames.includes(destReg)) throw new Error(`Invalid register: ${args[0]}`);
+                        const addr = getValue(args[1]);
+                        if(addr === null || addr < 0 || addr >= ram.length) throw new Error(`Invalid address: ${addr}`);
+                        registers[destReg] = ram[addr];
+                        highlightElement(document.getElementById(`reg-${destReg}`), 'highlight-update');
+                        highlightElement(document.getElementById(`ram-${addr}`), 'highlight-read');
+                        break;
+                    }
+                     case 'STOR': { // STOR REG, ADDR
+                        if (args.length !== 2) throw new Error("STOR needs 2 args");
+                        const srcReg = args[0].toUpperCase();
+                        if (!registerNames.includes(srcReg)) throw new Error(`Invalid register: ${args[0]}`);
+                        const addr = getValue(args[1]);
+                        if(addr === null || addr < 0 || addr >= ram.length) throw new Error(`Invalid address: ${addr}`);
+                        ram[addr] = registers[srcReg];
+                        highlightElement(document.getElementById(`ram-${addr}`), 'highlight-write');
+                        
+                        // Clear all registers after STOR operation
+                        for (const reg of registerNames) {
+                            registers[reg] = 0;
+                            highlightElement(document.getElementById(`reg-${reg}`), 'highlight-update'); // Highlight each cleared register
+                        }
+                        break;
+                    }
+                    case 'INP': { // INP REG
+                        if (args.length !== 1) throw new Error("INP needs 1 arg");
+                        const destReg = args[0].toUpperCase();
+                        if (!registerNames.includes(destReg)) throw new Error(`Invalid register: ${args[0]}`);
+                        if (inputBuffer.length === 0) {
+                            setStatus('Awaiting Input', 'text-cyan-400');
+                            isRunning = false; // Effectively pauses
+                            return false;
+                        }
+                        registers[destReg] = inputBuffer.shift();
+                        inputArea.value = inputBuffer.join('\n');
+                        highlightElement(document.getElementById(`reg-${destReg}`), 'highlight-update');
+                        break;
+                    }
+                    case 'OUT': { // OUT REG | OUT VALUE
+                        if (args.length !== 1) throw new Error("OUT needs 1 arg");
+                        const val = getValue(args[0]);
+                        if(val === null) return false;
+                        outputArea.textContent += val + '\n';
+                        outputArea.scrollTop = outputArea.scrollHeight;
+                        break;
+                    }
+                    case 'CMP': { // CMP A, B
+                        if (args.length !== 2) throw new Error("CMP needs 2 args");
+                        const val1 = getValue(args[0]);
+                        const val2 = getValue(args[1]);
+                        if(val1 === null || val2 === null) return false;
+                        const diff = val1 - val2;
+                        compareFlag = Math.sign(diff);
+                        break;
+                    }
+                    case 'JMP':
+                    case 'JEZ': // Jump if Equal (zero)
+                    case 'JNE': // Jump if Not Equal
+                    case 'JGT': // Jump if Greater Than
+                    case 'JLT': // Jump if Less Than
+                    {
+                        if (args.length !== 1) throw new Error(`${op} needs 1 arg`);
+                        const label = args[0].toUpperCase();
+                        if (labelMap[label] === undefined) throw new Error(`Label not found: ${args[0]}`);
+                        
+                        let shouldJump = false;
+                        if(op === 'JMP') shouldJump = true;
+                        if(op === 'JEZ' && compareFlag === 0) shouldJump = true;
+                        if(op === 'JNE' && compareFlag !== 0) shouldJump = true;
+                        if(op === 'JGT' && compareFlag > 0) shouldJump = true;
+                        if(op === 'JLT' && compareFlag < 0) shouldJump = true;
+
+                        if (shouldJump) {
+                            pc = labelMap[label];
+                            pcShouldIncrement = false;
+                        }
+                        break;
+                    }
+                    case 'HLT':
+                        setStatus('Halted', 'text-purple-400');
+                        isRunning = false;
+                        if (timeoutId) clearTimeout(timeoutId);
+                        updateControls();
+                        return false; // Stop execution
+                    default:
+                        throw new Error(`Unknown instruction: ${op}`);
+                }
+            } catch (e) {
+                setError(`Line ${instr.line + 1}: ${e.message}`);
+                return false;
+            }
+            
+            if (pcShouldIncrement) pc++;
+            updateUI();
+            return true;
+        }
+
+        function runLoop() {
+            if (!isRunning || isPaused) return;
+            if (step()) {
+                if (executionSpeed > 0) {
+                    timeoutId = setTimeout(runLoop, executionSpeed);
+                } else {
+                    // Batch execution for max speed
+                    let batchSize = 0;
+                    while (isRunning && !isPaused && batchSize < 1000 && step()) {
+                        batchSize++;
+                    }
+                     if(isRunning && !isPaused) {
+                         timeoutId = setTimeout(runLoop, 0); // Yield to browser
+                     }
+                }
+            } else {
+                updateControls();
+            }
+        }
+
+        function startExecution() {
+            resetMachine();
+            if(program.length === 0) return;
+            isRunning = true;
+            isPaused = false;
+            setStatus('Running', 'text-green-400');
+            updateControls();
+            runLoop();
+        }
+
+        function updateLineNumbers() {
+            const lineCount = codeInput.value.split('\n').length;
+            lineNumbersDiv.innerHTML = Array.from({length: lineCount}, (_, i) => i + 1).join('<br>');
+            lineNumbersDiv.scrollTop = codeInput.scrollTop;
+        }
+        
+        // --- Event Listeners ---
+        runBtn.addEventListener('click', startExecution);
+        stepBtn.addEventListener('click', () => {
+            if (!isRunning) {
+                resetMachine();
+                isRunning = true;
+                isPaused = true;
+                setStatus('Stepping', 'text-yellow-400');
+            }
+            step();
+            updateControls();
+        });
+        pauseBtn.addEventListener('click', () => {
+             if (isPaused) { // Resume
+                 isPaused = false;
+                 setStatus('Running', 'text-green-400');
+                 runLoop();
+             } else { // Pause
+                 isPaused = true;
+                 if(timeoutId) clearTimeout(timeoutId);
+             }
+             updateControls();
+        });
+        resetBtn.addEventListener('click', () => {
+            resetMachine();
+            outputArea.textContent = '';
+        });
+        speedSlider.addEventListener('input', (e) => {
+            executionSpeed = 1000 - parseInt(e.target.value, 10);
+        });
+        codeInput.addEventListener('input', updateLineNumbers);
+        codeInput.addEventListener('scroll', () => {
+            lineNumbersDiv.scrollTop = codeInput.scrollTop;
+        });
+        loadExampleBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            codeInput.value = EXAMPLE_PROGRAM;
+            resetMachine();
+        });
+
+        // --- Info Modal Event Listeners ---
+        infoBtn.addEventListener('click', () => {
+            infoModal.classList.add('open');
+        });
+
+        closeModalBtn.addEventListener('click', () => {
+            infoModal.classList.remove('open');
+        });
+
+        infoModal.addEventListener('click', (e) => {
+            if (e.target === infoModal) { // Close if clicked outside modal content
+                infoModal.classList.remove('open');
+            }
+        });
+
+        // --- Initial Setup ---
+        codeInput.value = EXAMPLE_PROGRAM;
+        resetMachine();
+    });
+    </script>
+</body>
+</html>
