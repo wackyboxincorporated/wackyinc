@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Georgia', sans-serif;
+            font-family: 'Inter', sans-serif;
             background-color: #111827;
         }
         .font-fira {
@@ -284,6 +284,239 @@
                     <li>`HLT`: Halt the program execution.</li>
                 </ul>
             </section>
+
+            <section class="mb-6">
+                <h3 class="text-2xl font-semibold text-blue-300 mb-2">Detailed Assembly Programming Guide</h3>
+                <p class="mb-2">This section provides a detailed guide on each instruction available in this CPU's assembly language, including their purpose, syntax, arguments, and practical examples.</p>
+
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">1. `MOV` (Move)</h4>
+                <p class="mb-1"><strong>Purpose:</strong> Copies a value or the content of one register into another register.</p>
+                <p class="mb-1"><strong>Syntax:</strong> `MOV DEST_REG, SOURCE`</p>
+                <ul class="list-disc list-inside ml-4 mb-2">
+                    <li>`DEST_REG`: The destination register (A, B, C, or D) where the value will be stored.</li>
+                    <li>`SOURCE`: Can be an integer literal (e.g., `10`, `-5`) or another register name (e.g., `B`, `C`).</li>
+                </ul>
+                <p class="mb-1"><strong>Behavior:</strong> The value of `SOURCE` is copied into `DEST_REG`. The `SOURCE` itself is unchanged.</p>
+                <p class="mb-1"><strong>Example:</strong></p>
+                <pre class="bg-gray-900 p-3 rounded-md text-sm font-fira overflow-x-auto mb-2">
+MOV A, 10   ; Register A becomes 10
+MOV B, A    ; Register B becomes 10 (value from A)
+MOV C, -5   ; Register C becomes -5
+                </pre>
+
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">2. `ADD` (Add)</h4>
+                <p class="mb-1"><strong>Purpose:</strong> Adds a value or the content of one register to another register.</p>
+                <p class="mb-1"><strong>Syntax:</strong> `ADD DEST_REG, SOURCE`</p>
+                <ul class="list-disc list-inside ml-4 mb-2">
+                    <li>`DEST_REG`: The destination register (A, B, C, or D) to which `SOURCE` will be added. The result is stored back in `DEST_REG`.</li>
+                    <li>`SOURCE`: Can be an integer literal or another register name.</li>
+                </ul>
+                <p class="mb-1"><strong>Behavior:</strong> `DEST_REG = DEST_REG + SOURCE`. `SOURCE` is unchanged.</p>
+                <p class="mb-1"><strong>Example:</strong></p>
+                <pre class="bg-gray-900 p-3 rounded-md text-sm font-fira overflow-x-auto mb-2">
+MOV A, 5    ; A = 5
+MOV B, 3    ; B = 3
+ADD A, B    ; A = A + B (A becomes 8)
+ADD C, 10   ; C = C + 10 (assuming C was 0, C becomes 10)
+                </pre>
+
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">3. `SUB` (Subtract)</h4>
+                <p class="mb-1"><strong>Purpose:</strong> Subtracts a value or the content of one register from another register.</p>
+                <p class="mb-1"><strong>Syntax:</strong> `SUB DEST_REG, SOURCE`</p>
+                <ul class="list-disc list-inside ml-4 mb-2">
+                    <li>`DEST_REG`: The destination register (A, B, C, or D) from which `SOURCE` will be subtracted. The result is stored back in `DEST_REG`.</li>
+                    <li>`SOURCE`: Can be an integer literal or another register name.</li>
+                </ul>
+                <p class="mb-1"><strong>Behavior:</strong> `DEST_REG = DEST_REG - SOURCE`. `SOURCE` is unchanged.</p>
+                <p class="mb-1"><strong>Example:</strong></p>
+                <pre class="bg-gray-900 p-3 rounded-md text-sm font-fira overflow-x-auto mb-2">
+MOV A, 10   ; A = 10
+MOV B, 3    ; B = 3
+SUB A, B    ; A = A - B (A becomes 7)
+SUB D, 1    ; D = D - 1 (decrement D)
+                </pre>
+
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">4. `LOAD` (Load from RAM)</h4>
+                <p class="mb-1"><strong>Purpose:</strong> Copies a value from a specified RAM address into a register.</p>
+                <p class="mb-1"><strong>Syntax:</strong> `LOAD DEST_REG, ADDRESS`</p>
+                <ul class="list-disc list-inside ml-4 mb-2">
+                    <li>`DEST_REG`: The register (A, B, C, or D) where the loaded value will be stored.</li>
+                    <li>`ADDRESS`: An integer literal representing a valid RAM address (0-63).</li>
+                </ul>
+                <p class="mb-1"><strong>Behavior:</strong> `DEST_REG = RAM[ADDRESS]`. The content of RAM at `ADDRESS` remains unchanged.</p>
+                <p class="mb-1"><strong>Example:</strong></p>
+                <pre class="bg-gray-900 p-3 rounded-md text-sm font-fira overflow-x-auto mb-2">
+; Assume RAM[5] contains the value 100
+LOAD A, 5   ; Register A becomes 100
+                </pre>
+
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">5. `STOR` (Store to RAM)</h4>
+                <p class="mb-1"><strong>Purpose:</strong> Copies a value from a register into a specified RAM address.</p>
+                <p class="mb-1"><strong>Syntax:</strong> `STOR SOURCE_REG, ADDRESS`</p>
+                <ul class="list-disc list-inside ml-4 mb-2">
+                    <li>`SOURCE_REG`: The register (A, B, C, or D) whose content will be stored.</li>
+                    <li>`ADDRESS`: An integer literal representing a valid RAM address (0-63).</li>
+                </ul>
+                <p class="mb-1"><strong>Behavior:</strong> `RAM[ADDRESS] = SOURCE_REG`. The content of `SOURCE_REG` remains unchanged *before* this instruction completes, but **all registers (A, B, C, D) are cleared to 0 immediately after the value is written to RAM.**</p>
+                <p class="mb-1"><strong>Example:</strong></p>
+                <pre class="bg-gray-900 p-3 rounded-md text-sm font-fira overflow-x-auto mb-2">
+MOV A, 25   ; A = 25
+STOR A, 10  ; RAM[10] becomes 25. Now, A, B, C, D all become 0.
+; If you need A's value (or any other register's value) after STOR,
+; you MUST save it to a different RAM location *before* the STOR,
+; and then LOAD it back. For example:
+; MOV A, 25
+; STOR A, 0   ; Temporarily save A to RAM[0] before STOR clears registers
+; STOR A, 10  ; RAM[10] becomes 25. A, B, C, D all become 0.
+; LOAD A, 0   ; Restore A's original value (25) from RAM[0]
+                </pre>
+
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">6. `INP` (Input)</h4>
+                <p class="mb-1"><strong>Purpose:</strong> Reads the next number from the Input area into a specified register.</p>
+                <p class="mb-1"><strong>Syntax:</strong> `INP DEST_REG`</p>
+                <ul class="list-disc list-inside ml-4 mb-2">
+                    <li>`DEST_REG`: The register (A, B, C, or D) where the input value will be stored.</li>
+                </ul>
+                <p class="mb-1"><strong>Behavior:</strong> The first available number from the Input area is consumed and placed into `DEST_REG`. If no input is available, the CPU will pause execution until input is provided.</p>
+                <p class="mb-1"><strong>Example:</strong></p>
+                <pre class="bg-gray-900 p-3 rounded-md text-sm font-fira overflow-x-auto mb-2">
+; Input area has:
+; 42
+; 100
+INP A       ; A becomes 42. Input area now has: 100
+INP B       ; B becomes 100. Input area is now empty.
+                </pre>
+
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">7. `OUT` (Output)</h4>
+                <p class="mb-1"><strong>Purpose:</strong> Displays a value or the content of a register in the Output area.</p>
+                <p class="mb-1"><strong>Syntax:</strong> `OUT SOURCE`</p>
+                <ul class="list-disc list-inside ml-4 mb-2">
+                    <li>`SOURCE`: Can be an integer literal or a register name (A, B, C, or D).</li>
+                </ul>
+                <p class="mb-1"><strong>Behavior:</strong> The value of `SOURCE` is appended as a new line to the Output area.</p>
+                <p class="mb-1"><strong>Example:</strong></p>
+                <pre class="bg-gray-900 p-3 rounded-md text-sm font-fira overflow-x-auto mb-2">
+MOV A, 7
+OUT A       ; Output: 7
+OUT 99      ; Output: 99 (on a new line)
+                </pre>
+
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">8. `CMP` (Compare)</h4>
+                <p class="mb-1"><strong>Purpose:</strong> Compares two values and sets the `Compare Flag` based on their relationship.</p>
+                <p class="mb-1"><strong>Syntax:</strong> `CMP VALUE1, VALUE2`</p>
+                <ul class="list-disc list-inside ml-4 mb-2">
+                    <li>`VALUE1`: Can be an integer literal or a register name.</li>
+                    <li>`VALUE2`: Can be an integer literal or a register name.</li>
+                </ul>
+                <p class="mb-1"><strong>Behavior:</strong> Sets the `Compare Flag` register:</p>
+                <ul class="list-disc list-inside ml-8">
+                    <li>`-1` if `VALUE1 < VALUE2`</li>
+                    <li>`0` if `VALUE1 == VALUE2`</li>
+                    <li>`1` if `VALUE1 > VALUE2`</li>
+                </ul>
+                <p class="mb-1">This flag is then used by conditional jump instructions (`JEZ`, `JNE`, `JGT`, `JLT`).</p>
+                <p class="mb-1"><strong>Example:</strong></p>
+                <pre class="bg-gray-900 p-3 rounded-md text-sm font-fira overflow-x-auto mb-2">
+MOV A, 5
+MOV B, 10
+CMP A, B    ; Compare Flag becomes -1 (5 < 10)
+CMP B, 5    ; Compare Flag becomes 1 (10 > 5)
+CMP A, 5    ; Compare Flag becomes 0 (5 == 5)
+                </pre>
+
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">9. `JMP` (Jump)</h4>
+                <p class="mb-1"><strong>Purpose:</strong> Unconditionally changes the `Program Counter` (PC) to the address of a specified label, causing execution to continue from that point.</p>
+                <p class="mb-1"><strong>Syntax:</strong> `JMP LABEL_NAME`</p>
+                <ul class="list-disc list-inside ml-4 mb-2">
+                    <li>`LABEL_NAME`: A label defined in your program (e.g., `MY_LOOP:`, `START:`).</li>
+                </ul>
+                <p class="mb-1"><strong>Behavior:</strong> The PC is set to the line number associated with `LABEL_NAME`. This creates loops or jumps to subroutines.</p>
+                <p class="mb-1"><strong>Example:</strong></p>
+                <pre class="bg-gray-900 p-3 rounded-md text-sm font-fira overflow-x-auto mb-2">
+START:
+    MOV A, 1
+    JMP END_PROGRAM
+    ; This line will be skipped
+    MOV A, 0
+END_PROGRAM:
+    HLT
+                </pre>
+
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">10. `JEZ` (Jump if Equal to Zero)</h4>
+                <p class="mb-1"><strong>Purpose:</strong> Jumps to a label if the `Compare Flag` is 0 (meaning the last `CMP` operation resulted in equality).</p>
+                <p class="mb-1"><strong>Syntax:</strong> `JEZ LABEL_NAME`</p>
+                <p class="mb-1"><strong>Behavior:</strong> If `Compare Flag == 0`, PC is set to `LABEL_NAME`. Otherwise, execution continues to the next instruction.</p>
+                <p class="mb-1"><strong>Example:</strong></p>
+                <pre class="bg-gray-900 p-3 rounded-md text-sm font-fira overflow-x-auto mb-2">
+MOV A, 5
+CMP A, 5    ; Compare Flag = 0
+JEZ IS_FIVE ; Jumps to IS_FIVE
+OUT 0       ; This line is skipped
+IS_FIVE:
+OUT 1       ; Output: 1
+HLT
+                </pre>
+
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">11. `JNE` (Jump if Not Equal)</h4>
+                <p class="mb-1"><strong>Purpose:</strong> Jumps to a label if the `Compare Flag` is not 0 (meaning the last `CMP` operation resulted in inequality).</p>
+                <p class="mb-1"><strong>Syntax:</strong> `JNE LABEL_NAME`</p>
+                <p class="mb-1"><strong>Behavior:</strong> If `Compare Flag != 0`, PC is set to `LABEL_NAME`. Otherwise, execution continues to the next instruction.</p>
+                <p class="mb-1"><strong>Example:</strong></p>
+                <pre class="bg-gray-900 p-3 rounded-md text-sm font-fira overflow-x-auto mb-2">
+MOV A, 5
+CMP A, 6    ; Compare Flag = -1
+JNE NOT_SIX ; Jumps to NOT_SIX
+OUT 0       ; This line is skipped
+NOT_SIX:
+OUT 1       ; Output: 1
+HLT
+                </pre>
+
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">12. `JGT` (Jump if Greater Than)</h4>
+                <p class="mb-1"><strong>Purpose:</strong> Jumps to a label if the `Compare Flag` is 1 (meaning the first value in `CMP` was greater than the second).</p>
+                <p class="mb-1"><strong>Syntax:</strong> `JGT LABEL_NAME`</p>
+                <p class="mb-1"><strong>Behavior:</strong> If `Compare Flag == 1`, PC is set to `LABEL_NAME`. Otherwise, execution continues to the next instruction.</p>
+                <p class="mb-1"><strong>Example:</strong></p>
+                <pre class="bg-gray-900 p-3 rounded-md text-sm font-fira overflow-x-auto mb-2">
+MOV A, 10
+MOV B, 5
+CMP A, B    ; Compare Flag = 1
+JGT A_IS_GREATER ; Jumps to A_IS_GREATER
+OUT 0
+A_IS_GREATER:
+OUT 1       ; Output: 1
+HLT
+                </pre>
+
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">13. `JLT` (Jump if Less Than)</h4>
+                <p class="mb-1"><strong>Purpose:</strong> Jumps to a label if the `Compare Flag` is -1 (meaning the first value in `CMP` was less than the second).</p>
+                <p class="mb-1"><strong>Syntax:</strong> `JLT LABEL_NAME`</p>
+                <p class="mb-1"><strong>Behavior:</strong> If `Compare Flag == -1`, PC is set to `LABEL_NAME`. Otherwise, execution continues to the next instruction.</p>
+                <p class="mb-1"><strong>Example:</strong></p>
+                <pre class="bg-gray-900 p-3 rounded-md text-sm font-fira overflow-x-auto mb-2">
+MOV A, 5
+MOV B, 10
+CMP A, B    ; Compare Flag = -1
+JLT A_IS_LESS ; Jumps to A_IS_LESS
+OUT 0
+A_IS_LESS:
+OUT 1       ; Output: 1
+HLT
+                </pre>
+
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">14. `HLT` (Halt)</h4>
+                <p class="mb-1"><strong>Purpose:</strong> Stops the CPU execution.</p>
+                <p class="mb-1"><strong>Syntax:</strong> `HLT` (takes no arguments)</p>
+                <p class="mb-1"><strong>Behavior:</strong> The program halts, and the CPU status changes to "Halted".</p>
+                <p class="mb-1"><strong>Example:</strong></p>
+                <pre class="bg-gray-900 p-3 rounded-md text-sm font-fira overflow-x-auto mb-2">
+MOV A, 1
+OUT A
+HLT         ; Program stops here
+MOV B, 2    ; This line will never be reached
+                </pre>
+            </section>
+
 
             <section>
                 <h3 class="text-2xl font-semibold text-blue-300 mb-2">The Turing Machine Incrementer Example Program</h3>
