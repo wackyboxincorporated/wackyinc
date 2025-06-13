@@ -264,10 +264,10 @@
 
                 if (playerState.isPaused) {
                     playerState.isPaused = false;
-                    playerState.isPlaying = true;
+                    playerState.isPlaying = true; // Set to true for resume
                     console.log('Main: Resumed playback.');
                 } else if (!playerState.isPlaying) {
-                    startPlayback();
+                    startPlayback(); // startPlayback will handle setting isPlaying = true
                     console.log('Main: Started new playback.');
                 }
                 
@@ -454,7 +454,7 @@
             
             function resetPlayerState() {
                 playerState = {
-                    isPlaying: false, isPaused: false,
+                    isPlaying: false, isPaused: false, // Default to false
                     position: 0, row: 0, tick: 0,
                     speed: 6, bpm: 125, timerId: null,
                     // Initialize main thread channels with AudioNode references
@@ -477,6 +477,11 @@
                 }
                 
                 resetPlayerState(); // Reset player state for a fresh start
+
+                // IMPORTANT: Set isPlaying to true AFTER resetPlayerState()
+                playerState.isPlaying = true;
+                console.log('Main: playerState.isPlaying set to TRUE.');
+
 
                 // Create gain nodes and connect to master gain node
                 playerState.channels.forEach((ch, index) => {
