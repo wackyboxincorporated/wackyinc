@@ -45,6 +45,7 @@
             opacity: 0;
             transition: opacity 0.5s;
             pointer-events: none;
+            text-align: center;
         }
         #message-box.show {
             opacity: 1;
@@ -56,6 +57,10 @@
         #message-box.info {
             background-color: #047857; /* green-700 */
             color: white;
+        }
+        #message-box.warning {
+            background-color: #f59e0b; /* amber-500 */
+            color: black;
         }
         /* Style for the volume slider */
         input[type="range"] {
@@ -188,32 +193,55 @@
             
             initPatternView(); // Create the grid structure once.
 
+            // Initialize AudioContext and master gain node early
+            console.log('Main: Initializing AudioContext and MasterGainNode on DOMContentLoaded.');
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            masterGainNode = audioContext.createGain();
+            masterGainNode.connect(audioContext.destination);
+            masterGainNode.gain.value = parseFloat(volumeSlider.value);
+
+
             /**
              * Displays a transient message box.
              * @param {string} text The message to display.
              * @param {string} type The type of message ('info' or 'error').
              */
             function showMessage(text, type = 'info') {
+                console.log(`[Message Box] ${type.toUpperCase()}: ${text}`); // Log messages to console
                 messageBox.textContent = text;
                 messageBox.className = ``; // Reset classes
                 messageBox.classList.add(type, 'show');
                 setTimeout(() => messageBox.classList.remove('show'), 3000);
             }
 
+            // Check if running from file:/// protocol
+            if (window.location.protocol === 'file:') {
+                showMessage(
+                    'Warning: This application uses Web Workers and requires a web server (e.g., http-server, Live Server) to function correctly. Please serve the files via HTTP/HTTPS.',
+                    'warning'
+                );
+            }
+
+
             fileLoader.addEventListener('change', (event) => {
                 const file = event.target.files[0];
                 if (file) {
                     stopPlayback(); // Stop any current playback
                     showMessage('Loading MOD file...', 'info');
+                    console.log('Main: File selected, reading as ArrayBuffer.');
                     
                     const reader = new FileReader();
                     reader.onload = (e) => {
                         const arrayBuffer = e.target.result;
+                        console.log('Main: ArrayBuffer loaded, size:', arrayBuffer.byteLength);
                         // Send the ArrayBuffer to worker1 for parsing
                         if (worker1) {
-                            worker1.postMessage({ type: 'parse_mod_file', data: { arrayBuffer: arrayBuffer } }, [arrayBuffer]); // Transfer buffer
+                            // Ensure the buffer is marked as transferable
+                            worker1.postMessage({ type: 'parse_mod_file', data: { arrayBuffer: arrayBuffer } }, [arrayBuffer]);
+                            console.log('Main: Sent parse_mod_file message to worker1.');
                         } else {
                             showMessage('Worker not initialized. Cannot parse file.', 'error');
+                            console.error('Main: Worker1 is null during file load.');
                         }
                     };
                     reader.readAsArrayBuffer(file);
@@ -221,31 +249,34 @@
             });
 
             playButton.addEventListener('click', () => {
-                if (!modFile) return;
-
-                if (!audioContext) {
-                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    masterGainNode = audioContext.createGain();
-                    masterGainNode.connect(audioContext.destination);
-                    masterGainNode.gain.value = parseFloat(volumeSlider.value);
+                if (!modFile) {
+                    console.warn('Main: Play button clicked but no modFile loaded.');
+                    return;
                 }
+
+                // AudioContext and masterGainNode are now initialized on DOMContentLoaded
                 if (audioContext.state === 'suspended') {
+                    console.log('Main: Resuming AudioContext.');
                     audioContext.resume();
                 }
 
                 if (playerState.isPaused) {
                     playerState.isPaused = false;
                     playerState.isPlaying = true;
+                    console.log('Main: Resumed playback.');
                 } else if (!playerState.isPlaying) {
                     startPlayback();
+                    console.log('Main: Started new playback.');
                 }
                 
                 // Ensure tick loop and render loop are active if playing
                 if (playerState.isPlaying && !playerState.timerId) {
                    tick();
+                   console.log('Main: Started tick loop.');
                 }
                 if (playerState.isPlaying && !animationFrameId) {
                     renderLoop();
+                    console.log('Main: Started render loop.');
                 }
 
                 playButton.disabled = true;
@@ -257,6 +288,7 @@
                 if (playerState.isPlaying) {
                     playerState.isPlaying = false;
                     playerState.isPaused = true;
+                    console.log('Main: Paused playback.');
                     playButton.disabled = false;
                     pauseButton.disabled = true;
                 }
@@ -267,17 +299,19 @@
             volumeSlider.addEventListener('input', (event) => {
                 if (masterGainNode) {
                     masterGainNode.gain.value = parseFloat(event.target.value);
+                    console.log('Main: Volume set to', masterGainNode.gain.value);
                 }
             });
 
             // --- Web Worker Setup ---
             function setupWorkers() {
+                console.log('Main: Setting up Web Workers.');
                 // Initialize Worker 1 (channels 0, 1)
                 worker1 = new Worker('worker.js'); // Assuming worker.js is in the same directory
                 worker1.onmessage = handleWorkerMessage;
                 worker1.onerror = (e) => {
                     console.error('Worker 1 error:', e);
-                    showMessage('Error in playback worker 1.', 'error');
+                    showMessage('Error in playback worker 1. Check console for details.', 'error');
                 };
 
                 // Initialize Worker 2 (channels 2, 3)
@@ -285,7 +319,7 @@
                 worker2.onmessage = handleWorkerMessage;
                 worker2.onerror = (e) => {
                     console.error('Worker 2 error:', e);
-                    showMessage('Error in playback worker 2.', 'error');
+                    showMessage('Error in playback worker 2. Check console for details.', 'error');
                 };
             }
 
@@ -301,73 +335,106 @@
 
                 switch (type) {
                     case 'mod_parsed':
+                        console.log('Main: Received mod_parsed from worker. ModFile:', receivedModFile);
                         modFile = receivedModFile;
                         // Convert sample data from transferable ArrayBuffer back to AudioBuffer
-                        // The worker sent Int8Array.buffer. We need to create AudioBuffer from it.
                         modFile.samples.forEach(sample => {
                             if (sample.data && sample.data.buffer) {
-                                // Create AudioBuffer from the transferred data
+                                // Now audioContext is guaranteed to be initialized here
                                 const buffer = audioContext.createBuffer(1, sample.length, audioContext.sampleRate);
                                 const bufferData = buffer.getChannelData(0);
                                 for (let i = 0; i < sample.length; i++) {
                                     bufferData[i] = sample.data[i] / 128.0; // Convert Int8 to float [-1, 1]
                                 }
                                 sample.buffer = buffer; // Store the AudioBuffer
-                                sample.data = null; // Free up the Int8Array data
+                                sample.data = null; // Free up the Int8Array data from the worker response
                             }
                         });
 
                         if (modFile) {
                             showMessage('MOD file loaded and parsed successfully.', 'info');
-                            resetPlayerState();
+                            resetPlayerState(); // Reset main thread's player state with fresh AudioNodes
                             updateSongInfo();
                             displayPattern(modFile.patterns[modFile.patternTable[0]]);
                             playButton.disabled = false;
 
                             // Initialize workers with their respective channel states
-                            // This also implicitly tells them their starting channels
                             if (worker1 && worker2 && audioContext) {
+                                console.log('Main: Initializing workers with channel states.');
                                 worker1.postMessage({
                                     type: 'init_playback',
                                     data: {
-                                        initialChannelStates: playerState.channels.slice(0, 2),
+                                        initialChannelStates: playerState.channels.slice(0, 2).map(ch => ({ // Send a deep copy of initial relevant state
+                                            sampleNum: ch.sampleNum, period: ch.period, volume: ch.volume,
+                                            portamentoTarget: ch.portamentoTarget, portamentoSpeed: ch.portamentoSpeed,
+                                            volumeSlideSpeed: ch.volumeSlideSpeed, vibratoSpeed: ch.vibratoSpeed,
+                                            vibratoDepth: ch.vibratoDepth, vibratoPos: ch.vibratoPos,
+                                            arpeggioCache: ch.arpeggioCache, effect: ch.effect
+                                        })),
                                         sampleRate: audioContext.sampleRate
                                     }
                                 });
                                 worker2.postMessage({
                                     type: 'init_playback',
                                     data: {
-                                        initialChannelStates: playerState.channels.slice(2, 4),
+                                        initialChannelStates: playerState.channels.slice(2, 4).map(ch => ({ // Send a deep copy of initial relevant state
+                                            sampleNum: ch.sampleNum, period: ch.period, volume: ch.volume,
+                                            portamentoTarget: ch.portamentoTarget, portamentoSpeed: ch.portamentoSpeed,
+                                            volumeSlideSpeed: ch.volumeSlideSpeed, vibratoSpeed: ch.vibratoSpeed,
+                                            vibratoDepth: ch.vibratoDepth, vibratoPos: ch.vibratoPos,
+                                            arpeggioCache: ch.arpeggioCache, effect: ch.effect
+                                        })),
                                         sampleRate: audioContext.sampleRate
                                     }
                                 });
                             }
                         } else {
                             showMessage('Failed to parse MOD file.', 'error');
+                            console.error('Main: modFile is null after parsing in worker.');
                             playButton.disabled = true;
                         }
                         break;
                     case 'mod_parse_error':
-                        console.error('MOD parse error from worker:', message);
+                        console.error('Main: MOD parse error from worker:', message);
                         showMessage(`Failed to parse MOD file: ${message}`, 'error');
                         modFile = null;
                         playButton.disabled = true;
                         break;
                     case 'channel_update':
-                        // Receive updated channel data from worker and apply it
+                        // console.log(`Main: Received channel_update from worker for offset ${channelIndexOffset}.`, data);
                         if (data && data.length > 0) {
                             for (let i = 0; i < data.length; i++) {
                                 const globalChannelIndex = channelIndexOffset + i;
                                 const updatedChannel = data[i];
                                 const mainChannel = playerState.channels[globalChannelIndex];
 
-                                // Update main thread's channel state
-                                Object.assign(mainChannel, updatedChannel);
+                                if (!mainChannel) {
+                                    console.warn(`Main: Channel ${globalChannelIndex} not found in mainPlayerState. Skipping update.`);
+                                    continue;
+                                }
+
+                                // Update main thread's channel state, excluding AudioNodes
+                                mainChannel.sampleNum = updatedChannel.sampleNum;
+                                mainChannel.period = updatedChannel.period;
+                                mainChannel.volume = updatedChannel.volume;
+                                mainChannel.triggerNote = updatedChannel.triggerNote;
+                                mainChannel.startOffset = updatedChannel.startOffset;
+                                mainChannel.periodAdjust = updatedChannel.periodAdjust;
+                                mainChannel.portamentoTarget = updatedChannel.portamentoTarget;
+                                mainChannel.portamentoSpeed = updatedChannel.portamentoSpeed;
+                                mainChannel.volumeSlideSpeed = updatedChannel.volumeSlideSpeed;
+                                mainChannel.vibratoSpeed = updatedChannel.vibratoSpeed;
+                                mainChannel.vibratoDepth = updatedChannel.vibratoDepth;
+                                mainChannel.vibratoPos = updatedChannel.vibratoPos;
+                                mainChannel.arpeggioCache = updatedChannel.arpeggioCache;
+                                mainChannel.effect = updatedChannel.effect;
+
 
                                 // If a note needs to be triggered/re-triggered (e.g., new note, sample offset)
                                 if (mainChannel.triggerNote) {
+                                    // console.log(`Main: Channel ${globalChannelIndex} triggered note: sample ${mainChannel.sampleNum}, period ${mainChannel.period}, offset ${mainChannel.startOffset}`);
                                     playSample(globalChannelIndex, mainChannel.sampleNum, mainChannel.period, mainChannel.startOffset);
-                                    mainChannel.triggerNote = false; // Reset flag
+                                    mainChannel.triggerNote = false; // Reset flag after triggering
                                 } else {
                                     // Only update pitch/volume if not a new note event (to avoid re-triggering)
                                     // Apply period and volume adjustments from worker
@@ -387,48 +454,61 @@
                     speed: 6, bpm: 125, timerId: null,
                     // Initialize main thread channels with AudioNode references
                     channels: Array(4).fill(null).map(() => ({
-                        sampleNum: null, period: 0, volume: 64, triggerNote: false, // Renamed from noteOn to triggerNote
+                        sampleNum: null, period: 0, volume: 64, triggerNote: false,
                         source: null, gainNode: null, effect: { command: 0, value: 0 },
                         portamentoTarget: 0, portamentoSpeed: 0, volumeSlideSpeed: 0, 
                         vibratoSpeed: 0, vibratoDepth: 0, vibratoPos: 0, arpeggioCache: [0,0,0],
-                        startOffset: 0, // For 0x9 effect
+                        startOffset: 0,
                         periodAdjust: 0 // For vibrato calculations from worker
                     })),
                 };
+                console.log('Main: Player state reset.');
             }
 
             function startPlayback() {
-                if (!audioContext || !masterGainNode) return;
+                if (!audioContext || !masterGainNode) {
+                    console.error('Main: AudioContext or MasterGainNode not initialized for playback start. This should not happen if DOMContentLoaded is handled correctly.');
+                    return;
+                }
                 
                 resetPlayerState(); // Reset player state for a fresh start
 
                 // Create gain nodes and connect to master gain node
-                playerState.channels.forEach(ch => {
+                playerState.channels.forEach((ch, index) => {
                     ch.gainNode = audioContext.createGain();
                     ch.gainNode.connect(masterGainNode);
+                    console.log(`Main: Channel ${index} gain node created and connected.`);
                 });
                 
                 updateSongInfo();
                 displayPattern(modFile.patterns[modFile.patternTable[playerState.position]]);
                 tick();
                 renderLoop();
+                console.log('Main: Playback started. Initial tick and render loops initiated.');
             }
             
             function stopPlayback() {
-                if(playerState.timerId) clearTimeout(playerState.timerId);
-                playerState.timerId = null;
+                console.log('Main: Stopping playback.');
+                if(playerState.timerId) {
+                    clearTimeout(playerState.timerId);
+                    playerState.timerId = null;
+                }
 
-                if (animationFrameId) cancelAnimationFrame(animationFrameId);
-                animationFrameId = null;
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                }
 
                 if (playerState.channels) {
-                    playerState.channels.forEach(ch => {
+                    playerState.channels.forEach((ch, index) => {
                         if (ch.source) {
-                            try { ch.source.stop(); } catch(e) {}
+                            try { ch.source.stop(); console.log(`Main: Channel ${index} source stopped.`); } catch(e) { console.warn(`Main: Error stopping channel ${index} source:`, e); }
                             ch.source.disconnect();
+                            console.log(`Main: Channel ${index} source disconnected.`);
                         }
                         if (ch.gainNode) {
                             ch.gainNode.disconnect();
+                            console.log(`Main: Channel ${index} gain node disconnected.`);
                         }
                     });
                 }
@@ -436,9 +516,10 @@
                 resetPlayerState(); // Reset main thread state
 
                 // Re-initialize workers to clear their internal states as well
-                if (worker1) worker1.terminate();
-                if (worker2) worker2.terminate();
-                setupWorkers(); // Recreate workers
+                if (worker1) { worker1.terminate(); console.log('Main: Worker 1 terminated.'); }
+                if (worker2) { worker2.terminate(); console.log('Main: Worker 2 terminated.'); }
+                setupWorkers(); // Recreate workers for next use
+                console.log('Main: Workers re-setup.');
 
                 if(modFile) {
                     updateSongInfo();
@@ -452,9 +533,9 @@
                 stopButton.disabled = true;
                 lastActiveRow = -1;
 
-                if (audioContext && audioContext.state !== 'closed') {
-                    // audioContext.close(); // Not closing, keep it ready for next play
-                }
+                // AudioContext generally shouldn't be closed unless memory is critical and no more audio playback is expected.
+                // Keeping it alive to avoid latency on subsequent plays.
+                // if (audioContext && audioContext.state !== 'closed') { audioContext.close(); audioContext = null; masterGainNode = null; }
             }
             
             /**
@@ -463,10 +544,12 @@
             function tick() {
                 if (!playerState.isPlaying) {
                     playerState.timerId = null;
+                    console.log('Main: Tick loop stopping (isPlaying is false).');
                     return;
                 }
                 
                 const tickDuration = (2500 / playerState.bpm);
+                // console.log(`Main: Tick ${playerState.tick} at position ${playerState.position}, row ${playerState.row}. Duration: ${tickDuration}ms`);
 
                 // Send current playback state to workers
                 const workerPayload = {
@@ -492,10 +575,12 @@
                         playerState.position++;
                         if (playerState.position >= modFile.songLength) {
                             playerState.position = modFile.restartPosition || 0;
+                            // console.log('Main: Song finished, looping to restart position:', modFile.restartPosition);
                         }
                         const nextPatternIndex = modFile.patternTable[playerState.position];
+                        // console.log(`Main: Advancing to new pattern: ${nextPatternIndex} at position ${playerState.position}`);
                         displayPattern(modFile.patterns[nextPatternIndex]);
-                        updateSongInfo();
+                        updateSongInfo(); // Update song info immediately on pattern/position change
                     }
                 }
                 
@@ -506,6 +591,7 @@
             function renderLoop() {
                 if (!playerState.isPlaying) {
                     animationFrameId = null;
+                    // console.log('Main: Render loop stopping (isPlaying is false).');
                     return;
                 }
                 updateActiveRowHighlight(playerState.row);
@@ -524,13 +610,19 @@
              * @param {number} startOffset The start offset in seconds for playback.
              */
             function playSample(channelIndex, sampleIndex, period, startOffset = 0) {
-                if (!audioContext || sampleIndex === null || sampleIndex >= modFile.samples.length || !masterGainNode) return;
+                if (!audioContext || sampleIndex === null || sampleIndex >= modFile.samples.length || !masterGainNode) {
+                    console.warn(`Main: Cannot play sample on channel ${channelIndex}. Missing audio context, sample, or master gain.`);
+                    return;
+                }
                 const sample = modFile.samples[sampleIndex];
-                if (!sample || !sample.buffer) return;
+                if (!sample || !sample.buffer) {
+                    console.warn(`Main: Sample ${sampleIndex} on channel ${channelIndex} has no buffer.`);
+                    return;
+                }
 
                 const channel = playerState.channels[channelIndex];
                 if (channel.source) {
-                    try { channel.source.stop(); } catch(e) { /* console.warn("Failed to stop previous source:", e); */ }
+                    try { channel.source.stop(); } catch(e) { /* console.warn(`Main: Failed to stop old source on channel ${channelIndex}:`, e); */ }
                     channel.source.disconnect();
                 }
                 
@@ -544,10 +636,11 @@
                 }
 
                 // Initial pitch update and connection
-                updatePitch(channelIndex, period + channel.periodAdjust); // Apply initial vibrato adjustment
+                updatePitch(channelIndex, period + channel.periodAdjust); // Apply initial vibrato adjustment from worker
                 channel.gainNode.gain.setValueAtTime(channel.volume / 64, audioContext.currentTime);
                 channel.source.connect(channel.gainNode);
                 channel.source.start(0, startOffset);
+                // console.log(`Main: Playing sample ${sampleIndex} on channel ${channelIndex} with period ${period} (adj ${channel.periodAdjust}), volume ${channel.volume}, offset ${startOffset}`);
             }
             
             /**
@@ -557,16 +650,15 @@
              */
             function updatePitch(channelIndex, period) {
                 const channel = playerState.channels[channelIndex];
-                if(channel.source && period > 0 && audioContext) {
+                if(channel.source && period > 0 && audioContext && channel.sampleNum !== null) {
                     const sample = modFile.samples[channel.sampleNum];
-                    // Fine tune is already factored in by the worker, or is applied to period directly there.
-                    // The worker provides the final `period` and `periodAdjust` (for vibrato).
-                    // We combine them here before calculating playback rate.
-                    const fineTuneFactor = Math.pow(2, (sample.fineTune || 0) / (12 * 8)); // Re-apply if not handled by worker
+                    // fineTuneFactor must be applied here as it's part of how period translates to frequency
+                    // The worker calculates the period based on effects, but fineTune is a property of the sample itself.
+                    const fineTuneFactor = Math.pow(2, (sample.fineTune || 0) / (12 * 8));
                     const targetFrequency = (PAL_CLOCK / period) * fineTuneFactor;
                     const playbackRate = targetFrequency / audioContext.sampleRate;
                     
-                    // Smoothly set playbackRate
+                    // console.log(`Main: Updating pitch for channel ${channelIndex}. Period: ${period}, FineTune: ${sample.fineTune}, PlaybackRate: ${playbackRate}`);
                     channel.source.playbackRate.setTargetAtTime(playbackRate, audioContext.currentTime, 0.001);
                 }
             }
@@ -582,6 +674,7 @@
                 document.getElementById('current-pattern').textContent = modFile.patternTable[playerState.position];
                 document.getElementById('current-speed').textContent = playerState.speed;
                 document.getElementById('current-bpm').textContent = Math.round(playerState.bpm);
+                // console.log('Main: Song info updated.');
             }
             
             function initPatternView() {
@@ -607,6 +700,7 @@
                         patternViewCells[r][c] = cell;
                     }
                 }
+                // console.log('Main: Pattern view initialized.');
             }
 
             /**
@@ -641,6 +735,7 @@
 
             function displayPattern(pattern) {
                 if (!pattern) return;
+                // console.log('Main: Displaying pattern at row', playerState.row);
                 for (let r = 0; r < 64; r++) {
                     for (let c = 0; c < 4; c++) {
                         const noteData = pattern[r] ? pattern[r][c] : null;
