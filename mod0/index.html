@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>mod-0.6</title>
+    <title>Amiga MOD Player</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
@@ -57,42 +57,6 @@
             background-color: #047857; /* green-700 */
             color: white;
         }
-        /* Style for the volume slider */
-        input[type="range"] {
-            -webkit-appearance: none;
-            width: 100%;
-            height: 8px;
-            background: #4a4a4a;
-            outline: none;
-            opacity: 0.7;
-            -webkit-transition: .2s;
-            transition: opacity .2s;
-            border-radius: 4px;
-        }
-
-        input[type="range"]:hover {
-            opacity: 1;
-        }
-
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #00ff00;
-            cursor: pointer;
-            box-shadow: 0 0 5px rgba(0,0,0,0.5);
-        }
-
-        input[type="range"]::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #00ff00;
-            cursor: pointer;
-            box-shadow: 0 0 5px rgba(0,0,0,0.5);
-        }
     </style>
 </head>
 <body class="bg-gray-900 text-green-400 p-4">
@@ -100,11 +64,11 @@
     <div id="message-box"></div>
 
     <div class="max-w-7xl mx-auto bg-gray-800 border border-green-500 rounded-lg shadow-lg p-6">
-        <h1 class="text-4xl mb-4 text-center text-green-300">protracker for idiots</h1>
+        <h1 class="text-4xl mb-4 text-center text-green-300">Amiga MOD Player</h1>
 
         <!-- File Loader -->
         <div class="mb-6">
-            <label for="file-loader" class="block mb-2 text-lg">load .MOD file</label>
+            <label for="file-loader" class="block mb-2 text-lg">Load .MOD File</label>
             <input type="file" id="file-loader" accept=".mod" class="block w-full text-sm text-green-400
                 file:mr-4 file:py-2 file:px-4
                 file:rounded-full file:border-0
@@ -118,31 +82,31 @@
             <button id="play-button" class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-6 rounded-lg disabled:opacity-50" disabled>Play</button>
             <button id="pause-button" class="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-6 rounded-lg disabled:opacity-50" disabled>Pause</button>
             <button id="stop-button" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-6 rounded-lg disabled:opacity-50" disabled>Stop</button>
-            <!-- Volume Control -->
-            <div class="flex flex-col items-center ml-4">
-                <label for="volume-slider" class="text-lg">volume</label>
-                <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.75" class="w-32"/>
-            </div>
         </div>
         
         <!-- Song Info -->
         <div id="song-info" class="mb-6 bg-gray-700 p-4 rounded-lg border border-gray-600">
-            <h2 class="text-2xl mb-2 text-green-300">song information</h2>
+            <h2 class="text-2xl mb-2 text-green-300">Song Information</h2>
             <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
-                <p><strong>title:</strong> <span id="song-title">N/A</span></p>
-                <p><strong>instruments:</strong> <span id="instrument-count">0</span></p>
-                <p><strong>patterns:</strong> <span id="pattern-count">0</span></p>
-                <p><strong>position:</strong> <span id="current-position">0</span> / <span id="song-length">0</span></p>
-                <p><strong>pattern:</strong> <span id="current-pattern">0</span> | <strong>Row:</strong> <span id="current-row">0</span></p>
-                <p><strong>speed:</strong> <span id="current-speed">6</span> | <strong>BPM:</strong> <span id="current-bpm">125</span></p>
+                <p><strong>Title:</strong> <span id="song-title">N/A</span></p>
+                <p><strong>Instruments:</strong> <span id="instrument-count">0</span></p>
+                <p><strong>Patterns:</strong> <span id="pattern-count">0</span></p>
+                <p><strong>Position:</strong> <span id="current-position">0</span> / <span id="song-length">0</span></p>
+                <p><strong>Pattern:</strong> <span id="current-pattern">0</span> | <strong>Row:</strong> <span id="current-row">0</span></p>
+                <p><strong>Speed:</strong> <span id="current-speed">6</span> | <strong>BPM:</strong> <span id="current-bpm">125</span></p>
             </div>
         </div>
 
         <!-- Pattern View -->
         <div id="pattern-view-container" class="bg-gray-900 p-4 rounded-lg border border-gray-700 overflow-x-auto">
-             <h2 class="text-2xl mb-2 text-green-300">pattern data</h2>
+             <h2 class="text-2xl mb-2 text-green-300">Pattern Data</h2>
              <div id="pattern-view" class="tracker-grid min-w-[600px]">
-                 <!-- Grid will be generated by JS -->
+                 <!-- Header -->
+                 <div class="tracker-header">Ch 1</div>
+                 <div class="tracker-header">Ch 2</div>
+                 <div class="tracker-header">Ch 3</div>
+                 <div class="tracker-header">Ch 4</div>
+                 <!-- Rows will be generated by JS -->
              </div>
         </div>
     </div>
@@ -153,49 +117,33 @@
             const playButton = document.getElementById('play-button');
             const pauseButton = document.getElementById('pause-button');
             const stopButton = document.getElementById('stop-button');
-            const volumeSlider = document.getElementById('volume-slider');
             const messageBox = document.getElementById('message-box');
 
             let audioContext;
-            let masterGainNode;
             let modFile;
             let playerState = {};
-            let sortedPeriods = []; // Used for UI only, worker has its own
-            
-            // ** Web Worker instances **
-            let worker1 = null; // Handles channels 0 and 1
-            let worker2 = null; // Handles channels 2 and 3
-
-            // **OPTIMIZATION**: Caching UI elements
-            let patternViewCells = [];
-            let lastActiveRow = -1;
-            let animationFrameId;
+            let sortedPeriods = []; // For improved Arpeggio calculation
 
             // Constants
-            const PAL_CLOCK = 3546895;
+            const PAL_CLOCK = 3546895; // PAL Amiga master clock frequency
+            const MIN_PERIOD = 113;
+            const MAX_PERIOD = 856;
 
-            // Note period table for PAL Amigas (for UI display only)
+            // Note period table for PAL Amigas
             const periodTable = {
                 856: 'C-1', 808: 'C#1', 762: 'D-1', 720: 'D#1', 678: 'E-1', 640: 'F-1', 604: 'F#1', 570: 'G-1', 538: 'G#1', 508: 'A-1', 480: 'A#1', 453: 'B-1',
                 428: 'C-2', 404: 'C#2', 381: 'D-2', 360: 'D#2', 339: 'E-2', 320: 'F-2', 302: 'F#2', 285: 'G-2', 269: 'G#2', 254: 'A-2', 240: 'A#2', 226: 'B-2',
                 214: 'C-3', 202: 'C#3', 190: 'D-3', 180: 'D#3', 170: 'E-3', 160: 'F-3', 151: 'F#3', 142: 'G-3', 135: 'G#3', 127: 'A-3', 120: 'A#3', 113: 'B-3'
             };
-            
-            // For UI display, keeping this local. Worker has its own copy for calculations.
+
+            // Pre-calculate sorted periods for effect lookups
             sortedPeriods = Object.keys(periodTable).map(p => parseInt(p)).sort((a, b) => b - a);
             
             // --- UI & Event Listeners ---
             
-            initPatternView(); // Create the grid structure once.
-
-            /**
-             * Displays a transient message box.
-             * @param {string} text The message to display.
-             * @param {string} type The type of message ('info' or 'error').
-             */
             function showMessage(text, type = 'info') {
                 messageBox.textContent = text;
-                messageBox.className = ``; // Reset classes
+                messageBox.className = ``; // Clear classes
                 messageBox.classList.add(type, 'show');
                 setTimeout(() => messageBox.classList.remove('show'), 3000);
             }
@@ -203,17 +151,23 @@
             fileLoader.addEventListener('change', (event) => {
                 const file = event.target.files[0];
                 if (file) {
-                    stopPlayback(); // Stop any current playback
-                    showMessage('Loading MOD file...', 'info');
-                    
                     const reader = new FileReader();
                     reader.onload = (e) => {
-                        const arrayBuffer = e.target.result;
-                        // Send the ArrayBuffer to worker1 for parsing
-                        if (worker1) {
-                            worker1.postMessage({ type: 'parse_mod_file', data: { arrayBuffer: arrayBuffer } }, [arrayBuffer]); // Transfer buffer
-                        } else {
-                            showMessage('Worker not initialized. Cannot parse file.', 'error');
+                        try {
+                            stopPlayback();
+                            modFile = parseModFile(e.target.result);
+                            if (modFile) {
+                                showMessage('MOD file loaded successfully.', 'info');
+                                updateSongInfo();
+                                resetPlayerState(); // Set initial state
+                                displayPattern(modFile.patterns[modFile.patternTable[0]]);
+                                playButton.disabled = false;
+                            }
+                        } catch (error) {
+                            console.error("Failed to parse MOD file:", error);
+                            showMessage('Failed to parse MOD file. It might be corrupt or unsupported.', 'error');
+                            modFile = null;
+                            playButton.disabled = true;
                         }
                     };
                     reader.readAsArrayBuffer(file);
@@ -225,27 +179,22 @@
 
                 if (!audioContext) {
                     audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    masterGainNode = audioContext.createGain();
-                    masterGainNode.connect(audioContext.destination);
-                    masterGainNode.gain.value = parseFloat(volumeSlider.value);
                 }
+                // Resume context if it was suspended
                 if (audioContext.state === 'suspended') {
                     audioContext.resume();
                 }
 
-                if (playerState.isPaused) {
+                if (playerState.isPaused) { // Resuming from pause
                     playerState.isPaused = false;
                     playerState.isPlaying = true;
-                } else if (!playerState.isPlaying) {
+                } else if (!playerState.isPlaying) { // Starting from stop
                     startPlayback();
                 }
                 
-                // Ensure tick loop and render loop are active if playing
+                // Always ensure the ticker is running if we are supposed to be playing
                 if (playerState.isPlaying && !playerState.timerId) {
-                   tick();
-                }
-                if (playerState.isPlaying && !animationFrameId) {
-                    renderLoop();
+                   tick(); 
                 }
 
                 playButton.disabled = true;
@@ -257,6 +206,7 @@
                 if (playerState.isPlaying) {
                     playerState.isPlaying = false;
                     playerState.isPaused = true;
+                    // The tick loop will automatically stop and clear its timer
                     playButton.disabled = false;
                     pauseButton.disabled = true;
                 }
@@ -264,203 +214,71 @@
 
             stopButton.addEventListener('click', stopPlayback);
 
-            volumeSlider.addEventListener('input', (event) => {
-                if (masterGainNode) {
-                    masterGainNode.gain.value = parseFloat(event.target.value);
-                }
-            });
+            // --- Core Playback Logic ---
 
-            // --- Web Worker Setup ---
-            function setupWorkers() {
-                // Initialize Worker 1 (channels 0, 1)
-                worker1 = new Worker('worker.js'); // Assuming worker.js is in the same directory
-                worker1.onmessage = handleWorkerMessage;
-                worker1.onerror = (e) => {
-                    console.error('Worker 1 error:', e);
-                    showMessage('Error in playback worker 1.', 'error');
-                };
-
-                // Initialize Worker 2 (channels 2, 3)
-                worker2 = new Worker('worker.js');
-                worker2.onmessage = handleWorkerMessage;
-                worker2.onerror = (e) => {
-                    console.error('Worker 2 error:', e);
-                    showMessage('Error in playback worker 2.', 'error');
-                };
-            }
-
-            // Call setupWorkers when DOM is ready
-            setupWorkers();
-
-            /**
-             * Handles messages received from the Web Workers.
-             * @param {MessageEvent} event The message event from the worker.
-             */
-            function handleWorkerMessage(event) {
-                const { type, modFile: receivedModFile, data, channelIndexOffset, message } = event.data;
-
-                switch (type) {
-                    case 'mod_parsed':
-                        modFile = receivedModFile;
-                        // Convert sample data from transferable ArrayBuffer back to AudioBuffer
-                        // The worker sent Int8Array.buffer. We need to create AudioBuffer from it.
-                        modFile.samples.forEach(sample => {
-                            if (sample.data && sample.data.buffer) {
-                                // Create AudioBuffer from the transferred data
-                                const buffer = audioContext.createBuffer(1, sample.length, audioContext.sampleRate);
-                                const bufferData = buffer.getChannelData(0);
-                                for (let i = 0; i < sample.length; i++) {
-                                    bufferData[i] = sample.data[i] / 128.0; // Convert Int8 to float [-1, 1]
-                                }
-                                sample.buffer = buffer; // Store the AudioBuffer
-                                sample.data = null; // Free up the Int8Array data
-                            }
-                        });
-
-                        if (modFile) {
-                            showMessage('MOD file loaded and parsed successfully.', 'info');
-                            resetPlayerState();
-                            updateSongInfo();
-                            displayPattern(modFile.patterns[modFile.patternTable[0]]);
-                            playButton.disabled = false;
-
-                            // Initialize workers with their respective channel states
-                            // This also implicitly tells them their starting channels
-                            if (worker1 && worker2 && audioContext) {
-                                worker1.postMessage({
-                                    type: 'init_playback',
-                                    data: {
-                                        initialChannelStates: playerState.channels.slice(0, 2),
-                                        sampleRate: audioContext.sampleRate
-                                    }
-                                });
-                                worker2.postMessage({
-                                    type: 'init_playback',
-                                    data: {
-                                        initialChannelStates: playerState.channels.slice(2, 4),
-                                        sampleRate: audioContext.sampleRate
-                                    }
-                                });
-                            }
-                        } else {
-                            showMessage('Failed to parse MOD file.', 'error');
-                            playButton.disabled = true;
-                        }
-                        break;
-                    case 'mod_parse_error':
-                        console.error('MOD parse error from worker:', message);
-                        showMessage(`Failed to parse MOD file: ${message}`, 'error');
-                        modFile = null;
-                        playButton.disabled = true;
-                        break;
-                    case 'channel_update':
-                        // Receive updated channel data from worker and apply it
-                        if (data && data.length > 0) {
-                            for (let i = 0; i < data.length; i++) {
-                                const globalChannelIndex = channelIndexOffset + i;
-                                const updatedChannel = data[i];
-                                const mainChannel = playerState.channels[globalChannelIndex];
-
-                                // Update main thread's channel state
-                                Object.assign(mainChannel, updatedChannel);
-
-                                // If a note needs to be triggered/re-triggered (e.g., new note, sample offset)
-                                if (mainChannel.triggerNote) {
-                                    playSample(globalChannelIndex, mainChannel.sampleNum, mainChannel.period, mainChannel.startOffset);
-                                    mainChannel.triggerNote = false; // Reset flag
-                                } else {
-                                    // Only update pitch/volume if not a new note event (to avoid re-triggering)
-                                    // Apply period and volume adjustments from worker
-                                    updatePitch(globalChannelIndex, mainChannel.period + mainChannel.periodAdjust);
-                                    mainChannel.gainNode.gain.setTargetAtTime(mainChannel.volume / 64, audioContext.currentTime, 0.001);
-                                }
-                            }
-                        }
-                        break;
-                }
-            }
-            
             function resetPlayerState() {
                 playerState = {
                     isPlaying: false, isPaused: false,
                     position: 0, row: 0, tick: 0,
                     speed: 6, bpm: 125, timerId: null,
-                    // Initialize main thread channels with AudioNode references
                     channels: Array(4).fill(null).map(() => ({
-                        sampleNum: null, period: 0, volume: 64, triggerNote: false, // Renamed from noteOn to triggerNote
+                        sampleNum: 0, period: 0, volume: 64, noteOn: false,
                         source: null, gainNode: null, effect: { command: 0, value: 0 },
-                        portamentoTarget: 0, portamentoSpeed: 0, volumeSlideSpeed: 0, 
-                        vibratoSpeed: 0, vibratoDepth: 0, vibratoPos: 0, arpeggioCache: [0,0,0],
-                        startOffset: 0, // For 0x9 effect
-                        periodAdjust: 0 // For vibrato calculations from worker
+                        portamentoTarget: 0, portamentoSpeed: 0,
+                        vibratoSpeed: 0, vibratoDepth: 0, vibratoPos: 0,
+                        arpeggioCache: [0,0,0],
                     })),
                 };
             }
 
             function startPlayback() {
-                if (!audioContext || !masterGainNode) return;
+                if (!audioContext) return;
                 
-                resetPlayerState(); // Reset player state for a fresh start
+                resetPlayerState();
+                playerState.isPlaying = true;
 
-                // Create gain nodes and connect to master gain node
+                // Create gain nodes and connect them
                 playerState.channels.forEach(ch => {
                     ch.gainNode = audioContext.createGain();
-                    ch.gainNode.connect(masterGainNode);
+                    ch.gainNode.connect(audioContext.destination);
                 });
                 
+                // Initial UI update for the start of the song
                 updateSongInfo();
                 displayPattern(modFile.patterns[modFile.patternTable[playerState.position]]);
-                tick();
-                renderLoop();
             }
             
             function stopPlayback() {
-                if(playerState.timerId) clearTimeout(playerState.timerId);
-                playerState.timerId = null;
-
-                if (animationFrameId) cancelAnimationFrame(animationFrameId);
-                animationFrameId = null;
+                if(playerState.timerId){
+                    clearTimeout(playerState.timerId);
+                    playerState.timerId = null;
+                }
 
                 if (playerState.channels) {
                     playerState.channels.forEach(ch => {
                         if (ch.source) {
                             try { ch.source.stop(); } catch(e) {}
-                            ch.source.disconnect();
-                        }
-                        if (ch.gainNode) {
-                            ch.gainNode.disconnect();
                         }
                     });
                 }
                 
-                resetPlayerState(); // Reset main thread state
-
-                // Re-initialize workers to clear their internal states as well
-                if (worker1) worker1.terminate();
-                if (worker2) worker2.terminate();
-                setupWorkers(); // Recreate workers
-
+                resetPlayerState(); // Reset all state variables
+                
+                // Reset UI
                 if(modFile) {
                     updateSongInfo();
                     displayPattern(modFile.patterns[modFile.patternTable[0]]);
-                    updateActiveRowHighlight(-1);
+                    updateActiveRowHighlight(-1); // Remove highlight
                     playButton.disabled = false;
                 } else {
                      playButton.disabled = true;
                 }
                 pauseButton.disabled = true;
                 stopButton.disabled = true;
-                lastActiveRow = -1;
-
-                if (audioContext && audioContext.state !== 'closed') {
-                    // audioContext.close(); // Not closing, keep it ready for next play
-                }
             }
             
-            /**
-             * The main playback tick loop. Sends data to workers and handles timing.
-             */
             function tick() {
+                // If we are no longer playing or paused, stop the loop.
                 if (!playerState.isPlaying) {
                     playerState.timerId = null;
                     return;
@@ -468,19 +286,11 @@
                 
                 const tickDuration = (2500 / playerState.bpm);
 
-                // Send current playback state to workers
-                const workerPayload = {
-                    position: playerState.position,
-                    row: playerState.row,
-                    tick: playerState.tick,
-                    speed: playerState.speed,
-                    bpm: playerState.bpm,
-                    isPlaying: playerState.isPlaying
-                };
-
-                // Workers will calculate and send back channel updates
-                if (worker1) worker1.postMessage({ type: 'process_tick', data: { ...workerPayload, channelIndexOffset: 0 } });
-                if (worker2) worker2.postMessage({ type: 'process_tick', data: { ...workerPayload, channelIndexOffset: 2 } });
+                if (playerState.tick === 0) {
+                    processRow();
+                } else {
+                    updateEffects();
+                }
 
                 playerState.tick++;
                 if (playerState.tick >= playerState.speed) {
@@ -491,51 +301,245 @@
                         playerState.row = 0;
                         playerState.position++;
                         if (playerState.position >= modFile.songLength) {
-                            playerState.position = modFile.restartPosition || 0;
+                            playerState.position = 0; // Loop song
                         }
                         const nextPatternIndex = modFile.patternTable[playerState.position];
                         displayPattern(modFile.patterns[nextPatternIndex]);
-                        updateSongInfo();
                     }
+                    updateSongInfo();
                 }
                 
                 playerState.timerId = setTimeout(tick, tickDuration);
             }
+            
+            function processRow() {
+                const patternIndex = modFile.patternTable[playerState.position];
+                if (patternIndex >= modFile.patterns.length) return;
+                
+                const pattern = modFile.patterns[patternIndex];
+                if (!pattern) return;
 
-            // Separate rendering loop for UI updates
-            function renderLoop() {
-                if (!playerState.isPlaying) {
-                    animationFrameId = null;
-                    return;
-                }
+                const rowData = pattern[playerState.row];
+                if (!rowData) return;
+                
                 updateActiveRowHighlight(playerState.row);
-                document.getElementById('current-row').textContent = playerState.row;
-                document.getElementById('current-position').textContent = playerState.position;
-                animationFrameId = requestAnimationFrame(renderLoop);
+
+                for (let ch = 0; ch < 4; ch++) {
+                    const note = rowData[ch];
+                    const channel = playerState.channels[ch];
+
+                    // Store effect for continuous processing in updateEffects()
+                    channel.effect = note.effect;
+                    
+                    if (note.sampleNum > 0) {
+                        channel.sampleNum = note.sampleNum - 1;
+                        // Set volume to sample's default unless there's a Set Volume (C) effect
+                        if(note.effect.command !== 0xC) {
+                           channel.volume = modFile.samples[channel.sampleNum].volume;
+                        }
+                    }
+
+                    if (note.period > 0) {
+                        // If not a portamento effect, trigger a new note
+                        if (note.effect.command !== 0x3 && note.effect.command !== 0x5) { 
+                             channel.period = note.period;
+                             channel.noteOn = true;
+                             channel.vibratoPos = 0; // Reset vibrato phase
+                        }
+                        // For portamento, set the target period but don't retrigger the sample
+                        channel.portamentoTarget = note.period;
+                    }
+                    
+                    // Handle effects that take place only on tick 0
+                    handleTick0Effects(ch, note.effect);
+
+                    if (channel.noteOn && channel.sampleNum < modFile.samples.length) {
+                        const sample = modFile.samples[channel.sampleNum];
+                        if (sample && sample.data) {
+                           playSample(ch, channel.sampleNum, channel.period);
+                        }
+                        channel.noteOn = false;
+                    }
+                }
             }
             
-            // --- Audio Node Management (Main Thread) ---
+            // --- Effect Processing ---
 
-            /**
-             * Plays a sample on a specific channel. This runs on the main thread.
-             * @param {number} channelIndex The global index of the channel (0-3).
-             * @param {number} sampleIndex The index of the sample to play.
-             * @param {number} period The period for playback rate calculation.
-             * @param {number} startOffset The start offset in seconds for playback.
-             */
+            function handleTick0Effects(ch, effect) {
+                const channel = playerState.channels[ch];
+                const cmd = effect.command;
+                const val = effect.value;
+
+                switch (cmd) {
+                    case 0x0: // Arpeggio - set up notes for subsequent ticks
+                        if (val > 0) {
+                            const x = val >> 4;
+                            const y = val & 0x0F;
+                            channel.arpeggioCache[0] = channel.period;
+                            channel.arpeggioCache[1] = getPeriodForNote(channel.period, x);
+                            channel.arpeggioCache[2] = getPeriodForNote(channel.period, y);
+                        }
+                        break;
+                    case 0x3: // Tone Portamento
+                    case 0x5: // Tone Portamento + Volume Slide
+                        if (val !== 0) channel.portamentoSpeed = val;
+                        break;
+                    case 0x4: // Vibrato
+                    case 0x6: // Vibrato + Volume Slide
+                        if ((val & 0xF0) > 0) channel.vibratoSpeed = (val & 0xF0) >> 4;
+                        if ((val & 0x0F) > 0) channel.vibratoDepth = (val & 0x0F);
+                        // Apply effect on first tick as well
+                        updateVibrato(ch); 
+                        break;
+                    case 0x9: // Sample Offset
+                        if (channel.noteOn) { // Only works with a new note
+                             const offsetInFrames = val * 256;
+                             playSample(ch, channel.sampleNum, channel.period, offsetInFrames / audioContext.sampleRate);
+                             channel.noteOn = false; // We've consumed the note trigger
+                        }
+                        break;
+                    case 0xB: // Position Jump
+                        playerState.position = val;
+                        playerState.row = -1; // Will advance to 0 on next tick
+                        break;
+                    case 0xC: // Set Volume
+                        channel.volume = val > 64 ? 64 : val;
+                        channel.gainNode.gain.setTargetAtTime(channel.volume / 64, audioContext.currentTime, 0.001);
+                        break;
+                    case 0xD: // Pattern Break
+                        playerState.position++;
+                        if (playerState.position >= modFile.songLength) playerState.position = 0;
+                        const row = (val >> 4) * 10 + (val & 0x0F);
+                        playerState.row = row - 1; // Will advance to target row on next tick
+                        if(playerState.row < -1) playerState.row = -1;
+                        break;
+                    case 0xF: // Set Speed / BPM
+                        if (val > 0) {
+                            if (val <= 32) { // Set speed
+                                playerState.speed = val;
+                            } else { // Set BPM
+                                playerState.bpm = val;
+                            }
+                        }
+                        break;
+                }
+            }
+            
+            function updateEffects() {
+                for (let ch = 0; ch < 4; ch++) {
+                    const channel = playerState.channels[ch];
+                    if (!channel) continue;
+                    const cmd = channel.effect.command;
+                    const val = channel.effect.value;
+
+                    switch (cmd) {
+                         case 0x0: // Arpeggio
+                            if (val > 0) {
+                                const arpIndex = playerState.tick % 3;
+                                const arpPeriod = channel.arpeggioCache[arpIndex];
+                                if (arpPeriod > 0) updatePitch(ch, arpPeriod);
+                            }
+                            break;
+                        case 0x1: // Porta Up
+                             channel.period -= val;
+                             if(channel.period < MIN_PERIOD) channel.period = MIN_PERIOD;
+                             updatePitch(ch, channel.period);
+                             break;
+                        case 0x2: // Porta Down
+                             channel.period += val;
+                             if(channel.period > MAX_PERIOD) channel.period = MAX_PERIOD;
+                             updatePitch(ch, channel.period);
+                             break;
+                        case 0x3: // Tone Portamento
+                        case 0x5: // Tone Portamento + Volume Slide
+                            updatePortamento(ch);
+                            break;
+                        case 0x4: // Vibrato
+                        case 0x6: // Vibrato + Volume Slide
+                            updateVibrato(ch);
+                            break;
+                        case 0xA: // Volume Slide
+                        case 0x5: // (Volume slide part)
+                        case 0x6: // (Volume slide part)
+                            updateVolumeSlide(ch, val);
+                            break;
+                    }
+                }
+            }
+
+            function updatePortamento(ch) {
+                const channel = playerState.channels[ch];
+                if(channel.portamentoTarget > 0) {
+                    if (channel.period < channel.portamentoTarget) {
+                        channel.period += channel.portamentoSpeed;
+                        if (channel.period > channel.portamentoTarget) channel.period = channel.portamentoTarget;
+                    } else if (channel.period > channel.portamentoTarget) {
+                        channel.period -= channel.portamentoSpeed;
+                        if (channel.period < channel.portamentoTarget) channel.period = channel.portamentoTarget;
+                    }
+
+                    if (channel.period < MIN_PERIOD) channel.period = MIN_PERIOD;
+                    if (channel.period > MAX_PERIOD) channel.period = MAX_PERIOD;
+                    
+                    updatePitch(ch, channel.period);
+                }
+            }
+
+            function updateVibrato(ch) {
+                const channel = playerState.channels[ch];
+                const wave = Math.sin(channel.vibratoPos * 2 * Math.PI);
+                const delta = wave * channel.vibratoDepth / 4;
+                updatePitch(ch, channel.period + delta);
+                
+                channel.vibratoPos += channel.vibratoSpeed / 64;
+                if(channel.vibratoPos > 1) channel.vibratoPos -= 1;
+            }
+
+            function updateVolumeSlide(ch, val) {
+                const channel = playerState.channels[ch];
+                const up = val >> 4;
+                const down = val & 0x0F;
+
+                channel.volume += up;
+                channel.volume -= down;
+
+                if(channel.volume < 0) channel.volume = 0;
+                if(channel.volume > 64) channel.volume = 64;
+                
+                channel.gainNode.gain.setTargetAtTime(channel.volume / 64, audioContext.currentTime, 0.001);
+            }
+
+            function getPeriodForNote(basePeriod, semitoneOffset) {
+                const baseIndex = sortedPeriods.reduce((prev, curr, i) => 
+                    (Math.abs(curr - basePeriod) < Math.abs(sortedPeriods[prev] - basePeriod) ? i : prev), 0);
+                
+                const newIndex = baseIndex - semitoneOffset;
+                if (newIndex >= 0 && newIndex < sortedPeriods.length) {
+                    return sortedPeriods[newIndex];
+                }
+                return basePeriod;
+            }
+
+            // --- Audio Node Management ---
+
             function playSample(channelIndex, sampleIndex, period, startOffset = 0) {
-                if (!audioContext || sampleIndex === null || sampleIndex >= modFile.samples.length || !masterGainNode) return;
+                if (!audioContext || sampleIndex >= modFile.samples.length) return;
                 const sample = modFile.samples[sampleIndex];
-                if (!sample || !sample.buffer) return;
+                if (!sample || !sample.data) return;
 
                 const channel = playerState.channels[channelIndex];
                 if (channel.source) {
-                    try { channel.source.stop(); } catch(e) { /* console.warn("Failed to stop previous source:", e); */ }
-                    channel.source.disconnect();
+                    try { channel.source.stop(); } catch(e) {}
                 }
-                
+
+                const buffer = audioContext.createBuffer(1, sample.length, audioContext.sampleRate);
+                const bufferData = buffer.getChannelData(0);
+                for (let i = 0; i < sample.length; i++) {
+                    bufferData[i] = sample.data[i] / 128.0;
+                }
+
                 channel.source = audioContext.createBufferSource();
-                channel.source.buffer = sample.buffer;
+                channel.source.buffer = buffer;
                 
                 if(sample.repeatLength > 2){
                     channel.source.loop = true;
@@ -543,34 +547,112 @@
                     channel.source.loopEnd = (sample.repeatOffset + sample.repeatLength) / audioContext.sampleRate;
                 }
 
-                // Initial pitch update and connection
-                updatePitch(channelIndex, period + channel.periodAdjust); // Apply initial vibrato adjustment
-                channel.gainNode.gain.setValueAtTime(channel.volume / 64, audioContext.currentTime);
+                updatePitch(channelIndex, period);
+                channel.gainNode.gain.setTargetAtTime(channel.volume / 64, audioContext.currentTime, 0.001);
                 channel.source.connect(channel.gainNode);
                 channel.source.start(0, startOffset);
             }
             
-            /**
-             * Updates the playback pitch of a channel's audio source. This runs on the main thread.
-             * @param {number} channelIndex The global index of the channel.
-             * @param {number} period The period value to use for pitch calculation.
-             */
             function updatePitch(channelIndex, period) {
                 const channel = playerState.channels[channelIndex];
                 if(channel.source && period > 0 && audioContext) {
                     const sample = modFile.samples[channel.sampleNum];
-                    // Fine tune is already factored in by the worker, or is applied to period directly there.
-                    // The worker provides the final `period` and `periodAdjust` (for vibrato).
-                    // We combine them here before calculating playback rate.
-                    const fineTuneFactor = Math.pow(2, (sample.fineTune || 0) / (12 * 8)); // Re-apply if not handled by worker
+                    
+                    const fineTuneFactor = Math.pow(2, (sample.fineTune || 0) / (12 * 8));
+                    
+                    // *** NEW, CORRECTED PITCH CALCULATION ***
+                    // This formula correctly maps the Amiga's period-based frequency
+                    // to the Web Audio API's playbackRate multiplier.
                     const targetFrequency = (PAL_CLOCK / period) * fineTuneFactor;
                     const playbackRate = targetFrequency / audioContext.sampleRate;
                     
-                    // Smoothly set playbackRate
                     channel.source.playbackRate.setTargetAtTime(playbackRate, audioContext.currentTime, 0.001);
                 }
             }
             
+            // --- MOD File Parsing ---
+
+            function parseModFile(arrayBuffer) {
+                const dv = new DataView(arrayBuffer);
+                const textDecoder = new TextDecoder('iso-8859-1');
+
+                const identifier = textDecoder.decode(new Uint8Array(arrayBuffer, 1080, 4));
+                const is31Sample = ['M.K.', 'M!K!', 'FLT4', '4CHN'].includes(identifier);
+                
+                if (!is31Sample) {
+                    console.warn(`MOD identifier is '${identifier}', not a standard 31-sample format. Parsing might fail.`);
+                }
+                
+                let mod = {
+                    title: textDecoder.decode(new Uint8Array(arrayBuffer, 0, 20)).replace(/\0/g, ''),
+                    samples: [],
+                    songLength: dv.getUint8(950),
+                    patternTable: [],
+                    patterns: [],
+                    identifier: identifier,
+                    numPatterns: 0
+                };
+
+                let offset = 20;
+                for (let i = 0; i < 31; i++) {
+                    let ft = dv.getUint8(offset + 24);
+                    if (ft > 7) ft = ft - 16;
+
+                    const sample = {
+                        name: textDecoder.decode(new Uint8Array(arrayBuffer, offset, 22)).replace(/\0/g, ''),
+                        length: dv.getUint16(offset + 22) * 2,
+                        fineTune: ft,
+                        volume: dv.getUint8(offset + 25),
+                        repeatOffset: dv.getUint16(offset + 26) * 2,
+                        repeatLength: dv.getUint16(offset + 28) * 2,
+                        data: null
+                    };
+                    mod.samples.push(sample);
+                    offset += 30;
+                }
+                
+                offset = 952;
+                let maxPattern = 0;
+                for (let i = 0; i < 128; i++) {
+                    const pNum = dv.getUint8(offset + i);
+                    mod.patternTable.push(pNum);
+                    if (pNum > maxPattern) maxPattern = pNum;
+                }
+                mod.numPatterns = maxPattern + 1;
+
+                offset = 1084;
+                for (let p = 0; p < mod.numPatterns; p++) {
+                    let pattern = [];
+                    for (let row = 0; row < 64; row++) {
+                        let rowData = [];
+                        for (let ch = 0; ch < 4; ch++) {
+                            const b1 = dv.getUint8(offset++);
+                            const b2 = dv.getUint8(offset++);
+                            const b3 = dv.getUint8(offset++);
+                            const b4 = dv.getUint8(offset++);
+
+                            rowData.push({
+                                sampleNum: (b1 & 0xF0) | (b3 >> 4),
+                                period: ((b1 & 0x0F) << 8) | b2,
+                                effect: { command: b3 & 0x0F, value: b4 }
+                            });
+                        }
+                        pattern.push(rowData);
+                    }
+                    mod.patterns.push(pattern);
+                }
+
+                // Sample Data starts after pattern data
+                for (let i = 0; i < 31; i++) {
+                    if(mod.samples[i].length > 0) {
+                        const sampleData = new Int8Array(arrayBuffer, offset, mod.samples[i].length);
+                        mod.samples[i].data = sampleData;
+                        offset += mod.samples[i].length;
+                    }
+                }
+                return mod;
+            }
+
             // --- UI Rendering ---
 
             function updateSongInfo() {
@@ -579,68 +661,25 @@
                 document.getElementById('instrument-count').textContent = modFile.samples.filter(s => s.length > 0).length;
                 document.getElementById('pattern-count').textContent = modFile.numPatterns;
                 document.getElementById('song-length').textContent = modFile.songLength;
+                document.getElementById('current-position').textContent = playerState.position;
                 document.getElementById('current-pattern').textContent = modFile.patternTable[playerState.position];
+                document.getElementById('current-row').textContent = playerState.row;
                 document.getElementById('current-speed').textContent = playerState.speed;
-                document.getElementById('current-bpm').textContent = Math.round(playerState.bpm);
-            }
-            
-            function initPatternView() {
-                const patternView = document.getElementById('pattern-view');
-                patternView.innerHTML = '';
-                const fragment = document.createDocumentFragment();
-                const headers = ['Ch 1', 'Ch 2', 'Ch 3', 'Ch 4'];
-                headers.forEach(text => {
-                    const header = document.createElement('div');
-                    header.className = 'tracker-header';
-                    header.textContent = text;
-                    fragment.appendChild(header);
-                });
-                patternView.appendChild(fragment);
-
-                patternViewCells = Array.from({ length: 64 }, () => Array(4));
-                for (let r = 0; r < 64; r++) {
-                    for (let c = 0; c < 4; c++) {
-                        const cell = document.createElement('div');
-                        cell.className = 'tracker-cell';
-                        cell.textContent = '... .. ...';
-                        patternView.appendChild(cell);
-                        patternViewCells[r][c] = cell;
-                    }
-                }
-            }
-
-            /**
-             * Finds the closest period in the periodTable to a given period (for UI display).
-             * This is a local copy for UI purposes; worker uses its own.
-             * @param {number} period The period to find the closest match for.
-             * @returns {number} The closest period found.
-             */
-            function getClosestPeriodForUI(period) {
-                let low = 0;
-                let high = sortedPeriods.length - 1;
-                let closest = sortedPeriods[0];
-        
-                while (low <= high) {
-                    let mid = Math.floor((low + high) / 2);
-                    let current = sortedPeriods[mid];
-        
-                    if (Math.abs(current - period) < Math.abs(closest - period)) {
-                        closest = current;
-                    }
-        
-                    if (current < period) {
-                        high = mid - 1;
-                    } else if (current > period) {
-                        low = mid + 1;
-                    } else {
-                        return current;
-                    }
-                }
-                return closest;
+                document.getElementById('current-bpm').textContent = playerState.bpm;
             }
 
             function displayPattern(pattern) {
+                const patternView = document.getElementById('pattern-view');
+                patternView.innerHTML = `
+                    <div class="tracker-header">Ch 1</div>
+                    <div class="tracker-header">Ch 2</div>
+                    <div class="tracker-header">Ch 3</div>
+                    <div class="tracker-header">Ch 4</div>
+                `;
+                
                 if (!pattern) return;
+                const fragment = document.createDocumentFragment();
+
                 for (let r = 0; r < 64; r++) {
                     for (let c = 0; c < 4; c++) {
                         const noteData = pattern[r] ? pattern[r][c] : null;
@@ -648,34 +687,41 @@
                         
                         let noteStr = '...';
                         if (noteData.period > 0) {
-                             const closestPeriod = getClosestPeriodForUI(noteData.period);
+                             const closestPeriod = sortedPeriods.reduce((prev, curr) => 
+                                (Math.abs(curr - noteData.period) < Math.abs(prev - noteData.period) ? curr : prev));
                              noteStr = periodTable[closestPeriod] || '???';
                         }
                         
                         const sampleStr = noteData.sampleNum > 0 ? noteData.sampleNum.toString(16).toUpperCase().padStart(2, '0') : '..';
                         const effectStr = noteData.effect.command === 0 && noteData.effect.value === 0 
-                            ? '...' : `${noteData.effect.command.toString(16).toUpperCase()}${noteData.effect.value.toString(16).toUpperCase().padStart(2, '0')}`;
+                            ? '...' 
+                            : `${noteData.effect.command.toString(16).toUpperCase()}${noteData.effect.value.toString(16).toUpperCase().padStart(2, '0')}`;
                         
-                        patternViewCells[r][c].textContent = `${noteStr} ${sampleStr} ${effectStr}`;
+                        const cell = document.createElement('div');
+                        cell.className = 'tracker-cell';
+                        cell.id = `cell-${r}-${c}`;
+                        cell.textContent = `${noteStr} ${sampleStr} ${effectStr}`;
+                        fragment.appendChild(cell);
                     }
                 }
+                patternView.appendChild(fragment);
             }
             
             function updateActiveRowHighlight(row) {
-                if (lastActiveRow === row) return;
-
-                if (lastActiveRow >= 0 && patternViewCells[lastActiveRow]) {
-                    for(let c = 0; c < 4; c++) {
-                        patternViewCells[lastActiveRow][c].classList.remove('active-row');
-                    }
-                }
+                // Remove all previous active classes - this is more robust
+                document.querySelectorAll('.active-row').forEach(cell => {
+                    cell.classList.remove('active-row');
+                });
                 
-                if (row >= 0 && patternViewCells[row]) {
+                // Add class to the new active row
+                if (row >= 0) {
                     for(let c = 0; c < 4; c++) {
-                        patternViewCells[row][c].classList.add('active-row');
+                        const newActiveCell = document.getElementById(`cell-${row}-${c}`);
+                        if (newActiveCell) {
+                            newActiveCell.classList.add('active-row');
+                        }
                     }
                 }
-                lastActiveRow = row;
             }
         });
     </script>
