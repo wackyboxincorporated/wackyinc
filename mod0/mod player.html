@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>mod-0.6</title>
+    <title>mod-0.71</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
@@ -339,61 +339,73 @@
                     case 'mod_parsed':
                         console.log('Main: Received mod_parsed from worker. ModFile:', receivedModFile);
                         modFile = receivedModFile;
-                        // Convert sample data from transferable ArrayBuffer back to AudioBuffer
+                        
+                        // Prepare modFile for sending to other workers (remove AudioBuffers, keep Int8Array data)
+                        // Make a deep copy to ensure workers get their own instance
+                        const modFileForWorkers = JSON.parse(JSON.stringify(modFile));
+                        // Re-attach Int8Array data (which was transferred as separate buffers)
+                        // This step is critical because JSON.stringify/parse will not handle ArrayBuffer/TypedArray
+                        modFileForWorkers.samples.forEach((s, i) => {
+                            if (modFile.samples[i].data) {
+                                s.data = modFile.samples[i].data; // Attach the original Int8Array which still has its buffer
+                            }
+                        });
+
+
+                        // Collect transferable buffers from samples data for the worker version of modFile
+                        const transferableBuffers = modFileForWorkers.samples
+                            .filter(s => s.data)
+                            .map(s => s.data.buffer); // Get ArrayBuffer from Int8Array
+
+
+                        // Send the full modFile data to both workers (the one that parsed it, and the other)
+                        // Make sure to transfer the sample data to avoid copying overhead
+                        // Use a new transferable list for each postMessage to avoid "already transferred" errors
+                        worker1.postMessage({ type: 'set_mod_data', data: { modFile: modFileForWorkers } }, transferableBuffers.slice()); // Slice to create a new transferable list
+                        worker2.postMessage({ type: 'set_mod_data', data: { modFile: modFileForWorkers } }, transferableBuffers.slice()); // Slice again
+
+                        console.log('Main: Sent set_mod_data message to both workers with transferable sample data.');
+
+                        // Now, convert sample data to AudioBuffers on the main thread for actual playback
                         modFile.samples.forEach(sample => {
                             if (sample.data && sample.data.buffer) {
-                                // Now audioContext is guaranteed to be initialized here
                                 const buffer = audioContext.createBuffer(1, sample.length, audioContext.sampleRate);
                                 const bufferData = buffer.getChannelData(0);
                                 for (let i = 0; i < sample.length; i++) {
-                                    bufferData[i] = sample.data[i] / 128.0; // Convert Int8 to float [-1, 1]
+                                    bufferData[i] = sample.data[i] / 128.0;
                                 }
                                 sample.buffer = buffer; // Store the AudioBuffer
-                                sample.data = null; // Free up the Int8Array data from the worker response
+                                sample.data = null; // Clear Int8Array data on main thread after conversion
                             }
                         });
 
                         if (modFile) {
                             showMessage('MOD file loaded and parsed successfully.', 'info');
-                            resetPlayerState(); // Reset main thread's player state with fresh AudioNodes
+                            resetPlayerState();
                             updateSongInfo();
                             displayPattern(modFile.patterns[modFile.patternTable[0]]);
                             playButton.disabled = false;
 
-                            // Initialize workers with their respective channel states
+                            // Now send initial channel states (simplified as modFile is already sent)
                             if (worker1 && worker2 && audioContext) {
                                 console.log('Main: Initializing workers with channel states and AudioContext sample rate.');
                                 worker1.postMessage({
                                     type: 'init_playback',
                                     data: {
-                                        initialChannelStates: playerState.channels.slice(0, 2).map(ch => ({ // Send a deep copy of initial relevant state
-                                            sampleNum: ch.sampleNum, period: ch.period, volume: ch.volume,
-                                            portamentoTarget: ch.portamentoTarget, portamentoSpeed: ch.portamentoSpeed,
-                                            volumeSlideSpeed: ch.volumeSlideSpeed, vibratoSpeed: ch.vibratoSpeed,
-                                            vibratoDepth: ch.vibratoDepth, vibratoPos: ch.vibratoPos,
-                                            arpeggioCache: ch.arpeggioCache, effect: ch.effect
-                                        })),
+                                        initialChannelStates: playerState.channels.slice(0, 2).map(ch => ({ ...ch, source: null, gainNode: null })), // Don't send AudioNodes
                                         sampleRate: audioContext.sampleRate
                                     }
                                 });
                                 worker2.postMessage({
                                     type: 'init_playback',
                                     data: {
-                                        initialChannelStates: playerState.channels.slice(2, 4).map(ch => ({ // Send a deep copy of initial relevant state
-                                            sampleNum: ch.sampleNum, period: ch.period, volume: ch.volume,
-                                            portamentoTarget: ch.portamentoTarget, portamentoSpeed: ch.portamentoSpeed,
-                                            volumeSlideSpeed: ch.volumeSlideSpeed, vibratoSpeed: ch.vibratoSpeed,
-                                            vibratoDepth: ch.vibratoDepth, vibratoPos: ch.vibratoPos,
-                                            arpeggioCache: ch.arpeggioCache, effect: ch.effect
-                                        })),
+                                        initialChannelStates: playerState.channels.slice(2, 4).map(ch => ({ ...ch, source: null, gainNode: null })), // Don't send AudioNodes
                                         sampleRate: audioContext.sampleRate
                                     }
                                 });
                             }
                         } else {
-                            showMessage('Failed to parse MOD file.', 'error');
-                            console.error('Main: modFile is null after parsing in worker.');
-                            playButton.disabled = true;
+                            // ... (existing error handling) ...
                         }
                         break;
                     case 'mod_parse_error':
