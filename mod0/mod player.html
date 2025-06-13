@@ -237,6 +237,8 @@
                         // Send the ArrayBuffer to worker1 for parsing
                         if (worker1) {
                             // Ensure the buffer is marked as transferable
+                            // Clone the arrayBuffer before transferring if it might be used again on the main thread later
+                            // In this case, `reader.readAsArrayBuffer` creates a new ArrayBuffer, so transfer is fine.
                             worker1.postMessage({ type: 'parse_mod_file', data: { arrayBuffer: arrayBuffer } }, [arrayBuffer]);
                             console.log('Main: Sent parse_mod_file message to worker1.');
                         } else {
@@ -360,7 +362,7 @@
 
                             // Initialize workers with their respective channel states
                             if (worker1 && worker2 && audioContext) {
-                                console.log('Main: Initializing workers with channel states.');
+                                console.log('Main: Initializing workers with channel states and AudioContext sample rate.');
                                 worker1.postMessage({
                                     type: 'init_playback',
                                     data: {
@@ -432,14 +434,17 @@
 
                                 // If a note needs to be triggered/re-triggered (e.g., new note, sample offset)
                                 if (mainChannel.triggerNote) {
-                                    // console.log(`Main: Channel ${globalChannelIndex} triggered note: sample ${mainChannel.sampleNum}, period ${mainChannel.period}, offset ${mainChannel.startOffset}`);
+                                    console.log(`Main: Channel ${globalChannelIndex} TRIGGERING NOTE: sample ${mainChannel.sampleNum}, period ${mainChannel.period}, offset ${mainChannel.startOffset}, volume ${mainChannel.volume}`);
                                     playSample(globalChannelIndex, mainChannel.sampleNum, mainChannel.period, mainChannel.startOffset);
                                     mainChannel.triggerNote = false; // Reset flag after triggering
                                 } else {
                                     // Only update pitch/volume if not a new note event (to avoid re-triggering)
                                     // Apply period and volume adjustments from worker
-                                    updatePitch(globalChannelIndex, mainChannel.period + mainChannel.periodAdjust);
-                                    mainChannel.gainNode.gain.setTargetAtTime(mainChannel.volume / 64, audioContext.currentTime, 0.001);
+                                    if (mainChannel.source) { // Only update if a source is active
+                                        updatePitch(globalChannelIndex, mainChannel.period + mainChannel.periodAdjust);
+                                        mainChannel.gainNode.gain.setTargetAtTime(mainChannel.volume / 64, audioContext.currentTime, 0.001);
+                                        // console.log(`Main: Channel ${globalChannelIndex} UPDATING PITCH/VOLUME: period ${mainChannel.period} (adj ${mainChannel.periodAdjust}), volume ${mainChannel.volume}`);
+                                    }
                                 }
                             }
                         }
@@ -549,7 +554,7 @@
                 }
                 
                 const tickDuration = (2500 / playerState.bpm);
-                // console.log(`Main: Tick ${playerState.tick} at position ${playerState.position}, row ${playerState.row}. Duration: ${tickDuration}ms`);
+                console.log(`Main: Tick ${playerState.tick} at position ${playerState.position}, row ${playerState.row}. Duration: ${tickDuration}ms`);
 
                 // Send current playback state to workers
                 const workerPayload = {
@@ -575,10 +580,10 @@
                         playerState.position++;
                         if (playerState.position >= modFile.songLength) {
                             playerState.position = modFile.restartPosition || 0;
-                            // console.log('Main: Song finished, looping to restart position:', modFile.restartPosition);
+                            console.log('Main: Song finished, looping to restart position:', modFile.restartPosition);
                         }
                         const nextPatternIndex = modFile.patternTable[playerState.position];
-                        // console.log(`Main: Advancing to new pattern: ${nextPatternIndex} at position ${playerState.position}`);
+                        console.log(`Main: Advancing to new pattern: ${nextPatternIndex} at position ${playerState.position}`);
                         displayPattern(modFile.patterns[nextPatternIndex]);
                         updateSongInfo(); // Update song info immediately on pattern/position change
                     }
@@ -591,7 +596,7 @@
             function renderLoop() {
                 if (!playerState.isPlaying) {
                     animationFrameId = null;
-                    // console.log('Main: Render loop stopping (isPlaying is false).');
+                    console.log('Main: Render loop stopping (isPlaying is false).');
                     return;
                 }
                 updateActiveRowHighlight(playerState.row);
@@ -640,7 +645,7 @@
                 channel.gainNode.gain.setValueAtTime(channel.volume / 64, audioContext.currentTime);
                 channel.source.connect(channel.gainNode);
                 channel.source.start(0, startOffset);
-                // console.log(`Main: Playing sample ${sampleIndex} on channel ${channelIndex} with period ${period} (adj ${channel.periodAdjust}), volume ${channel.volume}, offset ${startOffset}`);
+                console.log(`Main: Playing sample ${sampleIndex} on channel ${channelIndex} with period ${period} (adj ${channel.periodAdjust}), volume ${channel.volume}, offset ${startOffset}`);
             }
             
             /**
@@ -658,7 +663,7 @@
                     const targetFrequency = (PAL_CLOCK / period) * fineTuneFactor;
                     const playbackRate = targetFrequency / audioContext.sampleRate;
                     
-                    // console.log(`Main: Updating pitch for channel ${channelIndex}. Period: ${period}, FineTune: ${sample.fineTune}, PlaybackRate: ${playbackRate}`);
+                    console.log(`Main: Updating pitch for channel ${channelIndex}. Period: ${period}, FineTune: ${sample.fineTune}, PlaybackRate: ${playbackRate}`);
                     channel.source.playbackRate.setTargetAtTime(playbackRate, audioContext.currentTime, 0.001);
                 }
             }
@@ -674,7 +679,7 @@
                 document.getElementById('current-pattern').textContent = modFile.patternTable[playerState.position];
                 document.getElementById('current-speed').textContent = playerState.speed;
                 document.getElementById('current-bpm').textContent = Math.round(playerState.bpm);
-                // console.log('Main: Song info updated.');
+                console.log('Main: Song info updated.');
             }
             
             function initPatternView() {
@@ -700,7 +705,7 @@
                         patternViewCells[r][c] = cell;
                     }
                 }
-                // console.log('Main: Pattern view initialized.');
+                console.log('Main: Pattern view initialized.');
             }
 
             /**
@@ -735,7 +740,7 @@
 
             function displayPattern(pattern) {
                 if (!pattern) return;
-                // console.log('Main: Displaying pattern at row', playerState.row);
+                console.log('Main: Displaying pattern for current position.');
                 for (let r = 0; r < 64; r++) {
                     for (let c = 0; c < 4; c++) {
                         const noteData = pattern[r] ? pattern[r][c] : null;
