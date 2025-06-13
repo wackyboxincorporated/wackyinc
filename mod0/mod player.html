@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>mod-0.71</title>
+    <title>mod-0.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
@@ -163,8 +163,8 @@
 
             let audioContext;
             let masterGainNode;
-            let modFile;
-            let playerState = {};
+            let modFile; // This modFile on main thread will contain AudioBuffers
+            let workerModFileReadyCount = 0; // Tracks when both workers have received modFile data
             let sortedPeriods = []; // Used for UI only, worker has its own
             
             // ** Web Worker instances **
@@ -236,9 +236,6 @@
                         console.log('Main: ArrayBuffer loaded, size:', arrayBuffer.byteLength);
                         // Send the ArrayBuffer to worker1 for parsing
                         if (worker1) {
-                            // Ensure the buffer is marked as transferable
-                            // Clone the arrayBuffer before transferring if it might be used again on the main thread later
-                            // In this case, `reader.readAsArrayBuffer` creates a new ArrayBuffer, so transfer is fine.
                             worker1.postMessage({ type: 'parse_mod_file', data: { arrayBuffer: arrayBuffer } }, [arrayBuffer]);
                             console.log('Main: Sent parse_mod_file message to worker1.');
                         } else {
@@ -308,6 +305,8 @@
             // --- Web Worker Setup ---
             function setupWorkers() {
                 console.log('Main: Setting up Web Workers.');
+                workerModFileReadyCount = 0; // Reset count when workers are set up
+
                 // Initialize Worker 1 (channels 0, 1)
                 worker1 = new Worker('worker.js'); // Assuming worker.js is in the same directory
                 worker1.onmessage = handleWorkerMessage;
@@ -338,76 +337,75 @@
                 switch (type) {
                     case 'mod_parsed':
                         console.log('Main: Received mod_parsed from worker. ModFile:', receivedModFile);
-                        modFile = receivedModFile;
-                        
-                        // Prepare modFile for sending to other workers (remove AudioBuffers, keep Int8Array data)
-                        // Make a deep copy to ensure workers get their own instance
-                        const modFileForWorkers = JSON.parse(JSON.stringify(modFile));
-                        // Re-attach Int8Array data (which was transferred as separate buffers)
-                        // This step is critical because JSON.stringify/parse will not handle ArrayBuffer/TypedArray
-                        modFileForWorkers.samples.forEach((s, i) => {
-                            if (modFile.samples[i].data) {
-                                s.data = modFile.samples[i].data; // Attach the original Int8Array which still has its buffer
-                            }
-                        });
+                        modFile = receivedModFile; // Main thread's copy of modFile
 
-
-                        // Collect transferable buffers from samples data for the worker version of modFile
-                        const transferableBuffers = modFileForWorkers.samples
-                            .filter(s => s.data)
-                            .map(s => s.data.buffer); // Get ArrayBuffer from Int8Array
-
-
-                        // Send the full modFile data to both workers (the one that parsed it, and the other)
-                        // Make sure to transfer the sample data to avoid copying overhead
-                        // Use a new transferable list for each postMessage to avoid "already transferred" errors
-                        worker1.postMessage({ type: 'set_mod_data', data: { modFile: modFileForWorkers } }, transferableBuffers.slice()); // Slice to create a new transferable list
-                        worker2.postMessage({ type: 'set_mod_data', data: { modFile: modFileForWorkers } }, transferableBuffers.slice()); // Slice again
-
-                        console.log('Main: Sent set_mod_data message to both workers with transferable sample data.');
-
-                        // Now, convert sample data to AudioBuffers on the main thread for actual playback
+                        // Convert sample data from Int8Array to AudioBuffers on the main thread
                         modFile.samples.forEach(sample => {
-                            if (sample.data && sample.data.buffer) {
+                            if (sample.data instanceof Int8Array) { // Ensure it's an Int8Array
                                 const buffer = audioContext.createBuffer(1, sample.length, audioContext.sampleRate);
                                 const bufferData = buffer.getChannelData(0);
                                 for (let i = 0; i < sample.length; i++) {
                                     bufferData[i] = sample.data[i] / 128.0;
                                 }
-                                sample.buffer = buffer; // Store the AudioBuffer
-                                sample.data = null; // Clear Int8Array data on main thread after conversion
+                                sample.buffer = buffer; // Store the AudioBuffer on main thread's modFile
+                                sample.data = null; // Clear Int8Array data from main thread's modFile after conversion
                             }
                         });
 
-                        if (modFile) {
-                            showMessage('MOD file loaded and parsed successfully.', 'info');
-                            resetPlayerState();
-                            updateSongInfo();
-                            displayPattern(modFile.patterns[modFile.patternTable[0]]);
-                            playButton.disabled = false;
+                        // Now, prepare a *new* modFile object specifically for workers
+                        // This version should NOT contain the Int8Array data, as workers don't need it.
+                        // We use JSON.parse(JSON.stringify) for a deep copy, then nullify `data` field in samples.
+                        const modFileForWorkers = JSON.parse(JSON.stringify(modFile));
+                        modFileForWorkers.samples.forEach(sample => {
+                            // The `data` property would be lost in JSON.stringify/parse anyway,
+                            // but explicitly setting to null ensures clarity and prevents accidental transferables.
+                            sample.data = null;
+                            sample.buffer = null; // Also clear buffer reference as workers don't need it
+                        });
 
-                            // Now send initial channel states (simplified as modFile is already sent)
-                            if (worker1 && worker2 && audioContext) {
-                                console.log('Main: Initializing workers with channel states and AudioContext sample rate.');
-                                worker1.postMessage({
-                                    type: 'init_playback',
-                                    data: {
-                                        initialChannelStates: playerState.channels.slice(0, 2).map(ch => ({ ...ch, source: null, gainNode: null })), // Don't send AudioNodes
-                                        sampleRate: audioContext.sampleRate
-                                    }
-                                });
-                                worker2.postMessage({
-                                    type: 'init_playback',
-                                    data: {
-                                        initialChannelStates: playerState.channels.slice(2, 4).map(ch => ({ ...ch, source: null, gainNode: null })), // Don't send AudioNodes
-                                        sampleRate: audioContext.sampleRate
-                                    }
-                                });
-                            }
-                        } else {
-                            // ... (existing error handling) ...
+                        // Send the metadata-only modFile to both workers
+                        // No transferable list needed here as no ArrayBuffers are being transferred.
+                        if (worker1) {
+                            worker1.postMessage({ type: 'set_mod_data', data: { modFile: modFileForWorkers } });
+                            console.log('Main: Sent set_mod_data message to worker1 (metadata only).');
+                        }
+                        if (worker2) {
+                            worker2.postMessage({ type: 'set_mod_data', data: { modFile: modFileForWorkers } });
+                            console.log('Main: Sent set_mod_data message to worker2 (metadata only).');
+                        }
+
+                        // Also send initial channel states to workers, after modFile is sent
+                        if (worker1 && worker2 && audioContext) {
+                            console.log('Main: Initializing workers with channel states and AudioContext sample rate.');
+                            worker1.postMessage({
+                                type: 'init_playback',
+                                data: {
+                                    initialChannelStates: playerState.channels.slice(0, 2).map(ch => ({ ...ch, source: null, gainNode: null })), // Don't send AudioNodes
+                                    sampleRate: audioContext.sampleRate
+                                }
+                            });
+                            worker2.postMessage({
+                                type: 'init_playback',
+                                data: {
+                                    initialChannelStates: playerState.channels.slice(2, 4).map(ch => ({ ...ch, source: null, gainNode: null })), // Don't send AudioNodes
+                                    sampleRate: audioContext.sampleRate
+                                }
+                            });
+                        }
+                        
+                        // Enable play button AFTER modFile is processed and sent to workers
+                        // We'll wait for confirmation from workers that they're ready.
+                        break;
+                    
+                    case 'worker_ready':
+                        console.log(`Main: Worker ${message} is ready.`);
+                        workerModFileReadyCount++;
+                        if (workerModFileReadyCount === 2) {
+                            console.log('Main: Both workers are ready. Enabling play button.');
+                            playButton.disabled = false;
                         }
                         break;
+
                     case 'mod_parse_error':
                         console.error('Main: MOD parse error from worker:', message);
                         showMessage(`Failed to parse MOD file: ${message}`, 'error');
@@ -547,7 +545,7 @@
                     updateSongInfo();
                     displayPattern(modFile.patterns[modFile.patternTable[0]]);
                     updateActiveRowHighlight(-1);
-                    playButton.disabled = false;
+                    playButton.disabled = false; // Re-enable play button after stop/reset
                 } else {
                      playButton.disabled = true;
                 }
@@ -637,8 +635,9 @@
                     return;
                 }
                 const sample = modFile.samples[sampleIndex];
-                if (!sample || !sample.buffer) {
-                    console.warn(`Main: Sample ${sampleIndex} on channel ${channelIndex} has no buffer.`);
+                // Check if sample.buffer is actually an AudioBuffer
+                if (!sample || !(sample.buffer instanceof AudioBuffer)) {
+                    console.warn(`Main: Sample ${sampleIndex} on channel ${channelIndex} has no valid AudioBuffer.`);
                     return;
                 }
 
@@ -681,7 +680,12 @@
                     const playbackRate = targetFrequency / audioContext.sampleRate;
                     
                     console.log(`Main: Updating pitch for channel ${channelIndex}. Period: ${period}, FineTune: ${sample.fineTune}, PlaybackRate: ${playbackRate}`);
-                    channel.source.playbackRate.setTargetAtTime(playbackRate, audioContext.currentTime, 0.001);
+                    // Check if the AudioBufferSourceNode is still active before trying to set its playbackRate
+                    if (channel.source.playbackRate) { // Ensure playbackRate property exists
+                        channel.source.playbackRate.setTargetAtTime(playbackRate, audioContext.currentTime, 0.001);
+                    } else {
+                        console.warn(`Main: Cannot update pitch for channel ${channelIndex}, source playbackRate is not available.`);
+                    }
                 }
             }
             
