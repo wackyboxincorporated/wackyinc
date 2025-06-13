@@ -153,6 +153,36 @@
     </div>
 
     <script>
+        // Global variables, ensuring they are always defined
+        let audioContext;
+        let masterGainNode;
+        let modFile; // This modFile on main thread will contain AudioBuffers
+        let workerModFileReadyCount = 0; // Tracks when both workers have received modFile data
+        let playerState = {}; // Initialize playerState globally
+        let sortedPeriods = []; // Used for UI only, worker has its own
+        
+        // ** Web Worker instances **
+        let worker1 = null; // Handles channels 0 and 1
+        let worker2 = null; // Handles channels 2 and 3
+
+        // **OPTIMIZATION**: Caching UI elements
+        let patternViewCells = [];
+        let lastActiveRow = -1;
+        let animationFrameId;
+
+        // Constants
+        const PAL_CLOCK = 3546895;
+
+        // Note period table for PAL Amigas (for UI display only)
+        const periodTable = {
+            856: 'C-1', 808: 'C#1', 762: 'D-1', 720: 'D#1', 678: 'E-1', 640: 'F-1', 604: 'F#1', 570: 'G-1', 538: 'G#1', 508: 'A-1', 480: 'A#1', 453: 'B-1',
+            428: 'C-2', 404: 'C#2', 381: 'D-2', 360: 'D#2', 339: 'E-2', 320: 'F-2', 302: 'F#2', 285: 'G-2', 269: 'G#2', 254: 'A-2', 240: 'A#2', 226: 'B-2',
+            214: 'C-3', 202: 'C#3', 190: 'D-3', 180: 'D#3', 170: 'E-3', 160: 'F-3', 151: 'F#3', 142: 'G-3', 135: 'G#3', 127: 'A-3', 120: 'A#3', 113: 'B-3'
+        };
+        
+        // For UI display, keeping this local. Worker has its own copy for calculations.
+        sortedPeriods = Object.keys(periodTable).map(p => parseInt(p)).sort((a, b) => b - a);
+
         document.addEventListener('DOMContentLoaded', () => {
             const fileLoader = document.getElementById('file-loader');
             const playButton = document.getElementById('play-button');
@@ -160,34 +190,6 @@
             const stopButton = document.getElementById('stop-button');
             const volumeSlider = document.getElementById('volume-slider');
             const messageBox = document.getElementById('message-box');
-
-            let audioContext;
-            let masterGainNode;
-            let modFile; // This modFile on main thread will contain AudioBuffers
-            let workerModFileReadyCount = 0; // Tracks when both workers have received modFile data
-            let sortedPeriods = []; // Used for UI only, worker has its own
-            
-            // ** Web Worker instances **
-            let worker1 = null; // Handles channels 0 and 1
-            let worker2 = null; // Handles channels 2 and 3
-
-            // **OPTIMIZATION**: Caching UI elements
-            let patternViewCells = [];
-            let lastActiveRow = -1;
-            let animationFrameId;
-
-            // Constants
-            const PAL_CLOCK = 3546895;
-
-            // Note period table for PAL Amigas (for UI display only)
-            const periodTable = {
-                856: 'C-1', 808: 'C#1', 762: 'D-1', 720: 'D#1', 678: 'E-1', 640: 'F-1', 604: 'F#1', 570: 'G-1', 538: 'G#1', 508: 'A-1', 480: 'A#1', 453: 'B-1',
-                428: 'C-2', 404: 'C#2', 381: 'D-2', 360: 'D#2', 339: 'E-2', 320: 'F-2', 302: 'F#2', 285: 'G-2', 269: 'G#2', 254: 'A-2', 240: 'A#2', 226: 'B-2',
-                214: 'C-3', 202: 'C#3', 190: 'D-3', 180: 'D#3', 170: 'E-3', 160: 'F-3', 151: 'F#3', 142: 'G-3', 135: 'G#3', 127: 'A-3', 120: 'A#3', 113: 'B-3'
-            };
-            
-            // For UI display, keeping this local. Worker has its own copy for calculations.
-            sortedPeriods = Object.keys(periodTable).map(p => parseInt(p)).sort((a, b) => b - a);
             
             // --- UI & Event Listeners ---
             
@@ -509,28 +511,33 @@
             
             function stopPlayback() {
                 console.log('Main: Stopping playback.');
-                if(playerState.timerId) {
-                    clearTimeout(playerState.timerId);
-                    playerState.timerId = null;
-                }
+                // Safely check playerState before accessing properties
+                if (playerState) {
+                    if(playerState.timerId) {
+                        clearTimeout(playerState.timerId);
+                        playerState.timerId = null;
+                    }
 
-                if (animationFrameId) {
-                    cancelAnimationFrame(animationFrameId);
-                    animationFrameId = null;
-                }
+                    if (animationFrameId) {
+                        cancelAnimationFrame(animationFrameId);
+                        animationFrameId = null;
+                    }
 
-                if (playerState.channels) {
-                    playerState.channels.forEach((ch, index) => {
-                        if (ch.source) {
-                            try { ch.source.stop(); console.log(`Main: Channel ${index} source stopped.`); } catch(e) { console.warn(`Main: Error stopping channel ${index} source:`, e); }
-                            ch.source.disconnect();
-                            console.log(`Main: Channel ${index} source disconnected.`);
-                        }
-                        if (ch.gainNode) {
-                            ch.gainNode.disconnect();
-                            console.log(`Main: Channel ${index} gain node disconnected.`);
-                        }
-                    });
+                    if (playerState.channels) {
+                        playerState.channels.forEach((ch, index) => {
+                            if (ch.source) {
+                                try { ch.source.stop(); console.log(`Main: Channel ${index} source stopped.`); } catch(e) { console.warn(`Main: Error stopping channel ${index} source:`, e); }
+                                ch.source.disconnect();
+                                console.log(`Main: Channel ${index} source disconnected.`);
+                            }
+                            if (ch.gainNode) {
+                                ch.gainNode.disconnect();
+                                console.log(`Main: Channel ${index} gain node disconnected.`);
+                            }
+                        });
+                    }
+                } else {
+                    console.warn("Main: playerState is undefined when stopPlayback was called. Resetting anyway.");
                 }
                 
                 resetPlayerState(); // Reset main thread state
