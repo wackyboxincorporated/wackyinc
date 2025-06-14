@@ -114,6 +114,15 @@
             <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.75" class="w-full">
         </div>
         
+        <div class="mb-6">
+            <label for="hz-input" class="block mb-2 text-lg">Set Playback Rate (Hz)</label>
+            <div class="flex items-center space-x-2">
+                <input type="number" id="hz-input" min="1" value="50" class="w-24 p-2 rounded-md bg-gray-700 border border-gray-600 text-green-400">
+                <button id="set-hz-button" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">Apply Hz</button>
+            </div>
+            <p class="text-sm text-gray-400 mt-1">Recommended: 50 (PAL), 60 (NTSC) or adjust for desired speed.</p>
+        </div>
+
         <div id="song-info" class="mb-6 bg-gray-700 p-4 rounded-lg border border-gray-600">
             <h2 class="text-2xl mb-2 text-green-300">song information</h2>
             <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -143,14 +152,17 @@
             const playButton = document.getElementById('play-button');
             const pauseButton = document.getElementById('pause-button');
             const stopButton = document.getElementById('stop-button');
-            const volumeSlider = document.getElementById('volume-slider'); // New volume slider
+            const volumeSlider = document.getElementById('volume-slider');
+            const hzInput = document.getElementById('hz-input');
+            const setHzButton = document.getElementById('set-hz-button');
             const messageBox = document.getElementById('message-box');
 
             let audioContext;
-            let masterGainNode; // New master gain node
+            let masterGainNode;
             let modFile;
             let playerState = {};
-            let sortedPeriods = []; // For improved Arpeggio calculation
+            let sortedPeriods = [];
+            let customHz = null; // Stores user-set Hz, null means use MOD BPM/Speed
 
             // Constants
             const NTSC_CLOCK = 3579545; // NTSC Amiga master clock frequency
@@ -251,6 +263,23 @@
                 }
             });
 
+            setHzButton.addEventListener('click', () => {
+                const newHz = parseFloat(hzInput.value);
+                if (!isNaN(newHz) && newHz > 0) {
+                    customHz = newHz;
+                    showMessage(`Playback rate set to ${newHz} Hz.`, 'info');
+                    // If playing, restart the tick loop to apply new speed immediately
+                    if (playerState.isPlaying) {
+                        clearTimeout(playerState.timerId);
+                        playerState.timerId = null; // Clear existing timer
+                        tick(); // Start new tick loop
+                    }
+                } else {
+                    showMessage('Please enter a valid Hz value (e.g., 50 or 60).', 'error');
+                    customHz = null; // Revert to default if invalid
+                }
+            });
+
             // --- Core Playback Logic ---
 
             function resetPlayerState() {
@@ -339,8 +368,13 @@
                     return;
                 }
                 
-                // Adjusted for NTSC 60Hz equivalent at 125 BPM
-                const tickDuration = (2083.333 / playerState.bpm); 
+                let tickDuration;
+                if (customHz !== null) {
+                    tickDuration = 1000 / customHz;
+                } else {
+                    // Original MOD BPM-driven tempo, adjusted for NTSC 60Hz equivalent at 125 BPM
+                    tickDuration = (2083.333 / playerState.bpm); 
+                }
 
                 if (playerState.tick === 0) { // New row
                     processRow();
