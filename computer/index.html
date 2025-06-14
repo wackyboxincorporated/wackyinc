@@ -82,7 +82,7 @@
             text-align: right;
             color: #9ca3af; /* text-gray-400 */
             user-select: none;
-            overflow: hidden;
+            overflow: hidden; /* Hide overflow here, the textarea/highlighted-code handles scrolling */
             z-index: 20; /* Above highlighted-code, below textarea content flow */
             line-height: 1.5rem; /* Match textarea line-height */
             font-size: 1rem; /* Match textarea font-size */
@@ -99,10 +99,10 @@
             padding-left: 4.5rem; /* Adjust based on line-numbers width */
             padding-top: 1rem;
             padding-bottom: 1rem;
-            white-space: pre-wrap; /* IMPORTANT: Allows wrapping and preserves whitespace */
-            overflow-wrap: break-word; /* Prevents long words from overflowing */
-            word-break: break-all; /* Force breaking at characters for long words */
-            overflow-x: auto;
+            padding-right: 0; /* Consistent padding */
+            white-space: pre; /* IMPORTANT: Preserves whitespace, NO wrapping */
+            overflow-x: auto; /* Enable horizontal scrolling */
+            /* Removed overflow-wrap and word-break as they conflict with white-space: pre */
             height: 100%;
             width: 100%;
             background-color: transparent; /* Make background transparent */
@@ -125,27 +125,24 @@
             padding-left: 4.5rem; /* Match textarea padding */
             padding-top: 1rem;
             padding-bottom: 1rem;
+            padding-right: 0; /* Consistent padding */
             font-family: 'Fira Code', monospace;
             font-size: 1rem;
             line-height: 1.5rem; /* Match textarea line-height */
             z-index: 5; /* Below textarea, above container background */
             pointer-events: none; /* Crucial: allows clicks to pass through to textarea */
-            white-space: pre-wrap; /* IMPORTANT: Allows wrapping and preserves whitespace */
-            overflow-wrap: break-word; /* Prevents long words from overflowing */
-            word-break: break-all; /* Force breaking at characters for long words */
-            overflow-x: auto;
+            white-space: pre; /* IMPORTANT: Preserves whitespace, NO wrapping */
+            overflow-x: auto; /* Enable horizontal scrolling */
+            /* Removed overflow-wrap and word-break as they conflict with white-space: pre */
             color: white; /* Default color for highlighting, will be overridden by spans */
             box-sizing: border-box; /* Crucial for consistent sizing */
             tab-size: 4; /* Explicitly set tab size */
             -moz-tab-size: 4; /* For Firefox */
         }
-        /* Each logical line in highlighted-code will be an inline span.
-           The explicit \n in JS handles line breaks. */
-        #highlighted-code > span {
-            /* Removed display: block here */
-            /* line-height is inherited from parent now, which matches textarea */
+        /* Syntax Highlighting Classes - ensure these are inline or default (inline-block) */
+        .opcode-orange, .opcode-pink, .arg-green, .inc-green, .label-red, .comment-white {
+            /* Removed display: block; - these should flow inline within the logical line */
         }
-
 
         /* Syntax Highlighting Classes */
         .opcode-orange { color: #f97316; } /* Orange-600 */
@@ -441,8 +438,7 @@ SUB D, $2   ; D = D - dedicatedCounter2
                 <p class="mb-1"><strong>Behavior:</strong> `DEST_REG = RAM[ADDRESS]`. The content of RAM at `ADDRESS` remains unchanged.</p>
                 <p class="mb-1"><strong>Example:</strong></p>
                 <pre class="bg-gray-900 p-3 rounded-md text-sm font-fira overflow-x-auto mb-2">
-; Assume RAM[5] contains the value 100
-LOAD A, 5           ; Register A becomes 100
+MOV A, 5           ; Register A becomes 100
 MOV B, 2
 LOAD C, 3 + B       ; Register C becomes RAM[5] (if B was 2)
 LOAD D, 10 + $      ; Register D becomes RAM[10 + dedicatedCounter]
@@ -566,13 +562,10 @@ OUT $2          ; Output: final value of Dedicated Counter 2
                 <p class="mb-1"><strong>Behavior:</strong> The PC is set to the line number associated with `LABEL_NAME`. This creates loops or jumps to subroutines.</p>
                 <p class="mb-1"><strong>Example:</strong></p>
                 <pre class="bg-gray-900 p-3 rounded-md text-sm font-fira overflow-x-auto mb-2">
-START:
-    MOV A, 1
-    JMP END_PROGRAM
-    ; This line will be skipped
-    MOV A, 0
-END_PROGRAM:
-    HLT
+MOV A, 1
+OUT A
+HLT         ; Program stops here
+MOV B, 2    ; This line will never be reached
                 </pre>
 
                 <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">12. `JEZ` (Jump if Equal to Zero)</h4>
@@ -937,33 +930,35 @@ PRINT_TAPE_LOOP:
                 }
 
                 // Tokenize codePart to preserve internal spaces
+                // Use a regex that captures both non-whitespace sequences and whitespace sequences
                 const codeTokens = codePart.match(/(\S+|\s+)/g) || [];
+
 
                 codeTokens.forEach((token, i) => {
                     if (/\s+/.test(token)) { // If it's just whitespace
-                        currentLineHtml += escapeHtml(token);
+                        currentLineHtml += escapeHtml(token); // Add raw whitespace
                     } else { // It's a non-whitespace token (opcode or argument)
                         let tokenHtml = escapeHtml(token);
                         const cleanedToken = token.replace(/,$/, '').toUpperCase(); // Clean for classification
 
+                        let spanClass = '';
                         if (i === 0) { // First non-whitespace token is usually the opcode
-                            const opcodeClass = opcodeMap[cleanedToken] || '';
-                            tokenHtml = `<span class="${opcodeClass}">${tokenHtml}</span>`;
+                            spanClass = opcodeMap[cleanedToken] || '';
                         } else { // Subsequent non-whitespace tokens are arguments
                             if (registerPattern.test(cleanedToken) || counterPattern.test(cleanedToken) || cleanedToken.match(/([ABCD$]+\d*|-?\d+)\s*([+\-*/])\s*([ABCD$]+\d*|-?\d+)/i)) {
-                                tokenHtml = `<span class="arg-green">${tokenHtml}</span>`;
+                                spanClass = 'arg-green';
                             } else if (!isNaN(parseInt(cleanedToken, 10)) && String(parseInt(cleanedToken, 10)) === cleanedToken) {
-                                tokenHtml = `<span class="arg-green">${tokenHtml}</span>`;
+                                spanClass = 'arg-green';
                             }
                         }
-                        currentLineHtml += tokenHtml;
+                        currentLineHtml += `<span class="${spanClass}">${tokenHtml}</span>`;
                     }
                 });
 
                 if (commentPart) {
                     currentLineHtml += `<span class="comment-white">${escapeHtml(commentPart)}</span>`;
                 }
-                highlightedHtml += `<span>${currentLineHtml}</span>\n`; // Re-added the trailing '\n' to create line breaks
+                highlightedHtml += currentLineHtml + '\n'; // Add the line content and a newline
             });
 
             highlightedCodeDiv.innerHTML = highlightedHtml;
@@ -1103,12 +1098,20 @@ PRINT_TAPE_LOOP:
             
             // Update code highlighting (for execution pointer)
             // Remove previous active line highlight
+            // IMPORTANT: With `white-space: pre;`, each 'line' in `highlightedCodeDiv.childNodes` is now a TextNode or a span that contains an entire line.
+            // The `span` elements around each logical line (which includes other styling spans within it) are the direct children.
             document.querySelectorAll('#highlighted-code > span.active-instruction').forEach(span => span.classList.remove('active-instruction'));
-            const activeLineSpan = highlightedCodeDiv.querySelector(`span:nth-child(${pc + 1})`); // Get the span for the current PC line
-            if (activeLineSpan) {
-                // To highlight the entire line in the highlighted-code div
-                activeLineSpan.classList.add('active-instruction');
+            const activeLineNode = highlightedCodeDiv.childNodes[pc]; // Access by index
+            if (activeLineNode && activeLineNode.nodeType === 1) { // Ensure it's an element node (a span)
+                activeLineNode.classList.add('active-instruction');
+            } else if (activeLineNode && activeLineNode.nodeType === 3) { // It's a text node (for lines without highlighting tokens)
+                // If it's a text node, wrap it in a span for highlighting
+                const span = document.createElement('span');
+                span.textContent = activeLineNode.textContent;
+                activeLineNode.parentNode.replaceChild(span, activeLineNode);
+                span.classList.add('active-instruction');
             }
+
 
             updateLineNumbers();
         }
@@ -1323,15 +1326,19 @@ PRINT_TAPE_LOOP:
         }
 
         function updateLineNumbers() {
+            // Number of lines is determined by the number of newlines in the input,
+            // which directly corresponds to the number of logical lines.
             const lineCount = codeInput.value.split('\n').length;
             let lineNumHtml = '';
-            // Wrap each line number in a span with display: block and matching line-height
             for(let i = 1; i <= lineCount; i++) {
-                lineNumHtml += `<span>${i}</span>`;
+                lineNumHtml += `<span>${i}</span>`; // Each logical line gets a number
             }
             lineNumbersDiv.innerHTML = lineNumHtml;
+            // Synchronize vertical scroll
             lineNumbersDiv.scrollTop = codeInput.scrollTop;
-            highlightedCodeDiv.scrollTop = codeInput.scrollTop; // Sync scroll for highlighted div
+            highlightedCodeDiv.scrollTop = codeInput.scrollTop;
+            // Synchronize horizontal scroll
+            highlightedCodeDiv.scrollLeft = codeInput.scrollLeft;
         }
         
         // --- Event Listeners ---
@@ -1370,6 +1377,8 @@ PRINT_TAPE_LOOP:
         codeInput.addEventListener('scroll', () => {
             lineNumbersDiv.scrollTop = codeInput.scrollTop;
             highlightedCodeDiv.scrollTop = codeInput.scrollTop;
+            // Crucial: Sync horizontal scroll as well
+            highlightedCodeDiv.scrollLeft = codeInput.scrollLeft;
         });
         loadExampleBtn.addEventListener('click', (e) => {
             e.preventDefault();
