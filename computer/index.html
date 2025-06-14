@@ -88,7 +88,7 @@
             font-size: 1rem; /* Match textarea font-size */
             box-sizing: border-box; /* Ensure padding is included in element's total width/height */
             font-family: 'Fira Code', monospace; /* Crucial: ensure font matches for line height */
-            white-space: pre-wrap; /* For line numbers to wrap if content does */
+            /* white-space: pre-wrap; This is handled by each span having display: block */
         }
         #line-numbers span {
             display: block; /* Each number on its own line */
@@ -138,10 +138,11 @@
             tab-size: 4; /* Explicitly set tab size */
             -moz-tab-size: 4; /* For Firefox */
         }
-        /* Each line in highlighted-code will be a span */
+        /* Each line in highlighted-code will be an inline span that respects pre-wrap */
         #highlighted-code > span {
-            display: block; /* Ensures each line takes its own block space */
-            line-height: 1.5rem; /* Crucial to match textarea's line height */
+            /* Removed display: block here */
+            /* The trailing \n added in JS will now create the line break */
+            /* line-height: 1.5rem; This is inherited from parent now */
         }
 
 
@@ -537,7 +538,7 @@ LOOP_COUNT:
     SUB A, 1
     CMP A, 0
     JNE LOOP_COUNT
-OUT $           ; Output: final value of Dedicated Counter 1
+OUT $ అనంతరం; Output: final value of Dedicated Counter 1
                 </pre>
                 
                 <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">10. `INC2` (Increment Dedicated Counter 2)</h4>
@@ -961,7 +962,7 @@ PRINT_TAPE_LOOP:
                 if (commentPart) {
                     currentLineHtml += `<span class="comment-white">${escapeHtml(commentPart)}</span>`;
                 }
-                highlightedHtml += `<span>${currentLineHtml}</span>\n`; // Wrap the entire line content in a span
+                highlightedHtml += `<span>${currentLineHtml}</span>\n`; // Re-added the trailing '\n' to create line breaks
             });
 
             highlightedCodeDiv.innerHTML = highlightedHtml;
