@@ -138,11 +138,11 @@
             tab-size: 4; /* Explicitly set tab size */
             -moz-tab-size: 4; /* For Firefox */
         }
-        /* Each line in highlighted-code will be an inline span that respects pre-wrap */
+        /* Each logical line in highlighted-code will be an inline span.
+           The explicit \n in JS handles line breaks. */
         #highlighted-code > span {
             /* Removed display: block here */
-            /* The trailing \n added in JS will now create the line break */
-            /* line-height: 1.5rem; This is inherited from parent now */
+            /* line-height is inherited from parent now, which matches textarea */
         }
 
 
@@ -538,7 +538,7 @@ LOOP_COUNT:
     SUB A, 1
     CMP A, 0
     JNE LOOP_COUNT
-OUT $ అనంతరం; Output: final value of Dedicated Counter 1
+OUT $           ; Output: final value of Dedicated Counter 1
                 </pre>
                 
                 <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">10. `INC2` (Increment Dedicated Counter 2)</h4>
