@@ -52,6 +52,13 @@
         @keyframes highlight-update {
             50% { background-color: #16a34a; }
         }
+        /* New highlight for the dedicated counter */
+        #dedicated-counter-display.highlight-update {
+            animation: highlight-counter 0.5s ease-out;
+        }
+        @keyframes highlight-counter {
+            50% { background-color: #92400e; } /* Orange-ish highlight */
+        }
         .code-line {
             transition: background-color 0.2s;
         }
@@ -203,6 +210,10 @@
                             <p id="flag-display" class="text-lg font-semibold text-yellow-400 font-fira">0</p>
                         </div>
                         <div>
+                            <h3 class="text-sm font-medium text-gray-400">Dedicated Counter</h3>
+                            <p id="dedicated-counter-display" class="text-lg font-semibold text-orange-400 font-fira">0</p>
+                        </div>
+                        <div>
                             <h3 class="text-sm font-medium text-gray-400">Error</h3>
                             <p id="error-display" class="text-sm font-semibold text-red-400 h-6 truncate" title="">-</p>
                         </div>
@@ -265,17 +276,19 @@
                     <li><strong>RAM (Random Access Memory):</strong> This is the main memory, a larger storage area where data and program instructions can be stored. This simulation has 64 RAM cells.</li>
                     <li><strong>Program Counter (PC):</strong> Points to the current instruction being executed in the program.</li>
                     <li><strong>Compare Flag:</strong> Set by the `CMP` instruction to indicate if the first value was less than (-1), equal to (0), or greater than (1) the second value.</li>
+                    <li><strong>Dedicated Counter:</strong> A special-purpose counter that can be incremented by the `INC` instruction.</li>
                 </ul>
                 <p class="mb-2">Key Instructions:</p>
                 <ul class="list-disc list-inside ml-4 mb-4">
-                    <li>`MOV REG, VAL/REG`: Move a value or register content into a register.</li>
-                    <li>`ADD REG, VAL/REG`: Add a value or register content to a register.</li>
-                    <li>`SUB REG, VAL/REG`: Subtract a value or register content from a register.</li>
-                    <li>`LOAD REG, ADDR`: Load content from a RAM address into a register.</li>
-                    <li>`STOR REG, ADDR`: Store content from a register into a RAM address. **Note:** After a `STOR` operation, only the source register (the one whose value was stored) is cleared to 0 in this specific simulation. Other registers retain their values.</li>
+                    <li>`MOV REG, VAL/REG/EXPR`: Move a value, register content, or the result of an arithmetic expression into a register.</li>
+                    <li>`ADD REG, VAL/REG/EXPR`: Add a value, register content, or the result of an arithmetic expression to a register.</li>
+                    <li>`SUB REG, VAL/REG/EXPR`: Subtract a value, register content, or the result of an arithmetic expression from a register.</li>
+                    <li>`LOAD REG, ADDR/EXPR`: Load content from a RAM address (which can be specified by an expression) into a register.</li>
+                    <li>`STOR REG, ADDR/EXPR`: Store content from a register into a RAM address (which can be specified by an expression). **Note:** After a `STOR` operation, only the source register (the one whose value was stored) is cleared to 0 in this specific simulation. Other registers retain their values.</li>
                     <li>`INP REG`: Read a number from the input area into a register.</li>
-                    <li>`OUT REG/VAL`: Output a register content or value to the output area.</li>
-                    <li>`CMP VAL/REG, VAL/REG`: Compare two values and set the Compare Flag.</li>
+                    <li>`OUT REG/VAL/EXPR`: Output a register content, value, or the result of an arithmetic expression to the output area.</li>
+                    <li>`CMP VAL/REG/EXPR, VAL/REG/EXPR`: Compare two values (which can be specified by expressions) and set the Compare Flag.</li>
+                    <li>`INC`: Increments the dedicated counter by 1.</li>
                     <li>`JMP LABEL`: Unconditionally jump to a program label.</li>
                     <li>`JEZ LABEL`: Jump if the Compare Flag is Zero (equal).</li>
                     <li>`JNE LABEL`: Jump if the Compare Flag is Not Zero (not equal).</li>
@@ -283,6 +296,7 @@
                     <li>`JLT LABEL`: Jump if the Compare Flag is Less Than Zero.</li>
                     <li>`HLT`: Halt the program execution.</li>
                 </ul>
+                <p class="mb-2">Arithmetic expressions can now be used as arguments for `MOV`, `ADD`, `SUB`, `LOAD`, `STOR`, `OUT`, and `CMP` instructions. Supported operators are `+`, `-`, `*`, `/`. Expressions must be in the format `Operand Operator Operand` (e.g., `A + 1`, `B * C`). Division performs integer division (result is floored).</p>
             </section>
 
             <section class="mb-6">
@@ -290,26 +304,28 @@
                 <p class="mb-2">This section provides a detailed guide on each instruction available in this CPU's assembly language, including their purpose, syntax, arguments, and practical examples.</p>
 
                 <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">1. `MOV` (Move)</h4>
-                <p class="mb-1"><strong>Purpose:</strong> Copies a value or the content of one register into another register.</p>
+                <p class="mb-1"><strong>Purpose:</strong> Copies a value, the content of one register, or the result of an arithmetic expression into another register.</p>
                 <p class="mb-1"><strong>Syntax:</strong> `MOV DEST_REG, SOURCE`</p>
                 <ul class="list-disc list-inside ml-4 mb-2">
                     <li>`DEST_REG`: The destination register (A, B, C, or D) where the value will be stored.</li>
-                    <li>`SOURCE`: Can be an integer literal (e.g., `10`, `-5`) or another register name (e.g., `B`, `C`).</li>
+                    <li>`SOURCE`: Can be an integer literal (e.g., `10`, `-5`), another register name (e.g., `B`, `C`), or a simple arithmetic expression (e.g., `A + 1`, `B * D`).</li>
                 </ul>
                 <p class="mb-1"><strong>Behavior:</strong> The value of `SOURCE` is copied into `DEST_REG`. The `SOURCE` itself is unchanged.</p>
                 <p class="mb-1"><strong>Example:</strong></p>
                 <pre class="bg-gray-900 p-3 rounded-md text-sm font-fira overflow-x-auto mb-2">
-MOV A, 10   ; Register A becomes 10
-MOV B, A    ; Register B becomes 10 (value from A)
-MOV C, -5   ; Register C becomes -5
+MOV A, 10           ; Register A becomes 10
+MOV B, A            ; Register B becomes 10 (value from A)
+MOV C, -5           ; Register C becomes -5
+MOV D, A + 5        ; Register D becomes 15 (if A was 10)
+MOV A, B * C        ; Register A becomes -50 (if B was 10, C was -5)
                 </pre>
 
                 <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">2. `ADD` (Add)</h4>
-                <p class="mb-1"><strong>Purpose:</strong> Adds a value or the content of one register to another register.</p>
+                <p class="mb-1"><strong>Purpose:</strong> Adds a value, the content of one register, or the result of an arithmetic expression to another register.</p>
                 <p class="mb-1"><strong>Syntax:</strong> `ADD DEST_REG, SOURCE`</p>
                 <ul class="list-disc list-inside ml-4 mb-2">
                     <li>`DEST_REG`: The destination register (A, B, C, or D) to which `SOURCE` will be added. The result is stored back in `DEST_REG`.</li>
-                    <li>`SOURCE`: Can be an integer literal or another register name.</li>
+                    <li>`SOURCE`: Can be an integer literal, another register name, or a simple arithmetic expression.</li>
                 </ul>
                 <p class="mb-1"><strong>Behavior:</strong> `DEST_REG = DEST_REG + SOURCE`. `SOURCE` is unchanged.</p>
                 <p class="mb-1"><strong>Example:</strong></p>
@@ -318,14 +334,15 @@ MOV A, 5    ; A = 5
 MOV B, 3    ; B = 3
 ADD A, B    ; A = A + B (A becomes 8)
 ADD C, 10   ; C = C + 10 (assuming C was 0, C becomes 10)
+ADD D, A / 2 ; D = D + (A / 2) (integer division)
                 </pre>
 
                 <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">3. `SUB` (Subtract)</h4>
-                <p class="mb-1"><strong>Purpose:</strong> Subtracts a value or the content of one register from another register.</p>
+                <p class="mb-1"><strong>Purpose:</strong> Subtracts a value, the content of one register, or the result of an arithmetic expression from another register.</p>
                 <p class="mb-1"><strong>Syntax:</strong> `SUB DEST_REG, SOURCE`</p>
                 <ul class="list-disc list-inside ml-4 mb-2">
                     <li>`DEST_REG`: The destination register (A, B, C, or D) from which `SOURCE` will be subtracted. The result is stored back in `DEST_REG`.</li>
-                    <li>`SOURCE`: Can be an integer literal or another register name.</li>
+                    <li>`SOURCE`: Can be an integer literal, another register name, or a simple arithmetic expression.</li>
                 </ul>
                 <p class="mb-1"><strong>Behavior:</strong> `DEST_REG = DEST_REG - SOURCE`. `SOURCE` is unchanged.</p>
                 <p class="mb-1"><strong>Example:</strong></p>
@@ -334,28 +351,31 @@ MOV A, 10   ; A = 10
 MOV B, 3    ; B = 3
 SUB A, B    ; A = A - B (A becomes 7)
 SUB D, 1    ; D = D - 1 (decrement D)
+SUB B, A - C ; B = B - (A - C)
                 </pre>
 
                 <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">4. `LOAD` (Load from RAM)</h4>
-                <p class="mb-1"><strong>Purpose:</strong> Copies a value from a specified RAM address into a register.</p>
+                <p class="mb-1"><strong>Purpose:</strong> Copies a value from a specified RAM address (which can be an expression) into a register.</p>
                 <p class="mb-1"><strong>Syntax:</strong> `LOAD DEST_REG, ADDRESS`</p>
                 <ul class="list-disc list-inside ml-4 mb-2">
                     <li>`DEST_REG`: The register (A, B, C, or D) where the loaded value will be stored.</li>
-                    <li>`ADDRESS`: An integer literal representing a valid RAM address (0-63).</li>
+                    <li>`ADDRESS`: An integer literal representing a valid RAM address (0-63), or an arithmetic expression that evaluates to a valid address.</li>
                 </ul>
                 <p class="mb-1"><strong>Behavior:</strong> `DEST_REG = RAM[ADDRESS]`. The content of RAM at `ADDRESS` remains unchanged.</p>
                 <p class="mb-1"><strong>Example:</strong></p>
                 <pre class="bg-gray-900 p-3 rounded-md text-sm font-fira overflow-x-auto mb-2">
 ; Assume RAM[5] contains the value 100
-LOAD A, 5   ; Register A becomes 100
+LOAD A, 5           ; Register A becomes 100
+MOV B, 2
+LOAD C, 3 + B       ; Register C becomes RAM[5] (if B was 2)
                 </pre>
 
                 <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">5. `STOR` (Store to RAM)</h4>
-                <p class="mb-1"><strong>Purpose:</strong> Copies a value from a register into a specified RAM address.</p>
+                <p class="mb-1"><strong>Purpose:</strong> Copies a value from a register into a specified RAM address (which can be an expression).</p>
                 <p class="mb-1"><strong>Syntax:</strong> `STOR SOURCE_REG, ADDRESS`</p>
                 <ul class="list-disc list-inside ml-4 mb-2">
                     <li>`SOURCE_REG`: The register (A, B, C, or D) whose content will be stored.</li>
-                    <li>`ADDRESS`: An integer literal representing a valid RAM address (0-63).</li>
+                    <li>`ADDRESS`: An integer literal representing a valid RAM address (0-63), or an arithmetic expression that evaluates to a valid address.</li>
                 </ul>
                 <p class="mb-1"><strong>Behavior:</strong> `RAM[ADDRESS] = SOURCE_REG`. The content of `SOURCE_REG` is then cleared to 0. Other registers (not `SOURCE_REG`) will retain their values.</p>
                 <p class="mb-1"><strong>Example:</strong></p>
@@ -363,6 +383,8 @@ LOAD A, 5   ; Register A becomes 100
 MOV A, 25   ; A = 25
 MOV B, 10   ; B = 10
 STOR A, 10  ; RAM[10] becomes 25. A becomes 0. B, C, D remain unchanged.
+MOV C, 1
+STOR B, B + C ; RAM[11] becomes B's value (10). B becomes 0.
                 </pre>
 
                 <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">6. `INP` (Input)</h4>
@@ -382,10 +404,10 @@ INP B       ; B becomes 100. Input area is now empty.
                 </pre>
 
                 <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">7. `OUT` (Output)</h4>
-                <p class="mb-1"><strong>Purpose:</strong> Displays a value or the content of a register in the Output area.</p>
+                <p class="mb-1"><strong>Purpose:</strong> Displays a value, the content of a register, or the result of an arithmetic expression in the Output area.</p>
                 <p class="mb-1"><strong>Syntax:</strong> `OUT SOURCE`</p>
                 <ul class="list-disc list-inside ml-4 mb-2">
-                    <li>`SOURCE`: Can be an integer literal or a register name (A, B, C, or D).</li>
+                    <li>`SOURCE`: Can be an integer literal, a register name (A, B, C, or D), or a simple arithmetic expression.</li>
                 </ul>
                 <p class="mb-1"><strong>Behavior:</strong> The value of `SOURCE` is appended as a new line to the Output area.</p>
                 <p class="mb-1"><strong>Example:</strong></p>
@@ -393,14 +415,15 @@ INP B       ; B becomes 100. Input area is now empty.
 MOV A, 7
 OUT A       ; Output: 7
 OUT 99      ; Output: 99 (on a new line)
+OUT A * 2   ; Output: 14 (if A was 7)
                 </pre>
 
                 <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">8. `CMP` (Compare)</h4>
-                <p class="mb-1"><strong>Purpose:</strong> Compares two values and sets the `Compare Flag` based on their relationship.</p>
+                <p class="mb-1"><strong>Purpose:</strong> Compares two values (which can be expressions) and sets the `Compare Flag` based on their relationship.</p>
                 <p class="mb-1"><strong>Syntax:</strong> `CMP VALUE1, VALUE2`</p>
                 <ul class="list-disc list-inside ml-4 mb-2">
-                    <li>`VALUE1`: Can be an integer literal or a register name.</li>
-                    <li>`VALUE2`: Can be an integer literal or a register name.</li>
+                    <li>`VALUE1`: Can be an integer literal, a register name, or a simple arithmetic expression.</li>
+                    <li>`VALUE2`: Can be an integer literal, a register name, or a simple arithmetic expression.</li>
                 </ul>
                 <p class="mb-1"><strong>Behavior:</strong> Sets the `Compare Flag` register:</p>
                 <ul class="list-disc list-inside ml-8">
@@ -413,12 +436,28 @@ OUT 99      ; Output: 99 (on a new line)
                 <pre class="bg-gray-900 p-3 rounded-md text-sm font-fira overflow-x-auto mb-2">
 MOV A, 5
 MOV B, 10
-CMP A, B    ; Compare Flag becomes -1 (5 < 10)
-CMP B, 5    ; Compare Flag becomes 1 (10 > 5)
-CMP A, 5    ; Compare Flag becomes 0 (5 == 5)
+CMP A, B        ; Compare Flag = -1 (5 < 10)
+CMP B, 5        ; Compare Flag = 1 (10 > 5)
+CMP A, 5        ; Compare Flag = 0 (5 == 5)
+CMP A + 1, B    ; Compare Flag = -1 (6 < 10)
                 </pre>
 
-                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">9. `JMP` (Jump)</h4>
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">9. `INC` (Increment Dedicated Counter)</h4>
+                <p class="mb-1"><strong>Purpose:</strong> Increments the dedicated counter by 1.</p>
+                <p class="mb-1"><strong>Syntax:</strong> `INC` (takes no arguments)</p>
+                <p class="mb-1"><strong>Behavior:</strong> The `Dedicated Counter` variable is incremented by 1. This instruction is useful for tracking loop iterations or other custom counts.</p>
+                <p class="mb-1"><strong>Example:</strong></p>
+                <pre class="bg-gray-900 p-3 rounded-md text-sm font-fira overflow-x-auto mb-2">
+MOV A, 3
+LOOP_COUNT:
+    INC         ; Dedicated Counter increments (0 -> 1 -> 2 -> 3)
+    SUB A, 1
+    CMP A, 0
+    JNE LOOP_COUNT
+OUT DEDICATED_COUNTER ; This would output the current dedicated counter value (not a real instruction, just for demo)
+                </pre>
+
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">10. `JMP` (Jump)</h4>
                 <p class="mb-1"><strong>Purpose:</strong> Unconditionally changes the `Program Counter` (PC) to the address of a specified label, causing execution to continue from that point.</p>
                 <p class="mb-1"><strong>Syntax:</strong> `JMP LABEL_NAME`</p>
                 <ul class="list-disc list-inside ml-4 mb-2">
@@ -436,7 +475,7 @@ END_PROGRAM:
     HLT
                 </pre>
 
-                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">10. `JEZ` (Jump if Equal to Zero)</h4>
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">11. `JEZ` (Jump if Equal to Zero)</h4>
                 <p class="mb-1"><strong>Purpose:</strong> Jumps to a label if the `Compare Flag` is 0 (meaning the last `CMP` operation resulted in equality).</p>
                 <p class="mb-1"><strong>Syntax:</strong> `JEZ LABEL_NAME`</p>
                 <p class="mb-1"><strong>Behavior:</strong> If `Compare Flag == 0`, PC is set to `LABEL_NAME`. Otherwise, execution continues to the next instruction.</p>
@@ -451,7 +490,7 @@ OUT 1       ; Output: 1
 HLT
                 </pre>
 
-                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">11. `JNE` (Jump if Not Equal)</h4>
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">12. `JNE` (Jump if Not Equal)</h4>
                 <p class="mb-1"><strong>Purpose:</strong> Jumps to a label if the `Compare Flag` is not 0 (meaning the last `CMP` operation resulted in inequality).</p>
                 <p class="mb-1"><strong>Syntax:</strong> `JNE LABEL_NAME`</p>
                 <p class="mb-1"><strong>Behavior:</strong> If `Compare Flag != 0`, PC is set to `LABEL_NAME`. Otherwise, execution continues to the next instruction.</p>
@@ -466,7 +505,7 @@ OUT 1       ; Output: 1
 HLT
                 </pre>
 
-                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">12. `JGT` (Jump if Greater Than)</h4>
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">13. `JGT` (Jump if Greater Than)</h4>
                 <p class="mb-1"><strong>Purpose:</strong> Jumps to a label if the `Compare Flag` is 1 (meaning the first value in `CMP` was greater than the second).</p>
                 <p class="mb-1"><strong>Syntax:</strong> `JGT LABEL_NAME`</p>
                 <p class="mb-1"><strong>Behavior:</strong> If `Compare Flag == 1`, PC is set to `LABEL_NAME`. Otherwise, execution continues to the next instruction.</p>
@@ -482,7 +521,7 @@ OUT 1       ; Output: 1
 HLT
                 </pre>
 
-                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">13. `JLT` (Jump if Less Than)</h4>
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">14. `JLT` (Jump if Less Than)</h4>
                 <p class="mb-1"><strong>Purpose:</strong> Jumps to a label if the `Compare Flag` is -1 (meaning the first value in `CMP` was less than the second).</p>
                 <p class="mb-1"><strong>Syntax:</strong> `JLT LABEL_NAME`</p>
                 <p class="mb-1"><strong>Behavior:</strong> If `Compare Flag == -1`, PC is set to `LABEL_NAME`. Otherwise, execution continues to the next instruction.</p>
@@ -498,7 +537,7 @@ OUT 1       ; Output: 1
 HLT
                 </pre>
 
-                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">14. `HLT` (Halt)</h4>
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">15. `HLT` (Halt)</h4>
                 <p class="mb-1"><strong>Purpose:</strong> Stops the CPU execution.</p>
                 <p class="mb-1"><strong>Syntax:</strong> `HLT` (takes no arguments)</p>
                 <p class="mb-1"><strong>Behavior:</strong> The program halts, and the CPU status changes to "Halted".</p>
@@ -555,6 +594,7 @@ MOV B, 2    ; This line will never be reached
         const pcDisplay = document.getElementById('pc-display');
         const flagDisplay = document.getElementById('flag-display');
         const errorDisplay = document.getElementById('error-display');
+        const dedicatedCounterDisplay = document.getElementById('dedicated-counter-display'); // New element reference
         const loadExampleBtn = document.getElementById('load-example');
         // Modal elements
         const infoBtn = document.getElementById('info-btn');
@@ -568,7 +608,8 @@ MOV B, 2    ; This line will never be reached
         const registerNames = Object.keys(registers);
         let pc = 0; // Program Counter
         let compareFlag = 0; // -1 (less), 0 (equal), 1 (greater)
-        
+        let dedicatedCounter = 0; // New: Dedicated counter
+
         let program = [];
         let labelMap = {};
         let inputBuffer = [];
@@ -628,6 +669,7 @@ START:
     STOR A, 0   ; Save initial tape head position to RAM[0] (A is cleared by this STOR)
 
 LOOP:
+    INC         ; Increment the dedicated counter for each loop iteration
     LOAD A, 0   ; Restore A from RAM[0] at the start of each loop iteration (important because STOR clears A when it's the source)
     LOAD B, A   ; B = RAM[A]
 
@@ -685,6 +727,10 @@ PRINT_TAPE_LOOP:
     ADD C, 1    ; Move to the next tape cell address (C = C + 1)
     CMP C, 15   ; Compare C with the address after the last tape cell (RAM[14] + 1)
     JLT PRINT_TAPE_LOOP ; If C is less than 15, continue printing
+
+    ; Output the total loop iterations from the dedicated counter
+    OUT "Loop iterations:"
+    OUT dedicatedCounter
     HLT         ; End of program
 `;
 
@@ -695,6 +741,7 @@ PRINT_TAPE_LOOP:
             for (const reg of registerNames) registers[reg] = 0;
             pc = 0;
             compareFlag = 0;
+            dedicatedCounter = 0; // Reset dedicated counter
 
             inputBuffer = inputArea.value.trim().split('\n').map(n => parseInt(n, 10)).filter(n => !isNaN(n));
             outputArea.textContent = ''; // Clear output area on reset
@@ -740,7 +787,70 @@ PRINT_TAPE_LOOP:
             });
             setError('-'); // Clear previous errors
         }
-        
+
+        // New helper function to evaluate arithmetic expressions
+        function evaluateExpression(expression) {
+            expression = String(expression).trim();
+
+            // Check for pure register name
+            if (registerNames.includes(expression.toUpperCase())) {
+                return registers[expression.toUpperCase()];
+            }
+
+            // Check for simple integer literal (handle negative numbers)
+            const num = parseInt(expression, 10);
+            if (!isNaN(num) && String(num) === expression) { // Ensure the string is exactly the number
+                return num;
+            }
+
+            // Handle binary operations: "Operand Operator Operand"
+            // Example: "A + 1", "B - C", "D * 2"
+            // Operand: A register name (A, B, C, D) or an integer literal (possibly negative)
+            // Operator: +, -, *, /
+            const regex = /^\s*([ABCD]|-?\d+)\s*([+\-*/])\s*([ABCD]|-?\d+)\s*$/i;
+            const match = expression.match(regex);
+
+            if (match) {
+                const operand1Str = match[1];
+                const operator = match[2];
+                const operand2Str = match[3];
+
+                let val1;
+                if (registerNames.includes(operand1Str.toUpperCase())) {
+                    val1 = registers[operand1Str.toUpperCase()];
+                } else {
+                    val1 = parseInt(operand1Str, 10);
+                }
+
+                let val2;
+                if (registerNames.includes(operand2Str.toUpperCase())) {
+                    val2 = registers[operand2Str.toUpperCase()];
+                } else {
+                    val2 = parseInt(operand2Str, 10);
+                }
+
+                if (isNaN(val1) || isNaN(val2)) {
+                    setError(`Invalid operand in expression '${expression}': One or both operands are not valid numbers or registers.`);
+                    return null;
+                }
+
+                switch (operator) {
+                    case '+': return val1 + val2;
+                    case '-': return val1 - val2;
+                    case '*': return val1 * val2;
+                    case '/': 
+                        if (val2 === 0) throw new Error("Division by zero");
+                        return Math.floor(val1 / val2); // Integer division
+                    default:
+                        // This case should ideally not be reached due to regex, but for safety
+                        throw new Error(`Unsupported operator in expression: '${operator}'`);
+                }
+            }
+            
+            setError(`Invalid expression format: '${expression}'. Expected 'Operand Operator Operand' or a direct value/register.`);
+            return null;
+        }
+
         function highlightElement(element, className) {
             if (!element) return;
             element.classList.add(className);
@@ -751,6 +861,7 @@ PRINT_TAPE_LOOP:
             // Update displays
             pcDisplay.textContent = pc;
             flagDisplay.textContent = compareFlag;
+            dedicatedCounterDisplay.textContent = dedicatedCounter; // Update dedicated counter display
 
             // Update Registers
             registersContainer.innerHTML = '';
@@ -778,13 +889,9 @@ PRINT_TAPE_LOOP:
                 ramContainer.appendChild(cell);
             }
             
-            // Update code highlighting
-            document.querySelectorAll('#code-input').forEach(el => el.classList.remove('active-instruction'));
-            const activeLine = program.find(p => p.line === pc);
-            if(activeLine) {
-                 // This part is tricky with a textarea. A div overlay would be better.
-                 // For now, we just update the PC. Highlighting a single line in a textarea is not simple.
-            }
+            // Update code highlighting (conceptual, as textarea is difficult to highlight per line)
+            // This part is tricky with a textarea. A div overlay would be better.
+            // For now, we just update the PC. Highlighting a single line in a textarea is not simple.
             updateLineNumbers();
         }
         
@@ -818,18 +925,8 @@ PRINT_TAPE_LOOP:
             }
         }
         
-        function getValue(arg) {
-            const upperArg = arg.toUpperCase();
-            if (registerNames.includes(upperArg)) {
-                return registers[upperArg];
-            }
-            const num = parseInt(arg, 10);
-            if(isNaN(num)) {
-                setError(`Invalid number: ${arg}`);
-                return null;
-            }
-            return num;
-        }
+        // Removed original getValue function, now using evaluateExpression directly
+        // function getValue(arg) { ... }
 
         function step() {
             if (pc >= program.length) {
@@ -850,12 +947,12 @@ PRINT_TAPE_LOOP:
 
             try {
                 switch (op) {
-                    case 'MOV': { // MOV REG, VALUE | MOV REG, REG
+                    case 'MOV': { // MOV REG, VALUE | MOV REG, REG | MOV REG, EXPR
                         if (args.length !== 2) throw new Error("MOV needs 2 args");
                         const destReg = args[0].toUpperCase();
                         if (!registerNames.includes(destReg)) throw new Error(`Invalid register: ${args[0]}`);
-                        const val = getValue(args[1]);
-                        if(val === null) return false;
+                        const val = evaluateExpression(args[1]); // Use evaluateExpression
+                        if(val === null) return false; // Error handled by evaluateExpression
                         registers[destReg] = val;
                         highlightElement(document.getElementById(`reg-${destReg}`), 'highlight-update');
                         break;
@@ -865,28 +962,28 @@ PRINT_TAPE_LOOP:
                         if (args.length !== 2) throw new Error(`${op} needs 2 args`);
                         const destReg = args[0].toUpperCase();
                         if (!registerNames.includes(destReg)) throw new Error(`Invalid register: ${args[0]}`);
-                        const val = getValue(args[1]);
+                        const val = evaluateExpression(args[1]); // Use evaluateExpression
                         if(val === null) return false;
                         registers[destReg] += (op === 'ADD' ? val : -val);
                         highlightElement(document.getElementById(`reg-${destReg}`), 'highlight-update');
                         break;
                     }
-                    case 'LOAD': { // LOAD REG, ADDR
+                    case 'LOAD': { // LOAD REG, ADDR | LOAD REG, EXPR
                         if (args.length !== 2) throw new Error("LOAD needs 2 args");
                         const destReg = args[0].toUpperCase();
                         if (!registerNames.includes(destReg)) throw new Error(`Invalid register: ${args[0]}`);
-                        const addr = getValue(args[1]);
+                        const addr = evaluateExpression(args[1]); // Use evaluateExpression for address
                         if(addr === null || addr < 0 || addr >= ram.length) throw new Error(`Invalid address: ${addr}`);
                         registers[destReg] = ram[addr];
                         highlightElement(document.getElementById(`reg-${destReg}`), 'highlight-update');
                         highlightElement(document.getElementById(`ram-${addr}`), 'highlight-read');
                         break;
                     }
-                     case 'STOR': { // STOR REG, ADDR
+                     case 'STOR': { // STOR REG, ADDR | STOR REG, EXPR
                         if (args.length !== 2) throw new Error("STOR needs 2 args");
                         const srcReg = args[0].toUpperCase();
                         if (!registerNames.includes(srcReg)) throw new Error(`Invalid register: ${args[0]}`);
-                        const addr = getValue(args[1]);
+                        const addr = evaluateExpression(args[1]); // Use evaluateExpression for address
                         if(addr === null || addr < 0 || addr >= ram.length) throw new Error(`Invalid address: ${addr}`);
                         ram[addr] = registers[srcReg];
                         highlightElement(document.getElementById(`ram-${addr}`), 'highlight-write');
@@ -896,7 +993,7 @@ PRINT_TAPE_LOOP:
                         highlightElement(document.getElementById(`reg-${srcReg}`), 'highlight-update'); // Highlight the cleared source register
                         break;
                     }
-                    case 'INP': { // INP REG
+                    case 'INP': { // INP REG (input takes only direct register)
                         if (args.length !== 1) throw new Error("INP needs 1 arg");
                         const destReg = args[0].toUpperCase();
                         if (!registerNames.includes(destReg)) throw new Error(`Invalid register: ${args[0]}`);
@@ -910,21 +1007,28 @@ PRINT_TAPE_LOOP:
                         highlightElement(document.getElementById(`reg-${destReg}`), 'highlight-update');
                         break;
                     }
-                    case 'OUT': { // OUT REG | OUT VALUE
+                    case 'OUT': { // OUT REG | OUT VALUE | OUT EXPR
                         if (args.length !== 1) throw new Error("OUT needs 1 arg");
-                        const val = getValue(args[0]);
+                        // OUT can output a register, a value, or an expression result
+                        const val = evaluateExpression(args[0]); // Use evaluateExpression
                         if(val === null) return false;
                         outputArea.textContent += val + '\n';
                         outputArea.scrollTop = outputArea.scrollHeight;
                         break;
                     }
-                    case 'CMP': { // CMP A, B
+                    case 'CMP': { // CMP A, B | CMP EXPR, EXPR
                         if (args.length !== 2) throw new Error("CMP needs 2 args");
-                        const val1 = getValue(args[0]);
-                        const val2 = getValue(args[1]);
+                        const val1 = evaluateExpression(args[0]); // Use evaluateExpression
+                        const val2 = evaluateExpression(args[1]); // Use evaluateExpression
                         if(val1 === null || val2 === null) return false;
                         const diff = val1 - val2;
                         compareFlag = Math.sign(diff);
+                        break;
+                    }
+                    case 'INC': { // New: INC dedicated counter
+                        if (args.length !== 0) throw new Error("INC takes no args");
+                        dedicatedCounter++;
+                        highlightElement(dedicatedCounterDisplay, 'highlight-update');
                         break;
                     }
                     case 'JMP':
