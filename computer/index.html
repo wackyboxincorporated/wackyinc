@@ -59,6 +59,13 @@
         @keyframes highlight-counter {
             50% { background-color: #92400e; } /* Orange-ish highlight */
         }
+        /* New highlight for the second dedicated counter */
+        #dedicated-counter-display-2.highlight-update {
+            animation: highlight-counter-2 0.5s ease-out;
+        }
+        @keyframes highlight-counter-2 {
+            50% { background-color: #7c2d12; } /* Darker orange/brown highlight */
+        }
         .code-line {
             transition: background-color 0.2s;
         }
@@ -210,8 +217,12 @@
                             <p id="flag-display" class="text-lg font-semibold text-yellow-400 font-fira">0</p>
                         </div>
                         <div>
-                            <h3 class="text-sm font-medium text-gray-400">Dedicated Counter</h3>
+                            <h3 class="text-sm font-medium text-gray-400">Dedicated Counter 1</h3>
                             <p id="dedicated-counter-display" class="text-lg font-semibold text-orange-400 font-fira">0</p>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-400">Dedicated Counter 2</h3>
+                            <p id="dedicated-counter-display-2" class="text-lg font-semibold text-amber-600 font-fira">0</p>
                         </div>
                         <div>
                             <h3 class="text-sm font-medium text-gray-400">Error</h3>
@@ -276,7 +287,8 @@
                     <li><strong>RAM (Random Access Memory):</strong> This is the main memory, a larger storage area where data and program instructions can be stored. This simulation has 64 RAM cells.</li>
                     <li><strong>Program Counter (PC):</strong> Points to the current instruction being executed in the program.</li>
                     <li><strong>Compare Flag:</strong> Set by the `CMP` instruction to indicate if the first value was less than (-1), equal to (0), or greater than (1) the second value.</li>
-                    <li><strong>Dedicated Counter:</strong> A special-purpose counter that can be incremented by the `INC` instruction.</li>
+                    <li><strong>Dedicated Counter 1 ($):</strong> A special-purpose counter that can be incremented by the `INC` instruction.</li>
+                    <li><strong>Dedicated Counter 2 ($2):</strong> Another special-purpose counter that can be incremented by the `INC2` instruction.</li>
                 </ul>
                 <p class="mb-2">Key Instructions:</p>
                 <ul class="list-disc list-inside ml-4 mb-4">
@@ -288,7 +300,8 @@
                     <li>`INP REG`: Read a number from the input area into a register.</li>
                     <li>`OUT REG/VAL/EXPR`: Output a register content, value, or the result of an arithmetic expression to the output area.</li>
                     <li>`CMP VAL/REG/EXPR, VAL/REG/EXPR`: Compare two values (which can be specified by expressions) and set the Compare Flag.</li>
-                    <li>`INC`: Increments the dedicated counter by 1.</li>
+                    <li>`INC`: Increments Dedicated Counter 1 ($) by 1.</li>
+                    <li>`INC2`: Increments Dedicated Counter 2 ($2) by 1.</li>
                     <li>`JMP LABEL`: Unconditionally jump to a program label.</li>
                     <li>`JEZ LABEL`: Jump if the Compare Flag is Zero (equal).</li>
                     <li>`JNE LABEL`: Jump if the Compare Flag is Not Zero (not equal).</li>
@@ -296,7 +309,7 @@
                     <li>`JLT LABEL`: Jump if the Compare Flag is Less Than Zero.</li>
                     <li>`HLT`: Halt the program execution.</li>
                 </ul>
-                <p class="mb-2">Arithmetic expressions can now be used as arguments for `MOV`, `ADD`, `SUB`, `LOAD`, `STOR`, `OUT`, and `CMP` instructions. Supported operators are `+`, `-`, `*`, `/`. Expressions must be in the format `Operand Operator Operand` (e.g., `A + 1`, `B * C`). Division performs integer division (result is floored). Additionally, using `$` as an operand in an expression will reference the current value of the dedicated counter (e.g., `STOR A, $`, `ADD B, $ + 5`).</p>
+                <p class="mb-2">Arithmetic expressions can now be used as arguments for `MOV`, `ADD`, `SUB`, `LOAD`, `STOR`, `OUT`, and `CMP` instructions. Supported operators are `+`, `-`, `*`, `/`. Expressions must be in the format `Operand Operator Operand` (e.g., `A + 1`, `B * C`). Division performs integer division (result is floored). Additionally, using `$` as an operand in an expression will reference the current value of Dedicated Counter 1, and `$2` will reference Dedicated Counter 2 (e.g., `STOR A, $`, `ADD B, $2 + 5`).</p>
             </section>
 
             <section class="mb-6">
@@ -308,7 +321,7 @@
                 <p class="mb-1"><strong>Syntax:</strong> `MOV DEST_REG, SOURCE`</p>
                 <ul class="list-disc list-inside ml-4 mb-2">
                     <li>`DEST_REG`: The destination register (A, B, C, or D) where the value will be stored.</li>
-                    <li>`SOURCE`: Can be an integer literal (e.g., `10`, `-5`), another register name (e.g., `B`, `C`), or a simple arithmetic expression (e.g., `A + 1`, `B * D`, `5 + $`).</li>
+                    <li>`SOURCE`: Can be an integer literal (e.g., `10`, `-5`), another register name (e.g., `B`, `C`), or a simple arithmetic expression (e.g., `A + 1`, `B * D`, `5 + $`, `A - $2`).</li>
                 </ul>
                 <p class="mb-1"><strong>Behavior:</strong> The value of `SOURCE` is copied into `DEST_REG`. The `SOURCE` itself is unchanged.</p>
                 <p class="mb-1"><strong>Example:</strong></p>
@@ -319,6 +332,7 @@ MOV C, -5           ; Register C becomes -5
 MOV D, A + 5        ; Register D becomes 15 (if A was 10)
 MOV A, B * C        ; Register A becomes -50 (if B was 10, C was -5)
 MOV B, $ + 1        ; Register B becomes (dedicatedCounter + 1)
+MOV D, $2 - 3       ; Register D becomes (dedicatedCounter2 - 3)
                 </pre>
 
                 <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">2. `ADD` (Add)</h4>
@@ -337,6 +351,7 @@ ADD A, B    ; A = A + B (A becomes 8)
 ADD C, 10   ; C = C + 10 (assuming C was 0, C becomes 10)
 ADD D, A / 2 ; D = D + (A / 2) (integer division)
 ADD A, $    ; A = A + dedicatedCounter
+ADD B, $2   ; B = B + dedicatedCounter2
                 </pre>
 
                 <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">3. `SUB` (Subtract)</h4>
@@ -355,6 +370,7 @@ SUB A, B    ; A = A - B (A becomes 7)
 SUB D, 1    ; D = D - 1 (decrement D)
 SUB B, A - C ; B = B - (A - C)
 SUB C, $    ; C = C - dedicatedCounter
+SUB D, $2   ; D = D - dedicatedCounter2
                 </pre>
 
                 <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">4. `LOAD` (Load from RAM)</h4>
@@ -362,7 +378,7 @@ SUB C, $    ; C = C - dedicatedCounter
                 <p class="mb-1"><strong>Syntax:</strong> `LOAD DEST_REG, ADDRESS`</p>
                 <ul class="list-disc list-inside ml-4 mb-2">
                     <li>`DEST_REG`: The register (A, B, C, or D) where the loaded value will be stored.</li>
-                    <li>`ADDRESS`: An integer literal representing a valid RAM address (0-63), or an arithmetic expression that evaluates to a valid address (e.g., `3 + B`, `10 + $`).</li>
+                    <li>`ADDRESS`: An integer literal representing a valid RAM address (0-63), or an arithmetic expression that evaluates to a valid address (e.g., `3 + B`, `10 + $`, `20 + $2`).</li>
                 </ul>
                 <p class="mb-1"><strong>Behavior:</strong> `DEST_REG = RAM[ADDRESS]`. The content of RAM at `ADDRESS` remains unchanged.</p>
                 <p class="mb-1"><strong>Example:</strong></p>
@@ -372,6 +388,7 @@ LOAD A, 5           ; Register A becomes 100
 MOV B, 2
 LOAD C, 3 + B       ; Register C becomes RAM[5] (if B was 2)
 LOAD D, 10 + $      ; Register D becomes RAM[10 + dedicatedCounter]
+LOAD A, 30 + $2     ; Register A becomes RAM[30 + dedicatedCounter2]
                 </pre>
 
                 <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">5. `STOR` (Store to RAM)</h4>
@@ -379,7 +396,7 @@ LOAD D, 10 + $      ; Register D becomes RAM[10 + dedicatedCounter]
                 <p class="mb-1"><strong>Syntax:</strong> `STOR SOURCE_REG, ADDRESS`</p>
                 <ul class="list-disc list-inside ml-4 mb-2">
                     <li>`SOURCE_REG`: The register (A, B, C, or D) whose content will be stored.</li>
-                    <li>`ADDRESS`: An integer literal representing a valid RAM address (0-63), or an arithmetic expression that evaluates to a valid address (e.g., `B + C`, `$ * 2`).</li>
+                    <li>`ADDRESS`: An integer literal representing a valid RAM address (0-63), or an arithmetic expression that evaluates to a valid address (e.g., `B + C`, `$ * 2`, `$2 + 10`).</li>
                 </ul>
                 <p class="mb-1"><strong>Behavior:</strong> `RAM[ADDRESS] = SOURCE_REG`. The content of `SOURCE_REG` is then cleared to 0. Other registers (not `SOURCE_REG`) will retain their values.</p>
                 <p class="mb-1"><strong>Example:</strong></p>
@@ -390,6 +407,7 @@ STOR A, 10  ; RAM[10] becomes 25. A becomes 0. B, C, D remain unchanged.
 MOV C, 1
 STOR B, B + C ; RAM[11] becomes B's value (10). B becomes 0.
 STOR D, $   ; RAM[dedicatedCounter] becomes D's value. D becomes 0.
+STOR A, $2  ; RAM[dedicatedCounter2] becomes A's value. A becomes 0.
                 </pre>
 
                 <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">6. `INP` (Input)</h4>
@@ -421,7 +439,8 @@ MOV A, 7
 OUT A       ; Output: 7
 OUT 99      ; Output: 99 (on a new line)
 OUT A * 2   ; Output: 14 (if A was 7)
-OUT $       ; Output: current value of dedicatedCounter
+OUT $       ; Output: current value of Dedicated Counter 1
+OUT $2      ; Output: current value of Dedicated Counter 2
                 </pre>
 
                 <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">8. `CMP` (Compare)</h4>
@@ -446,25 +465,41 @@ CMP A, B        ; Compare Flag = -1 (5 < 10)
 CMP B, 5        ; Compare Flag = 1 (10 > 5)
 CMP A, 5        ; Compare Flag = 0 (5 == 5)
 CMP A + 1, B    ; Compare Flag = -1 (6 < 10)
-CMP $, 10       ; Compare Flag based on dedicatedCounter vs 10
+CMP $, 10       ; Compare Flag based on Dedicated Counter 1 vs 10
+CMP $2, B       ; Compare Flag based on Dedicated Counter 2 vs B
                 </pre>
 
-                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">9. `INC` (Increment Dedicated Counter)</h4>
-                <p class="mb-1"><strong>Purpose:</strong> Increments the dedicated counter by 1.</p>
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">9. `INC` (Increment Dedicated Counter 1)</h4>
+                <p class="mb-1"><strong>Purpose:</strong> Increments Dedicated Counter 1 ($) by 1.</p>
                 <p class="mb-1"><strong>Syntax:</strong> `INC` (takes no arguments)</p>
-                <p class="mb-1"><strong>Behavior:</strong> The `Dedicated Counter` variable is incremented by 1. This instruction is useful for tracking loop iterations or other custom counts.</p>
+                <p class="mb-1"><strong>Behavior:</strong> The `Dedicated Counter 1` variable is incremented by 1. This instruction is useful for tracking loop iterations or other custom counts.</p>
                 <p class="mb-1"><strong>Example:</strong></p>
                 <pre class="bg-gray-900 p-3 rounded-md text-sm font-fira overflow-x-auto mb-2">
 MOV A, 3
 LOOP_COUNT:
-    INC         ; Dedicated Counter increments (0 -> 1 -> 2 -> 3)
+    INC         ; Dedicated Counter 1 increments
     SUB A, 1
     CMP A, 0
     JNE LOOP_COUNT
-OUT DEDICATED_COUNTER ; This would output the current dedicated counter value (not a real instruction, just for demo)
+OUT $           ; Output: final value of Dedicated Counter 1
+                </pre>
+                
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">10. `INC2` (Increment Dedicated Counter 2)</h4>
+                <p class="mb-1"><strong>Purpose:</strong> Increments Dedicated Counter 2 ($2) by 1.</p>
+                <p class="mb-1"><strong>Syntax:</strong> `INC2` (takes no arguments)</p>
+                <p class="mb-1"><strong>Behavior:</strong> The `Dedicated Counter 2` variable is incremented by 1.</p>
+                <p class="mb-1"><strong>Example:</strong></p>
+                <pre class="bg-gray-900 p-3 rounded-md text-sm font-fira overflow-x-auto mb-2">
+MOV A, 5
+LOOP_INNER:
+    INC2        ; Dedicated Counter 2 increments
+    SUB A, 1
+    CMP A, 0
+    JNE LOOP_INNER
+OUT $2          ; Output: final value of Dedicated Counter 2
                 </pre>
 
-                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">10. `JMP` (Jump)</h4>
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">11. `JMP` (Jump)</h4>
                 <p class="mb-1"><strong>Purpose:</strong> Unconditionally changes the `Program Counter` (PC) to the address of a specified label, causing execution to continue from that point.</p>
                 <p class="mb-1"><strong>Syntax:</strong> `JMP LABEL_NAME`</p>
                 <ul class="list-disc list-inside ml-4 mb-2">
@@ -482,7 +517,7 @@ END_PROGRAM:
     HLT
                 </pre>
 
-                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">11. `JEZ` (Jump if Equal to Zero)</h4>
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">12. `JEZ` (Jump if Equal to Zero)</h4>
                 <p class="mb-1"><strong>Purpose:</strong> Jumps to a label if the `Compare Flag` is 0 (meaning the last `CMP` operation resulted in equality).</p>
                 <p class="mb-1"><strong>Syntax:</strong> `JEZ LABEL_NAME`</p>
                 <p class="mb-1"><strong>Behavior:</strong> If `Compare Flag == 0`, PC is set to `LABEL_NAME`. Otherwise, execution continues to the next instruction.</p>
@@ -497,7 +532,7 @@ OUT 1       ; Output: 1
 HLT
                 </pre>
 
-                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">12. `JNE` (Jump if Not Equal)</h4>
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">13. `JNE` (Jump if Not Equal)</h4>
                 <p class="mb-1"><strong>Purpose:</strong> Jumps to a label if the `Compare Flag` is not 0 (meaning the last `CMP` operation resulted in inequality).</p>
                 <p class="mb-1"><strong>Syntax:</strong> `JNE LABEL_NAME`</p>
                 <p class="mb-1"><strong>Behavior:</strong> If `Compare Flag != 0`, PC is set to `LABEL_NAME`. Otherwise, execution continues to the next instruction.</p>
@@ -512,7 +547,7 @@ OUT 1       ; Output: 1
 HLT
                 </pre>
 
-                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">13. `JGT` (Jump if Greater Than)</h4>
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">14. `JGT` (Jump if Greater Than)</h4>
                 <p class="mb-1"><strong>Purpose:</strong> Jumps to a label if the `Compare Flag` is 1 (meaning the first value in `CMP` was greater than the second).</p>
                 <p class="mb-1"><strong>Syntax:</strong> `JGT LABEL_NAME`</p>
                 <p class="mb-1"><strong>Behavior:</strong> If `Compare Flag == 1`, PC is set to `LABEL_NAME`. Otherwise, execution continues to the next instruction.</p>
@@ -528,7 +563,7 @@ OUT 1       ; Output: 1
 HLT
                 </pre>
 
-                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">14. `JLT` (Jump if Less Than)</h4>
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">15. `JLT` (Jump if Less Than)</h4>
                 <p class="mb-1"><strong>Purpose:</strong> Jumps to a label if the `Compare Flag` is -1 (meaning the first value in `CMP` was less than the second).</p>
                 <p class="mb-1"><strong>Syntax:</strong> `JLT LABEL_NAME`</p>
                 <p class="mb-1"><strong>Behavior:</strong> If `Compare Flag == -1`, PC is set to `LABEL_NAME`. Otherwise, execution continues to the next instruction.</p>
@@ -544,7 +579,7 @@ OUT 1       ; Output: 1
 HLT
                 </pre>
 
-                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">15. `HLT` (Halt)</h4>
+                <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">16. `HLT` (Halt)</h4>
                 <p class="mb-1"><strong>Purpose:</strong> Stops the CPU execution.</p>
                 <p class="mb-1"><strong>Syntax:</strong> `HLT` (takes no arguments)</p>
                 <p class="mb-1"><strong>Behavior:</strong> The program halts, and the CPU status changes to "Halted".</p>
@@ -601,7 +636,8 @@ MOV B, 2    ; This line will never be reached
         const pcDisplay = document.getElementById('pc-display');
         const flagDisplay = document.getElementById('flag-display');
         const errorDisplay = document.getElementById('error-display');
-        const dedicatedCounterDisplay = document.getElementById('dedicated-counter-display'); // New element reference
+        const dedicatedCounterDisplay = document.getElementById('dedicated-counter-display'); 
+        const dedicatedCounterDisplay2 = document.getElementById('dedicated-counter-display-2'); // New element reference for second counter
         const loadExampleBtn = document.getElementById('load-example');
         // Modal elements
         const infoBtn = document.getElementById('info-btn');
@@ -615,7 +651,8 @@ MOV B, 2    ; This line will never be reached
         const registerNames = Object.keys(registers);
         let pc = 0; // Program Counter
         let compareFlag = 0; // -1 (less), 0 (equal), 1 (greater)
-        let dedicatedCounter = 0; // New: Dedicated counter
+        let dedicatedCounter = 0; // Dedicated counter 1
+        let dedicatedCounter2 = 0; // New: Dedicated counter 2
 
         let program = [];
         let labelMap = {};
@@ -627,6 +664,7 @@ MOV B, 2    ; This line will never be reached
         let executionSpeed = 1000 - parseInt(speedSlider.value, 10);
 
         // --- Turing Machine Example Program ---
+        // This example program has been updated to demonstrate INC2 and $2 if you reset it.
         const EXAMPLE_PROGRAM = `; --- Turing Machine Simulation: Increment Binary Number ---
 ; This program simulates a simple Turing Machine that increments a binary number
 ; stored on a "tape" within the CPU's RAM.
@@ -677,6 +715,7 @@ START:
 
 LOOP:
     INC         ; Increment the dedicated counter for each loop iteration
+    INC2        ; Increment the second dedicated counter
     LOAD A, 0   ; Restore A from RAM[0] at the start of each loop iteration (important because STOR clears A when it's the source)
     LOAD B, A   ; B = RAM[A]
 
@@ -735,9 +774,11 @@ PRINT_TAPE_LOOP:
     CMP C, 15   ; Compare C with the address after the last tape cell (RAM[14] + 1)
     JLT PRINT_TAPE_LOOP ; If C is less than 15, continue printing
 
-    ; Output the total loop iterations from the dedicated counter
-    OUT "Loop iterations:"
-    OUT dedicatedCounter
+    ; Output the total loop iterations from the dedicated counters
+    OUT "Loop iterations (Counter 1):"
+    OUT $
+    OUT "Loop iterations (Counter 2):"
+    OUT $2
     HLT         ; End of program
 `;
 
@@ -748,7 +789,8 @@ PRINT_TAPE_LOOP:
             for (const reg of registerNames) registers[reg] = 0;
             pc = 0;
             compareFlag = 0;
-            dedicatedCounter = 0; // Reset dedicated counter
+            dedicatedCounter = 0; // Reset dedicated counter 1
+            dedicatedCounter2 = 0; // Reset dedicated counter 2
 
             inputBuffer = inputArea.value.trim().split('\n').map(n => parseInt(n, 10)).filter(n => !isNaN(n));
             outputArea.textContent = ''; // Clear output area on reset
@@ -795,13 +837,16 @@ PRINT_TAPE_LOOP:
             setError('-'); // Clear previous errors
         }
 
-        // New helper function to evaluate arithmetic expressions
+        // Helper function to evaluate arithmetic expressions including '$' and '$2'
         function evaluateExpression(expression) {
             expression = String(expression).trim();
 
-            // Check for dedicated counter reference '$'
+            // Check for dedicated counter references
             if (expression === '$') {
                 return dedicatedCounter;
+            }
+            if (expression === '$2') {
+                return dedicatedCounter2;
             }
 
             // Check for pure register name
@@ -816,11 +861,10 @@ PRINT_TAPE_LOOP:
             }
 
             // Handle binary operations: "Operand Operator Operand"
-            // Example: "A + 1", "B - C", "D * 2", "$ + 5"
-            // Operand: A register name (A, B, C, D), an integer literal (possibly negative), or '$'
+            // Operand: A register name (A, B, C, D), an integer literal (possibly negative), '$', or '$2'
             // Operator: +, -, *, /
-            // The regex needs to handle '$' as an operand.
-            const regex = /^\s*([ABCD$]|-?\d+)\s*([+\-*/])\s*([ABCD$]|-?\d+)\s*$/i;
+            // The regex needs to handle '$' and '$2' as operands.
+            const regex = /^\s*([ABCD$]+\d*|-?\d+)\s*([+\-*/])\s*([ABCD$]+\d*|-?\d+)\s*$/i;
             const match = expression.match(regex);
 
             if (match) {
@@ -831,6 +875,8 @@ PRINT_TAPE_LOOP:
                 let val1;
                 if (operand1Str.toUpperCase() === '$') {
                     val1 = dedicatedCounter;
+                } else if (operand1Str.toUpperCase() === '$2') { // Handle $2
+                    val1 = dedicatedCounter2;
                 } else if (registerNames.includes(operand1Str.toUpperCase())) {
                     val1 = registers[operand1Str.toUpperCase()];
                 } else {
@@ -840,6 +886,8 @@ PRINT_TAPE_LOOP:
                 let val2;
                 if (operand2Str.toUpperCase() === '$') {
                     val2 = dedicatedCounter;
+                } else if (operand2Str.toUpperCase() === '$2') { // Handle $2
+                    val2 = dedicatedCounter2;
                 } else if (registerNames.includes(operand2Str.toUpperCase())) {
                     val2 = registers[operand2Str.toUpperCase()];
                 } else {
@@ -847,7 +895,7 @@ PRINT_TAPE_LOOP:
                 }
 
                 if (isNaN(val1) || isNaN(val2)) {
-                    setError(`Invalid operand in expression '${expression}': One or both operands are not valid numbers, registers, or '$'.`);
+                    setError(`Invalid operand in expression '${expression}': One or both operands are not valid numbers, registers, '$', or '$2'.`);
                     return null;
                 }
 
@@ -864,7 +912,7 @@ PRINT_TAPE_LOOP:
                 }
             }
             
-            setError(`Invalid expression format: '${expression}'. Expected 'Operand Operator Operand', a direct value/register, or '$'.`);
+            setError(`Invalid expression format: '${expression}'. Expected 'Operand Operator Operand', a direct value/register, '$', or '$2'.`);
             return null;
         }
 
@@ -878,7 +926,8 @@ PRINT_TAPE_LOOP:
             // Update displays
             pcDisplay.textContent = pc;
             flagDisplay.textContent = compareFlag;
-            dedicatedCounterDisplay.textContent = dedicatedCounter; // Update dedicated counter display
+            dedicatedCounterDisplay.textContent = dedicatedCounter; // Update dedicated counter 1 display
+            dedicatedCounterDisplay2.textContent = dedicatedCounter2; // Update dedicated counter 2 display
 
             // Update Registers
             registersContainer.innerHTML = '';
@@ -907,8 +956,6 @@ PRINT_TAPE_LOOP:
             }
             
             // Update code highlighting (conceptual, as textarea is difficult to highlight per line)
-            // This part is tricky with a textarea. A div overlay would be better.
-            // For now, we just update the PC. Highlighting a single line in a textarea is not simple.
             updateLineNumbers();
         }
         
@@ -942,9 +989,6 @@ PRINT_TAPE_LOOP:
             }
         }
         
-        // Removed original getValue function, now using evaluateExpression directly
-        // function getValue(arg) { ... }
-
         function step() {
             if (pc >= program.length) {
                 setStatus('Halted', 'text-purple-400');
@@ -1042,10 +1086,16 @@ PRINT_TAPE_LOOP:
                         compareFlag = Math.sign(diff);
                         break;
                     }
-                    case 'INC': { // New: INC dedicated counter
+                    case 'INC': { // Increment dedicated counter 1
                         if (args.length !== 0) throw new Error("INC takes no args");
                         dedicatedCounter++;
                         highlightElement(dedicatedCounterDisplay, 'highlight-update');
+                        break;
+                    }
+                    case 'INC2': { // New: Increment dedicated counter 2
+                        if (args.length !== 0) throw new Error("INC2 takes no args");
+                        dedicatedCounter2++;
+                        highlightElement(dedicatedCounterDisplay2, 'highlight-update');
                         break;
                     }
                     case 'JMP':
