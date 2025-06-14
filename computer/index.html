@@ -91,63 +91,39 @@
             color: #9ca3af; /* text-gray-400 */
             user-select: none;
             overflow: hidden;
+            z-index: 10;
         }
         #code-input {
             padding-left: 4.5rem; /* Adjust based on line-numbers width */
-            white-space: pre;
-            overflow-wrap: normal;
+            white-space: pre-wrap; /* Use pre-wrap for wrapping */
+            overflow-wrap: break-word;
             overflow-x: auto;
-        }
-        /* Modal Styles */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.75);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-        }
-        .modal-overlay.open {
-            opacity: 1;
-            visibility: visible;
-        }
-        .modal-content {
-            background-color: #1f2937; /* bg-gray-800 */
-            padding: 2rem;
-            border-radius: 0.75rem; /* rounded-xl */
-            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3);
-            max-width: 80%;
-            max-height: 90%;
-            overflow-y: auto;
-            color: #d1d5db; /* text-gray-200 */
+            width: 100%;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+            background-color: transparent;
+            color: white;
+            outline: none;
             position: relative;
-            transform: translateY(-20px);
-            transition: transform 0.3s ease;
+            z-index: 1;
+            line-height: 1.5; /* Ensure lines are consistent */
+            font-size: 1rem; /* Adjust as needed */
         }
-        .modal-overlay.open .modal-content {
-            transform: translateY(0);
+        /* Placeholder for contenteditable div */
+        #code-input:empty::before {
+            content: attr(data-placeholder);
+            color: #6b7280; /* text-gray-500 */
+            pointer-events: none;
         }
-        .modal-close-btn {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            color: #9ca3af;
-            cursor: pointer;
-            transition: color 0.2s ease;
-        }
-        .modal-close-btn:hover {
-            color: #e5e7eb;
-        }
+
+        /* Syntax Highlighting Classes */
+        .opcode-orange { color: #f97316; } /* Orange-600 */
+        .opcode-pink { color: #ec4899; } /* Pink-500 */
+        .arg-green { color: #22c55e; } /* Green-500 */
+        .inc-green { color: #10b981; } /* Emerald-500 */
+        .label-red { color: #ef4444; } /* Red-500 */
+        .comment-white { color: #d1d5db; } /* Gray-300 */
     </style>
 </head>
 <body class="text-gray-200">
@@ -176,9 +152,11 @@
                         </div>
                          <a href="#" id="load-example" class="text-sm text-blue-400 hover:underline">Load Example</a>
                     </div>
-                    <div id="code-editor-container" class="font-fira text-base bg-gray-900 flex-grow rounded-b-xl overflow-hidden">
+                    <div id="code-editor-container" class="font-fira text-base bg-gray-900 flex-grow rounded-b-xl overflow-hidden relative">
                         <div id="line-numbers">1</div>
-                        <textarea id="code-input" class="w-full h-full p-4 bg-transparent text-white resize-none" spellcheck="false" rows="15"></textarea>
+                        <div id="code-input" contenteditable="true" spellcheck="false" 
+                             class="w-full h-full p-4 bg-transparent text-white resize-none" 
+                             data-placeholder="Start typing your assembly code..."></div>
                     </div>
                 </div>
 
@@ -356,7 +334,7 @@ ADD B, $2   ; B = B + dedicatedCounter2
 
                 <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">3. `SUB` (Subtract)</h4>
                 <p class="mb-1"><strong>Purpose:</strong> Subtracts a value, the content of one register, or the result of an arithmetic expression from another register.</p>
-                <p class="mb-1"><strong>Syntax:</strong> `SUB DEST_REG, SOURCE`</p>
+                <p class="mb-1"><strong>Syntax:</b> `SUB DEST_REG, SOURCE`</p>
                 <ul class="list-disc list-inside ml-4 mb-2">
                     <li>`DEST_REG`: The destination register (A, B, C, or D) from which `SOURCE` will be subtracted. The result is stored back in `DEST_REG`.</li>
                     <li>`SOURCE`: Can be an integer literal, another register name, or a simple arithmetic expression.</li>
@@ -806,7 +784,8 @@ PRINT_TAPE_LOOP:
         }
         
         function parseAndLoadProgram() {
-            const code = codeInput.value;
+            // Read from textContent for the contenteditable div
+            const code = codeInput.textContent; 
             program = code.split('\n').map((line, index) => {
                 const cleanLine = line.split(';')[0].trim(); // Remove comments and trim
                 // Normalize commas: replace all commas with spaces to ensure arguments are correctly separated
@@ -835,6 +814,151 @@ PRINT_TAPE_LOOP:
                 }
             });
             setError('-'); // Clear previous errors
+        }
+
+        /**
+         * Saves the current cursor (selection) position in the contenteditable div.
+         * @returns {object|null} An object containing the current node and offset, or null if no selection.
+         */
+        function saveCursorPosition() {
+            const selection = window.getSelection();
+            if (selection.rangeCount === 0) return null;
+            const range = selection.getRangeAt(0);
+            return {
+                commonAncestorContainer: range.commonAncestorContainer,
+                startOffset: range.startOffset,
+                endOffset: range.endOffset
+            };
+        }
+
+        /**
+         * Restores the cursor (selection) position in the contenteditable div.
+         * @param {object} savedRange An object containing the node and offset from saveCursorPosition.
+         */
+        function restoreCursorPosition(savedRange) {
+            if (!savedRange) return;
+
+            const selection = window.getSelection();
+            const range = document.createRange();
+
+            // Find the correct text node and set the offset
+            function findTextNode(node, offset) {
+                let currentOffset = 0;
+                for (let i = 0; i < node.childNodes.length; i++) {
+                    const child = node.childNodes[i];
+                    if (child.nodeType === Node.TEXT_NODE) {
+                        if (offset <= currentOffset + child.length) {
+                            return { node: child, offset: offset - currentOffset };
+                        }
+                        currentOffset += child.length;
+                    } else if (child.nodeType === Node.ELEMENT_NODE) {
+                        // Recursively search in elements (like our span tags)
+                        const result = findTextNode(child, offset - currentOffset);
+                        if (result) return result;
+                        currentOffset += child.textContent.length;
+                    }
+                }
+                // If cursor is at the very end, it might be outside any text node
+                return { node: node, offset: node.textContent.length };
+            }
+
+            const startInfo = findTextNode(savedRange.commonAncestorContainer, savedRange.startOffset);
+            const endInfo = findTextNode(savedRange.commonAncestorContainer, savedRange.endOffset);
+
+            if (startInfo.node && endInfo.node) {
+                range.setStart(startInfo.node, startInfo.offset);
+                range.setEnd(endInfo.node, endInfo.offset);
+
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+        }
+
+
+        /**
+         * Applies syntax highlighting to the code input.
+         */
+        function highlightCode() {
+            const savedCursor = saveCursorPosition();
+            const text = codeInput.textContent;
+            let highlightedHtml = '';
+
+            const lines = text.split('\n');
+            const opcodeMap = {
+                'MOV': 'opcode-pink', 'ADD': 'opcode-pink', 'SUB': 'opcode-pink',
+                'LOAD': 'opcode-orange', 'STOR': 'opcode-orange',
+                'INP': 'opcode-pink', 'OUT': 'opcode-pink', 'CMP': 'opcode-pink',
+                'JMP': 'opcode-pink', 'JEZ': 'opcode-pink', 'JNE': 'opcode-pink',
+                'JGT': 'opcode-pink', 'JLT': 'opcode-pink',
+                'INC': 'inc-green', 'INC2': 'inc-green'
+            };
+            const registerPattern = /^[ABCD]$/i;
+            const counterPattern = /^\$[2]?$/; // Matches $ or $2
+
+            lines.forEach(line => {
+                let currentLineHtml = '';
+                const commentIndex = line.indexOf(';');
+                let codePart = line;
+                let commentPart = '';
+
+                if (commentIndex !== -1) {
+                    codePart = line.substring(0, commentIndex).trim();
+                    commentPart = line.substring(commentIndex);
+                }
+
+                if (codePart.endsWith(':')) { // It's a label
+                    currentLineHtml += `<span class="label-red">${codePart}</span>`;
+                } else {
+                    const parts = codePart.match(/(".*?"|'.*?'|\S+)/g) || [];
+                    if (parts.length > 0) {
+                        const opcode = parts[0].toUpperCase();
+                        const opcodeClass = opcodeMap[opcode] || '';
+                        currentLineHtml += `<span class="${opcodeClass}">${opcode}</span>`;
+
+                        // Handle arguments
+                        for (let i = 1; i < parts.length; i++) {
+                            let arg = parts[i];
+                            let argHtml = arg;
+
+                            // Remove comma for internal processing if present (after initial split)
+                            const cleanedArg = arg.replace(/,$/, ''); 
+
+                            // Check if it's a register, counter, or an expression
+                            if (registerPattern.test(cleanedArg) || counterPattern.test(cleanedArg) || cleanedArg.match(/([ABCD$]+\d*|-?\d+)\s*([+\-*/])\s*([ABCD$]+\d*|-?\d+)/i)) {
+                                argHtml = `<span class="arg-green">${arg}</span>`;
+                            } else if (parseInt(cleanedArg).toString() === cleanedArg || (cleanedArg.startsWith('-') && parseInt(cleanedArg.substring(1)).toString() === cleanedArg.substring(1))) {
+                                // Simple number literal
+                                argHtml = `<span class="arg-green">${arg}</span>`;
+                            }
+                            
+                            // Add a space before the argument if it's not the first part of the argument group
+                            // and if the original argument wasn't directly appended (e.g. "A,1")
+                            if (i === 1 && !arg.startsWith(',')) { // For first argument, usually has a comma
+                                currentLineHtml += ' ';
+                            } else if (i > 1 && !arg.startsWith(',')) { // For subsequent args separated by space
+                                currentLineHtml += ' ';
+                            } else if (i > 0 && arg.startsWith(',')) { // If it starts with a comma, just append
+                                currentLineHtml += ''; // No extra space needed, comma already implies separation
+                            } else { // Fallback, add a space if not a comma-separated scenario
+                                currentLineHtml += ' ';
+                            }
+                            currentLineHtml += argHtml;
+                        }
+                    }
+                }
+
+                if (commentPart) {
+                    currentLineHtml += `<span class="comment-white">${commentPart}</span>`;
+                }
+                highlightedHtml += currentLineHtml + '\n';
+            });
+
+            // Set innerHTML (this might reset cursor)
+            codeInput.innerHTML = highlightedHtml.trimEnd(); // Remove trailing newline to avoid extra line
+
+            // Restore cursor
+            restoreCursorPosition(savedCursor);
+            updateLineNumbers(); // Re-update line numbers after highlight
         }
 
         // Helper function to evaluate arithmetic expressions including '$' and '$2'
@@ -955,7 +1079,8 @@ PRINT_TAPE_LOOP:
                 ramContainer.appendChild(cell);
             }
             
-            // Update code highlighting (conceptual, as textarea is difficult to highlight per line)
+            // Highlight the active instruction line (visual only, not functional for execution flow)
+            // This needs to be managed carefully with contenteditable. For now, it's a simple PC update.
             updateLineNumbers();
         }
         
@@ -979,7 +1104,8 @@ PRINT_TAPE_LOOP:
             runBtn.disabled = isRunning;
             stepBtn.disabled = isRunning;
             pauseBtn.disabled = !isRunning || isPaused;
-            codeInput.disabled = isRunning || isPaused;
+            // Disable codeInput only if running, allow editing when paused/idle
+            codeInput.contentEditable = isRunning ? 'false' : 'true';
             
             if (isPaused) {
                 pauseBtn.textContent = 'Resume';
@@ -1171,7 +1297,8 @@ PRINT_TAPE_LOOP:
         }
 
         function updateLineNumbers() {
-            const lineCount = codeInput.value.split('\n').length;
+            // Use textContent to get the raw lines for line numbering
+            const lineCount = codeInput.textContent.split('\n').length;
             lineNumbersDiv.innerHTML = Array.from({length: lineCount}, (_, i) => i + 1).join('<br>');
             lineNumbersDiv.scrollTop = codeInput.scrollTop;
         }
@@ -1206,13 +1333,15 @@ PRINT_TAPE_LOOP:
         speedSlider.addEventListener('input', (e) => {
             executionSpeed = 1000 - parseInt(e.target.value, 10);
         });
-        codeInput.addEventListener('input', updateLineNumbers);
+        // Use 'input' event for contenteditable div
+        codeInput.addEventListener('input', highlightCode);
         codeInput.addEventListener('scroll', () => {
             lineNumbersDiv.scrollTop = codeInput.scrollTop;
         });
         loadExampleBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            codeInput.value = EXAMPLE_PROGRAM;
+            codeInput.textContent = EXAMPLE_PROGRAM; // Set textContent for contenteditable
+            highlightCode(); // Apply highlighting immediately
             resetMachine();
         });
 
@@ -1232,7 +1361,8 @@ PRINT_TAPE_LOOP:
         });
 
         // --- Initial Setup ---
-        codeInput.value = EXAMPLE_PROGRAM;
+        codeInput.textContent = EXAMPLE_PROGRAM; // Set initial content
+        highlightCode(); // Apply initial highlighting
         resetMachine();
     });
     </script>
