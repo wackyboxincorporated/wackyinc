@@ -88,7 +88,6 @@
             font-size: 1rem; /* Match textarea font-size */
             box-sizing: border-box; /* Ensure padding is included in element's total width/height */
             font-family: 'Fira Code', monospace; /* Crucial: ensure font matches for line height */
-            /* white-space: pre-wrap; This is handled by each span having display: block */
         }
         #line-numbers span {
             display: block; /* Each number on its own line */
@@ -102,6 +101,7 @@
             padding-bottom: 1rem;
             white-space: pre-wrap; /* IMPORTANT: Allows wrapping and preserves whitespace */
             overflow-wrap: break-word; /* Prevents long words from overflowing */
+            word-break: break-all; /* Force breaking at characters for long words */
             overflow-x: auto;
             height: 100%;
             width: 100%;
@@ -132,6 +132,7 @@
             pointer-events: none; /* Crucial: allows clicks to pass through to textarea */
             white-space: pre-wrap; /* IMPORTANT: Allows wrapping and preserves whitespace */
             overflow-wrap: break-word; /* Prevents long words from overflowing */
+            word-break: break-all; /* Force breaking at characters for long words */
             overflow-x: auto;
             color: white; /* Default color for highlighting, will be overridden by spans */
             box-sizing: border-box; /* Crucial for consistent sizing */
