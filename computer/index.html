@@ -52,33 +52,25 @@
         @keyframes highlight-update {
             50% { background-color: #16a34a; }
         }
-        /* New highlight for the dedicated counter */
+        /* Highlight for Dedicated Counter 1 */
         #dedicated-counter-display.highlight-update {
             animation: highlight-counter 0.5s ease-out;
         }
         @keyframes highlight-counter {
             50% { background-color: #92400e; } /* Orange-ish highlight */
         }
-        /* New highlight for the second dedicated counter */
+        /* Highlight for Dedicated Counter 2 */
         #dedicated-counter-display-2.highlight-update {
             animation: highlight-counter-2 0.5s ease-out;
         }
         @keyframes highlight-counter-2 {
             50% { background-color: #7c2d12; } /* Darker orange/brown highlight */
         }
-        .code-line {
-            transition: background-color 0.2s;
-        }
-        .active-instruction {
-            background-color: #3b82f6 !important;
-            color: white;
-        }
-        .control-button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
+        
+        /* Code Editor Specific Styles for Highlighting */
         #code-editor-container {
             position: relative;
+            /* Ensure it has a defined height, flex-grow from parent should handle it */
         }
         #line-numbers {
             position: absolute;
@@ -91,30 +83,46 @@
             color: #9ca3af; /* text-gray-400 */
             user-select: none;
             overflow: hidden;
-            z-index: 10;
+            z-index: 20; /* Above highlighted-code, below textarea content flow */
+            line-height: 1.5; /* Match textarea line-height */
+            font-size: 1rem; /* Match textarea font-size */
         }
         #code-input {
+            position: absolute;
+            inset: 0; /* Cover the entire container */
             padding-left: 4.5rem; /* Adjust based on line-numbers width */
-            white-space: pre-wrap; /* Use pre-wrap for wrapping */
-            overflow-wrap: break-word;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+            white-space: pre; /* Keep pre-formatted whitespace */
+            overflow-wrap: normal;
             overflow-x: auto;
             height: 100%;
             width: 100%;
+            background-color: transparent; /* Make background transparent */
+            color: transparent; /* Make text transparent */
+            caret-color: white; /* Show caret in white */
+            resize: none;
+            spellcheck: false;
+            z-index: 10; /* Above highlighted-code */
+            outline: none;
+            line-height: 1.5;
+            font-size: 1rem;
+        }
+        #highlighted-code {
+            position: absolute;
+            inset: 0;
+            padding-left: 4.5rem; /* Match textarea padding */
             padding-top: 1rem;
             padding-bottom: 1rem;
-            background-color: transparent;
-            color: white;
-            outline: none;
-            position: relative;
-            z-index: 1;
-            line-height: 1.5; /* Ensure lines are consistent */
-            font-size: 1rem; /* Adjust as needed */
-        }
-        /* Placeholder for contenteditable div */
-        #code-input:empty::before {
-            content: attr(data-placeholder);
-            color: #6b7280; /* text-gray-500 */
-            pointer-events: none;
+            font-family: 'Fira Code', monospace;
+            font-size: 1rem;
+            line-height: 1.5;
+            z-index: 5; /* Below textarea, above container background */
+            pointer-events: none; /* Crucial: allows clicks to pass through to textarea */
+            white-space: pre; /* Match textarea whitespace behavior */
+            overflow-wrap: normal;
+            overflow-x: auto;
+            color: white; /* Default color for highlighting, will be overridden by spans */
         }
 
         /* Syntax Highlighting Classes */
@@ -123,7 +131,58 @@
         .arg-green { color: #22c55e; } /* Green-500 */
         .inc-green { color: #10b981; } /* Emerald-500 */
         .label-red { color: #ef4444; } /* Red-500 */
-        .comment-white { color: #d1d5db; } /* Gray-300 */
+        .comment-white { color: #9ca3af; } /* Gray-400 for comments, slightly different from text-gray-200 */
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.75);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: #1f2937; /* bg-gray-800 */
+            padding: 2rem;
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3);
+            max-width: 80%;
+            max-height: 90%;
+            overflow-y: auto;
+            color: #d1d5db; /* text-gray-200 */
+            position: relative;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.open .modal-content {
+            transform: translateY(0);
+        }
+        .modal-close-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #9ca3af;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .modal-close-btn:hover {
+            color: #e5e7eb;
+        }
     </style>
 </head>
 <body class="text-gray-200">
@@ -154,9 +213,8 @@
                     </div>
                     <div id="code-editor-container" class="font-fira text-base bg-gray-900 flex-grow rounded-b-xl overflow-hidden relative">
                         <div id="line-numbers">1</div>
-                        <div id="code-input" contenteditable="true" spellcheck="false" 
-                             class="w-full h-full p-4 bg-transparent text-white resize-none" 
-                             data-placeholder="Start typing your assembly code..."></div>
+                        <div id="highlighted-code"></div> <!-- This will display the highlighted code -->
+                        <textarea id="code-input" class="w-full h-full p-4 bg-transparent text-white resize-none" spellcheck="false" rows="15"></textarea>
                     </div>
                 </div>
 
@@ -334,7 +392,7 @@ ADD B, $2   ; B = B + dedicatedCounter2
 
                 <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">3. `SUB` (Subtract)</h4>
                 <p class="mb-1"><strong>Purpose:</strong> Subtracts a value, the content of one register, or the result of an arithmetic expression from another register.</p>
-                <p class="mb-1"><strong>Syntax:</b> `SUB DEST_REG, SOURCE`</p>
+                <p class="mb-1"><strong>Syntax:</strong> `SUB DEST_REG, SOURCE`</p>
                 <ul class="list-disc list-inside ml-4 mb-2">
                     <li>`DEST_REG`: The destination register (A, B, C, or D) from which `SOURCE` will be subtracted. The result is stored back in `DEST_REG`.</li>
                     <li>`SOURCE`: Can be an integer literal, another register name, or a simple arithmetic expression.</li>
@@ -605,6 +663,7 @@ MOV B, 2    ; This line will never be reached
         const resetBtn = document.getElementById('reset-btn');
         const speedSlider = document.getElementById('speed-slider');
         const codeInput = document.getElementById('code-input');
+        const highlightedCodeDiv = document.getElementById('highlighted-code'); // New element for highlighting
         const lineNumbersDiv = document.getElementById('line-numbers');
         const inputArea = document.getElementById('input-area');
         const outputArea = document.getElementById('output-area');
@@ -615,7 +674,7 @@ MOV B, 2    ; This line will never be reached
         const flagDisplay = document.getElementById('flag-display');
         const errorDisplay = document.getElementById('error-display');
         const dedicatedCounterDisplay = document.getElementById('dedicated-counter-display'); 
-        const dedicatedCounterDisplay2 = document.getElementById('dedicated-counter-display-2'); // New element reference for second counter
+        const dedicatedCounterDisplay2 = document.getElementById('dedicated-counter-display-2');
         const loadExampleBtn = document.getElementById('load-example');
         // Modal elements
         const infoBtn = document.getElementById('info-btn');
@@ -630,7 +689,7 @@ MOV B, 2    ; This line will never be reached
         let pc = 0; // Program Counter
         let compareFlag = 0; // -1 (less), 0 (equal), 1 (greater)
         let dedicatedCounter = 0; // Dedicated counter 1
-        let dedicatedCounter2 = 0; // New: Dedicated counter 2
+        let dedicatedCounter2 = 0; // Dedicated counter 2
 
         let program = [];
         let labelMap = {};
@@ -642,7 +701,6 @@ MOV B, 2    ; This line will never be reached
         let executionSpeed = 1000 - parseInt(speedSlider.value, 10);
 
         // --- Turing Machine Example Program ---
-        // This example program has been updated to demonstrate INC2 and $2 if you reset it.
         const EXAMPLE_PROGRAM = `; --- Turing Machine Simulation: Increment Binary Number ---
 ; This program simulates a simple Turing Machine that increments a binary number
 ; stored on a "tape" within the CPU's RAM.
@@ -784,8 +842,7 @@ PRINT_TAPE_LOOP:
         }
         
         function parseAndLoadProgram() {
-            // Read from textContent for the contenteditable div
-            const code = codeInput.textContent; 
+            const code = codeInput.value;
             program = code.split('\n').map((line, index) => {
                 const cleanLine = line.split(';')[0].trim(); // Remove comments and trim
                 // Normalize commas: replace all commas with spaces to ensure arguments are correctly separated
@@ -817,70 +874,10 @@ PRINT_TAPE_LOOP:
         }
 
         /**
-         * Saves the current cursor (selection) position in the contenteditable div.
-         * @returns {object|null} An object containing the current node and offset, or null if no selection.
-         */
-        function saveCursorPosition() {
-            const selection = window.getSelection();
-            if (selection.rangeCount === 0) return null;
-            const range = selection.getRangeAt(0);
-            return {
-                commonAncestorContainer: range.commonAncestorContainer,
-                startOffset: range.startOffset,
-                endOffset: range.endOffset
-            };
-        }
-
-        /**
-         * Restores the cursor (selection) position in the contenteditable div.
-         * @param {object} savedRange An object containing the node and offset from saveCursorPosition.
-         */
-        function restoreCursorPosition(savedRange) {
-            if (!savedRange) return;
-
-            const selection = window.getSelection();
-            const range = document.createRange();
-
-            // Find the correct text node and set the offset
-            function findTextNode(node, offset) {
-                let currentOffset = 0;
-                for (let i = 0; i < node.childNodes.length; i++) {
-                    const child = node.childNodes[i];
-                    if (child.nodeType === Node.TEXT_NODE) {
-                        if (offset <= currentOffset + child.length) {
-                            return { node: child, offset: offset - currentOffset };
-                        }
-                        currentOffset += child.length;
-                    } else if (child.nodeType === Node.ELEMENT_NODE) {
-                        // Recursively search in elements (like our span tags)
-                        const result = findTextNode(child, offset - currentOffset);
-                        if (result) return result;
-                        currentOffset += child.textContent.length;
-                    }
-                }
-                // If cursor is at the very end, it might be outside any text node
-                return { node: node, offset: node.textContent.length };
-            }
-
-            const startInfo = findTextNode(savedRange.commonAncestorContainer, savedRange.startOffset);
-            const endInfo = findTextNode(savedRange.commonAncestorContainer, savedRange.endOffset);
-
-            if (startInfo.node && endInfo.node) {
-                range.setStart(startInfo.node, startInfo.offset);
-                range.setEnd(endInfo.node, endInfo.offset);
-
-                selection.removeAllRanges();
-                selection.addRange(range);
-            }
-        }
-
-
-        /**
-         * Applies syntax highlighting to the code input.
+         * Applies syntax highlighting to the code input by mirroring it to a hidden div.
          */
         function highlightCode() {
-            const savedCursor = saveCursorPosition();
-            const text = codeInput.textContent;
+            const text = codeInput.value;
             let highlightedHtml = '';
 
             const lines = text.split('\n');
@@ -907,39 +904,37 @@ PRINT_TAPE_LOOP:
                 }
 
                 if (codePart.endsWith(':')) { // It's a label
-                    currentLineHtml += `<span class="label-red">${codePart}</span>`;
+                    currentLineHtml += `<span class="label-red">${escapeHtml(codePart)}</span>`;
                 } else {
+                    // Split by space and comma (but keep comma to decide spacing)
                     const parts = codePart.match(/(".*?"|'.*?'|\S+)/g) || [];
                     if (parts.length > 0) {
                         const opcode = parts[0].toUpperCase();
                         const opcodeClass = opcodeMap[opcode] || '';
-                        currentLineHtml += `<span class="${opcodeClass}">${opcode}</span>`;
+                        currentLineHtml += `<span class="${opcodeClass}">${escapeHtml(opcode)}</span>`;
 
                         // Handle arguments
                         for (let i = 1; i < parts.length; i++) {
                             let arg = parts[i];
-                            let argHtml = arg;
+                            let argHtml = escapeHtml(arg); // Escape HTML for safety
 
                             // Remove comma for internal processing if present (after initial split)
                             const cleanedArg = arg.replace(/,$/, ''); 
 
                             // Check if it's a register, counter, or an expression
+                            // Regex for expression: e.g., A + 1, B * C, $ - 5
+                            // This regex is slightly simplified for parsing, actual evaluation regex is in evaluateExpression
                             if (registerPattern.test(cleanedArg) || counterPattern.test(cleanedArg) || cleanedArg.match(/([ABCD$]+\d*|-?\d+)\s*([+\-*/])\s*([ABCD$]+\d*|-?\d+)/i)) {
-                                argHtml = `<span class="arg-green">${arg}</span>`;
-                            } else if (parseInt(cleanedArg).toString() === cleanedArg || (cleanedArg.startsWith('-') && parseInt(cleanedArg.substring(1)).toString() === cleanedArg.substring(1))) {
-                                // Simple number literal
-                                argHtml = `<span class="arg-green">${arg}</span>`;
+                                argHtml = `<span class="arg-green">${argHtml}</span>`;
+                            } else if (!isNaN(parseInt(cleanedArg, 10)) && String(parseInt(cleanedArg, 10)) === cleanedArg) {
+                                // Simple integer literal (handle negative numbers)
+                                argHtml = `<span class="arg-green">${argHtml}</span>`;
                             }
                             
-                            // Add a space before the argument if it's not the first part of the argument group
-                            // and if the original argument wasn't directly appended (e.g. "A,1")
-                            if (i === 1 && !arg.startsWith(',')) { // For first argument, usually has a comma
+                            // Add a space before the argument if it's not the very first part
+                            if (i > 1 && !arg.startsWith(',')) {
                                 currentLineHtml += ' ';
-                            } else if (i > 1 && !arg.startsWith(',')) { // For subsequent args separated by space
-                                currentLineHtml += ' ';
-                            } else if (i > 0 && arg.startsWith(',')) { // If it starts with a comma, just append
-                                currentLineHtml += ''; // No extra space needed, comma already implies separation
-                            } else { // Fallback, add a space if not a comma-separated scenario
+                            } else if (i === 1 && !arg.startsWith(',')) {
                                 currentLineHtml += ' ';
                             }
                             currentLineHtml += argHtml;
@@ -948,18 +943,27 @@ PRINT_TAPE_LOOP:
                 }
 
                 if (commentPart) {
-                    currentLineHtml += `<span class="comment-white">${commentPart}</span>`;
+                    currentLineHtml += `<span class="comment-white">${escapeHtml(commentPart)}</span>`;
                 }
                 highlightedHtml += currentLineHtml + '\n';
             });
 
-            // Set innerHTML (this might reset cursor)
-            codeInput.innerHTML = highlightedHtml.trimEnd(); // Remove trailing newline to avoid extra line
-
-            // Restore cursor
-            restoreCursorPosition(savedCursor);
+            highlightedCodeDiv.innerHTML = highlightedHtml;
             updateLineNumbers(); // Re-update line numbers after highlight
         }
+
+        // Helper function to escape HTML entities for display
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
+
 
         // Helper function to evaluate arithmetic expressions including '$' and '$2'
         function evaluateExpression(expression) {
@@ -1079,8 +1083,15 @@ PRINT_TAPE_LOOP:
                 ramContainer.appendChild(cell);
             }
             
-            // Highlight the active instruction line (visual only, not functional for execution flow)
-            // This needs to be managed carefully with contenteditable. For now, it's a simple PC update.
+            // Update code highlighting (for execution pointer)
+            // Remove previous active line highlight
+            document.querySelectorAll('#highlighted-code > span').forEach(span => span.classList.remove('active-instruction'));
+            const activeLineText = highlightedCodeDiv.childNodes[pc]; // Get the span for the current PC line
+            if (activeLineText) {
+                // To highlight the entire line in the highlighted-code div
+                activeLineText.classList.add('active-instruction');
+            }
+
             updateLineNumbers();
         }
         
@@ -1104,8 +1115,7 @@ PRINT_TAPE_LOOP:
             runBtn.disabled = isRunning;
             stepBtn.disabled = isRunning;
             pauseBtn.disabled = !isRunning || isPaused;
-            // Disable codeInput only if running, allow editing when paused/idle
-            codeInput.contentEditable = isRunning ? 'false' : 'true';
+            codeInput.disabled = isRunning || isPaused; // Re-enable disabling textarea
             
             if (isPaused) {
                 pauseBtn.textContent = 'Resume';
@@ -1126,6 +1136,7 @@ PRINT_TAPE_LOOP:
             const instr = program[pc];
             if (!instr || instr.isLabel) {
                 pc++;
+                updateUI(); // Update UI to reflect PC increment even for labels
                 return true; // Skip labels/empty lines
             }
             
@@ -1134,12 +1145,12 @@ PRINT_TAPE_LOOP:
 
             try {
                 switch (op) {
-                    case 'MOV': { // MOV REG, VALUE | MOV REG, REG | MOV REG, EXPR
+                    case 'MOV': {
                         if (args.length !== 2) throw new Error("MOV needs 2 args");
                         const destReg = args[0].toUpperCase();
                         if (!registerNames.includes(destReg)) throw new Error(`Invalid register: ${args[0]}`);
-                        const val = evaluateExpression(args[1]); // Use evaluateExpression
-                        if(val === null) return false; // Error handled by evaluateExpression
+                        const val = evaluateExpression(args[1]);
+                        if(val === null) return false;
                         registers[destReg] = val;
                         highlightElement(document.getElementById(`reg-${destReg}`), 'highlight-update');
                         break;
@@ -1149,44 +1160,43 @@ PRINT_TAPE_LOOP:
                         if (args.length !== 2) throw new Error(`${op} needs 2 args`);
                         const destReg = args[0].toUpperCase();
                         if (!registerNames.includes(destReg)) throw new Error(`Invalid register: ${args[0]}`);
-                        const val = evaluateExpression(args[1]); // Use evaluateExpression
+                        const val = evaluateExpression(args[1]);
                         if(val === null) return false;
                         registers[destReg] += (op === 'ADD' ? val : -val);
                         highlightElement(document.getElementById(`reg-${destReg}`), 'highlight-update');
                         break;
                     }
-                    case 'LOAD': { // LOAD REG, ADDR | LOAD REG, EXPR
+                    case 'LOAD': {
                         if (args.length !== 2) throw new Error("LOAD needs 2 args");
                         const destReg = args[0].toUpperCase();
                         if (!registerNames.includes(destReg)) throw new Error(`Invalid register: ${args[0]}`);
-                        const addr = evaluateExpression(args[1]); // Use evaluateExpression for address
+                        const addr = evaluateExpression(args[1]);
                         if(addr === null || addr < 0 || addr >= ram.length) throw new Error(`Invalid address: ${addr}`);
                         registers[destReg] = ram[addr];
                         highlightElement(document.getElementById(`reg-${destReg}`), 'highlight-update');
                         highlightElement(document.getElementById(`ram-${addr}`), 'highlight-read');
                         break;
                     }
-                     case 'STOR': { // STOR REG, ADDR | STOR REG, EXPR
+                     case 'STOR': {
                         if (args.length !== 2) throw new Error("STOR needs 2 args");
                         const srcReg = args[0].toUpperCase();
                         if (!registerNames.includes(srcReg)) throw new Error(`Invalid register: ${args[0]}`);
-                        const addr = evaluateExpression(args[1]); // Use evaluateExpression for address
+                        const addr = evaluateExpression(args[1]);
                         if(addr === null || addr < 0 || addr >= ram.length) throw new Error(`Invalid address: ${addr}`);
                         ram[addr] = registers[srcReg];
                         highlightElement(document.getElementById(`ram-${addr}`), 'highlight-write');
                         
-                        // Clear ONLY the source register after STOR operation
                         registers[srcReg] = 0;
-                        highlightElement(document.getElementById(`reg-${srcReg}`), 'highlight-update'); // Highlight the cleared source register
+                        highlightElement(document.getElementById(`reg-${srcReg}`), 'highlight-update');
                         break;
                     }
-                    case 'INP': { // INP REG (input takes only direct register)
+                    case 'INP': {
                         if (args.length !== 1) throw new Error("INP needs 1 arg");
                         const destReg = args[0].toUpperCase();
                         if (!registerNames.includes(destReg)) throw new Error(`Invalid register: ${args[0]}`);
                         if (inputBuffer.length === 0) {
                             setStatus('Awaiting Input', 'text-cyan-400');
-                            isRunning = false; // Effectively pauses
+                            isRunning = false;
                             return false;
                         }
                         registers[destReg] = inputBuffer.shift();
@@ -1194,41 +1204,40 @@ PRINT_TAPE_LOOP:
                         highlightElement(document.getElementById(`reg-${destReg}`), 'highlight-update');
                         break;
                     }
-                    case 'OUT': { // OUT REG | OUT VALUE | OUT EXPR
+                    case 'OUT': {
                         if (args.length !== 1) throw new Error("OUT needs 1 arg");
-                        // OUT can output a register, a value, or an expression result
-                        const val = evaluateExpression(args[0]); // Use evaluateExpression
+                        const val = evaluateExpression(args[0]);
                         if(val === null) return false;
                         outputArea.textContent += val + '\n';
                         outputArea.scrollTop = outputArea.scrollHeight;
                         break;
                     }
-                    case 'CMP': { // CMP A, B | CMP EXPR, EXPR
+                    case 'CMP': {
                         if (args.length !== 2) throw new Error("CMP needs 2 args");
-                        const val1 = evaluateExpression(args[0]); // Use evaluateExpression
-                        const val2 = evaluateExpression(args[1]); // Use evaluateExpression
+                        const val1 = evaluateExpression(args[0]);
+                        const val2 = evaluateExpression(args[1]);
                         if(val1 === null || val2 === null) return false;
                         const diff = val1 - val2;
                         compareFlag = Math.sign(diff);
                         break;
                     }
-                    case 'INC': { // Increment dedicated counter 1
+                    case 'INC': {
                         if (args.length !== 0) throw new Error("INC takes no args");
                         dedicatedCounter++;
                         highlightElement(dedicatedCounterDisplay, 'highlight-update');
                         break;
                     }
-                    case 'INC2': { // New: Increment dedicated counter 2
+                    case 'INC2': {
                         if (args.length !== 0) throw new Error("INC2 takes no args");
                         dedicatedCounter2++;
                         highlightElement(dedicatedCounterDisplay2, 'highlight-update');
                         break;
                     }
                     case 'JMP':
-                    case 'JEZ': // Jump if Equal (zero)
-                    case 'JNE': // Jump if Not Equal
-                    case 'JGT': // Jump if Greater Than
-                    case 'JLT': // Jump if Less Than
+                    case 'JEZ':
+                    case 'JNE':
+                    case 'JGT':
+                    case 'JLT':
                     {
                         if (args.length !== 1) throw new Error(`${op} needs 1 arg`);
                         const label = args[0].toUpperCase();
@@ -1252,7 +1261,7 @@ PRINT_TAPE_LOOP:
                         isRunning = false;
                         if (timeoutId) clearTimeout(timeoutId);
                         updateControls();
-                        return false; // Stop execution
+                        return false;
                     default:
                         throw new Error(`Unknown instruction: ${op}`);
                 }
@@ -1272,13 +1281,12 @@ PRINT_TAPE_LOOP:
                 if (executionSpeed > 0) {
                     timeoutId = setTimeout(runLoop, executionSpeed);
                 } else {
-                    // Batch execution for max speed
                     let batchSize = 0;
                     while (isRunning && !isPaused && batchSize < 1000 && step()) {
                         batchSize++;
                     }
                      if(isRunning && !isPaused) {
-                         timeoutId = setTimeout(runLoop, 0); // Yield to browser
+                         timeoutId = setTimeout(runLoop, 0);
                      }
                 }
             } else {
@@ -1297,10 +1305,14 @@ PRINT_TAPE_LOOP:
         }
 
         function updateLineNumbers() {
-            // Use textContent to get the raw lines for line numbering
-            const lineCount = codeInput.textContent.split('\n').length;
-            lineNumbersDiv.innerHTML = Array.from({length: lineCount}, (_, i) => i + 1).join('<br>');
+            const lineCount = codeInput.value.split('\n').length;
+            let lineNumHtml = '';
+            for(let i = 1; i <= lineCount; i++) {
+                lineNumHtml += `<span>${i}</span><br>`;
+            }
+            lineNumbersDiv.innerHTML = lineNumHtml;
             lineNumbersDiv.scrollTop = codeInput.scrollTop;
+            highlightedCodeDiv.scrollTop = codeInput.scrollTop; // Sync scroll for highlighted div
         }
         
         // --- Event Listeners ---
@@ -1316,11 +1328,11 @@ PRINT_TAPE_LOOP:
             updateControls();
         });
         pauseBtn.addEventListener('click', () => {
-             if (isPaused) { // Resume
+             if (isPaused) {
                  isPaused = false;
                  setStatus('Running', 'text-green-400');
                  runLoop();
-             } else { // Pause
+             } else {
                  isPaused = true;
                  if(timeoutId) clearTimeout(timeoutId);
              }
@@ -1333,15 +1345,17 @@ PRINT_TAPE_LOOP:
         speedSlider.addEventListener('input', (e) => {
             executionSpeed = 1000 - parseInt(e.target.value, 10);
         });
-        // Use 'input' event for contenteditable div
+        // Listen for input on the textarea to trigger highlighting and line number updates
         codeInput.addEventListener('input', highlightCode);
+        // Sync scrolling of all three elements
         codeInput.addEventListener('scroll', () => {
             lineNumbersDiv.scrollTop = codeInput.scrollTop;
+            highlightedCodeDiv.scrollTop = codeInput.scrollTop;
         });
         loadExampleBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            codeInput.textContent = EXAMPLE_PROGRAM; // Set textContent for contenteditable
-            highlightCode(); // Apply highlighting immediately
+            codeInput.value = EXAMPLE_PROGRAM;
+            highlightCode(); // Apply highlighting immediately after loading example
             resetMachine();
         });
 
@@ -1361,7 +1375,7 @@ PRINT_TAPE_LOOP:
         });
 
         // --- Initial Setup ---
-        codeInput.textContent = EXAMPLE_PROGRAM; // Set initial content
+        codeInput.value = EXAMPLE_PROGRAM; // Set initial content
         highlightCode(); // Apply initial highlighting
         resetMachine();
     });
