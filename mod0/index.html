@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'VT323', monospace;
+            font-family: 'Unifont', monospace;
             background-color: #1a1a1a;
             color: #00ff00;
         }
@@ -176,7 +176,7 @@
                 214: 'C-3', 202: 'C#3', 190: 'D-3', 180: 'D#3', 170: 'E-3', 160: 'F-3', 151: 'F#3', 142: 'G-3', 135: 'G#3', 127: 'A-3', 120: 'A#3', 113: 'B-3'
             };
 
-            // Pre-calculate sorted periods for effect lookups
+            // Pre-calculate sorted periods for effect lookups (descending period -> ascending pitch)
             sortedPeriods = Object.keys(periodTable).map(p => parseInt(p)).sort((a, b) => b - a);
             
             // --- UI & Event Listeners ---
@@ -475,8 +475,8 @@
                         break;
                     case 0x4: // Vibrato
                     case 0x6: // Vibrato + Volume Slide
-                        if ((val & 0xF0) > 0) channel.vibratoSpeed = (val & 0xF0) >> 4;
-                        if ((val & 0x0F) > 0) channel.vibratoDepth = (val & 0x0F);
+                        if ((val & 0xF0) > 0) channel.vibratoSpeed = (val & 0x0F); // Speed from upper 4 bits
+                        if ((val & 0x0F) > 0) channel.vibratoDepth = (val & 0xF0) >> 4; // Depth from lower 4 bits
                         // Apply effect on first tick as well
                         updateVibrato(ch); 
                         break;
@@ -602,14 +602,24 @@
             }
 
             function getPeriodForNote(basePeriod, semitoneOffset) {
-                const baseIndex = sortedPeriods.reduce((prev, curr) => 
-                    (Math.abs(curr - basePeriod) < Math.abs(prev - basePeriod) ? curr : prev));
+                const basePeriodAsInt = parseInt(basePeriod);
+                let originalIndex = sortedPeriods.indexOf(basePeriodAsInt);
                 
-                const newIndex = sortedPeriods.indexOf(baseIndex) - semitoneOffset;
-                if (newIndex >= 0 && newIndex < sortedPeriods.length) {
-                    return sortedPeriods[newIndex];
+                // If the exact period isn't found (e.g., due to fine-tuning or portamento),
+                // find the closest one to use as a base for semitone calculation.
+                if (originalIndex === -1) {
+                    const closestValidPeriod = sortedPeriods.reduce((prev, curr) => 
+                        (Math.abs(curr - basePeriodAsInt) < Math.abs(prev - basePeriodAsInt) ? curr : prev));
+                    originalIndex = sortedPeriods.indexOf(closestValidPeriod);
                 }
-                return basePeriod;
+
+                const newIndex = originalIndex + semitoneOffset;
+
+                // Clamp the new index to valid range
+                if (newIndex < 0) return sortedPeriods[0]; // Lowest pitch (highest period)
+                if (newIndex >= sortedPeriods.length) return sortedPeriods[sortedPeriods.length - 1]; // Highest pitch (lowest period)
+
+                return sortedPeriods[newIndex];
             }
 
             // --- Audio Node Management ---
