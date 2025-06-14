@@ -339,7 +339,8 @@
                     return;
                 }
                 
-                const tickDuration = (2500 / playerState.bpm);
+                // Adjusted for NTSC 60Hz equivalent at 125 BPM
+                const tickDuration = (2083.333 / playerState.bpm); 
 
                 if (playerState.tick === 0) { // New row
                     processRow();
