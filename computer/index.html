@@ -272,7 +272,7 @@
                     <li>`ADD REG, VAL/REG`: Add a value or register content to a register.</li>
                     <li>`SUB REG, VAL/REG`: Subtract a value or register content from a register.</li>
                     <li>`LOAD REG, ADDR`: Load content from a RAM address into a register.</li>
-                    <li>`STOR REG, ADDR`: Store content from a register into a RAM address. **Note:** After a `STOR` operation, all registers (A, B, C, D) are cleared to 0 in this specific simulation. This necessitates careful programming to preserve important register values.</li>
+                    <li>`STOR REG, ADDR`: Store content from a register into a RAM address. **Note:** After a `STOR` operation, only the source register (the one whose value was stored) is cleared to 0 in this specific simulation. Other registers retain their values.</li>
                     <li>`INP REG`: Read a number from the input area into a register.</li>
                     <li>`OUT REG/VAL`: Output a register content or value to the output area.</li>
                     <li>`CMP VAL/REG, VAL/REG`: Compare two values and set the Compare Flag.</li>
@@ -357,18 +357,12 @@ LOAD A, 5   ; Register A becomes 100
                     <li>`SOURCE_REG`: The register (A, B, C, or D) whose content will be stored.</li>
                     <li>`ADDRESS`: An integer literal representing a valid RAM address (0-63).</li>
                 </ul>
-                <p class="mb-1"><strong>Behavior:</strong> `RAM[ADDRESS] = SOURCE_REG`. The content of `SOURCE_REG` remains unchanged *before* this instruction completes, but **all registers (A, B, C, D) are cleared to 0 immediately after the value is written to RAM.**</p>
+                <p class="mb-1"><strong>Behavior:</strong> `RAM[ADDRESS] = SOURCE_REG`. The content of `SOURCE_REG` is then cleared to 0. Other registers (not `SOURCE_REG`) will retain their values.</p>
                 <p class="mb-1"><strong>Example:</strong></p>
                 <pre class="bg-gray-900 p-3 rounded-md text-sm font-fira overflow-x-auto mb-2">
 MOV A, 25   ; A = 25
-STOR A, 10  ; RAM[10] becomes 25. Now, A, B, C, D all become 0.
-; If you need A's value (or any other register's value) after STOR,
-; you MUST save it to a different RAM location *before* the STOR,
-; and then LOAD it back. For example:
-; MOV A, 25
-; STOR A, 0   ; Temporarily save A to RAM[0] before STOR clears registers
-; STOR A, 10  ; RAM[10] becomes 25. A, B, C, D all become 0.
-; LOAD A, 0   ; Restore A's original value (25) from RAM[0]
+MOV B, 10   ; B = 10
+STOR A, 10  ; RAM[10] becomes 25. A becomes 0. B, C, D remain unchanged.
                 </pre>
 
                 <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">6. `INP` (Input)</h4>
@@ -531,11 +525,11 @@ MOV B, 2    ; This line will never be reached
                     <li>**If the current symbol is 'BLANK' (2):** This means the entire number was '11...1' (e.g., '11'). It changes the blank to a '1' (creating a new most significant bit) and then halts. This handles overflows (e.g., '11' becomes '100').</li>
                 </ul>
                 <h4 class="text-xl font-semibold text-gray-300 mb-1">Register Management for `STOR` Side Effect:</h4>
-                <p class="mb-2">Due to the unique feature of this CPU where `STOR` clears all registers, the Turing machine program employs a specific strategy:</p>
+                <p class="mb-2">Given the updated `STOR` instruction (which only clears the source register), the Turing machine program will still function correctly as it explicitly manages the tape head position by saving it to and loading it from `RAM[0]`. While the original program had to account for *all* registers being cleared, this updated behavior of `STOR` simplifies register management for other variables, as they will now persist across `STOR` operations unless they are the source register.</p>
                 <ul class="list-disc list-inside ml-4">
                     <li>The tape head position (originally in Register A) is always saved to a dedicated RAM location (`RAM[0]`) just before a `STOR` instruction is executed.</li>
                     <li>Immediately after a `STOR` instruction, the tape head position is re-loaded from `RAM[0]` back into Register A.</li>
-                    <li>This ensures that the tape head's position is correctly maintained throughout the TM's execution, despite registers being cleared by `STOR`.</li>
+                    <li>This ensures that the tape head's position is correctly maintained throughout the TM's execution.</li>
                 </ul>
                 <p class="mt-2">After the increment operation completes, the program iterates through the modified tape (RAM[10] to RAM[14]) and outputs each symbol to the I/O output area, showing the result of the Turing machine's work.</p>
             </section>
@@ -611,6 +605,7 @@ MOV B, 2    ; This line will never be reached
 ;
 ; Dedicated RAM for saving Tape Head Position:
 ;   RAM[0]: Stores the Tape Head Position (Register A) across STOR calls
+;           (This is still used even with the updated STOR behavior, as A is the source register for tape head moves)
 
 ; --- Program Start ---
 
@@ -618,22 +613,22 @@ START:
     ; Initialize Tape in RAM (Hardcoded for this example: 011__)
     ; Make sure these addresses are within RAM bounds (0-63)
     MOV D, 0    ; Set D to 0 (for initializing RAM cells)
-    STOR D, 10  ; RAM[10] = 0 (Registers are cleared after STOR)
+    STOR D, 10  ; RAM[10] = 0 (D is cleared after STOR)
     MOV D, 1    ; Set D to 1
-    STOR D, 11  ; RAM[11] = 1
+    STOR D, 11  ; RAM[11] = 1 (D is cleared after STOR)
     MOV D, 1    ; Set D to 1
-    STOR D, 12  ; RAM[12] = 1
+    STOR D, 12  ; RAM[12] = 1 (D is cleared after STOR)
     MOV D, 2    ; Set D to BLANK_SYMBOL (2)
-    STOR D, 13  ; RAM[13] = 2
+    STOR D, 13  ; RAM[13] = 2 (D is cleared after STOR)
     MOV D, 2    ; Set D to BLANK_SYMBOL (2)
-    STOR D, 14  ; RAM[14] = 2
+    STOR D, 14  ; RAM[14] = 2 (D is cleared after STOR)
 
     ; Set initial Tape Head Position to the rightmost digit (RAM[12])
     MOV A, 12   ; Register A holds the tape head address
-    STOR A, 0   ; Save initial tape head position to RAM[0] (because A will be cleared by next STOR)
+    STOR A, 0   ; Save initial tape head position to RAM[0] (A is cleared by this STOR)
 
 LOOP:
-    LOAD A, 0   ; Restore A from RAM[0] at the start of each loop iteration (important because STOR clears A)
+    LOAD A, 0   ; Restore A from RAM[0] at the start of each loop iteration (important because STOR clears A when it's the source)
     LOAD B, A   ; B = RAM[A]
 
     ; --- Turing Machine Transition Logic ---
@@ -657,27 +652,27 @@ LOOP:
 HANDLE_ONE:
     ; Action for '1': Write 0, Move Left
     MOV C, 0    ; Set C to 0
-    STOR C, A   ; Write 0 to RAM[A]. All registers (including A) are cleared.
-                ; A is now 0 due to STOR.
-    LOAD A, 0   ; Restore A (tape head position) from RAM[0]
+    STOR C, A   ; Write 0 to RAM[A]. C is cleared. A (tape head position) remains intact because it's not the source.
+                ; However, for the next step, A needs to be updated.
+    LOAD A, 0   ; Restore A from RAM[0] (this is technically redundant given new STOR but keeps logic consistent)
     SUB A, 1    ; Move tape head left (A = A - 1)
-    STOR A, 0   ; Save new A (tape head position) to RAM[0] for next iteration
+    STOR A, 0   ; Save new A (tape head position) to RAM[0]. A is cleared by this STOR.
     JMP LOOP    ; Go back to LOOP to process next symbol
 
 HANDLE_ZERO:
     ; Action for '0': Write 1, Halt
     MOV C, 1    ; Set C to 1
-    STOR C, A   ; Write 1 to RAM[A]. All registers (including A) are cleared.
-    LOAD A, 0   ; Restore A (tape head position) from RAM[0] (not strictly needed for final halt, but clean)
+    STOR C, A   ; Write 1 to RAM[A]. C is cleared.
+    LOAD A, 0   ; Restore A from RAM[0] (not strictly needed for final halt, but clean for consistent loop exit)
     JMP HALT_SUCCESS ; Program finished successfully
 
 HANDLE_BLANK:
     ; Action for 'BLANK': Write 1, Move Left, Halt (Handles overflow, e.g., 11 -> 100)
     MOV C, 1    ; Set C to 1
-    STOR C, A   ; Write 1 to RAM[A]. All registers (including A) are cleared.
-    LOAD A, 0   ; Restore A (tape head position) from RAM[0]
+    STOR C, A   ; Write 1 to RAM[A]. C is cleared.
+    LOAD A, 0   ; Restore A from RAM[0] (redundant, but for consistency)
     SUB A, 1    ; Move tape head left (A = A - 1)
-    STOR A, 0   ; Save new A (tape head position) to RAM[0] for next iteration
+    STOR A, 0   ; Save new A (tape head position) to RAM[0]. A is cleared by this STOR.
     JMP HALT_SUCCESS ; Program finished successfully
 
 HALT_SUCCESS:
@@ -896,11 +891,9 @@ PRINT_TAPE_LOOP:
                         ram[addr] = registers[srcReg];
                         highlightElement(document.getElementById(`ram-${addr}`), 'highlight-write');
                         
-                        // Clear all registers after STOR operation
-                        for (const reg of registerNames) {
-                            registers[reg] = 0;
-                            highlightElement(document.getElementById(`reg-${reg}`), 'highlight-update'); // Highlight each cleared register
-                        }
+                        // Clear ONLY the source register after STOR operation
+                        registers[srcReg] = 0;
+                        highlightElement(document.getElementById(`reg-${srcReg}`), 'highlight-update'); // Highlight the cleared source register
                         break;
                     }
                     case 'INP': { // INP REG
