@@ -84,8 +84,9 @@
             user-select: none;
             overflow: hidden;
             z-index: 20; /* Above highlighted-code, below textarea content flow */
-            line-height: 1.5; /* Match textarea line-height */
+            line-height: 1.5rem; /* Match textarea line-height */
             font-size: 1rem; /* Match textarea font-size */
+            box-sizing: border-box; /* Ensure padding is included in element's total width/height */
         }
         #code-input {
             position: absolute;
@@ -105,8 +106,10 @@
             spellcheck: false;
             z-index: 10; /* Above highlighted-code */
             outline: none;
-            line-height: 1.5;
+            line-height: 1.5rem; /* Explicitly match 1.5rem for Fira Code font */
             font-size: 1rem;
+            font-family: 'Fira Code', monospace; /* Explicitly set font */
+            box-sizing: border-box; /* Crucial for consistent sizing */
         }
         #highlighted-code {
             position: absolute;
@@ -116,13 +119,18 @@
             padding-bottom: 1rem;
             font-family: 'Fira Code', monospace;
             font-size: 1rem;
-            line-height: 1.5;
+            line-height: 1.5rem; /* Match textarea line-height */
             z-index: 5; /* Below textarea, above container background */
             pointer-events: none; /* Crucial: allows clicks to pass through to textarea */
             white-space: pre; /* Match textarea whitespace behavior */
             overflow-wrap: normal;
             overflow-x: auto;
             color: white; /* Default color for highlighting, will be overridden by spans */
+            box-sizing: border-box; /* Crucial for consistent sizing */
+        }
+        #highlighted-code span {
+            display: inline-block; /* Treat each token as a block for line height consistency */
+            line-height: 1.5rem; /* Ensure consistent line height for each token */
         }
 
         /* Syntax Highlighting Classes */
@@ -906,7 +914,6 @@ PRINT_TAPE_LOOP:
                 if (codePart.endsWith(':')) { // It's a label
                     currentLineHtml += `<span class="label-red">${escapeHtml(codePart)}</span>`;
                 } else {
-                    // Split by space and comma (but keep comma to decide spacing)
                     const parts = codePart.match(/(".*?"|'.*?'|\S+)/g) || [];
                     if (parts.length > 0) {
                         const opcode = parts[0].toUpperCase();
@@ -923,7 +930,6 @@ PRINT_TAPE_LOOP:
 
                             // Check if it's a register, counter, or an expression
                             // Regex for expression: e.g., A + 1, B * C, $ - 5
-                            // This regex is slightly simplified for parsing, actual evaluation regex is in evaluateExpression
                             if (registerPattern.test(cleanedArg) || counterPattern.test(cleanedArg) || cleanedArg.match(/([ABCD$]+\d*|-?\d+)\s*([+\-*/])\s*([ABCD$]+\d*|-?\d+)/i)) {
                                 argHtml = `<span class="arg-green">${argHtml}</span>`;
                             } else if (!isNaN(parseInt(cleanedArg, 10)) && String(parseInt(cleanedArg, 10)) === cleanedArg) {
@@ -931,10 +937,9 @@ PRINT_TAPE_LOOP:
                                 argHtml = `<span class="arg-green">${argHtml}</span>`;
                             }
                             
-                            // Add a space before the argument if it's not the very first part
-                            if (i > 1 && !arg.startsWith(',')) {
-                                currentLineHtml += ' ';
-                            } else if (i === 1 && !arg.startsWith(',')) {
+                            // Add a space before the argument if not directly concatenated by a comma in source
+                            // This part ensures spaces are added between highlighted tokens correctly.
+                            if (i > 0 && !arg.startsWith(',')) {
                                 currentLineHtml += ' ';
                             }
                             currentLineHtml += argHtml;
@@ -1085,11 +1090,11 @@ PRINT_TAPE_LOOP:
             
             // Update code highlighting (for execution pointer)
             // Remove previous active line highlight
-            document.querySelectorAll('#highlighted-code > span').forEach(span => span.classList.remove('active-instruction'));
-            const activeLineText = highlightedCodeDiv.childNodes[pc]; // Get the span for the current PC line
-            if (activeLineText) {
+            document.querySelectorAll('#highlighted-code > span.active-instruction').forEach(span => span.classList.remove('active-instruction'));
+            const activeLineSpan = highlightedCodeDiv.querySelector(`span:nth-child(${pc + 1})`); // Get the span for the current PC line
+            if (activeLineSpan) {
                 // To highlight the entire line in the highlighted-code div
-                activeLineText.classList.add('active-instruction');
+                activeLineSpan.classList.add('active-instruction');
             }
 
             updateLineNumbers();
