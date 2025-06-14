@@ -295,6 +295,7 @@
                     playerState.channels.forEach(ch => {
                         if (ch.source) {
                             try { ch.source.stop(); } catch(e) {}
+                            ch.source.disconnect(); // Disconnect old source
                             ch.source = null; // Clear source reference
                         }
                         if (ch.gainNode) {
@@ -340,9 +341,10 @@
                 
                 const tickDuration = (2500 / playerState.bpm);
 
-                if (playerState.tick === 0) {
+                if (playerState.tick === 0) { // New row
                     processRow();
-                } else {
+                    updateSongInfo(); // Update song info at start of new row (tick 0)
+                } else { // Intermediate tick
                     updateEffects();
                 }
 
@@ -361,7 +363,7 @@
                         displayPattern(modFile.patterns[nextPatternIndex]);
                     }
                 }
-                updateSongInfo(); // Update UI after potential row/position change or on every tick
+                // Removed updateSongInfo() from here to reduce UI updates
                 playerState.timerId = setTimeout(tick, tickDuration);
             }
             
@@ -455,6 +457,7 @@
                     case 0xB: // Position Jump
                         playerState.position = val;
                         playerState.row = -1; // Will advance to 0 on next tick
+                        updateSongInfo(); // Update UI immediately on position jump
                         break;
                     case 0xC: // Set Volume
                         channel.volume = val > 64 ? 64 : val;
@@ -466,6 +469,7 @@
                         const row = (val >> 4) * 10 + (val & 0x0F);
                         playerState.row = row - 1; // Will advance to target row on next tick
                         if(playerState.row < -1) playerState.row = -1;
+                        updateSongInfo(); // Update UI immediately on pattern break
                         break;
                     case 0xF: // Set Speed / BPM
                         if (val > 0) {
