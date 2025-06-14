@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'VT323', sans-serif;
             background-color: #111827;
         }
         .font-fira {
@@ -209,8 +209,8 @@
     <div class="min-h-screen flex flex-col p-4 sm:p-6 lg:p-8">
         <!-- Header -->
         <header class="text-center mb-6 relative">
-            <h1 class="text-4xl font-bold text-white tracking-tight">Turing Machine Incrementer</h1>
-            <p class="text-lg text-gray-400 mt-2">A simple Turing Machine simulated on the CPU, increments a binary number on the tape (RAM).</p>
+            <h1 class="text-4xl font-bold text-white tracking-tight">computer</h1>
+            <p class="text-lg text-gray-400 mt-2">a turing compatible simulated computer with a completely documented custom assembly language</p>
             <button id="info-btn" class="absolute top-0 right-0 sm:right-6 lg:right-8 bg-blue-600 hover:bg-blue-700 text-white font-bold p-2 rounded-full text-lg w-10 h-10 flex items-center justify-center shadow-lg transition-colors">
                 i
             </button>
@@ -225,10 +225,10 @@
                 <div class="bg-gray-800 rounded-xl shadow-lg flex flex-col h-full">
                     <div class="p-4 border-b border-gray-700 flex justify-between items-center">
                         <div>
-                           <h2 class="text-xl font-semibold text-white">Program Code</h2>
-                           <p class="text-sm text-gray-400">Write your assembly code below.</p>
+                           <h2 class="text-xl font-semibold text-white">program code!!!</h2>
+                           <p class="text-sm text-gray-400">your assembly here</p>
                         </div>
-                         <a href="#" id="load-example" class="text-sm text-blue-400 hover:underline">Load Example</a>
+                         <a href="#" id="load-example" class="text-sm text-blue-400 hover:underline">load example</a>
                     </div>
                     <div id="code-editor-container" class="font-fira text-base bg-gray-900 flex-grow rounded-b-xl overflow-hidden relative">
                         <div id="line-numbers">1</div>
@@ -239,7 +239,7 @@
 
                 <!-- Controls -->
                 <div class="bg-gray-800 p-4 rounded-xl shadow-lg">
-                    <h2 class="text-xl font-semibold mb-4 text-white">Controls</h2>
+                    <h2 class="text-xl font-semibold mb-4 text-white">controls</h2>
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                         <button id="run-btn" class="control-button bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors">Run</button>
                         <button id="step-btn" class="control-button bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors">Step</button>
@@ -247,7 +247,7 @@
                         <button id="reset-btn" class="control-button bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors">Reset</button>
                     </div>
                     <div class="mt-4">
-                        <label for="speed-slider" class="block mb-2 text-sm font-medium text-gray-300">Execution Speed</label>
+                        <label for="speed-slider" class="block mb-2 text-sm font-medium text-gray-300">clockspeed</label>
                         <input id="speed-slider" type="range" min="0" max="1000" value="800" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
                     </div>
                 </div>
@@ -257,10 +257,10 @@
             <div class="lg:col-span-2 flex flex-col gap-6">
                 <!-- Status & CPU State -->
                 <div class="bg-gray-800 p-4 rounded-xl shadow-lg">
-                    <h2 class="text-xl font-semibold mb-4 text-white">CPU State</h2>
+                    <h2 class="text-xl font-semibold mb-4 text-white">cpu state</h2>
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
                         <div>
-                            <h3 class="text-sm font-medium text-gray-400">Status</h3>
+                            <h3 class="text-sm font-medium text-gray-400">status</h3>
                             <p id="status-display" class="text-lg font-semibold text-blue-400">Idle</p>
                         </div>
                         <div>
@@ -330,8 +330,8 @@
             <section class="mb-6">
                 <h3 class="text-2xl font-semibold text-blue-300 mb-2">What is a Turing-Complete Computer?</h3>
                 <p class="mb-2">A **Turing-complete** system is one that can simulate any Turing machine. A Turing machine is a theoretical model of computation that consists of a tape (infinite memory), a head that can read and write symbols on the tape, and a set of rules (program) that dictate its behavior. If a system can simulate a Turing machine, it means it can perform any computation that any other computer can perform, given enough time and memory.</p>
-                <p class="mb-2">However, real-world computers (like this simulation) have **finite memory**. This fundamental limitation means they are technically not truly Turing-complete. But, for practical purposes, if their instruction set and control flow capabilities are rich enough, they are considered "mostly" Turing-complete because they can simulate the *computational aspects* of a Turing machine, assuming the problem fits within their memory constraints.</p>
-                <p>This CPU simulation, despite its finite RAM, possesses the necessary instructions (arithmetic, data movement, conditional jumps) to simulate other computational models like a Register Machine, which in turn are known to be Turing-equivalent. Therefore, in theory (ignoring memory limits), it can perform universal computation.</p>
+                <p class="mb-2">For some reason, real-world computers (like this simulation) have **finite memory**. This fundamental limitation means they are technically not truly Turing-complete. But, for practical purposes, if their instruction set and control flow capabilities are rich enough, they are considered "mostly" Turing-complete because they can simulate the *computational aspects* of a Turing machine, assuming the problem fits within their memory constraints.</p>
+                <p>This CPU simulation at the minimum possesses the necessary instructions (arithmetic, data movement, conditional jumps) to simulate other computational models like a Register Machine, which in turn are known to be Turing-equivalent. Therefore, in theory (ignoring memory limits), it can perform universal computation.</p>
             </section>
 
             <section class="mb-6">
