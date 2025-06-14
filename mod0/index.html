@@ -129,10 +129,10 @@
         <div id="pattern-view-container" class="bg-gray-900 p-4 rounded-lg border border-gray-700 overflow-x-auto">
              <h2 class="text-2xl mb-2 text-green-300">Pattern Data</h2>
              <div id="pattern-view" class="tracker-grid min-w-[600px]">
-                 <div class="tracker-header">ch 1</div>
-                 <div class="tracker-header">ch 2</div>
-                 <div class="tracker-header">ch 3</div>
-                 <div class="tracker-header">ch 4</div>
+                 <div class="tracker-header">Ch 1</div>
+                 <div class="tracker-header">Ch 2</div>
+                 <div class="tracker-header">Ch 3</div>
+                 <div class="tracker-header">Ch 4</div>
                  </div>
         </div>
     </div>
@@ -153,11 +153,11 @@
             let sortedPeriods = []; // For improved Arpeggio calculation
 
             // Constants
-            const PAL_CLOCK = 3546895; // PAL Amiga master clock frequency
+            const NTSC_CLOCK = 3579545; // NTSC Amiga master clock frequency
             const MIN_PERIOD = 113;
             const MAX_PERIOD = 856;
 
-            // Note period table for PAL Amigas
+            // Note period table for PAL Amigas (periods are the same, frequencies differ with clock)
             const periodTable = {
                 856: 'C-1', 808: 'C#1', 762: 'D-1', 720: 'D#1', 678: 'E-1', 640: 'F-1', 604: 'F#1', 570: 'G-1', 538: 'G#1', 508: 'A-1', 480: 'A#1', 453: 'B-1',
                 428: 'C-2', 404: 'C#2', 381: 'D-2', 360: 'D#2', 339: 'E-2', 320: 'F-2', 302: 'F#2', 285: 'G-2', 269: 'G#2', 254: 'A-2', 240: 'A#2', 226: 'B-2',
@@ -363,7 +363,6 @@
                         displayPattern(modFile.patterns[nextPatternIndex]);
                     }
                 }
-                // Removed updateSongInfo() from here to reduce UI updates
                 playerState.timerId = setTimeout(tick, tickDuration);
             }
             
@@ -568,10 +567,10 @@
             }
 
             function getPeriodForNote(basePeriod, semitoneOffset) {
-                const baseIndex = sortedPeriods.reduce((prev, curr, i) => 
-                    (Math.abs(curr - basePeriod) < Math.abs(sortedPeriods[prev] - basePeriod) ? i : prev), 0);
+                const baseIndex = sortedPeriods.reduce((prev, curr) => 
+                    (Math.abs(curr - basePeriod) < Math.abs(prev - basePeriod) ? curr : prev));
                 
-                const newIndex = baseIndex - semitoneOffset;
+                const newIndex = sortedPeriods.indexOf(baseIndex) - semitoneOffset;
                 if (newIndex >= 0 && newIndex < sortedPeriods.length) {
                     return sortedPeriods[newIndex];
                 }
@@ -620,10 +619,8 @@
                     
                     const fineTuneFactor = Math.pow(2, (sample.fineTune || 0) / (12 * 8));
                     
-                    // *** NEW, CORRECTED PITCH CALCULATION ***
-                    // This formula correctly maps the Amiga's period-based frequency
-                    // to the Web Audio API's playbackRate multiplier.
-                    const targetFrequency = (PAL_CLOCK / period) * fineTuneFactor;
+                    // Use NTSC_CLOCK for pitch calculation
+                    const targetFrequency = (NTSC_CLOCK / period) * fineTuneFactor;
                     const playbackRate = targetFrequency / audioContext.sampleRate;
                     
                     channel.source.playbackRate.setTargetAtTime(playbackRate, 0, 0.001); // Apply pitch immediately
