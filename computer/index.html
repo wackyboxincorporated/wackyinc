@@ -87,6 +87,11 @@
             line-height: 1.5rem; /* Match textarea line-height */
             font-size: 1rem; /* Match textarea font-size */
             box-sizing: border-box; /* Ensure padding is included in element's total width/height */
+            font-family: 'Fira Code', monospace; /* Crucial: ensure font matches for line height */
+        }
+        #line-numbers span {
+            display: block; /* Each number on its own line */
+            line-height: 1.5rem; /* Match textarea line height */
         }
         #code-input {
             position: absolute;
@@ -110,6 +115,8 @@
             font-size: 1rem;
             font-family: 'Fira Code', monospace; /* Explicitly set font */
             box-sizing: border-box; /* Crucial for consistent sizing */
+            tab-size: 4; /* Explicitly set tab size */
+            -moz-tab-size: 4; /* For Firefox */
         }
         #highlighted-code {
             position: absolute;
@@ -127,11 +134,14 @@
             overflow-x: auto;
             color: white; /* Default color for highlighting, will be overridden by spans */
             box-sizing: border-box; /* Crucial for consistent sizing */
+            tab-size: 4; /* Explicitly set tab size */
+            -moz-tab-size: 4; /* For Firefox */
         }
-        #highlighted-code span {
-            display: inline-block; /* Treat each token as a block for line height consistency */
-            line-height: 1.5rem; /* Ensure consistent line height for each token */
-        }
+        /* Removed display: inline-block; and line-height from here as it's handled by parent */
+        /* #highlighted-code span {
+            display: inline-block;
+            line-height: 1.5rem;
+        } */
 
         /* Syntax Highlighting Classes */
         .opcode-orange { color: #f97316; } /* Orange-600 */
@@ -328,7 +338,7 @@
                 <p class="mb-2">This interactive application simulates a very basic Central Processing Unit (CPU) with a small set of assembly-like instructions:</p>
                 <ul class="list-disc list-inside ml-4 mb-2">
                     <li><strong>Registers (A, B, C, D):</strong> These are small, fast storage locations within the CPU used for computations.</li>
-                    <li><strong>RAM (Random Access Memory):</strong> This is the main memory, a larger storage area where data and program instructions can be stored. This simulation has 64 RAM cells.</li>
+                    <li><strong>RAM (Random Access Memory):</b> This is the main memory, a larger storage area where data and program instructions can be stored. This simulation has 64 RAM cells.</li>
                     <li><strong>Program Counter (PC):</strong> Points to the current instruction being executed in the program.</li>
                     <li><strong>Compare Flag:</strong> Set by the `CMP` instruction to indicate if the first value was less than (-1), equal to (0), or greater than (1) the second value.</li>
                     <li><strong>Dedicated Counter 1 ($):</strong> A special-purpose counter that can be incremented by the `INC` instruction.</li>
@@ -911,6 +921,8 @@ PRINT_TAPE_LOOP:
                     commentPart = line.substring(commentIndex);
                 }
 
+                currentLineHtml += '<span>'; // Wrap each full line in a span for active instruction highlighting
+
                 if (codePart.endsWith(':')) { // It's a label
                     currentLineHtml += `<span class="label-red">${escapeHtml(codePart)}</span>`;
                 } else {
@@ -929,7 +941,6 @@ PRINT_TAPE_LOOP:
                             const cleanedArg = arg.replace(/,$/, ''); 
 
                             // Check if it's a register, counter, or an expression
-                            // Regex for expression: e.g., A + 1, B * C, $ - 5
                             if (registerPattern.test(cleanedArg) || counterPattern.test(cleanedArg) || cleanedArg.match(/([ABCD$]+\d*|-?\d+)\s*([+\-*/])\s*([ABCD$]+\d*|-?\d+)/i)) {
                                 argHtml = `<span class="arg-green">${argHtml}</span>`;
                             } else if (!isNaN(parseInt(cleanedArg, 10)) && String(parseInt(cleanedArg, 10)) === cleanedArg) {
@@ -938,7 +949,6 @@ PRINT_TAPE_LOOP:
                             }
                             
                             // Add a space before the argument if not directly concatenated by a comma in source
-                            // This part ensures spaces are added between highlighted tokens correctly.
                             if (i > 0 && !arg.startsWith(',')) {
                                 currentLineHtml += ' ';
                             }
@@ -950,7 +960,7 @@ PRINT_TAPE_LOOP:
                 if (commentPart) {
                     currentLineHtml += `<span class="comment-white">${escapeHtml(commentPart)}</span>`;
                 }
-                highlightedHtml += currentLineHtml + '\n';
+                highlightedHtml += currentLineHtml + '</span>\n'; // Close the line span and add newline
             });
 
             highlightedCodeDiv.innerHTML = highlightedHtml;
@@ -1312,8 +1322,9 @@ PRINT_TAPE_LOOP:
         function updateLineNumbers() {
             const lineCount = codeInput.value.split('\n').length;
             let lineNumHtml = '';
+            // Wrap each line number in a span with display: block and matching line-height
             for(let i = 1; i <= lineCount; i++) {
-                lineNumHtml += `<span>${i}</span><br>`;
+                lineNumHtml += `<span>${i}</span>`;
             }
             lineNumbersDiv.innerHTML = lineNumHtml;
             lineNumbersDiv.scrollTop = codeInput.scrollTop;
