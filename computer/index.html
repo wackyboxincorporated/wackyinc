@@ -88,6 +88,7 @@
             font-size: 1rem; /* Match textarea font-size */
             box-sizing: border-box; /* Ensure padding is included in element's total width/height */
             font-family: 'Fira Code', monospace; /* Crucial: ensure font matches for line height */
+            white-space: pre-wrap; /* For line numbers to wrap if content does */
         }
         #line-numbers span {
             display: block; /* Each number on its own line */
@@ -99,8 +100,8 @@
             padding-left: 4.5rem; /* Adjust based on line-numbers width */
             padding-top: 1rem;
             padding-bottom: 1rem;
-            white-space: pre; /* Keep pre-formatted whitespace */
-            overflow-wrap: normal;
+            white-space: pre-wrap; /* IMPORTANT: Allows wrapping and preserves whitespace */
+            overflow-wrap: break-word; /* Prevents long words from overflowing */
             overflow-x: auto;
             height: 100%;
             width: 100%;
@@ -129,8 +130,8 @@
             line-height: 1.5rem; /* Match textarea line-height */
             z-index: 5; /* Below textarea, above container background */
             pointer-events: none; /* Crucial: allows clicks to pass through to textarea */
-            white-space: pre; /* Match textarea whitespace behavior */
-            overflow-wrap: normal;
+            white-space: pre-wrap; /* IMPORTANT: Allows wrapping and preserves whitespace */
+            overflow-wrap: break-word; /* Prevents long words from overflowing */
             overflow-x: auto;
             color: white; /* Default color for highlighting, will be overridden by spans */
             box-sizing: border-box; /* Crucial for consistent sizing */
@@ -488,7 +489,7 @@ INP B       ; B becomes 100. Input area is now empty.
                     <li>`SOURCE`: Can be an integer literal, a register name (A, B, C, or D), or a simple arithmetic expression.</li>
                 </ul>
                 <p class="mb-1"><strong>Behavior:</strong> The value of `SOURCE` is appended as a new line to the Output area.</p>
-                <p class="mb-1"><strong>Example:</strong></p>
+                <p class="mb-1"><strong>Example:</b></p>
                 <pre class="bg-gray-900 p-3 rounded-md text-sm font-fira overflow-x-auto mb-2">
 MOV A, 7
 OUT A       ; Output: 7
@@ -540,7 +541,7 @@ OUT $           ; Output: final value of Dedicated Counter 1
                 </pre>
                 
                 <h4 class="text-xl font-semibold text-gray-300 mt-4 mb-1">10. `INC2` (Increment Dedicated Counter 2)</h4>
-                <p class="mb-1"><strong>Purpose:</strong> Increments Dedicated Counter 2 ($2) by 1.</p>
+                <p class="mb-1"><strong>Purpose:</b> Increments Dedicated Counter 2 ($2) by 1.</p>
                 <p class="mb-1"><strong>Syntax:</strong> `INC2` (takes no arguments)</p>
                 <p class="mb-1"><strong>Behavior:</strong> The `Dedicated Counter 2` variable is incremented by 1.</p>
                 <p class="mb-1"><strong>Example:</strong></p>
@@ -591,7 +592,7 @@ HLT
                 <p class="mb-1"><strong>Purpose:</strong> Jumps to a label if the `Compare Flag` is not 0 (meaning the last `CMP` operation resulted in inequality).</p>
                 <p class="mb-1"><strong>Syntax:</strong> `JNE LABEL_NAME`</p>
                 <p class="mb-1"><strong>Behavior:</strong> If `Compare Flag != 0`, PC is set to `LABEL_NAME`. Otherwise, execution continues to the next instruction.</p>
-                <p class="mb-1"><strong>Example:</strong></p>
+                <p class="mb-1"><strong>Example:</b></p>
                 <pre class="bg-gray-900 p-3 rounded-md text-sm font-fira overflow-x-auto mb-2">
 MOV A, 5
 CMP A, 6    ; Compare Flag = -1
@@ -914,64 +915,53 @@ PRINT_TAPE_LOOP:
             lines.forEach(line => {
                 let currentLineHtml = '';
                 
-                // Extract leading whitespace
+                // Capture leading whitespace before any code or comment
                 const leadingWhitespaceMatch = line.match(/^\s*/);
                 const leadingWhitespace = leadingWhitespaceMatch ? leadingWhitespaceMatch[0] : '';
-                const restOfLine = line.substring(leadingWhitespace.length); // Line without leading whitespace
+                
+                // Add leading whitespace as literal text (escaped)
+                currentLineHtml += escapeHtml(leadingWhitespace);
 
-                const commentIndex = restOfLine.indexOf(';');
-                let codePart = restOfLine;
+                // Process the rest of the line for highlighting
+                const contentAfterWhitespace = line.substring(leadingWhitespace.length);
+                const commentIndex = contentAfterWhitespace.indexOf(';');
+                
+                let codePart = contentAfterWhitespace;
                 let commentPart = '';
 
                 if (commentIndex !== -1) {
-                    codePart = restOfLine.substring(0, commentIndex); // Keep internal whitespace
-                    commentPart = restOfLine.substring(commentIndex);
+                    codePart = contentAfterWhitespace.substring(0, commentIndex);
+                    commentPart = contentAfterWhitespace.substring(commentIndex);
                 }
 
-                currentLineHtml += escapeHtml(leadingWhitespace); // Add leading whitespace first
-                currentLineHtml += '<span>'; // Wrap the actual code/comment part in a span
+                // Tokenize codePart to preserve internal spaces
+                const codeTokens = codePart.match(/(\S+|\s+)/g) || [];
 
-                if (codePart.trim().endsWith(':')) { // It's a label (trim for check, not for content)
-                    currentLineHtml += `<span class="label-red">${escapeHtml(codePart)}</span>`;
-                } else {
-                    // Split the codePart by sequence of non-whitespace characters or sequence of whitespace characters
-                    // This allows preserving internal spacing
-                    const tokens = codePart.match(/(\S+|\s+)/g) || [];
-                    
-                    tokens.forEach((token, i) => {
-                        if (/\s+/.test(token)) { // If it's whitespace, just escape and append
-                            currentLineHtml += escapeHtml(token);
-                        } else { // It's an actual code token (opcode or argument)
-                            let tokenHtml = escapeHtml(token);
-                            const cleanedToken = token.replace(/,$/, '').toUpperCase(); // Clean for opcode/arg check
+                codeTokens.forEach((token, i) => {
+                    if (/\s+/.test(token)) { // If it's just whitespace
+                        currentLineHtml += escapeHtml(token);
+                    } else { // It's a non-whitespace token (opcode or argument)
+                        let tokenHtml = escapeHtml(token);
+                        const cleanedToken = token.replace(/,$/, '').toUpperCase(); // Clean for classification
 
-                            if (i === 0) { // First token is potentially opcode
-                                const opcodeClass = opcodeMap[cleanedToken] || '';
-                                tokenHtml = `<span class="${opcodeClass}">${tokenHtml}</span>`;
-                            } else { // Subsequent tokens are arguments
-                                if (registerPattern.test(cleanedToken) || counterPattern.test(cleanedToken) || cleanedToken.match(/([ABCD$]+\d*|-?\d+)\s*([+\-*/])\s*([ABCD$]+\d*|-?\d+)/i)) {
-                                    tokenHtml = `<span class="arg-green">${tokenHtml}</span>`;
-                                } else if (!isNaN(parseInt(cleanedToken, 10)) && String(parseInt(cleanedToken, 10)) === cleanedToken) {
-                                    // Simple integer literal (handle negative numbers)
-                                    tokenHtml = `<span class="arg-green">${tokenHtml}</span>`;
-                                }
-                                // No explicit space addition here; the raw whitespace tokens handle spacing
+                        if (i === 0) { // First non-whitespace token is usually the opcode
+                            const opcodeClass = opcodeMap[cleanedToken] || '';
+                            tokenHtml = `<span class="${opcodeClass}">${tokenHtml}</span>`;
+                        } else { // Subsequent non-whitespace tokens are arguments
+                            if (registerPattern.test(cleanedToken) || counterPattern.test(cleanedToken) || cleanedToken.match(/([ABCD$]+\d*|-?\d+)\s*([+\-*/])\s*([ABCD$]+\d*|-?\d+)/i)) {
+                                tokenHtml = `<span class="arg-green">${tokenHtml}</span>`;
+                            } else if (!isNaN(parseInt(cleanedToken, 10)) && String(parseInt(cleanedToken, 10)) === cleanedToken) {
+                                tokenHtml = `<span class="arg-green">${tokenHtml}</span>`;
                             }
-                            currentLineHtml += tokenHtml;
                         }
-                    });
-                }
+                        currentLineHtml += tokenHtml;
+                    }
+                });
 
                 if (commentPart) {
-                    // Ensure there's a space if comment immediately follows code part without one
-                    // and if the comment part doesn't already start with a space (e.g. from ; )
-                    if (codePart.length > 0 && !codePart.endsWith(' ') && !commentPart.startsWith(';')) {
-                        currentLineHtml += ' ';
-                    }
                     currentLineHtml += `<span class="comment-white">${escapeHtml(commentPart)}</span>`;
                 }
-                currentLineHtml += '</span>'; // Close the span for the line's content
-                highlightedHtml += currentLineHtml + '\n'; // Add newline for the next line
+                highlightedHtml += `<span>${currentLineHtml}</span>\n`; // Wrap the entire line content in a span
             });
 
             highlightedCodeDiv.innerHTML = highlightedHtml;
