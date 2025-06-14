@@ -137,11 +137,12 @@
             tab-size: 4; /* Explicitly set tab size */
             -moz-tab-size: 4; /* For Firefox */
         }
-        /* Removed display: inline-block; and line-height from here as it's handled by parent */
-        /* #highlighted-code span {
-            display: inline-block;
-            line-height: 1.5rem;
-        } */
+        /* Each line in highlighted-code will be a span */
+        #highlighted-code > span {
+            display: block; /* Ensures each line takes its own block space */
+            line-height: 1.5rem; /* Crucial to match textarea's line height */
+        }
+
 
         /* Syntax Highlighting Classes */
         .opcode-orange { color: #f97316; } /* Orange-600 */
@@ -912,55 +913,65 @@ PRINT_TAPE_LOOP:
 
             lines.forEach(line => {
                 let currentLineHtml = '';
-                const commentIndex = line.indexOf(';');
-                let codePart = line;
+                
+                // Extract leading whitespace
+                const leadingWhitespaceMatch = line.match(/^\s*/);
+                const leadingWhitespace = leadingWhitespaceMatch ? leadingWhitespaceMatch[0] : '';
+                const restOfLine = line.substring(leadingWhitespace.length); // Line without leading whitespace
+
+                const commentIndex = restOfLine.indexOf(';');
+                let codePart = restOfLine;
                 let commentPart = '';
 
                 if (commentIndex !== -1) {
-                    codePart = line.substring(0, commentIndex).trim();
-                    commentPart = line.substring(commentIndex);
+                    codePart = restOfLine.substring(0, commentIndex); // Keep internal whitespace
+                    commentPart = restOfLine.substring(commentIndex);
                 }
 
-                currentLineHtml += '<span>'; // Wrap each full line in a span for active instruction highlighting
+                currentLineHtml += escapeHtml(leadingWhitespace); // Add leading whitespace first
+                currentLineHtml += '<span>'; // Wrap the actual code/comment part in a span
 
-                if (codePart.endsWith(':')) { // It's a label
+                if (codePart.trim().endsWith(':')) { // It's a label (trim for check, not for content)
                     currentLineHtml += `<span class="label-red">${escapeHtml(codePart)}</span>`;
                 } else {
-                    const parts = codePart.match(/(".*?"|'.*?'|\S+)/g) || [];
-                    if (parts.length > 0) {
-                        const opcode = parts[0].toUpperCase();
-                        const opcodeClass = opcodeMap[opcode] || '';
-                        currentLineHtml += `<span class="${opcodeClass}">${escapeHtml(opcode)}</span>`;
+                    // Split the codePart by sequence of non-whitespace characters or sequence of whitespace characters
+                    // This allows preserving internal spacing
+                    const tokens = codePart.match(/(\S+|\s+)/g) || [];
+                    
+                    tokens.forEach((token, i) => {
+                        if (/\s+/.test(token)) { // If it's whitespace, just escape and append
+                            currentLineHtml += escapeHtml(token);
+                        } else { // It's an actual code token (opcode or argument)
+                            let tokenHtml = escapeHtml(token);
+                            const cleanedToken = token.replace(/,$/, '').toUpperCase(); // Clean for opcode/arg check
 
-                        // Handle arguments
-                        for (let i = 1; i < parts.length; i++) {
-                            let arg = parts[i];
-                            let argHtml = escapeHtml(arg); // Escape HTML for safety
-
-                            // Remove comma for internal processing if present (after initial split)
-                            const cleanedArg = arg.replace(/,$/, ''); 
-
-                            // Check if it's a register, counter, or an expression
-                            if (registerPattern.test(cleanedArg) || counterPattern.test(cleanedArg) || cleanedArg.match(/([ABCD$]+\d*|-?\d+)\s*([+\-*/])\s*([ABCD$]+\d*|-?\d+)/i)) {
-                                argHtml = `<span class="arg-green">${argHtml}</span>`;
-                            } else if (!isNaN(parseInt(cleanedArg, 10)) && String(parseInt(cleanedArg, 10)) === cleanedArg) {
-                                // Simple integer literal (handle negative numbers)
-                                argHtml = `<span class="arg-green">${argHtml}</span>`;
+                            if (i === 0) { // First token is potentially opcode
+                                const opcodeClass = opcodeMap[cleanedToken] || '';
+                                tokenHtml = `<span class="${opcodeClass}">${tokenHtml}</span>`;
+                            } else { // Subsequent tokens are arguments
+                                if (registerPattern.test(cleanedToken) || counterPattern.test(cleanedToken) || cleanedToken.match(/([ABCD$]+\d*|-?\d+)\s*([+\-*/])\s*([ABCD$]+\d*|-?\d+)/i)) {
+                                    tokenHtml = `<span class="arg-green">${tokenHtml}</span>`;
+                                } else if (!isNaN(parseInt(cleanedToken, 10)) && String(parseInt(cleanedToken, 10)) === cleanedToken) {
+                                    // Simple integer literal (handle negative numbers)
+                                    tokenHtml = `<span class="arg-green">${tokenHtml}</span>`;
+                                }
+                                // No explicit space addition here; the raw whitespace tokens handle spacing
                             }
-                            
-                            // Add a space before the argument if not directly concatenated by a comma in source
-                            if (i > 0 && !arg.startsWith(',')) {
-                                currentLineHtml += ' ';
-                            }
-                            currentLineHtml += argHtml;
+                            currentLineHtml += tokenHtml;
                         }
-                    }
+                    });
                 }
 
                 if (commentPart) {
+                    // Ensure there's a space if comment immediately follows code part without one
+                    // and if the comment part doesn't already start with a space (e.g. from ; )
+                    if (codePart.length > 0 && !codePart.endsWith(' ') && !commentPart.startsWith(';')) {
+                        currentLineHtml += ' ';
+                    }
                     currentLineHtml += `<span class="comment-white">${escapeHtml(commentPart)}</span>`;
                 }
-                highlightedHtml += currentLineHtml + '</span>\n'; // Close the line span and add newline
+                currentLineHtml += '</span>'; // Close the span for the line's content
+                highlightedHtml += currentLineHtml + '\n'; // Add newline for the next line
             });
 
             highlightedCodeDiv.innerHTML = highlightedHtml;
