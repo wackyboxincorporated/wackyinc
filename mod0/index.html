@@ -475,8 +475,9 @@
                         break;
                     case 0x4: // Vibrato
                     case 0x6: // Vibrato + Volume Slide
-                        if ((val & 0xF0) > 0) channel.vibratoSpeed = (val & 0x0F); // Speed from upper 4 bits
-                        if ((val & 0x0F) > 0) channel.vibratoDepth = (val & 0xF0) >> 4; // Depth from lower 4 bits
+                        // Corrected: Upper nibble is speed, lower nibble is depth
+                        if ((val & 0xF0) > 0) channel.vibratoSpeed = (val & 0xF0) >> 4; 
+                        if ((val & 0x0F) > 0) channel.vibratoDepth = (val & 0x0F);
                         // Apply effect on first tick as well
                         updateVibrato(ch); 
                         break;
