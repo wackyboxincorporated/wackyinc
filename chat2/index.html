@@ -1042,7 +1042,7 @@
                 messagesListContainer.innerHTML = ''; // Clear messages before rendering all
                 const chatMessages = [];
                 snapshot.forEach((doc) => { // Re-populate for full rendering
-                    const msg = { ...doc.data(), id: doc.doc.id }; // Corrected from doc.id
+                    const msg = { ...doc.data(), id: doc.id }; // recorrected back because fuckig hell
                     if (msg.type === 'chat') {
                         chatMessages.push(msg);
                     }
