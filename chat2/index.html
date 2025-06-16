@@ -259,7 +259,7 @@
             <button type="button" id="cancelRecordingButton" class="ml-4 p-1 rounded-full text-red-500 hover:bg-red-100 dark:hover:bg-red-900 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                </svg>
+                    </svg>
             </button>
         </div>
 
@@ -1356,14 +1356,26 @@
                 if (!localStream) {
                     throw new Error("Failed to get local audio stream. Microphone access denied or not available.");
                 }
-                // localVideo.srcObject will not be set initially as video is off.
                 localVideo.classList.add('hidden'); // Ensure local video is hidden
                 toggleVideoButton.textContent = 'Enable Video'; // Button reflects current state
+                isLocalVideoEnabled = false; // Confirm video is off by default
 
                 remoteAudio.srcObject = null; // Clear any previous remote audio
                 remoteVideo.srcObject = null; // Clear any previous remote video
 
                 peerConnection = new RTCPeerConnection(rtcConfig);
+
+                // IMPORTANT: Add onnegotiationneeded listener
+                peerConnection.onnegotiationneeded = async () => {
+                    console.log('Negotiation needed. Creating offer...');
+                    try {
+                        const offer = await peerConnection.createOffer();
+                        await peerConnection.setLocalDescription(offer);
+                        sendWebRTCSignalingMessage('offer', offer, callTargetUserId, isCodeBasedCall ? codeToJoin : null);
+                    } catch (err) {
+                        console.error("Error during negotiationneeded offer creation:", err);
+                    }
+                };
 
                 // Log peer connection state changes
                 peerConnection.onconnectionstatechange = () => {
@@ -1419,11 +1431,13 @@
                     }
                 };
                 
-                // Create and send SDP offer
+                // No manual offer creation here, onnegotiationneeded will trigger it if necessary from addTrack
+                // However, for the *initial* call, we explicitly create offer as per common practice
                 const offer = await peerConnection.createOffer();
                 await peerConnection.setLocalDescription(offer);
-                console.log('Sending SDP offer:', offer);
+                console.log('Sending initial SDP offer:', offer);
                 sendWebRTCSignalingMessage('offer', offer, callTargetUserId, isCodeBasedCall ? codeToJoin : null);
+
 
                 callStatus.textContent = `Waiting for ${callTargetUserId} to answer...`;
                 startCallButton.classList.add('hidden');
@@ -1455,6 +1469,19 @@
         async function handleOffer(offer) {
             if (!peerConnection) {
                 peerConnection = new RTCPeerConnection(rtcConfig);
+
+                // IMPORTANT: Add onnegotiationneeded listener for the answering side too
+                peerConnection.onnegotiationneeded = async () => {
+                    console.log('Negotiation needed on answer side. Creating offer/answer...');
+                    try {
+                        const newAnswer = await peerConnection.createAnswer();
+                        await peerConnection.setLocalDescription(newAnswer);
+                        sendWebRTCSignalingMessage('answer', newAnswer, callTargetUserId);
+                    } catch (err) {
+                        console.error("Error during negotiationneeded answer creation:", err);
+                    }
+                };
+
                 // Set up handlers for the new peerConnection
                 peerConnection.onconnectionstatechange = () => {
                     console.log('Peer connection state changed (answer):', peerConnection.connectionState);
@@ -1562,7 +1589,15 @@
          * Ends the current WebRTC call and cleans up resources.
          */
         function handleHangup() {
+            console.log('Handling hangup...');
             if (peerConnection) {
+                // Set senders to null to explicitly stop sending tracks before closing
+                peerConnection.getSenders().forEach(sender => {
+                    if (sender.track) {
+                        sender.track.stop(); // Stop the media track
+                        sender.replaceTrack(null).catch(e => console.warn("Error replacing track with null:", e)); // Signal to remote peer
+                    }
+                });
                 peerConnection.close();
                 peerConnection = null;
             }
@@ -1574,7 +1609,6 @@
                 screenShareStream.getTracks().forEach(track => track.stop());
                 screenShareStream = null;
                 isScreenSharing = false;
-                toggleScreenShareButton.textContent = 'Share Screen';
             }
             if (remoteAudio.srcObject) {
                 remoteAudio.srcObject.getTracks().forEach(track => track.stop());
@@ -1633,18 +1667,19 @@
                 return;
             }
 
-            let videoTrack = localStream ? localStream.getVideoTracks()[0] : null;
+            const videoSender = peerConnection.getSenders().find(sender => sender.track && sender.track.kind === 'video');
 
             if (isLocalVideoEnabled) { // If video is currently enabled, disable it
-                if (videoTrack) {
-                    videoTrack.enabled = false;
-                    videoTrack.stop(); // Stop the track to release camera
-                    localStream.removeTrack(videoTrack); // Remove from local stream
-                    
-                    const videoSender = peerConnection.getSenders().find(sender => sender.track && sender.track.kind === 'video');
-                    if (videoSender) {
-                        await videoSender.replaceTrack(null); // Stop sending video
-                    }
+                if (videoSender && videoSender.track) {
+                    videoSender.track.stop(); // Stop the media track
+                    await videoSender.replaceTrack(null); // Signal to remote peer that video is stopped
+                    console.log('Video track replaced with null.');
+                }
+                if (localStream) {
+                    localStream.getVideoTracks().forEach(track => track.stop()); // Stop existing local video tracks
+                    // Filter out video tracks to create a new localStream with only audio
+                    localStream = new MediaStream(localStream.getAudioTracks()); 
+                    localVideo.srcObject = null; // Clear video display source
                 }
                 localVideo.classList.add('hidden');
                 toggleVideoButton.textContent = 'Enable Video';
@@ -1655,16 +1690,19 @@
                     const newCameraStream = await navigator.mediaDevices.getUserMedia({ video: { width: 128, height: 128 } });
                     const newCameraVideoTrack = newCameraStream.getVideoTracks()[0];
                     
-                    const videoSender = peerConnection.getSenders().find(sender => sender.track && sender.track.kind === 'video');
-
                     if (videoSender) {
                         await videoSender.replaceTrack(newCameraVideoTrack);
+                        console.log('Video track replaced with new camera track.');
                     } else {
+                        // If no existing sender, add a new video track to peer connection
                         peerConnection.addTrack(newCameraVideoTrack, localStream);
+                        console.log('New video track added to peer connection.');
                     }
                     
-                    localStream.addTrack(newCameraVideoTrack); // Add to local stream object
-                    localVideo.srcObject = new MediaStream([newCameraVideoTrack]); // Set srcObject to new stream
+                    // Update localStream: ensure audio tracks are still there, add new video track
+                    const existingAudioTracks = localStream ? localStream.getAudioTracks() : [];
+                    localStream = new MediaStream([...existingAudioTracks, newCameraVideoTrack]);
+                    localVideo.srcObject = localStream; // Set srcObject to the combined local stream
                     localVideo.classList.remove('hidden');
                     toggleVideoButton.textContent = 'Disable Video';
                     callStatus.textContent = 'Camera Video On';
@@ -1672,7 +1710,7 @@
 
                 } catch (error) {
                     console.error("Error enabling local video:", error);
-                    callStatus.textContent = `Video error: ${error.message}`;
+                    callStatus.textContent = `Video error: ${error.message}. Check camera permissions.`;
                     toggleVideoButton.textContent = 'Enable Video'; // Revert button state
                     localVideo.classList.add('hidden');
                     isLocalVideoEnabled = false;
@@ -1690,42 +1728,41 @@
             }
 
             const videoSender = peerConnection.getSenders().find(sender => sender.track && sender.track.kind === 'video');
+            const audioSender = peerConnection.getSenders().find(sender => sender.track && sender.track.kind === 'audio');
+
 
             if (isScreenSharing) {
                 // Stop screen sharing
+                console.log('Stopping screen sharing...');
                 if (screenShareStream) {
                     screenShareStream.getTracks().forEach(track => track.stop());
                     screenShareStream = null;
                 }
 
+                // Revert video track
                 if (videoSender) {
-                    // Try to revert to camera stream if it was previously enabled
-                    if (isLocalVideoEnabled) {
+                    if (isLocalVideoEnabled) { // If camera was on before screen share
                         try {
+                            console.log('Attempting to revert to camera after stopping screen share.');
                             const cameraStream = await navigator.mediaDevices.getUserMedia({ video: { width: 128, height: 128 } });
                             const cameraVideoTrack = cameraStream.getVideoTracks()[0];
-                            
                             await videoSender.replaceTrack(cameraVideoTrack);
-                            
                             // Update localStream to reflect camera
                             localStream.getVideoTracks().forEach(track => track.stop()); // Stop old video tracks
                             localStream = new MediaStream([...localStream.getAudioTracks(), cameraVideoTrack]); // Create new stream with audio and camera video
-
-                            localVideo.srcObject = localStream; // Show camera feed again
+                            localVideo.srcObject = localStream; 
                             localVideo.classList.remove('hidden');
                             toggleVideoButton.textContent = 'Disable Video'; 
                             callStatus.textContent = 'Switched to camera.';
-
                         } catch (cameraError) {
                             console.warn("Could not revert to camera after stopping screen share:", cameraError);
-                            // If no camera available or error, remove video track entirely
                             await videoSender.replaceTrack(null); // Stop sending video
-                            localStream.getVideoTracks().forEach(track => track.stop()); // Stop local video track
+                            localStream.getVideoTracks().forEach(track => track.stop());
                             localStream = new MediaStream(localStream.getAudioTracks()); // Only audio remains
-                            localVideo.classList.add('hidden'); // Hide local video
+                            localVideo.classList.add('hidden'); 
                             toggleVideoButton.textContent = 'Enable Video'; 
                             callStatus.textContent = 'Screen sharing stopped. No camera available.';
-                            isLocalVideoEnabled = false; // Camera is now off
+                            isLocalVideoEnabled = false; 
                         }
                     } else { // If camera was off before screen share, just stop screen and keep camera off
                         await videoSender.replaceTrack(null);
@@ -1736,11 +1773,32 @@
                         callStatus.textContent = 'Screen sharing stopped. Camera remains off.';
                     }
                 }
+                
+                // Revert audio track (if screen audio was used)
+                if (audioSender && audioSender.track && audioSender.track.kind === 'audio' && localStream && localStream.getAudioTracks().length === 0) {
+                     // If the only audio track was from screen share, try to get microphone back
+                     try {
+                        const micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                        const micAudioTrack = micStream.getAudioTracks()[0];
+                        await audioSender.replaceTrack(micAudioTrack);
+                        localStream.addTrack(micAudioTrack); // Add microphone to local stream
+                        toggleAudioButton.textContent = 'Mute Audio';
+                        callStatus.textContent = 'Switched to microphone.';
+                        isLocalAudioEnabled = true;
+                     } catch (micError) {
+                         console.warn("Could not revert to microphone after screen share audio stopped:", micError);
+                         await audioSender.replaceTrack(null);
+                         toggleAudioButton.textContent = 'Unmute Audio';
+                         callStatus.textContent = 'Screen sharing stopped. No microphone available.';
+                         isLocalAudioEnabled = false;
+                     }
+                }
 
                 isScreenSharing = false;
                 toggleScreenShareButton.textContent = 'Share Screen';
             } else {
                 // Start screen sharing
+                console.log('Starting screen sharing...');
                 try {
                     const displayStream = await navigator.mediaDevices.getDisplayMedia({
                         video: {
@@ -1756,51 +1814,57 @@
                     isScreenSharing = true;
 
                     const screenVideoTrack = screenShareStream.getVideoTracks()[0];
-                    const screenAudioTrack = screenShareStream.getAudioTracks()[0]; // Get audio track from display media
+                    const screenAudioTrack = screenShareStream.getAudioTracks()[0]; 
 
-                    // Stop current local video track (if any, e.g., camera)
+                    // Stop current local video track (if any, e.g., camera) and replace
                     localStream.getVideoTracks().forEach(track => track.stop());
-                    
                     if (videoSender) {
                         await videoSender.replaceTrack(screenVideoTrack);
+                        console.log('Video sender track replaced with screen video track.');
                     } else {
+                        // If no video sender, add screen share track
                         peerConnection.addTrack(screenVideoTrack, localStream);
+                        console.log('Screen video track added to peer connection (no prior video sender).');
                     }
                     
-                    // Add screen audio track to peer connection if available and no existing audio track from microphone
+                    // Handle audio: If screen audio is available, replace current audio track
                     if (screenAudioTrack) {
-                        const audioSender = peerConnection.getSenders().find(sender => sender.track && sender.track.kind === 'audio');
+                        localStream.getAudioTracks().forEach(track => track.stop()); // Stop microphone if active
                         if (audioSender) {
                             await audioSender.replaceTrack(screenAudioTrack);
+                            console.log('Audio sender track replaced with screen audio track.');
                         } else {
                             peerConnection.addTrack(screenAudioTrack, localStream);
+                            console.log('Screen audio track added to peer connection (no prior audio sender).');
                         }
-                        // Stop microphone audio if system audio is being shared
-                        localStream.getAudioTracks().forEach(track => {
-                            if (track !== screenAudioTrack) track.stop();
-                        });
+                    } else {
+                        console.warn("No audio track found in screen share stream.");
                     }
 
-                    // Update localStream object to reflect current tracks
-                    localStream = new MediaStream([
-                        ...localStream.getAudioTracks().filter(track => track === screenAudioTrack), // Keep screen audio if exists
-                        screenVideoTrack
-                    ]);
-
-
+                    // Update localStream object to reflect current tracks (screen video and potentially screen audio)
+                    localStream = new MediaStream([...screenShareStream.getTracks()]);
                     localVideo.srcObject = localStream; // Show screen share locally
                     localVideo.classList.remove('hidden');
                     toggleScreenShareButton.textContent = 'Stop Sharing';
                     callStatus.textContent = 'Screen sharing active.';
                     toggleVideoButton.textContent = 'Disable Video'; // Video is now "on" (screen share)
-                    isLocalVideoEnabled = true; // Treat screen share as video being enabled
+                    isLocalVideoEnabled = true; 
+                    toggleAudioButton.textContent = screenAudioTrack ? 'Mute Audio' : 'Mute Audio (No Screen Audio)'; // Adjust audio button text
+                    isLocalAudioEnabled = screenAudioTrack ? true : false;
 
 
                     // Listen for 'ended' event on screen share track (e.g., user stops sharing from browser UI)
                     screenVideoTrack.onended = () => {
-                        console.log('Screen share track ended. Stopping sharing.');
+                        console.log('Screen share video track ended. Stopping sharing.');
                         toggleScreenShare(); // Call toggle function to clean up
                     };
+                    if (screenAudioTrack) {
+                        screenAudioTrack.onended = () => {
+                            console.log('Screen share audio track ended.');
+                            // The primary toggleScreenShare will handle the full cleanup,
+                            // but this ensures the audio track cleanup also happens if video track isn't also ended.
+                        };
+                    }
 
                 } catch (error) {
                     console.error("Error starting screen share:", error);
