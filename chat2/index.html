@@ -31,36 +31,7 @@
         </div>
     </header>
 
-    <section class="bg-white dark:bg-gray-800 p-4 shadow-md rounded-b-xl relative">
-        <button id="channelToggleButton" class="absolute top-4 right-4 p-1 rounded-full bg-blue-500 text-white shadow-md z-10 transition-transform duration-300 hover:scale-110">
-            <svg id="channelToggleIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform rotate-0" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-            </svg>
-        </button>
-        <div id="channelControlArea" class="max-h-0 overflow-hidden transition-all duration-300 ease-in-out">
-            <div class="flex flex-col md:flex-row items-center justify-between space-y-3 md:space-y-0 md:space-x-4 pt-2">
-                <div class="flex items-center space-x-2 w-full md:w-auto">
-                    <label for="channelInput" class="text-gray-700 dark:text-gray-300 font-semibold text-sm">Channel:</label>
-                    <input
-                        type="text"
-                        id="channelInput"
-                        placeholder="Enter channel name (password)"
-                        class="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 transition-all duration-300"
-                        value="general-chat"
-                    />
-                </div>
-                <button
-                    id="joinChannelButton"
-                    class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-300 transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 w-full md:w-auto"
-                >
-                    Join/Create Channel
-                </button>
-                <span id="currentChannelDisplay" class="text-blue-700 dark:text-blue-300 font-semibold text-sm w-full text-center md:text-right">
-                    Current: #general-chat
-                </span>
-            </div>
-        </div>
-    </section>
+    <!-- Removed the channel control section from here -->
 
     <main class="flex flex-1 overflow-hidden relative">
         <button id="sidebarToggle" class="absolute top-4 left-4 p-1 rounded-full bg-blue-500 text-white shadow-md z-10 transition-transform duration-300 hover:scale-110">
@@ -71,6 +42,39 @@
 
         <aside id="sidebar" class="w-0 bg-gray-200 dark:bg-gray-800 transition-all duration-300 ease-in-out overflow-hidden flex-shrink-0">
             <div id="channelListContent" class="p-4 pt-10 h-full overflow-y-auto">
+                <!-- Channel Control Area - NOW INSIDE SIDEBAR -->
+                <div id="channelControlArea" class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg shadow-inner mb-4">
+                    <button id="channelToggleButton" class="w-full text-left font-semibold text-gray-800 dark:text-gray-100 flex justify-between items-center py-1">
+                        Channel Settings
+                        <svg id="channelToggleIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform rotate-180" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                    <div id="channelInputContent" class="max-h-0 overflow-hidden transition-all duration-300 ease-in-out">
+                        <div class="flex flex-col space-y-2 pt-2">
+                            <div class="flex items-center space-x-2 w-full">
+                                <label for="channelInput" class="text-gray-700 dark:text-gray-300 font-semibold text-sm whitespace-nowrap">Channel:</label>
+                                <input
+                                    type="text"
+                                    id="channelInput"
+                                    placeholder="Enter name (password)"
+                                    class="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 transition-all duration-300"
+                                    value="general-chat"
+                                />
+                            </div>
+                            <button
+                                id="joinChannelButton"
+                                class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-300 transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 w-full"
+                            >
+                                Join/Create
+                            </button>
+                            <span id="currentChannelDisplay" class="text-blue-700 dark:text-blue-300 font-semibold text-sm w-full text-center">
+                                Current: #general-chat
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
                 <h3 class="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-100">Public Channels</h3>
                 <ul id="publicChannelList" class="space-y-1">
                 </ul>
@@ -165,19 +169,20 @@
                             class="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 text-center font-mono text-lg"
                             maxlength="4"
                         />
-                        <button type="button" id="generateCallCodeButton" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-300 whitespace-nowrap">Generate Code</button>
+                        <button type="button" id="generateCallCodeButton" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-1.5 px-3 rounded-lg shadow-md transition-all duration-300 whitespace-nowrap text-sm">Generate Code</button>
                     </div>
                 </div>
                 <div class="text-sm font-semibold text-gray-800 dark:text-gray-100 text-center mb-2">
                     Your generated code: <span id="generatedCallCodeDisplay" class="text-green-600 dark:text-green-400 font-bold">N/A</span>
                 </div>
                 <div class="flex flex-wrap gap-2 mb-2">
-                    <button type="button" id="startCallButton" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-300">Call</button>
-                    <button type="button" id="answerCallButton" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-300 hidden">Answer</button>
-                    <button type="button" id="endCallButton" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-300 hidden">Hang Up</button>
-                    <button type="button" id="toggleVideoButton" class="flex-1 bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-300 hidden">Enable Video</button>
-                    <button type="button" id="toggleAudioButton" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-300 hidden">Mute Audio</button>
-                    <button type="button" id="toggleScreenShareButton" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-300 hidden">Share Screen</button>
+                    <button type="button" id="startCallButton" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-1.5 px-3 rounded-lg shadow-md transition-all duration-300 text-sm">Call</button>
+                    <button type="button" id="answerCallButton" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-1.5 px-3 rounded-lg shadow-md transition-all duration-300 hidden text-sm">Answer</button>
+                    <button type="button" id="endCallButton" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-1.5 px-3 rounded-lg shadow-md transition-all duration-300 hidden text-sm">Hang Up</button>
+                    <button type="button" id="toggleVideoButton" class="flex-1 bg-purple-500 hover:bg-purple-600 text-white font-bold py-1.5 px-3 rounded-lg shadow-md transition-all duration-300 hidden text-sm">Enable Video</button>
+                    <button type="button" id="toggleAudioButton" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-1.5 px-3 rounded-lg shadow-md transition-all duration-300 hidden text-sm">Mute Audio</button>
+                    <button type="button" id="toggleScreenShareButton" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1.5 px-3 rounded-lg shadow-md transition-all duration-300 hidden text-sm">Share Screen</button>
+                    <button type="button" id="enlargeRemoteVideoButton" class="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-1.5 px-3 rounded-lg shadow-md transition-all duration-300 hidden text-sm">Enlarge Video</button>
                 </div>
                 <div id="callStatus" class="text-sm text-gray-700 dark:text-gray-300 text-center mt-2 flex items-center justify-center gap-2">
                     Idle
@@ -381,6 +386,14 @@
         </div>
     </div>
 
+    <!-- Fullscreen Video Modal -->
+    <div id="fullscreenVideoModal" class="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-50 hidden">
+        <button id="closeFullscreenVideoButton" class="absolute top-4 right-4 text-white text-3xl p-2 rounded-full hover:bg-gray-700 transition-colors">
+            &times;
+        </button>
+        <video id="fullscreenVideo" class="max-w-full max-h-full object-contain" controls autoplay></video>
+    </div>
+
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -484,9 +497,10 @@
         const fileSizeError = document.getElementById('fileSizeError'); 
         const fileSizeErrorMessage = document.getElementById('fileSizeErrorMessage'); 
 
-        const channelToggleButton = document.getElementById('channelToggleButton');
+        const channelToggleButton = document.getElementById('channelToggleButton'); // NEW: This is the button inside the sidebar
         const channelToggleIcon = document.getElementById('channelToggleIcon');
-        const channelControlArea = document.getElementById('channelControlArea');
+        const channelControlArea = document.getElementById('channelControlArea'); // This entire div is now in the sidebar
+        const channelInputContent = document.getElementById('channelInputContent'); // New div to toggle visibility of channel inputs
 
         const userSettingsButton = document.getElementById('userSettingsButton');
         const userSettingsModal = document.getElementById('userSettingsModal');
@@ -546,6 +560,12 @@
         const friendCodeInput = document.getElementById('friendCodeInput');
         const addFriendByCodeButton = document.getElementById('addFriendByCodeButton');
 
+        // Fullscreen Video Elements
+        const fullscreenVideoModal = document.getElementById('fullscreenVideoModal');
+        const fullscreenVideo = document.getElementById('fullscreenVideo');
+        const closeFullscreenVideoButton = document.getElementById('closeFullscreenVideoButton');
+        const enlargeRemoteVideoButton = document.getElementById('enlargeRemoteVideoButton');
+
         // WebRTC specific variables
         let peerConnection;
         let localStream; // Combined camera and mic stream
@@ -555,6 +575,9 @@
         let iceCandidatesQueue = []; 
         let isScreenSharing = false; // Flag to track screen sharing status
         let currentGeneratedCallCode = null; // Store the currently generated 4-digit code
+        let isLocalVideoEnabled = false; // Track if local camera video is intentionally enabled
+        let isLocalAudioEnabled = true; // Track if local audio is intentionally enabled (default true)
+
 
         // Friends list specific variables
         let friendsListenerUnsubscribe = null;
@@ -1107,6 +1130,7 @@
                                         answerCallButton.classList.remove('hidden');
                                         endCallButton.classList.remove('hidden');
                                         updateAddFriendButtonVisibility(); // Update button visibility
+                                        enlargeRemoteVideoButton.classList.remove('hidden'); // Show enlarge button
                                         await handleOffer(signalingData);
                                     } else {
                                         console.warn(`Already in a call with ${callTargetUserId}, rejecting offer from ${msg.senderUserId}`);
@@ -1135,6 +1159,7 @@
                                             currentGeneratedCallCode = null;
                                         }
                                         updateAddFriendButtonVisibility(); // Update button visibility
+                                        enlargeRemoteVideoButton.classList.remove('hidden'); // Show enlarge button
                                     }
                                     break;
                                 case 'webrtc-candidate':
@@ -1264,6 +1289,7 @@
         /**
          * Initializes WebRTC peer connection and gets local audio stream.
          * Now handles both direct User ID calls and 4-digit code calls.
+         * Camera is off by default.
          */
         async function startCall() {
             if (!db || !currentUserId) {
@@ -1311,22 +1337,28 @@
             callTargetUserId = targetId; // Set the actual target user ID
             callStatus.textContent = `Calling ${callTargetUserId}...`;
             startCallButton.disabled = true;
-            toggleVideoButton.classList.remove('hidden'); 
             toggleAudioButton.classList.remove('hidden'); 
+            toggleVideoButton.classList.remove('hidden'); // Always show, even if camera is off by default
             toggleScreenShareButton.classList.remove('hidden'); 
+            enlargeRemoteVideoButton.classList.remove('hidden');
             updateAddFriendButtonVisibility(); // Update visibility here too, initial state hidden based on currentFriends[callTargetUserId]
 
             try {
-                // Request audio and video initially for local stream
+                // Request only audio initially
                 localStream = await navigator.mediaDevices.getUserMedia({ 
-                    audio: true,
-                    video: { width: 128, height: 128 } 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    },
+                    video: false // Camera off by default
                 });
                 if (!localStream) {
-                    throw new Error("Failed to get local audio/video stream. Camera/Microphone access denied or not available.");
+                    throw new Error("Failed to get local audio stream. Microphone access denied or not available.");
                 }
-                localVideo.srcObject = localStream; // Show local camera feed
-                localVideo.classList.remove('hidden');
+                // localVideo.srcObject will not be set initially as video is off.
+                localVideo.classList.add('hidden'); // Ensure local video is hidden
+                toggleVideoButton.textContent = 'Enable Video'; // Button reflects current state
 
                 remoteAudio.srcObject = null; // Clear any previous remote audio
                 remoteVideo.srcObject = null; // Clear any previous remote video
@@ -1404,11 +1436,12 @@
 
             } catch (error) {
                 console.error("Error starting call:", error);
-                callStatus.textContent = `Call failed: ${error.message}. Please check camera/microphone permissions and try again.`;
+                callStatus.textContent = `Call failed: ${error.message}. Please check microphone permissions and try again.`;
                 startCallButton.disabled = false;
                 toggleVideoButton.classList.add('hidden'); 
                 toggleAudioButton.classList.add('hidden'); 
                 toggleScreenShareButton.classList.add('hidden');
+                enlargeRemoteVideoButton.classList.add('hidden');
                 updateAddFriendButtonVisibility(); // Ensure hidden on error
                 handleHangup(); // Clean up if call fails to start
             }
@@ -1416,6 +1449,7 @@
 
         /**
          * Handles an incoming SDP offer and sends back an answer.
+         * Default camera is off when answering.
          * @param {Object} offer - The received SDP offer.
          */
         async function handleOffer(offer) {
@@ -1464,12 +1498,12 @@
                     }
                 };
 
-                 // Add local audio/video tracks if we haven't already and the user has a microphone
+                 // Add local audio tracks if we haven't already and the user has a microphone
                 try {
                     if (!localStream) { 
-                        localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: { width: 128, height: 128 } });
+                        localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false }); // Camera off by default
                         if (!localStream) {
-                            throw new Error("Failed to get local stream for answering call. Camera/Microphone access denied or not available.");
+                            throw new Error("Failed to get local stream for answering call. Microphone access denied or not available.");
                         }
                     }
                     localStream.getTracks().forEach(track => { 
@@ -1479,10 +1513,10 @@
                             peerConnection.addTrack(track, localStream);
                         }
                     });
-                    localVideo.srcObject = localStream;
-                    localVideo.classList.remove('hidden');
+                    localVideo.classList.add('hidden'); // Local video remains hidden by default
+                    toggleVideoButton.textContent = 'Enable Video'; // Button reflects current state
                 } catch (e) {
-                    console.warn("Could not get local audio/video stream for answering call. Continuing without sending own media:", e);
+                    console.warn("Could not get local audio stream for answering call. Continuing without sending own media:", e);
                     callStatus.textContent = `Incoming call (no local media): ${e.message}`; 
                 }
 
@@ -1513,6 +1547,7 @@
                 toggleVideoButton.classList.remove('hidden'); 
                 toggleAudioButton.classList.remove('hidden'); 
                 toggleScreenShareButton.classList.remove('hidden');
+                enlargeRemoteVideoButton.classList.remove('hidden'); // Show enlarge button
                 updateAddFriendButtonVisibility(); // Update button visibility
 
             }
@@ -1563,11 +1598,14 @@
             toggleVideoButton.classList.add('hidden'); 
             toggleAudioButton.classList.add('hidden'); 
             toggleScreenShareButton.classList.add('hidden'); // Hide screen share toggle
+            enlargeRemoteVideoButton.classList.add('hidden'); // Hide enlarge button
             updateAddFriendButtonVisibility(); // Ensure hidden on hangup
 
             toggleVideoButton.textContent = 'Enable Video'; // Reset button text
             toggleAudioButton.textContent = 'Mute Audio'; // Reset button text
             toggleScreenShareButton.textContent = 'Share Screen'; // Reset button text
+            isLocalVideoEnabled = false; // Reset video enabled state
+            isLocalAudioEnabled = true; // Reset audio enabled state (default to enabled)
 
             // Play disconnect sound
             disconnectSound.play().catch(e => console.warn("Disconnect sound play failed:", e));
@@ -1595,16 +1633,24 @@
                 return;
             }
 
-            // Find the video track in the localStream
             let videoTrack = localStream ? localStream.getVideoTracks()[0] : null;
 
-            if (videoTrack) {
-                videoTrack.enabled = !videoTrack.enabled;
-                localVideo.classList.toggle('hidden', !videoTrack.enabled); 
-                toggleVideoButton.textContent = videoTrack.enabled ? 'Disable Video' : 'Enable Video';
-                callStatus.textContent = videoTrack.enabled ? 'Camera Video On' : 'Camera Video Off';
-            } else {
-                // If no video track exists in localStream, try to acquire one (camera)
+            if (isLocalVideoEnabled) { // If video is currently enabled, disable it
+                if (videoTrack) {
+                    videoTrack.enabled = false;
+                    videoTrack.stop(); // Stop the track to release camera
+                    localStream.removeTrack(videoTrack); // Remove from local stream
+                    
+                    const videoSender = peerConnection.getSenders().find(sender => sender.track && sender.track.kind === 'video');
+                    if (videoSender) {
+                        await videoSender.replaceTrack(null); // Stop sending video
+                    }
+                }
+                localVideo.classList.add('hidden');
+                toggleVideoButton.textContent = 'Enable Video';
+                callStatus.textContent = 'Camera Video Off';
+                isLocalVideoEnabled = false;
+            } else { // If video is currently disabled, enable it
                 try {
                     const newCameraStream = await navigator.mediaDevices.getUserMedia({ video: { width: 128, height: 128 } });
                     const newCameraVideoTrack = newCameraStream.getVideoTracks()[0];
@@ -1613,28 +1659,23 @@
 
                     if (videoSender) {
                         await videoSender.replaceTrack(newCameraVideoTrack);
-                        // Stop old video track if it exists in localStream (e.g., from a previous camera session)
-                        if (localStream && localStream.getVideoTracks().length > 0) {
-                            localStream.getVideoTracks()[0].stop();
-                            localStream.removeTrack(localStream.getVideoTracks()[0]);
-                        }
-                        localStream.addTrack(newCameraVideoTrack);
                     } else {
-                        // If no video sender, add a new track to peer connection and localStream
                         peerConnection.addTrack(newCameraVideoTrack, localStream);
-                        localStream.addTrack(newCameraVideoTrack);
                     }
                     
-                    localVideo.srcObject = localStream; // Update local video preview
+                    localStream.addTrack(newCameraVideoTrack); // Add to local stream object
+                    localVideo.srcObject = new MediaStream([newCameraVideoTrack]); // Set srcObject to new stream
                     localVideo.classList.remove('hidden');
                     toggleVideoButton.textContent = 'Disable Video';
                     callStatus.textContent = 'Camera Video On';
+                    isLocalVideoEnabled = true;
 
                 } catch (error) {
                     console.error("Error enabling local video:", error);
                     callStatus.textContent = `Video error: ${error.message}`;
                     toggleVideoButton.textContent = 'Enable Video'; // Revert button state
                     localVideo.classList.add('hidden');
+                    isLocalVideoEnabled = false;
                 }
             }
         }
@@ -1658,39 +1699,41 @@
                 }
 
                 if (videoSender) {
-                    // Try to revert to camera stream
-                    try {
-                        const cameraStream = await navigator.mediaDevices.getUserMedia({ video: { width: 128, height: 128 } });
-                        const cameraVideoTrack = cameraStream.getVideoTracks()[0];
-                        
-                        await videoSender.replaceTrack(cameraVideoTrack);
-                        
-                        // Update localStream: remove old screen track, add new camera track
-                        if (localStream && localStream.getVideoTracks().length > 0) {
-                            localStream.getVideoTracks()[0].stop(); // Stop the screen track in localStream
-                            localStream.removeTrack(localStream.getVideoTracks()[0]);
-                        }
-                        localStream.addTrack(cameraVideoTrack);
+                    // Try to revert to camera stream if it was previously enabled
+                    if (isLocalVideoEnabled) {
+                        try {
+                            const cameraStream = await navigator.mediaDevices.getUserMedia({ video: { width: 128, height: 128 } });
+                            const cameraVideoTrack = cameraStream.getVideoTracks()[0];
+                            
+                            await videoSender.replaceTrack(cameraVideoTrack);
+                            
+                            // Update localStream to reflect camera
+                            localStream.getVideoTracks().forEach(track => track.stop()); // Stop old video tracks
+                            localStream = new MediaStream([...localStream.getAudioTracks(), cameraVideoTrack]); // Create new stream with audio and camera video
 
-                        localVideo.srcObject = localStream; // Show camera feed again
-                        localVideo.classList.remove('hidden');
-                        toggleVideoButton.textContent = 'Disable Video'; // Ensure video button is consistent
-                        callStatus.textContent = 'Switched to camera.';
+                            localVideo.srcObject = localStream; // Show camera feed again
+                            localVideo.classList.remove('hidden');
+                            toggleVideoButton.textContent = 'Disable Video'; 
+                            callStatus.textContent = 'Switched to camera.';
 
-                    } catch (cameraError) {
-                        console.warn("Could not revert to camera after stopping screen share:", cameraError);
-                        // If no camera available, remove video track entirely
-                        if (videoSender.track) { // Check if sender still has a track before removing
-                            peerConnection.removeTrack(videoSender);
+                        } catch (cameraError) {
+                            console.warn("Could not revert to camera after stopping screen share:", cameraError);
+                            // If no camera available or error, remove video track entirely
+                            await videoSender.replaceTrack(null); // Stop sending video
+                            localStream.getVideoTracks().forEach(track => track.stop()); // Stop local video track
+                            localStream = new MediaStream(localStream.getAudioTracks()); // Only audio remains
+                            localVideo.classList.add('hidden'); // Hide local video
+                            toggleVideoButton.textContent = 'Enable Video'; 
+                            callStatus.textContent = 'Screen sharing stopped. No camera available.';
+                            isLocalVideoEnabled = false; // Camera is now off
                         }
-                        // Also remove from localStream
-                        if (localStream && localStream.getVideoTracks().length > 0) {
-                            localStream.getVideoTracks()[0].stop();
-                            localStream.removeTrack(localStream.getVideoTracks()[0]);
-                        }
-                        localVideo.classList.add('hidden'); // Hide local video
-                        toggleVideoButton.textContent = 'Enable Video'; // Enable video button
-                        callStatus.textContent = 'Screen sharing stopped. No camera available.';
+                    } else { // If camera was off before screen share, just stop screen and keep camera off
+                        await videoSender.replaceTrack(null);
+                        localStream.getVideoTracks().forEach(track => track.stop());
+                        localStream = new MediaStream(localStream.getAudioTracks()); // Only audio remains
+                        localVideo.classList.add('hidden');
+                        toggleVideoButton.textContent = 'Enable Video';
+                        callStatus.textContent = 'Screen sharing stopped. Camera remains off.';
                     }
                 }
 
@@ -1706,36 +1749,52 @@
                             height: { ideal: 1080, max: 1080 },
                             frameRate: { ideal: 15, max: 20 },
                         },
-                        audio: { // Include system audio from screen share
-                            echoCancellation: true,
-                            noiseSuppression: true,
-                            autoGainControl: true
-                        }
+                        audio: true // Request system audio from screen share
                     });
 
                     screenShareStream = displayStream;
                     isScreenSharing = true;
 
                     const screenVideoTrack = screenShareStream.getVideoTracks()[0];
+                    const screenAudioTrack = screenShareStream.getAudioTracks()[0]; // Get audio track from display media
+
+                    // Stop current local video track (if any, e.g., camera)
+                    localStream.getVideoTracks().forEach(track => track.stop());
                     
                     if (videoSender) {
-                        // Stop the current video track (camera) in localStream before replacing
-                        if (localStream && localStream.getVideoTracks().length > 0) {
-                            localStream.getVideoTracks()[0].stop();
-                            localStream.removeTrack(localStream.getVideoTracks()[0]);
-                        }
                         await videoSender.replaceTrack(screenVideoTrack);
-                        localStream.addTrack(screenVideoTrack); // Add screen track to localStream
                     } else {
-                        // If no video sender (e.g., video was disabled), add screen share track
                         peerConnection.addTrack(screenVideoTrack, localStream);
-                        localStream.addTrack(screenVideoTrack);
                     }
                     
+                    // Add screen audio track to peer connection if available and no existing audio track from microphone
+                    if (screenAudioTrack) {
+                        const audioSender = peerConnection.getSenders().find(sender => sender.track && sender.track.kind === 'audio');
+                        if (audioSender) {
+                            await audioSender.replaceTrack(screenAudioTrack);
+                        } else {
+                            peerConnection.addTrack(screenAudioTrack, localStream);
+                        }
+                        // Stop microphone audio if system audio is being shared
+                        localStream.getAudioTracks().forEach(track => {
+                            if (track !== screenAudioTrack) track.stop();
+                        });
+                    }
+
+                    // Update localStream object to reflect current tracks
+                    localStream = new MediaStream([
+                        ...localStream.getAudioTracks().filter(track => track === screenAudioTrack), // Keep screen audio if exists
+                        screenVideoTrack
+                    ]);
+
+
                     localVideo.srcObject = localStream; // Show screen share locally
                     localVideo.classList.remove('hidden');
                     toggleScreenShareButton.textContent = 'Stop Sharing';
                     callStatus.textContent = 'Screen sharing active.';
+                    toggleVideoButton.textContent = 'Disable Video'; // Video is now "on" (screen share)
+                    isLocalVideoEnabled = true; // Treat screen share as video being enabled
+
 
                     // Listen for 'ended' event on screen share track (e.g., user stops sharing from browser UI)
                     screenVideoTrack.onended = () => {
@@ -1749,10 +1808,11 @@
                     isScreenSharing = false;
                     toggleScreenShareButton.textContent = 'Share Screen';
                     // Revert local video display to camera if screen share fails and camera was active
-                    if (localStream && localStream.getVideoTracks().length > 0) {
-                        localVideo.srcObject = localStream; // Assumes localStream still has camera if screen share failed
-                        localVideo.classList.remove('hidden');
-                    } else {
+                    if (isLocalVideoEnabled && localStream && localStream.getVideoTracks().length === 0) {
+                        // Attempt to re-enable camera if it was on
+                        await toggleLocalVideo(); // This will try to re-acquire camera
+                    } else if (!isLocalVideoEnabled) {
+                        // If camera was off, ensure local video is still hidden
                         localVideo.classList.add('hidden');
                     }
                 }
@@ -1770,16 +1830,53 @@
             }
             const audioTracks = localStream.getAudioTracks();
             if (audioTracks.length > 0) {
-                const isMuted = !audioTracks[0].enabled;
-                audioTracks[0].enabled = isMuted;
-                toggleAudioButton.textContent = isMuted ? 'Unmute Audio' : 'Mute Audio';
-                console.log(`Local audio muted: ${!isMuted}`);
-                callStatus.textContent = isMuted ? 'Audio Muted' : 'Audio Unmuted';
+                audioTracks.forEach(track => {
+                    track.enabled = !track.enabled;
+                });
+                isLocalAudioEnabled = audioTracks[0].enabled;
+                toggleAudioButton.textContent = isLocalAudioEnabled ? 'Mute Audio' : 'Unmute Audio';
+                console.log(`Local audio muted: ${!isLocalAudioEnabled}`);
+                callStatus.textContent = isLocalAudioEnabled ? 'Audio Unmuted' : 'Audio Muted';
             } else {
                 console.warn("No audio track found in local stream.");
                 callStatus.textContent = "No audio track to mute/unmute.";
             }
         }
+
+        /**
+         * Toggles the remote video element into and out of fullscreen mode.
+         */
+        function toggleFullscreenRemoteVideo() {
+            if (!remoteVideo.srcObject) {
+                showModalMessage("No Remote Video", "There is no remote video feed to enlarge.");
+                return;
+            }
+
+            fullscreenVideoModal.classList.remove('hidden');
+            fullscreenVideo.srcObject = remoteVideo.srcObject;
+            
+            // Attempt to go fullscreen using the browser's Fullscreen API
+            if (fullscreenVideo.requestFullscreen) {
+                fullscreenVideo.requestFullscreen();
+            } else if (fullscreenVideo.webkitRequestFullscreen) { /* Safari */
+                fullscreenVideo.webkitRequestFullscreen();
+            } else if (fullscreenVideo.msRequestFullscreen) { /* IE11 */
+                fullscreenVideo.msRequestFullscreen();
+            }
+
+            fullscreenVideo.play().catch(e => console.error("Error playing fullscreen video:", e));
+        }
+
+        // Event listener for exiting fullscreen for the modal
+        document.addEventListener('fullscreenchange', (event) => {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
+                // If exited fullscreen and the fullscreen modal is still open, close it
+                if (!fullscreenVideoModal.classList.contains('hidden')) {
+                    fullscreenVideoModal.classList.add('hidden');
+                    fullscreenVideo.srcObject = null; // Clear stream
+                }
+            }
+        });
 
 
         /**
@@ -1991,19 +2088,19 @@
         }
 
         /**
-         * Toggles the visibility of the channel control area.
+         * Toggles the visibility of the channel control area (now inside sidebar).
          */
         function toggleChannelControl() {
-            const isExpanded = !channelControlArea.classList.contains('max-h-0');
+            const isExpanded = !channelInputContent.classList.contains('max-h-0');
 
             if (isExpanded) {
-                channelControlArea.classList.add('max-h-0');
-                channelControlArea.classList.remove('max-h-full');
+                channelInputContent.classList.add('max-h-0');
+                channelInputContent.classList.remove('max-h-full');
                 channelToggleIcon.classList.remove('rotate-0');
                 channelToggleIcon.classList.add('rotate-180');
             } else {
-                channelControlArea.classList.remove('max-h-0');
-                channelControlArea.classList.add('max-h-full');
+                channelInputContent.classList.remove('max-h-0');
+                channelInputContent.classList.add('max-h-full');
                 channelToggleIcon.classList.remove('rotate-180');
                 channelToggleIcon.classList.add('rotate-0');
             }
@@ -2900,7 +2997,7 @@
         // Toggle sidebar visibility
         sidebarToggle.addEventListener('click', toggleSidebar);
         // Toggle channel control area visibility
-        channelToggleButton.addEventListener('click', toggleChannelControl);
+        channelToggleButton.addEventListener('click', toggleChannelControl); // Now for the sidebar internal toggle
         // Toggle WebRTC control area visibility
         webrtcToggleButton.addEventListener('click', toggleWebRTCControls);
         // Toggle Friends sidebar visibility
@@ -3114,11 +3211,11 @@
         answerCallButton.addEventListener('click', async () => {
             if (peerConnection && peerConnection.remoteDescription) {
                 try {
-                    // Ensure localStream has video and audio before answering
-                    if (!localStream) {
-                        localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: { width: 128, height: 128 } });
+                    // Ensure localStream has audio (and video if user toggled it on) before answering
+                    if (!localStream) { // Only get stream if not already available
+                        localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: isLocalVideoEnabled }); 
                         if (!localStream) {
-                             throw new Error("Failed to get local stream for answering call. Camera/Microphone access denied or not available.");
+                             throw new Error("Failed to get local stream for answering call. Microphone/Camera access denied or not available.");
                         }
                     }
                     
@@ -3131,8 +3228,12 @@
                         }
                     });
                     
-                    localVideo.srcObject = localStream;
-                    localVideo.classList.remove('hidden');
+                    if (isLocalVideoEnabled) {
+                        localVideo.srcObject = localStream;
+                        localVideo.classList.remove('hidden');
+                    } else {
+                        localVideo.classList.add('hidden');
+                    }
 
                     const answer = await peerConnection.createAnswer();
                     await peerConnection.setLocalDescription(answer);
@@ -3146,6 +3247,7 @@
                     toggleVideoButton.classList.remove('hidden'); 
                     toggleAudioButton.classList.remove('hidden'); 
                     toggleScreenShareButton.classList.remove('hidden'); 
+                    enlargeRemoteVideoButton.classList.remove('hidden');
                     updateAddFriendButtonVisibility(); 
 
                 } catch (e) {
@@ -3193,6 +3295,16 @@
             }
         });
 
+        // Fullscreen Video Modal Listeners
+        enlargeRemoteVideoButton.addEventListener('click', toggleFullscreenRemoteVideo);
+        closeFullscreenVideoButton.addEventListener('click', () => {
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            }
+            fullscreenVideoModal.classList.add('hidden');
+            fullscreenVideo.srcObject = null;
+        });
+
         // --- Initial Load Logic ---
         window.onload = () => {
             initializeFirebase(); // Initialize Firebase when the window loads
@@ -3211,9 +3323,10 @@
                 toggleIcon.classList.add('rotate-0');
             }
             // Adjust channel control area visibility based on screen width on load
+            // Now it's inside the sidebar, so manage its internal toggle
             if (window.innerWidth >= 768) {
-                 channelControlArea.classList.remove('max-h-0');
-                 channelControlArea.classList.add('max-h-full');
+                 channelInputContent.classList.remove('max-h-0');
+                 channelInputContent.classList.add('max-h-full');
                  channelToggleIcon.classList.add('rotate-0');
                  channelToggleIcon.classList.remove('rotate-180');
                  // Also ensure WebRTC controls are visible on larger screens by default
@@ -3221,8 +3334,8 @@
                  webrtcToggleIcon.classList.add('rotate-0');
                  webrtcToggleIcon.classList.remove('rotate-180');
             } else {
-                 channelControlArea.classList.add('max-h-0');
-                 channelControlArea.classList.remove('max-h-full');
+                 channelInputContent.classList.add('max-h-0');
+                 channelInputContent.classList.remove('max-h-full');
                  channelToggleIcon.classList.add('rotate-180');
                  channelToggleIcon.classList.remove('rotate-0');
                  // Make WebRTC controls collapsible on smaller screens
