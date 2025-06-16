@@ -343,6 +343,22 @@
                 </select>
             </div>
 
+            <!-- New: Notification Settings Section -->
+            <div class="mt-8 pt-4 border-t border-gray-300 dark:border-gray-600">
+                <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">Notification Settings</h3>
+                <div class="flex flex-col items-center space-y-3 mb-4">
+                    <p class="text-sm text-gray-700 dark:text-gray-300">
+                        Current Permission: <span id="notificationPermissionStatus" class="font-semibold text-blue-600 dark:text-blue-400">Loading...</span>
+                    </p>
+                    <button id="requestNotificationPermissionButton" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-300">
+                        Request Notification Permission
+                    </button>
+                    <p id="notificationPermissionHint" class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        If permission is "denied", you might need to enable notifications for this site in your browser settings.
+                    </p>
+                </div>
+            </div>
+
             <button id="saveUserSettingsButton" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-all duration-300 transform hover:scale-105 active:scale-95">
                 Save Settings
             </button>
@@ -508,6 +524,11 @@
         const userColorInput = document.getElementById('userColorInput');
         const themeSelect = document.getElementById('themeSelect');
         const saveUserSettingsButton = document.getElementById('saveUserSettingsButton');
+
+        // New: Notification elements
+        const requestNotificationPermissionButton = document.getElementById('requestNotificationPermissionButton');
+        const notificationPermissionStatus = document.getElementById('notificationPermissionStatus');
+        const notificationPermissionHint = document.getElementById('notificationPermissionHint');
 
         // Voice Recording elements
         const recordButton = document.getElementById('recordButton');
@@ -765,6 +786,59 @@
         }
 
         /**
+         * Updates the text and color of the notification permission status.
+         * @param {string} status - The permission status string ('granted', 'denied', 'default').
+         */
+        function updateNotificationPermissionStatusUI(status) {
+            notificationPermissionStatus.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+            notificationPermissionStatus.classList.remove('text-green-600', 'text-red-600', 'text-blue-600');
+            notificationPermissionHint.classList.remove('hidden');
+
+            switch (status) {
+                case 'granted':
+                    notificationPermissionStatus.classList.add('text-green-600');
+                    notificationPermissionHint.textContent = "Notifications are enabled for wChat.";
+                    break;
+                case 'denied':
+                    notificationPermissionStatus.classList.add('text-red-600');
+                    notificationPermissionHint.textContent = "Notifications are blocked. Please enable them in your browser settings.";
+                    break;
+                case 'default':
+                    notificationPermissionStatus.classList.add('text-blue-600');
+                    notificationPermissionHint.textContent = "Notifications are not yet allowed. Click 'Request Notification Permission' to enable.";
+                    break;
+            }
+        }
+
+        /**
+         * Requests notification permission from the user.
+         */
+        async function requestNotificationPermission() {
+            if (!('Notification' in window)) {
+                showModalMessage("Browser Not Supported", "This browser does not support desktop notifications.");
+                updateNotificationPermissionStatusUI('denied');
+                return;
+            }
+
+            try {
+                const permission = await Notification.requestPermission();
+                updateNotificationPermissionStatusUI(permission);
+                if (permission === 'granted') {
+                    showModalMessage("Notifications Enabled!", "You will now receive notifications for new messages when the chat tab is in the background.");
+                } else if (permission === 'denied') {
+                    showModalMessage("Notifications Blocked", "You have denied notification permissions. Please enable them in your browser settings to receive message alerts.");
+                } else { // 'default'
+                    showModalMessage("Permission Pending", "You dismissed the notification permission request. You can try again later.");
+                }
+            } catch (error) {
+                console.error("Error requesting notification permission:", error);
+                showModalMessage("Error", "Could not request notification permission. Please try again.");
+                updateNotificationPermissionStatusUI(Notification.permission || 'default');
+            }
+        }
+
+
+        /**
          * Initializes Firebase authentication and Firestore.
          * Sets up the authentication state listener.
          */
@@ -855,16 +929,31 @@
             // Set up the real-time listener
             unsubscribeMessages = onSnapshot(q, (snapshot) => {
                 loadingIndicator.classList.add('hidden'); // Hide loading indicator once data is received
-                messagesListContainer.innerHTML = ''; // Clear messages again before rendering
-                const chatMessages = [];
+                // This is important: to prevent redundant notifications and flashing, only process new messages.
+                // We'll rebuild the entire list for simplicity and efficiency of onSnapshot, but only notify for newly added.
+                const newMessages = [];
+                snapshot.docChanges().forEach(change => {
+                    if (change.type === "added") {
+                        const msg = { ...change.doc.data(), id: change.doc.id };
+                        if (msg.type === 'chat') {
+                            newMessages.push(msg);
+                            // Trigger notification for new messages from other users when tab is not focused
+                            if (msg.userId !== currentUserId && document.hidden && Notification.permission === 'granted') {
+                                displayBrowserNotification(msg);
+                            }
+                        }
+                    }
+                });
 
-                // Filter for chat messages only
-                snapshot.forEach((doc) => {
+                messagesListContainer.innerHTML = ''; // Clear messages before rendering all
+                const chatMessages = [];
+                snapshot.forEach((doc) => { // Re-populate for full rendering
                     const msg = { ...doc.data(), id: doc.id };
                     if (msg.type === 'chat') {
                         chatMessages.push(msg);
                     }
                 });
+
 
                 // Show/hide no messages placeholder based on filtered message list emptiness
                 if (chatMessages.length === 0) {
@@ -881,6 +970,41 @@
                 messagesListContainer.innerHTML = `<div class="text-center text-red-500 dark:text-red-400">Error loading messages: ${error.message}</div>`;
             });
         }
+
+        /**
+         * Displays a browser notification for a new message.
+         * @param {Object} message - The message object.
+         */
+        function displayBrowserNotification(message) {
+            const title = `New Message from ${message.userName || 'Anonymous'} in #${message.channelId}`;
+            let body = message.text || '';
+            if (message.imageDataUrl) body = (body ? body + ' ' : '') + '[Image]';
+            if (message.audioDataUrl) body = (body ? body + ' ' : '') + '[Audio]';
+            if (message.videoDataUrl) body = (body ? body + ' ' : '') + '[Video]';
+
+            const options = {
+                body: body.length > 100 ? body.substring(0, 97) + '...' : body, // Truncate long messages
+                icon: 'https://placehold.co/48x48/007bff/ffffff?text=WC', // Simple icon
+                data: {
+                    channelId: message.channelId,
+                    messageId: message.id
+                }
+            };
+
+            const notification = new Notification(title, options);
+
+            // When the notification is clicked, focus the tab
+            notification.onclick = function(event) {
+                event.preventDefault(); // Prevent the browser from focusing the notification's tab
+                window.focus(); // Focus the current window/tab
+                // Optionally, if the message was from a different channel, you could auto-switch to it:
+                // if (options.data.channelId && options.data.channelId !== currentChannelId) {
+                //     channelInput.value = options.data.channelId;
+                //     joinChannel();
+                // }
+            };
+        }
+
 
         /**
          * Renders an array of message objects into the messages list container.
@@ -2213,6 +2337,7 @@
             userSettingsModal.classList.remove('hidden');
             userColorInput.value = currentColor; // Set current color
             themeSelect.value = localStorage.getItem('wChatTheme') || 'dark'; // Set current theme
+            updateNotificationPermissionStatusUI(Notification.permission || 'default'); // Update status when modal opens
         }
 
         /**
@@ -3256,6 +3381,9 @@
         userSettingsButton.addEventListener('click', openUserSettingsModal);
         closeSettingsModalButton.addEventListener('click', closeUserSettingsModal);
         saveUserSettingsButton.addEventListener('click', saveUserSettings);
+        // New: Notification permission button
+        requestNotificationPermissionButton.addEventListener('click', requestNotificationPermission);
+
 
         // Voice Recording Event Listeners
         recordButton.addEventListener('click', () => {
@@ -3373,6 +3501,9 @@
         window.onload = () => {
             initializeFirebase(); // Initialize Firebase when the window loads
             populateChannelList(); // Populate the public channel list
+
+            // Update notification permission status on load
+            updateNotificationPermissionStatusUI(Notification.permission || 'default');
 
             // Adjust sidebar visibility based on screen width on load
             if (window.innerWidth >= 768) {
