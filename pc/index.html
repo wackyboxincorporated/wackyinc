@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wackybox Incorporated - Services & Contact</title>
+    <!-- Tailwind CSS CDN for modern styling capabilities -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Unifont from Fontsource CDN (jsDelivr is a highly performant CDN) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/unifont@5.0.1/index.css">
+    <style>
+        /* Custom styles to achieve the Windows 95 look */
+        body {
+            /* Prioritize Unifont, then classic low-res sans-serif options */
+            font-family: 'Unifont', 'MS Sans Serif', 'Fixedsys', 'Terminal', sans-serif;
+            background-color: #C0C0C0; /* Windows 95 grey background */
+            color: #000000; /* Black text */
+            padding: 20px;
+        }
+
+        .window-frame {
+            background-color: #C0C0C0; /* Main window background */
+            border: 2px solid #FFFFFF; /* Light border */
+            border-right-color: #808080; /* Darker right border for 3D effect */
+            border-bottom-color: #808080; /* Darker bottom border for 3D effect */
+            box-shadow: 1px 1px #000000; /* Subtle shadow for depth */
+        }
+
+        .title-bar {
+            background: linear-gradient(to right, #0A246A, #A6CAF0); /* Windows 95 blue gradient */
+            color: #FFFFFF; /* White text */
+            padding: 4px 8px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #000000;
+        }
+
+        .title-bar-button {
+            background-color: #C0C0C0;
+            border: 2px solid #FFFFFF;
+            border-right-color: #000000;
+            border-bottom-color: #000000;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            cursor: default;
+            color: #000000;
+            line-height: 1; /* Adjust line height to center the X */
+        }
+
+        .content-box {
+            background-color: #FFFFFF; /* White content area */
+            border: 2px solid #808080; /* Sunken border effect */
+            border-top-color: #000000;
+            border-left-color: #000000;
+            padding: 16px;
+        }
+
+        .section-header {
+            background-color: #C0C0C0;
+            border: 2px solid #FFFFFF;
+            border-right-color: #808080;
+            border-bottom-color: #808080;
+            padding: 4px 8px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            padding: 4px 0;
+            border-bottom: 1px dotted #808080; /* Dotted line separator */
+        }
+
+        .list-item:last-child {
+            border-bottom: none;
+        }
+
+        .list-item-title {
+            font-weight: bold;
+            flex-basis: 70%; /* Give title more space */
+        }
+
+        .list-item-price {
+            font-weight: normal;
+            text-align: right;
+            flex-basis: 30%; /* Price takes remaining space */
+        }
+
+        /* Specific styling for green list items */
+        .list-item.green-bg {
+            background-color: #90EE90; /* Light green color */
+            border-top: 1px solid #D0FFD0; /* Lighter top border for subtle 3D effect */
+            border-left: 1px solid #D0FFD0; /* Lighter left border for subtle 3D effect */
+            border-right: 1px solid #6B8E23; /* Darker right border */
+            border-bottom: 1px solid #6B8E23; /* Darker bottom border */
+            padding: 3px; /* Adjust padding slightly due to border */
+            margin: 2px 0; /* Add a little margin to stand out */
+        }
+
+
+        /* Adjust for smaller screens */
+        @media (max-width: 640px) {
+            .list-item-title, .list-item-price {
+                flex-basis: 100%; /* Stack them on small screens */
+                text-align: left; /* Align text left */
+            }
+        }
+    </style>
+</head>
+<body class="p-5">
+    <div class="max-w-4xl mx-auto window-frame">
+        <div class="title-bar">
+            <span class="text-sm">Wackybox Incorporated - Services & Contact</span>
+            <div class="flex space-x-1">
+                <div class="title-bar-button">_</div>
+                <div class="title-bar-button">□</div>
+                <div class="title-bar-button">X</div>
+            </div>
+        </div>
+        <div class="content-box">
+            <h1 class="text-2xl font-bold mb-4 text-center">Welcome to Wackybox Incorporated!</h1>
+            
+            <!-- Updated welcome text below -->
+            <p class="mb-4 text-center">
+                Your go-to source for all your computer needs. We provide reliable and efficient services at the best value.
+            </p>
+
+            <!-- Remote access support message - now smaller, black, and right-aligned above "Our Services" -->
+            <p class="text-sm text-black text-right mb-2">
+                We also provide remote access support!
+            </p>
+
+            <div class="section-header">
+                Our Services
+            </div>
+            <div class="mb-6">
+                <div class="list-item">
+                    <span class="list-item-title">Computer repair</span>
+                    <span class="list-item-price">Cost of Parts + 7.5% for labor*</span>
+                </div>
+                <div class="list-item">
+                    <span class="list-item-title">Hardware troubleshooting</span>
+                    <span class="list-item-price">$20 per hour, no other costs</span>
+                </div>
+                <div class="list-item">
+                    <span class="list-item-title">General maintenance</span>
+                    <span class="list-item-price">$30 overall.**</span>
+                    <p class="w-full text-sm ml-4 italic">Includes cleaning, minor organization of internals.</p>
+                </div>
+                <div class="list-item">
+                    <span class="list-item-title">Advanced maintenance</span>
+                    <span class="list-item-price">$60 overall.</span>
+                    <p class="w-full text-sm ml-4 italic">Thorough cleaning, thermal paste replacement, cable management.</p>
+                </div>
+                <div class="list-item">
+                    <span class="list-item-title">New Computer Assembly</span>
+                    <span class="list-item-price">$30 overall. No other costs.</span>
+                    <p class="w-full text-sm ml-4 italic">MUST HAVE PARTS AND DEVICE. Includes connection of HDMI screens, mouse, keyboard, routing the cables.</p>
+                </div>
+                <div class="list-item">
+                    <span class="list-item-title">Device Upgrades</span>
+                    <span class="list-item-price">Cost of upgrade + 5.5%</span>
+                </div>
+                <div class="list-item">
+                    <span class="list-item-title">Device Custom Manufacturing</span>
+                    <span class="list-item-price">Cost of parts + 5.5%</span>
+                </p>
+                <div class="list-item">
+                    <span class="list-item-title">Parts Research</span>
+                    <span class="list-item-price">$15</span>
+                    <p class="w-full text-sm ml-4 italic">We find you the best parts for your needs.</p>
+                </div>
+                <div class="list-item green-bg"> <!-- Added green-bg class here -->
+                    <span class="list-item-title">Complete Microsoft Office Suite</span>
+                    <span class="list-item-price">$25</span>
+                </div>
+                <div class="list-item">
+                    <span class="list-item-title">Windows 10, 11 Home</span>
+                    <span class="list-item-price">$30 (Standard Windows.)</span>
+                </div>
+                <div class="list-item green-bg">
+                    <span class="list-item-title">Windows 10, 11 Pro</span>
+                    <span class="list-item-price">$35 (More features)</span>
+                </div>
+                <div class="list-item">
+                    <span class="list-item-title">Windows 10, 11 Enterprise</span>
+                    <span class="list-item-price">$45 (Most don't need this)</span>
+                </div>
+                <div class="list-item green-bg">
+                    <span class="list-item-title">Windows 11 Performance</span>
+                    <span class="list-item-price">$25 (For older computers)</span>
+                </div>
+                <!-- Updated discount text for all Windows OS versions -->
+                <p class="text-red-600 font-bold mt-2">85% off from Microsoft's Prices! Applies to all Windows 10/11 versions listed.</p>
+            </div>
+
+            <div class="section-header">
+                Important Notes
+            </div>
+            <ul class="list-disc pl-5 mb-6 text-sm">
+                <li>* If we have recycled parts on hand, those are available at a variable discount.</li>
+                <li>** If you order General and your device is absolutely disgusting (covered in hair and grime), you will be charged $20 extra. But we will service it!</li>
+                <li>We will find you the best deals, and I hold my promise on that.</li>
+                <li>We don't markup prices on parts, we just charge for the work.</li>
+                <li>Some terms and prices negotiable.</li>
+            </ul>
+
+            <div class="section-header">
+                Contact Us
+            </div>
+            <p class="mb-4">
+                For any questions or to place an order, please feel free to reach out to us!
+            </p>
+            <p class="mb-2">
+                <strong>Email:</strong> <a href="mailto:wackyboxinc@gmail.com" class="text-blue-700 underline">wackyboxinc@gmail.com</a>
+            </p>
+            <p class="mb-4">
+                <strong>Phone:</strong> <a href="tel:+19718991425" class="text-blue-700 underline">971-899-1425</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
