@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2151,7 +2152,7 @@
          */
         function toggleFullscreenRemoteVideo() {
             if (!remoteVideo.srcObject) {
-                showModalMessage("No Remote Video", "There is no remote video feed to enlarge.");
+                showModalMessage("No Remote Video", "Try enabling and disabling your camera and do this button again.");
                 return;
             }
 
@@ -2194,16 +2195,16 @@
             // Basic validation for authentication and channel
             if (!currentUserId || !db || !currentChannelId) {
                 if (!currentUserId) {
-                    console.error("Cannot send message: User is not authenticated.");
+                    console.error("Pls authenticat.");
                 } else if (!currentChannelId) {
-                    console.error("Cannot send message: No channel selected.");
+                    console.error("Pick a channel first.");
                 }
                 return;
             }
 
             // Don't send empty messages unless there's an image, audio, or video
             if (messageText === '' && !currentImageFile && !currentAudioFile && !currentVideoFile) {
-                console.warn("Cannot send empty message or without an image/audio/video.");
+                console.warn("Can't send nothing.");
                 return;
             }
 
@@ -2316,7 +2317,7 @@
                 console.log("Message deleted successfully from Firestore:", msgInfo.id);
             } catch (error) {
                 console.error("Error deleting message:", error);
-                console.error("Failed to delete message. Please check console for details.");
+                console.error("Your actions couldn't be wiped off the face of the earth.");
             }
         }
 
@@ -2326,7 +2327,7 @@
         function joinChannel() {
             const newChannel = channelInput.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, ''); // Sanitize input
             if (!newChannel) {
-                console.warn("Channel name cannot be empty or contain only special characters.");
+                console.warn("Channel name cannot be complete BS.");
                 return;
             }
 
@@ -2534,14 +2535,14 @@
                     if (isRecording) {
                         stopRecording();
                         console.log("Recording stopped automatically after 1 minute.");
-                        recordingMessage.textContent = "Recording stopped automatically (1 min limit).";
+                        recordingMessage.textContent = "1 minute. That's all you get.";
                     }
                 }, MAX_RECORDING_TIME_MS);
 
             } catch (err) {
                 console.error("Error accessing microphone:", err);
                 // Use a modal for error messages instead of alert
-                showModalMessage("Microphone Access Error", "Could not access microphone. Please ensure it's connected and permissions are granted.");
+                showModalMessage("Microphone Access Error", "I CAN'T HEAR YOU VRO FIX YOr MiC1!!!11!!1");
             }
         }
 
@@ -2619,7 +2620,7 @@
             scaleImageButton.disabled = true;
             scaleImageButton.textContent = "Scaling...";
             sendButton.disabled = true;
-            showFileSizeMessage("Scaling image...", false); // Indicate ongoing process
+            showFileSizeMessage("Chewing on that...", false); // Indicate ongoing process
 
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -2709,7 +2710,7 @@
             scaleVideoButton.disabled = true;
             scaleVideoButton.textContent = "Scaling...";
             sendButton.disabled = true;
-            showFileSizeMessage("Scaling video with audio (this may take time and reduce quality significantly). Please be patient...", false);
+            showFileSizeMessage("I am eating your video. Please be patient...", false);
 
             let videoElement = document.createElement('video');
             videoElement.preload = 'metadata';
@@ -2736,7 +2737,7 @@
                     const SHORTEST_VIDEO_DURATION_FOR_MAX_QUALITY_SECONDS = 5; 
                     const LONGEST_VIDEO_DURATION_FOR_FIXED_QUALITY_SECONDS = 60; 
                     const MAX_QUALITY_TARGET_SIZE_KB = 800; 
-                    const BASE_QUALITY_TARGET_SIZE_KB = 200; 
+                    const BASE_QUALITY_TARGET_SIZE_KB = 600; 
 
                     let targetBlobSizeBytes;
 
@@ -2759,8 +2760,8 @@
                     let calculatedTotalBitrate = (targetBlobSizeBytes * 8) / videoDuration;
 
                     // Cap bitrate to avoid excessively high or low values
-                    const MAX_BITRATE = 800000; 
-                    const MIN_BITRATE = 50000;  
+                    const MAX_BITRATE = 1255000; 
+                    const MIN_BITRATE = 64000;  
 
                     calculatedTotalBitrate = Math.max(MIN_BITRATE, Math.min(MAX_BITRATE, calculatedTotalBitrate));
 
@@ -2846,7 +2847,7 @@
 
                     } catch (e) {
                         console.error("MediaRecorder video init error:", e);
-                        reject(new Error(`Failed to initialize video recorder: ${e.message}. Ensure your browser supports MediaRecorder for canvas streams with webm/vp8 and opus codecs.`));
+                        reject(new Error(`Couldn't enable MR... ${e.message}. Ensure your browser supports MediaRecorder for canvas streams with webm/vp8 and opus codecs.`));
                         return;
                     }
                     
@@ -2885,7 +2886,7 @@
                         if (scaledBlob.size <= FIRESTORE_MAX_DOC_SIZE) {
                             resolve(scaledBlob);
                         } else {
-                            reject(new Error(`Scaled video is still too large (${(scaledBlob.size / 1024).toFixed(2)} KB). Target: ${(FIRESTORE_MAX_DOC_SIZE / 1024).toFixed(2)} KB. Please try a much shorter or lower quality video.`));
+                            reject(new Error(`Scaled video is impossible: (${(scaledBlob.size / 1024).toFixed(2)} KB). Target: ${(FIRESTORE_MAX_DOC_SIZE / 1024).toFixed(2)} KB. We can't handle all of Shrek 2.`));
                         }
                     };
 
@@ -2916,13 +2917,13 @@
                         }, videoDuration * 1000 + 500); 
                     }).catch(err => {
                         console.error("Video playback error for scaling:", err);
-                        reject(new Error(`Video playback error: ${err.message}. Ensure the video file is not corrupted.`));
+                        reject(new Error(`Video playback error: ${err.message}. What the hell`));
                     });
                 };
 
                 videoElement.onerror = (e) => {
                     console.error("Error loading video for scaling:", e);
-                    reject(new Error("Failed to load video for scaling. Check video file integrity or format compatibility."));
+                    reject(new Error("I couldn't work with your video. You're certain it isn't in a weird format?"));
                 };
 
                 videoElement.src = URL.createObjectURL(videoFile);
@@ -2977,7 +2978,7 @@
                 if (!hasFriends) {
                     const listItem = document.createElement('li');
                     listItem.className = "text-gray-600 dark:text-gray-400 text-sm";
-                    listItem.textContent = "No friends yet. Add someone from a call!";
+                    listItem.textContent = "Lonely, are we?";
                     friendsList.appendChild(listItem);
                 }
                 // Call the unified visibility function after friends are loaded
@@ -3064,11 +3065,11 @@
                 return;
             }
             if (friendId === currentUserId) {
-                showModalMessage("Add Friend Error", "You cannot add yourself as a friend.");
+                showModalMessage("Sorry?", "You cannot add yourself as a friend.  What's wrong with you?");
                 return;
             }
             if (currentFriends[friendId]) {
-                showModalMessage("Add Friend Info", `${friendId} is already in your friends list!`);
+                showModalMessage("They're already there.", `${friendId} is already in your friends list!`);
                 return;
             }
 
@@ -3082,12 +3083,12 @@
                     addedTimestamp: serverTimestamp()
                 });
                 console.log(`Friend ${friendId} added.`);
-                showModalMessage("Friend Added!", `${friendId} has been added to your friends list.`);
+                showModalMessage("together you stand", `${friendId} has been added to your friends list.`);
                 updateAddFriendButtonVisibility(); // Update button visibility after adding friend
             }
             catch (error) {
                 console.error("Error adding friend:", error);
-                showModalMessage("Add Friend Error", `Failed to add friend: ${error.message}`);
+                showModalMessage("Unfortunate event!", `Failed to add friend: ${error.message}`);
             }
         }
 
@@ -3105,7 +3106,7 @@
             const friendDisplayName = friend ? (friend.nickname || friend.id) : friendId;
 
             // Optional: Add a confirmation dialog before deleting
-            const confirmRemove = confirm(`Are you sure you want to remove ${friendDisplayName} from your friends list?`);
+            const confirmRemove = confirm(`Are you sure you want to cast ${friendDisplayName} into darkness?`);
             if (!confirmRemove) {
                 return;
             }
@@ -3119,7 +3120,7 @@
                 // The onSnapshot listener will automatically update the UI
             } catch (error) {
                 console.error("Error removing friend:", error);
-                showModalMessage("Remove Friend Error", `Failed to remove friend: ${error.message}`);
+                showModalMessage("That didn't work.", `Failed to remove friend: ${error.message}`);
             }
         }
 
@@ -3208,7 +3209,7 @@
                 const targetFriendId = codeDoc.userId;
 
                 if (targetFriendId === currentUserId) {
-                    showModalMessage("Add Friend Error", "You cannot add yourself as a friend.");
+                    showModalMessage("Add Friend Error", "You cannot add yourself as a friend. What encouraged you to even try that?");
                     return;
                 }
 
