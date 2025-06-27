@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modular CLT Housing 3D Visualization - Enhanced with Brighter Joints and More Steps</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; /* Prevent scrolling */
+        }
+        #app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+            background-color: #f0f0f0; /* Light background for the app */
+        }
+        #threejs-container {
+            flex-grow: 1; /* Allows canvas to take available space */
+            position: relative;
+            background-color: #e0e7ee; /* Sky-like background */
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin: 1rem;
+        }
+        canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+        }
+        #controls {
+            background-color: #ffffff;
+            padding: 1rem;
+            border-radius: 12px;
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+            margin: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            align-items: center;
+        }
+        button {
+            @apply px-4 py-2 rounded-lg font-medium transition-all duration-300 ease-in-out;
+            @apply bg-blue-500 text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        button:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        input[type="range"] {
+            @apply w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer;
+            @apply md:w-64; /* Make slider wider on medium screens */
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            @apply appearance-none w-4 h-4 bg-blue-500 rounded-full shadow-lg;
+        }
+        input[type="range"]::-moz-range-thumb {
+            @apply appearance-none w-4 h-4 bg-blue-500 rounded-full shadow-lg;
+        }
+        #info-display {
+            @apply text-lg font-semibold text-gray-800 bg-gray-100 p-3 rounded-lg;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+            min-width: 200px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="app-container">
+        <div id="threejs-container">
+            <!-- Three.js canvas will be appended here -->
+        </div>
+        <div id="controls">
+            <button id="playPauseBtn">Play</button>
+            <button id="resetBtn">Reset</button>
+            <input type="range" id="progressSlider" min="0" max="100" value="0">
+            <div id="info-display">Assembly Step: Idle</div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- Scene Setup ---
+        let scene, camera, renderer, controls;
+        let animationTimeline;
+        const modules = []; // Array to hold our 3D module objects
+        const textureLoader = new THREE.TextureLoader();
+        const woodTexture = textureLoader.load('https://file.garden/ZMbUnW5nmTe-x54m/download.jpg');
+        woodTexture.wrapS = THREE.RepeatWrapping;
+        woodTexture.wrapT = THREE.RepeatWrapping;
+        woodTexture.repeat.set(2, 2); // Adjust tiling as needed for visual scale
+
+        const moduleData = [
+            // Define module configurations for assembly
+            // Position: (x, y, z) relative to initial ground plane
+            // Target Position: where it should end up
+            // Initial Position: where it starts (off-screen for animation)
+            // Color: to differentiate modules (will be overridden by texture, but kept for material differentiation if desired)
+            // Description: for info display
+            {
+                id: 'module1',
+                targetPos: new THREE.Vector3(0, 1.5, 0),
+                initialPos: new THREE.Vector3(-20, 1.5, 0), // Comes from left
+                color: 0x964B00, // CLT Wood Brown (base color, texture will overlay)
+                description: 'Module 1: Foundation Placement'
+            },
+            {
+                id: 'module2',
+                targetPos: new THREE.Vector3(4, 1.5, 0),
+                initialPos: new THREE.Vector3(20, 1.5, 0), // Comes from right
+                color: 0xA0522D, // Slightly different wood tone (base color, texture will overlay)
+                description: 'Module 2: Adjacent Placement'
+            },
+            {
+                id: 'module3',
+                targetPos: new THREE.Vector3(0, 4.5, 0), // Stacks on module 1
+                initialPos: new THREE.Vector3(0, 20, 0), // Comes from top
+                color: 0x8B4513, // Another wood tone (base color, texture will overlay)
+                description: 'Module 3: Vertical Stacking'
+            },
+            {
+                id: 'module4',
+                targetPos: new THREE.Vector3(4, 4.5, 0), // Stacks on module 2
+                initialPos: new THREE.Vector3(4, -20, 0), // Comes from bottom
+                color: 0xB8860B, // Even another wood tone (base color, texture will overlay)
+                description: 'Module 4: Completing the Second Level'
+            }
+        ];
+
+        // Module dimensions
+        const MODULE_WIDTH = 4;
+        const MODULE_HEIGHT = 3;
+        const MODULE_DEPTH = 4;
+
+        // Chamfer radius for edges (for visual simulation, not actual geometry modification)
+        const CHAMFER_SIZE = 0.1; // Represents 10cm bevel
+
+        // --- Functions ---
+
+        /**
+         * Initializes the Three.js scene, camera, renderer, and controls.
+         */
+        function init() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xe0e7ee); // Light blue sky
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(10, 8, 15); // Initial camera position
+            camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+            // Renderer
+            const container = document.getElementById('threejs-container');
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio); // Use device's pixel ratio for sharpness
+            renderer.shadowMap.enabled = true; // Enable shadows
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Softer shadows
+            container.appendChild(renderer.domElement);
+
+            // Orbit Controls
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true; // Smooth camera movement
+            controls.dampingFactor = 0.05;
+            controls.screenSpacePanning = false; // Prevents panning through the ground
+            controls.maxPolarAngle = Math.PI / 2 - 0.1; // Prevent camera from going below ground
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.8); // Soft ambient light
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2); // Directional light for shadows
+            directionalLight.position.set(10, 15, 10);
+            directionalLight.castShadow = true;
+            // Adjust shadow map size for better quality
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            directionalLight.shadow.camera.near = 0.5;
+            directionalLight.shadow.camera.far = 50;
+            directionalLight.shadow.camera.left = -15;
+            directionalLight.shadow.camera.right = 15;
+            directionalLight.shadow.camera.top = 15;
+            directionalLight.shadow.camera.bottom = -15;
+            scene.add(directionalLight);
+            // scene.add(new THREE.DirectionalLightHelper(directionalLight, 5)); // Helper for debug
+
+            // Add a PointLight to the camera for better illumination
+            const cameraLight = new THREE.PointLight(0xffffcc, 1, 100); // Soft yellow light
+            camera.add(cameraLight);
+            scene.add(camera); // Add camera to the scene (with its child light)
+            cameraLight.castShadow = true;
+            cameraLight.shadow.mapSize.width = 1024;
+            cameraLight.shadow.mapSize.height = 1024;
+            cameraLight.shadow.camera.near = 0.1;
+            cameraLight.shadow.camera.far = 20;
+
+
+            // Ground Plane
+            const groundGeometry = new THREE.PlaneGeometry(50, 50);
+            const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x889988, roughness: 0.8, metalness: 0.1 });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true; // Ground can receive shadows
+            scene.add(ground);
+
+            // Create initial modules (off-screen or at assembly start)
+            createModules();
+
+            // Set up animation timeline
+            setupAnimationTimeline();
+
+            // Handle window resizing
+            window.addEventListener('resize', onWindowResize, false);
+            // Start the animation loop
+            animate();
+        }
+
+        /**
+         * Creates a modular housing unit with chamfered edges and detailed connections.
+         * This function builds a group of meshes to simulate the module.
+         * @param {number} width - Width of the module.
+         * @param {number} height - Height of the module.
+         * @param {number} depth - Depth of the module.
+         * @param {number} baseColor - Base color of the module (texture will overlay).
+         * @returns {THREE.Group} - The complete module as a Three.js Group.
+         */
+        function createDetailedModule(width, height, depth, baseColor) {
+            const moduleGroup = new THREE.Group();
+            // Use the loaded woodTexture for the main module body
+            const moduleMaterial = new THREE.MeshStandardMaterial({
+                map: woodTexture,
+                roughness: 0.7,
+                metalness: 0.05,
+                emissive: new THREE.Color(0x000000),
+                emissiveIntensity: 0.5,
+                transparent: true, // Enable transparency
+                opacity: 1 // Initial opacity
+            });
+            // Changed color to brighter grey
+            const connectionMaterial = new THREE.MeshStandardMaterial({ color: 0xAAAAAA, roughness: 0.5, metalness: 0.8, transparent: true, opacity: 1 }); 
+            // Changed color to brighter grey
+            const utilityPortMaterial = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.6, metalness: 0.1, transparent: true, opacity: 1 }); 
+            const pipeMaterial = new THREE.MeshStandardMaterial({ color: 0x00FF00, roughness: 0.3, metalness: 0.1, transparent: true, opacity: 1 }); // Green for "connected" pipe
+            const wireMaterial = new THREE.MeshStandardMaterial({ color: 0xFFFF00, roughness: 0.3, metalness: 0.1, transparent: true, opacity: 1 }); // Yellow for "connected" wire
+
+            // Main module body
+            const mainGeometry = new THREE.BoxGeometry(width, height, depth);
+            const mainMesh = new THREE.Mesh(mainGeometry, moduleMaterial);
+            mainMesh.castShadow = true;
+            mainMesh.receiveShadow = true;
+            mainMesh.name = 'mainMesh'; // Assign a name to the main mesh
+            moduleGroup.add(mainMesh);
+
+            // Simulate chamfered edges by adding thin bevels
+            const bevelThickness = CHAMFER_SIZE * 0.5;
+            const bevelLengthAdj = CHAMFER_SIZE * 2; // Adjustment for length
+            const edgeGeometries = [];
+
+            // Edges along width (4)
+            for (let i = 0; i < 2; i++) {
+                for (let j = 0; j < 2; j++) {
+                    const edgeX = new THREE.BoxGeometry(width - bevelLengthAdj, bevelThickness, bevelThickness);
+                    const meshX = new THREE.Mesh(edgeX, moduleMaterial); // Use moduleMaterial with texture
+                    meshX.position.set(0, (height / 2 - bevelThickness / 2) * (i ? 1 : -1), (depth / 2 - bevelThickness / 2) * (j ? 1 : -1));
+                    edgeGeometries.push(meshX);
+                }
+            }
+            // Edges along height (4)
+            for (let i = 0; i < 2; i++) {
+                for (let j = 0; j < 2; j++) {
+                    const edgeY = new THREE.BoxGeometry(bevelThickness, height - bevelLengthAdj, bevelThickness);
+                    const meshY = new THREE.Mesh(edgeY, moduleMaterial); // Use moduleMaterial with texture
+                    meshY.position.set((width / 2 - bevelThickness / 2) * (i ? 1 : -1), 0, (depth / 2 - bevelThickness / 2) * (j ? 1 : -1));
+                    edgeGeometries.push(meshY);
+                }
+            }
+            // Edges along depth (4)
+            for (let i = 0; i < 2; i++) {
+                for (let j = 0; j < 2; j++) {
+                    const edgeZ = new THREE.BoxGeometry(bevelThickness, bevelThickness, depth - bevelLengthAdj);
+                    const meshZ = new THREE.Mesh(edgeZ, moduleMaterial); // Use moduleMaterial with texture
+                    meshZ.position.set((width / 2 - bevelThickness / 2) * (i ? 1 : -1), (height / 2 - bevelThickness / 2) * (j ? 1 : -1), 0);
+                    edgeGeometries.push(meshZ);
+                }
+            }
+
+            edgeGeometries.forEach(mesh => {
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                moduleGroup.add(mesh);
+            });
+
+            /**
+             * Adds connection points (bolts, receptor plates, utility ports) to a specific face of the module.
+             * @param {string} axis - 'x', 'y', or 'z'
+             * @param {number} direction - 1 for positive, -1 for negative
+             * @param {number} numBolts - Number of bolts to add.
+             */
+            function addConnectionPoints(axis, direction, numBolts = 3) {
+                const boltRadius = 0.08;
+                const boltHeadThickness = 0.05;
+                const boltShaftLength = 0.2;
+                const receptorPlateThickness = 0.05;
+
+                const rotationMap = {
+                    'x': new THREE.Euler(0, Math.PI / 2, 0), // Rotate for bolts along X-axis
+                    'y': new THREE.Euler(-Math.PI / 2, 0, 0), // Rotate for bolts along Y-axis
+                    'z': new THREE.Euler(0, 0, 0) // No rotation needed for Z-axis (default cylinder alignment)
+                };
+
+                const positionOffset = new THREE.Vector3();
+                
+                for (let i = 0; i < numBolts; i++) {
+                    // Calculate offsets along the face perpendicular to the axis
+                    let spacingFactor;
+                    if (axis === 'x') spacingFactor = height / (numBolts + 1);
+                    else if (axis === 'y') spacingFactor = width / (numBolts + 1);
+                    else spacingFactor = height / (numBolts + 1); // For Z, use height as arbitrary perpendicular dimension
+
+                    let initialOffset = (i - (numBolts - 1) / 2) * spacingFactor;
+
+                    if (axis === 'x') {
+                        positionOffset.set(width / 2 * direction, initialOffset, 0);
+                    } else if (axis === 'y') {
+                        positionOffset.set(initialOffset, height / 2 * direction, 0);
+                    } else { // axis === 'z'
+                        positionOffset.set(0, initialOffset, depth / 2 * direction);
+                    }
+
+                    // Bolt Head
+                    const boltHeadGeometry = new THREE.CylinderGeometry(boltRadius * 1.2, boltRadius * 1.2, boltHeadThickness, 6);
+                    const boltHead = new THREE.Mesh(boltHeadGeometry, connectionMaterial);
+                    boltHead.rotation.copy(rotationMap[axis]);
+                    boltHead.position.copy(positionOffset);
+                    boltHead.position[axis] += (boltHeadThickness / 2) * direction; // Position correctly on the face
+                    boltHead.castShadow = true;
+                    boltHead.name = `boltHead-${axis}${direction > 0 ? '+' : '-'}-${i}`;
+                    moduleGroup.add(boltHead);
+
+                    // Bolt Shaft
+                    const boltShaftGeometry = new THREE.CylinderGeometry(boltRadius, boltRadius, boltShaftLength, 8);
+                    const boltShaft = new THREE.Mesh(boltShaftGeometry, connectionMaterial);
+                    boltShaft.rotation.copy(rotationMap[axis]);
+                    boltShaft.position.copy(positionOffset);
+                    boltShaft.position[axis] += (boltHeadThickness + boltShaftLength / 2) * direction; // Position correctly for initial state
+                    boltShaft.castShadow = true;
+                    boltShaft.name = `boltShaft-${axis}${direction > 0 ? '+' : '-'}-${i}`;
+                    moduleGroup.add(boltShaft);
+
+                    // Receptor Plate
+                    let plateWidthDim, plateHeightDim, plateDepthDim;
+                    if (axis === 'x') {
+                        plateWidthDim = receptorPlateThickness; plateHeightDim = spacingFactor * (numBolts + 0.5); plateDepthDim = depth * 0.5;
+                    } else if (axis === 'y') {
+                        plateWidthDim = width * 0.5; plateHeightDim = receptorPlateThickness; plateDepthDim = spacingFactor * (numBolts + 0.5);
+                    } else { // axis === 'z'
+                        plateWidthDim = width * 0.5; plateHeightDim = height * 0.5; plateDepthDim = receptorPlateThickness;
+                    }
+                    const receptorPlateGeometry = new THREE.BoxGeometry(plateWidthDim, plateHeightDim, plateDepthDim);
+                    const receptorPlateMaterial = new THREE.MeshStandardMaterial({ color: 0xCCCCCC, roughness: 0.4, metalness: 0.9, transparent: true, opacity: 1 });
+                    const receptorPlate = new THREE.Mesh(receptorPlateGeometry, receptorPlateMaterial);
+                    receptorPlate.position.copy(positionOffset);
+                    receptorPlate.position[axis] += (receptorPlateThickness / 2) * direction; // Position correctly on the face
+                    receptorPlate.castShadow = true;
+                    receptorPlate.name = `receptorPlate-${axis}${direction > 0 ? '+' : '-'}-${i}`;
+                    moduleGroup.add(receptorPlate);
+                }
+
+                // Utility Port (one per face for demonstration)
+                const utilityPortRadius = 0.2;
+                const utilityPortHeight = 0.1;
+                const utilityPortGeometry = new THREE.CylinderGeometry(utilityPortRadius, utilityPortRadius, utilityPortHeight, 16);
+                const utilityPort = new THREE.Mesh(utilityPortGeometry, utilityPortMaterial);
+
+                utilityPort.rotation.copy(rotationMap[axis]); // Orient port correctly
+
+                // Position utility port at a corner of the face
+                if (axis === 'x') {
+                    utilityPort.position.set(width / 2 * direction, height / 2 - utilityPortRadius, depth / 2 - utilityPortRadius);
+                } else if (axis === 'y') {
+                    utilityPort.position.set(width / 2 - utilityPortRadius, height / 2 * direction, depth / 2 - utilityPortRadius);
+                    if (direction === 1) utilityPort.rotation.z = Math.PI / 2; // Adjust for Y+ axis visual
+                    else utilityPort.rotation.z = -Math.PI / 2; // Adjust for Y- axis visual
+                } else { // axis === 'z'
+                    utilityPort.position.set(width / 2 - utilityPortRadius, height / 2 - utilityPortRadius, depth / 2 * direction);
+                }
+                utilityPort.name = `utilityPort-${axis}${direction > 0 ? '+' : '-'}`;
+                moduleGroup.add(utilityPort);
+
+                // Placeholder for connecting utility pipe/cable (will be animated separately)
+                const utilityPipeGeometry = new THREE.CylinderGeometry(0.125, 0.125, 0.1, 8);
+                const utilityPipe = new THREE.Mesh(utilityPipeGeometry, pipeMaterial);
+                utilityPipe.position.copy(utilityPort.position); // Start at port
+                utilityPipe.visible = false; // Initially hidden
+                utilityPipe.name = `utilityPipe-${axis}${direction > 0 ? '+' : '-'}`;
+                moduleGroup.add(utilityPipe);
+
+                // Placeholder for connecting utility wire (similar to pipe)
+                const utilityWireGeometry = new THREE.CylinderGeometry(0.075, 0.075, 0.1, 8);
+                const utilityWire = new THREE.Mesh(utilityWireGeometry, wireMaterial);
+                
+                // Position wire slightly offset from pipe to be visible
+                let wireOffset = new THREE.Vector3();
+                if (axis === 'x') wireOffset.set(0, 0.1, 0); // Offset in Y for X-axis connections
+                else if (axis === 'y') wireOffset.set(0.1, 0, 0); // Offset in X for Y-axis connections
+                else wireOffset.set(0, 0.1, 0); // Default offset
+
+                utilityWire.position.copy(utilityPort.position).add(wireOffset); 
+                utilityWire.visible = false; // Initially hidden
+                utilityWire.name = `utilityWire-${axis}${direction > 0 ? '+' : '-'}`;
+                moduleGroup.add(utilityWire);
+            }
+
+            // Add connections to specific faces
+            addConnectionPoints('x', 1); // Positive X face (for bolting out)
+            addConnectionPoints('x', -1); // Negative X face (for receiving bolts)
+            addConnectionPoints('y', 1); // Positive Y face (for receiving vertical bolts from above)
+            addConnectionPoints('y', -1); // Negative Y face (for bolting downwards)
+
+
+            return moduleGroup;
+        }
+
+
+        /**
+         * Creates and positions all modules in the scene.
+         */
+        function createModules() {
+            moduleData.forEach(data => {
+                const module = createDetailedModule(MODULE_WIDTH, MODULE_HEIGHT, MODULE_DEPTH, data.color); // Using new detailed module creator
+                module.position.copy(data.initialPos); // Start at initial off-screen position
+                module.userData = { id: data.id, description: data.description }; // Store data on the object
+                scene.add(module);
+                modules.push(module);
+            });
+        }
+
+        /**
+         * Resets a single module's visual state to its initial position and hides connections.
+         * @param {THREE.Group} module - The module to reset.
+         */
+        function resetModuleVisualState(module) {
+            const data = moduleData.find(d => d.id === module.userData.id);
+            if (data) {
+                module.position.copy(data.initialPos);
+            }
+
+            const width = MODULE_WIDTH, height = MODULE_HEIGHT, depth = MODULE_DEPTH;
+            const boltHeadThickness = 0.05;
+            const boltShaftLength = 0.2;
+            const receptorPlateThickness = 0.05;
+
+            // Reset bolt and receptor plate positions for all relevant faces
+            for (let i = 0; i < 3; i++) {
+                // X+ face
+                const boltHeadXPlus = module.getObjectByName(`boltHead-X+-${i}`);
+                const boltShaftXPlus = module.getObjectByName(`boltShaft-X+-${i}`);
+                const receptorPlateXPlus = module.getObjectByName(`receptorPlate-X+-${i}`);
+                if (boltHeadXPlus) boltHeadXPlus.position.x = width / 2 + boltHeadThickness / 2;
+                if (boltShaftXPlus) boltShaftXPlus.position.x = width / 2 + boltHeadThickness + boltShaftLength / 2;
+                if (receptorPlateXPlus) receptorPlateXPlus.position.x = width / 2 + receptorPlateThickness / 2;
+
+                // X- face
+                const boltHeadXMinus = module.getObjectByName(`boltHead-X--${i}`);
+                const boltShaftXMinus = module.getObjectByName(`boltShaft-X--${i}`);
+                const receptorPlateXMinus = module.getObjectByName(`receptorPlate-X--${i}`);
+                if (boltHeadXMinus) boltHeadXMinus.position.x = -width / 2 - boltHeadThickness / 2;
+                if (boltShaftXMinus) boltShaftXMinus.position.x = -width / 2 - (boltHeadThickness + boltShaftLength / 2);
+                if (receptorPlateXMinus) receptorPlateXMinus.position.x = -width / 2 - receptorPlateThickness / 2;
+
+                // Y+ face
+                const boltHeadYPlus = module.getObjectByName(`boltHead-Y+-${i}`);
+                const boltShaftYPlus = module.getObjectByName(`boltShaft-Y+-${i}`);
+                const receptorPlateYPlus = module.getObjectByName(`receptorPlate-Y+-${i}`);
+                if (boltHeadYPlus) boltHeadYPlus.position.y = height / 2 + boltHeadThickness / 2;
+                if (boltShaftYPlus) boltShaftYPlus.position.y = height / 2 + boltHeadThickness + boltShaftLength / 2;
+                if (receptorPlateYPlus) receptorPlateYPlus.position.y = height / 2 + receptorPlateThickness / 2;
+
+                // Y- face
+                const boltHeadYMinus = module.getObjectByName(`boltHead-Y--${i}`);
+                const boltShaftYMinus = module.getObjectByName(`boltShaft-Y--${i}`);
+                const receptorPlateYMinus = module.getObjectByName(`receptorPlate-Y--${i}`);
+                if (boltHeadYMinus) boltHeadYMinus.position.y = -height / 2 - boltHeadThickness / 2;
+                if (boltShaftYMinus) boltShaftYMinus.position.y = -height / 2 - (boltHeadThickness + boltShaftLength / 2);
+                if (receptorPlateYMinus) receptorPlateYMinus.position.y = -height / 2 - receptorPlateThickness / 2;
+            }
+
+            // Reset utility pipes and wires
+            const resetUtilityConnection = (axis, direction, offsetVec) => {
+                const pipe = module.getObjectByName(`utilityPipe-${axis}${direction > 0 ? '+' : '-'}`);
+                const wire = module.getObjectByName(`utilityWire-${axis}${direction > 0 ? '+' : '-'}`);
+                const port = module.getObjectByName(`utilityPort-${axis}${direction > 0 ? '+' : '-'}`);
+
+                if (pipe && port) {
+                    pipe.visible = false;
+                    // Reset to a small placeholder size for the geometry, as it will be re-created for animation
+                    pipe.geometry = new THREE.CylinderGeometry(0.125, 0.125, 0.1, 8); 
+                    pipe.position.copy(port.position);
+                    if (axis === 'x') pipe.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
+                    else if (axis === 'y') pipe.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
+                    pipe.scale.y = 0.5; // Set starting scale for animation consistency
+                }
+                if (wire && port) {
+                    wire.visible = false;
+                    // Reset to a small placeholder size for the geometry, as it will be re-created for animation
+                    wire.geometry = new THREE.CylinderGeometry(0.075, 0.075, 0.1, 8); 
+                    
+                    // Calculate wire's starting position in world coordinates
+                    const portWorldPosition = new THREE.Vector3();
+                    port.getWorldPosition(portWorldPosition); // Get port's world position
+
+                    const portWorldQuaternion = new THREE.Quaternion();
+                    port.getWorldQuaternion(portWorldQuaternion); // Get port's world rotation
+
+                    // Apply the local offset vector using the port's world quaternion
+                    const localOffsetInWorld = offsetVec.clone().applyQuaternion(portWorldQuaternion);
+                    const wireStartWorldPosition = portWorldPosition.add(localOffsetInWorld);
+
+                    // Convert this world position back to the module's local space
+                    const wireStartModuleLocalPosition = new THREE.Vector3();
+                    module.worldToLocal(wireStartWorldPosition, wireStartModuleLocalPosition); 
+                    
+                    wire.position.copy(wireStartModuleLocalPosition); // Set wire's position in module's local space
+
+                    if (axis === 'x') wire.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
+                    else if (axis === 'y') wire.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
+                    wire.scale.y = 0.5; // Set starting scale for animation consistency
+                }
+            };
+            
+            // Define wire offsets consistently
+            const wireOffsetX = new THREE.Vector3(0, 0.1, 0); // Offset in Y for X-axis connections
+            const wireOffsetY = new THREE.Vector3(0.1, 0, 0); // Offset in X for Y-axis connections
+
+            resetUtilityConnection('x', 1, wireOffsetX);
+            resetUtilityConnection('x', -1, wireOffsetX);
+            resetUtilityConnection('y', 1, wireOffsetY);
+            resetUtilityConnection('y', -1, wireOffsetY);
+
+
+            // Reset emissive color and opacity if it was changed
+            const mainMesh = module.getObjectByName('mainMesh');
+            if (mainMesh && mainMesh.material) {
+                mainMesh.material.emissive.setHex(0x000000);
+                mainMesh.material.opacity = 1; // Reset opacity
+            }
+        }
+
+
+        /**
+         * Sets up the GSAP animation timeline for module assembly.
+         */
+        function setupAnimationTimeline() {
+            animationTimeline = gsap.timeline({ paused: true, onUpdate: updateInfoDisplay, onComplete: () => infoDisplay.textContent = 'Assembly Complete!' });
+
+            // Ensure all modules are positioned and reset correctly at the start of the timeline
+            modules.forEach(resetModuleVisualState);
+
+            // Define constants for component dimensions to use in reset and animation
+            const boltHeadThickness = 0.05;
+            const boltShaftLength = 0.2;
+
+            // Define camera positions and targets for various stages
+            const CAM_POSITIONS = {
+                initial: { pos: new THREE.Vector3(10, 8, 15), target: new THREE.Vector3(0, 0, 0) },
+                module1_focus: { pos: new THREE.Vector3(5, 4, 8), target: new THREE.Vector3(0, 1.5, 0) },
+                modules1_2_horizontal: { pos: new THREE.Vector3(7, 3, 7), target: new THREE.Vector3(2, 1.5, 0) },
+                horizontal_connection_detail: { pos: new THREE.Vector3(4.5, 2.5, 2), target: new THREE.Vector3(2, 1.5, 0) },
+                module3_approach: { pos: new THREE.Vector3(5, 10, 8), target: new THREE.Vector3(0, 4.5, 0) },
+                modules3_4_vertical: { pos: new THREE.Vector3(7, 7, 7), target: new THREE.Vector3(2, 4.5, 0) },
+                vertical_connection_detail: { pos: new THREE.Vector3(4.5, 5.5, 2), target: new THREE.Vector3(2, 4.5, 0) },
+                final_view: { pos: new THREE.Vector3(10, 8, 15), target: new THREE.Vector3(2, 3, 0) } // Overall building view
+            };
+
+            // Step 0: Initial state (all modules off-screen/idle)
+            animationTimeline.addLabel("start");
+            gsap.set("#info-display", { textContent: "Assembly Step: Idle" });
+            gsap.to(camera.position, { duration: 0, x: CAM_POSITIONS.initial.pos.x, y: CAM_POSITIONS.initial.pos.y, z: CAM_POSITIONS.initial.pos.z, ease: "none" });
+            gsap.to(controls.target, { duration: 0, x: CAM_POSITIONS.initial.target.x, y: CAM_POSITIONS.initial.target.y, z: CAM_POSITIONS.initial.target.z, ease: "none" });
+
+
+            // Step 1: Module 1 approaches
+            animationTimeline.to(modules[0].position, {
+                x: moduleData[0].targetPos.x,
+                y: moduleData[0].targetPos.y,
+                z: moduleData[0].targetPos.z,
+                duration: 1.5,
+                ease: "power2.out",
+                onStart: () => gsap.to("#info-display", { duration: 0.3, textContent: 'Module 1: Approaching Foundation Area' })
+            }, "module1-approach");
+            // Camera pans to Module 1
+            animationTimeline.to(camera.position, { duration: 1.5, x: CAM_POSITIONS.module1_focus.pos.x, y: CAM_POSITIONS.module1_focus.pos.y, z: CAM_POSITIONS.module1_focus.pos.z, ease: "power2.out" }, "module1-approach");
+            animationTimeline.to(controls.target, { duration: 1.5, x: CAM_POSITIONS.module1_focus.target.x, y: CAM_POSITIONS.module1_focus.target.y, z: CAM_POSITIONS.module1_focus.target.z, ease: "power2.out" }, "module1-approach");
+
+
+            // Step 1.1: Module 1 fine placement (no camera change, just fine-tuning pos)
+            animationTimeline.to(modules[0].position, {
+                x: moduleData[0].targetPos.x,
+                y: moduleData[0].targetPos.y,
+                z: moduleData[0].targetPos.z,
+                duration: 0.5,
+                ease: "power1.out",
+                onStart: () => gsap.to("#info-display", { duration: 0.3, textContent: 'Module 1: Precise Foundation Placement' })
+            }, "module1-place");
+
+
+            // Step 2: Module 2 approaches (prep phase)
+            animationTimeline.to(modules[1].position, {
+                x: moduleData[1].initialPos.x, // Move back to initial x for a brief moment for dramatic approach
+                y: moduleData[1].targetPos.y,
+                z: moduleData[1].targetPos.z,
+                duration: 0.5, // brief pause
+                ease: "none",
+                onStart: () => gsap.to("#info-display", { duration: 0.3, textContent: 'Module 2: Preparing for Adjacent Placement' })
+            }, "module2-approach");
+            // Camera pans to prepare for Module 2
+            animationTimeline.to(camera.position, { duration: 0.5, x: CAM_POSITIONS.modules1_2_horizontal.pos.x, y: CAM_POSITIONS.modules1_2_horizontal.pos.y, z: CAM_POSITIONS.modules1_2_horizontal.pos.z, ease: "power2.out" }, "module2-approach");
+            animationTimeline.to(controls.target, { duration: 0.5, x: CAM_POSITIONS.modules1_2_horizontal.target.x, y: CAM_POSITIONS.modules1_2_horizontal.target.y, z: CAM_POSITIONS.modules1_2_horizontal.target.z, ease: "power2.out" }, "module2-approach");
+
+            // Actual approach of Module 2
+            animationTimeline.to(modules[1].position, {
+                x: moduleData[1].targetPos.x,
+                y: moduleData[1].targetPos.y,
+                z: moduleData[1].targetPos.z,
+                duration: 1.5,
+                ease: "power2.out",
+                onStart: () => gsap.to("#info-display", { duration: 0.3, textContent: 'Module 2: Approaching Module 1' })
+            }, "module2-approach+=0.5");
+
+
+            // Step 2.1: Module 2 fine placement
+            animationTimeline.to(modules[1].position, {
+                x: moduleData[1].targetPos.x,
+                y: moduleData[1].targetPos.y,
+                z: moduleData[1].targetPos.z,
+                duration: 0.5,
+                ease: "power1.out",
+                onStart: () => gsap.to("#info-display", { duration: 0.3, textContent: 'Module 2: Precise Adjacent Placement' })
+            }, "module2-place");
+            // Camera zooms in slightly for connection detail
+            animationTimeline.to(camera.position, { duration: 0.5, x: CAM_POSITIONS.horizontal_connection_detail.pos.x, y: CAM_POSITIONS.horizontal_connection_detail.pos.y, z: CAM_POSITIONS.horizontal_connection_detail.pos.z, ease: "power1.out" }, "module2-place");
+            animationTimeline.to(controls.target, { duration: 0.5, x: CAM_POSITIONS.horizontal_connection_detail.target.x, y: CAM_POSITIONS.horizontal_connection_detail.target.y, z: CAM_POSITIONS.horizontal_connection_detail.target.z, ease: "power1.out" }, "module2-place");
+
+
+            // Step 3: Horizontal Connection Phase - Receptor Plates Extend
+            animationTimeline.addLabel("horizontal-plates-extend", "+=0.5"); // Short delay to let camera settle
+            // Make module 2 transparent to show internals
+            animationTimeline.to(modules[1].getObjectByName('mainMesh').material, { opacity: 0.5, duration: 0.5 }, "horizontal-plates-extend");
+
+            const rpXNeg0_M2 = modules[1].getObjectByName('receptorPlate-X--0');
+            const rpXNeg1_M2 = modules[1].getObjectByName('receptorPlate-X--1');
+            const rpXNeg2_M2 = modules[1].getObjectByName('receptorPlate-X--2');
+
+            if (rpXNeg0_M2) animationTimeline.to(rpXNeg0_M2.position, { x: -MODULE_WIDTH/2 - 0.1, duration: 0.5 }, "horizontal-plates-extend");
+            if (rpXNeg1_M2) animationTimeline.to(rpXNeg1_M2.position, { x: -MODULE_WIDTH/2 - 0.1, duration: 0.5 }, "<");
+            if (rpXNeg2_M2) animationTimeline.to(rpXNeg2_M2.position, { x: -MODULE_WIDTH/2 - 0.1, duration: 0.5 }, "<");
+            animationTimeline.to("#info-display", { duration: 0.3, textContent: 'Connection: Horizontal Receptor Plates Extend' }, "<");
+
+            // Step 3.1: Horizontal Connection Phase - Bolts Extend
+            animationTimeline.addLabel("horizontal-bolts-extend", "+=0.3"); // Add a small delay
+            ['boltShaft-X+-0', 'boltShaft-X+-1', 'boltShaft-X+-2'].forEach(name => {
+                const boltShaft = modules[0].getObjectByName(name);
+                if (boltShaft) {
+                    animationTimeline.to(boltShaft.position, { x: MODULE_WIDTH/2 + 0.25, duration: 0.7, ease: "power1.out" }, "horizontal-bolts-extend");
+                }
+            });
+            ['boltHead-X+-0', 'boltHead-X+-1', 'boltHead-X+-2'].forEach(name => {
+                const boltHead = modules[0].getObjectByName(name);
+                if (boltHead) {
+                    animationTimeline.to(boltHead.position, { x: MODULE_WIDTH/2 + 0.25 - boltHeadThickness/2, duration: 0.7, ease: "power1.out" }, "<");
+                }
+            });
+            animationTimeline.to("#info-display", { duration: 0.3, textContent: 'Connection: Horizontal Bolts Engaging' }, "<");
+
+            // Step 3.2: Horizontal Connection Phase - Bolts Tighten
+            animationTimeline.addLabel("horizontal-bolts-tighten", "+=0.3"); // Add a small delay
+            ['boltShaft-X+-0', 'boltShaft-X+-1', 'boltShaft-X+-2'].forEach(name => {
+                const boltShaft = modules[0].getObjectByName(name);
+                if (boltShaft) {
+                    animationTimeline.to(boltShaft.position, { x: MODULE_WIDTH/2 + 0.2, duration: 0.3 }, "horizontal-bolts-tighten");
+                }
+            });
+            ['boltHead-X+-0', 'boltHead-X+-1', 'boltHead-X+-2'].forEach(name => {
+                const boltHead = modules[0].getObjectByName(name);
+                if (boltHead) {
+                    animationTimeline.to(boltHead.position, { x: MODULE_WIDTH/2 + 0.2 - boltHeadThickness/2, duration: 0.3 }, "<");
+                }
+            });
+            animationTimeline.to(modules[0].getObjectByName('mainMesh').material.emissive, { r: 0.1, g: 0.1, b: 0.1, duration: 0.2 }, "<")
+                             .to(modules[1].getObjectByName('mainMesh').material.emissive, { r: 0.1, g: 0.1, b: 0.1, duration: 0.2 }, "<")
+                             .to("#info-display", { duration: 0.3, textContent: 'Connection: Horizontal Bolts Tightened & Secured' }, "<")
+                             .to(modules[0].getObjectByName('mainMesh').material.emissive, { r: 0, g: 0, b: 0, duration: 0.5 }, "+=0.1")
+                             .to(modules[1].getObjectByName('mainMesh').material.emissive, { r: 0, g: 0, b: 0, duration: 0.5 }, "<");
+
+            // Step 3.3: Horizontal Utility Connection (Pipe and Wire)
+            animationTimeline.addLabel("horizontal-utility-connect", "+=0.5");
+            animationTimeline.call(() => {
+                const pipe = modules[0].getObjectByName('utilityPipe-X+');
+                const wire = modules[0].getObjectByName('utilityWire-X+');
+                const targetModule = modules[1];
+                
+                const port1WorldPos = new THREE.Vector3();
+                const port1 = modules[0].getObjectByName('utilityPort-X+');
+                if (port1) port1.getWorldPosition(port1WorldPos);
+
+                const port2WorldPos = new THREE.Vector3();
+                const port2 = targetModule.getObjectByName('utilityPort-X-'); 
+                if (port2) port2.getWorldPosition(port2WorldPos);
+
+                if (pipe && wire && port1 && port2) {
+                    const pipeStartPos = modules[0].worldToLocal(port1WorldPos);
+                    const pipeEndPos = modules[0].worldToLocal(port2WorldPos);
+
+                    const pipeDirection = new THREE.Vector3().subVectors(pipeEndPos, pipeStartPos);
+                    const pipeLength = pipeDirection.length();
+
+                    pipe.visible = true;
+                    pipe.geometry = new THREE.CylinderGeometry(0.125, 0.125, pipeLength, 8); 
+                    pipe.position.copy(pipeStartPos);
+                    pipe.position.add(pipeDirection.multiplyScalar(0.5)); 
+                    pipe.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), pipeDirection.normalize()); 
+                    pipe.scale.y = 0.5; // Starts at 50% length
+                    gsap.to(pipe.scale, { y: 1, duration: 1, ease: "power2.out" });
+
+                    // For wire, slightly different position and then animate
+                    const wireOffset = new THREE.Vector3(0, 0.1, 0); // Offset in Y for X-axis connections
+                    const wireStartPos = new THREE.Vector3().copy(pipeStartPos).add(wireOffset);
+                    const wireEndPos = new THREE.Vector3().copy(pipeEndPos).add(wireOffset);
+                    const wireDirection = new THREE.Vector3().subVectors(wireEndPos, wireStartPos);
+                    const wireLength = wireDirection.length();
+
+                    wire.visible = true;
+                    wire.geometry = new THREE.CylinderGeometry(0.075, 0.075, wireLength, 8); 
+                    wire.position.copy(wireStartPos);
+                    wire.position.add(wireDirection.multiplyScalar(0.5));
+                    wire.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), wireDirection.normalize());
+                    wire.scale.y = 0.5; // Starts at 50% length
+                    gsap.to(wire.scale, { y: 1, duration: 1, ease: "power2.out" }, "<"); // Start wire animation with pipe
+
+                    gsap.to("#info-display", { duration: 0.3, textContent: 'Utility Connection: Horizontal Water/Power & Data Link-up' }, "<");
+                } else {
+                    console.warn("Could not find utility pipes/wires or ports for horizontal connection animation.");
+                }
+            }, null, "horizontal-utility-connect");
+
+            // Make module 2 opaque again after horizontal connection details
+            animationTimeline.to(modules[1].getObjectByName('mainMesh').material, { opacity: 1, duration: 0.5 }, "horizontal-utility-connect+=1.0");
+
+
+            // Step 4: Module 3 approaches
+            animationTimeline.to(modules[2].position, {
+                x: moduleData[2].targetPos.x,
+                y: moduleData[2].targetPos.y,
+                z: moduleData[2].targetPos.z,
+                duration: 1.5,
+                ease: "power2.out",
+                onStart: () => gsap.to("#info-display", { duration: 0.3, textContent: 'Module 3: Approaching Vertical Stacking Area' })
+            }, "module3-approach");
+            // Camera pans to Module 3 approach
+            animationTimeline.to(camera.position, { duration: 1.5, x: CAM_POSITIONS.module3_approach.pos.x, y: CAM_POSITIONS.module3_approach.pos.y, z: CAM_POSITIONS.module3_approach.pos.z, ease: "power2.out" }, "module3-approach");
+            animationTimeline.to(controls.target, { duration: 1.5, x: CAM_POSITIONS.module3_approach.target.x, y: CAM_POSITIONS.module3_approach.target.y, z: CAM_POSITIONS.module3_approach.target.z, ease: "power2.out" }, "module3-approach");
+
+
+            // Step 4.1: Module 3 fine placement
+            animationTimeline.to(modules[2].position, {
+                x: moduleData[2].targetPos.x,
+                y: moduleData[2].targetPos.y,
+                z: moduleData[2].targetPos.z,
+                duration: 0.5,
+                ease: "power1.out",
+                onStart: () => gsap.to("#info-display", { duration: 0.3, textContent: 'Module 3: Precise Vertical Stacking' })
+            }, "module3-place");
+
+
+            // Step 5: Module 4 approaches
+            animationTimeline.to(modules[3].position, {
+                x: moduleData[3].targetPos.x,
+                y: moduleData[3].targetPos.y,
+                z: moduleData[3].targetPos.z,
+                duration: 1.5,
+                ease: "power2.out",
+                onStart: () => gsap.to("#info-display", { duration: 0.3, textContent: 'Module 4: Approaching Vertical Stacking Area' })
+            }, "module4-approach");
+            // Camera pans to Module 4 approach and shows both second level modules
+            animationTimeline.to(camera.position, { duration: 1.5, x: CAM_POSITIONS.modules3_4_vertical.pos.x, y: CAM_POSITIONS.modules3_4_vertical.pos.y, z: CAM_POSITIONS.modules3_4_vertical.pos.z, ease: "power2.out" }, "module4-approach");
+            animationTimeline.to(controls.target, { duration: 1.5, x: CAM_POSITIONS.modules3_4_vertical.target.x, y: CAM_POSITIONS.modules3_4_vertical.target.y, z: CAM_POSITIONS.modules3_4_vertical.target.z, ease: "power2.out" }, "module4-approach");
+
+
+            // Step 5.1: Module 4 fine placement
+            animationTimeline.to(modules[3].position, {
+                x: moduleData[3].targetPos.x,
+                y: moduleData[3].targetPos.y,
+                z: moduleData[3].targetPos.z,
+                duration: 0.5,
+                ease: "power1.out",
+                onStart: () => gsap.to("#info-display", { duration: 0.3, textContent: 'Module 4: Precise Vertical Stacking' })
+            }, "module4-place");
+            // Camera zooms in for vertical connection detail
+            animationTimeline.to(camera.position, { duration: 0.5, x: CAM_POSITIONS.vertical_connection_detail.pos.x, y: CAM_POSITIONS.vertical_connection_detail.pos.y, z: CAM_POSITIONS.vertical_connection_detail.pos.z, ease: "power1.out" }, "module4-place");
+            animationTimeline.to(controls.target, { duration: 0.5, x: CAM_POSITIONS.vertical_connection_detail.target.x, y: CAM_POSITIONS.vertical_connection_detail.target.y, z: CAM_POSITIONS.vertical_connection_detail.target.z, ease: "power1.out" }, "module4-place");
+
+
+            // Step 6: Vertical Connection Phase - Receptor Plates Extend
+            animationTimeline.addLabel("vertical-plates-extend", "+=0.5");
+            // Make modules 1 and 2 transparent to show internals
+            animationTimeline.to(modules[0].getObjectByName('mainMesh').material, { opacity: 0.5, duration: 0.5 }, "vertical-plates-extend");
+            animationTimeline.to(modules[1].getObjectByName('mainMesh').material, { opacity: 0.5, duration: 0.5 }, "<"); // Sync with module 1 transparency
+
+            animationTimeline.to("#info-display", { duration: 0.3, textContent: 'Connection: Vertical Receptor Plates Extend' }, "<")
+                             .call(() => {
+                                 // Module 1's +Y receptor plates extend (local y position)
+                                 for(let i=0; i<3; i++) {
+                                     const rp = modules[0].getObjectByName(`receptorPlate-Y+-${i}`);
+                                     if(rp) gsap.to(rp.position, { y: MODULE_HEIGHT/2 + 0.1, duration: 0.5 });
+                                 }
+                                 // Module 2's +Y receptor plates extend (local y position)
+                                 for(let i=0; i<3; i++) {
+                                     const rp = modules[1].getObjectByName(`receptorPlate-Y+-${i}`);
+                                     if(rp) gsap.to(rp.position, { y: MODULE_HEIGHT/2 + 0.1, duration: 0.5 });
+                                 }
+                             });
+
+            // Step 6.1: Vertical Connection Phase - Bolts Extend
+            animationTimeline.addLabel("vertical-bolts-extend", "+=0.3");
+            // Bolts from Module 3's -Y face engage Module 1's +Y receptor plates
+            ['boltShaft-Y--0', 'boltShaft-Y--1', 'boltShaft-Y--2'].forEach(name => {
+                const boltShaft = modules[2].getObjectByName(name); 
+                if (boltShaft) {
+                    animationTimeline.to(boltShaft.position, { y: -MODULE_HEIGHT/2 - 0.25, duration: 0.7, ease: "power1.out" }, "vertical-bolts-extend");
+                }
+            });
+            ['boltHead-Y--0', 'boltHead-Y--1', 'boltHead-Y--2'].forEach(name => {
+                const boltHead = modules[2].getObjectByName(name);
+                if (boltHead) {
+                    animationTimeline.to(boltHead.position, { y: -MODULE_HEIGHT/2 - 0.25 + boltHeadThickness/2, duration: 0.7, ease: "power1.out" }, "<");
+                }
+            });
+            // Bolts from Module 4's -Y face engage Module 2's +Y receptor plates
+            ['boltShaft-Y--0', 'boltShaft-Y--1', 'boltShaft-Y--2'].forEach(name => {
+                const boltShaft = modules[3].getObjectByName(name);
+                if (boltShaft) {
+                    animationTimeline.to(boltShaft.position, { y: -MODULE_HEIGHT/2 - 0.25, duration: 0.7, ease: "power1.out" }, "<");
+                }
+            });
+            ['boltHead-Y--0', 'boltHead-Y--1', 'boltHead-Y--2'].forEach(name => {
+                const boltHead = modules[3].getObjectByName(name);
+                if (boltHead) {
+                    animationTimeline.to(boltHead.position, { y: -MODULE_HEIGHT/2 - 0.25 + boltHeadThickness/2, duration: 0.7, ease: "power1.out" }, "<");
+                }
+            });
+            animationTimeline.to("#info-display", { duration: 0.3, textContent: 'Connection: Vertical Bolts Engaging' }, "<");
+
+            // Step 6.2: Vertical Connection Phase - Bolts Tighten
+            animationTimeline.addLabel("vertical-bolts-tighten", "+=0.3");
+            ['boltShaft-Y--0', 'boltShaft-Y--1', 'boltShaft-Y--2'].forEach(name => {
+                const boltShaft = modules[2].getObjectByName(name);
+                if (boltShaft) {
+                    animationTimeline.to(boltShaft.position, { y: -MODULE_HEIGHT/2 - 0.2, duration: 0.3 }, "vertical-bolts-tighten");
+                }
+            });
+            ['boltHead-Y--0', 'boltHead-Y--1', 'boltHead-Y--2'].forEach(name => {
+                const boltHead = modules[2].getObjectByName(name);
+                if (boltHead) {
+                    animationTimeline.to(boltHead.position, { y: -MODULE_HEIGHT/2 - 0.2 + boltHeadThickness/2, duration: 0.3 }, "<");
+                }
+            });
+            ['boltShaft-Y--0', 'boltShaft-Y--1', 'boltShaft-Y--2'].forEach(name => {
+                const boltShaft = modules[3].getObjectByName(name);
+                if (boltShaft) {
+                    animationTimeline.to(boltShaft.position, { y: -MODULE_HEIGHT/2 - 0.2, duration: 0.3 }, "<");
+                }
+            });
+            ['boltHead-Y--0', 'boltHead-Y--1', 'boltHead-Y--2'].forEach(name => {
+                const boltHead = modules[3].getObjectByName(name);
+                if (boltHead) {
+                    animationTimeline.to(boltHead.position, { y: -MODULE_HEIGHT/2 - 0.2 + boltHeadThickness/2, duration: 0.3 }, "<");
+                }
+            });
+
+            animationTimeline.to(modules[2].getObjectByName('mainMesh').material.emissive, { r: 0.1, g: 0.1, b: 0.1, duration: 0.2 }, "<")
+                             .to(modules[3].getObjectByName('mainMesh').material.emissive, { r: 0.1, g: 0.1, b: 0.1, duration: 0.2 }, "<")
+                             .to("#info-display", { duration: 0.3, textContent: 'Connection: Vertical Bolts Tightened & Secured' }, "<")
+                             .to(modules[2].getObjectByName('mainMesh').material.emissive, { r: 0, g: 0, b: 0, duration: 0.5 }, "+=0.1")
+                             .to(modules[3].getObjectByName('mainMesh').material.emissive, { r: 0, g: 0, b: 0, duration: 0.5 }, "<");
+
+
+            // Step 6.3: Vertical Utility Connection (Module 3 and Module 4 Horizontal on second floor)
+            animationTimeline.addLabel("vertical-utility-connect-second-floor-horizontal", "+=0.5");
+            animationTimeline.call(() => {
+                const pipe = modules[2].getObjectByName('utilityPipe-X+');
+                const wire = modules[2].getObjectByName('utilityWire-X+');
+                const targetModule = modules[3];
+                const port3WorldPos = new THREE.Vector3();
+                const port3 = modules[2].getObjectByName('utilityPort-X+');
+                if (port3) port3.getWorldPosition(port3WorldPos);
+
+                const port4WorldPos = new THREE.Vector3();
+                const port4 = targetModule.getObjectByName('utilityPort-X-'); 
+                if (port4) port4.getWorldPosition(port4WorldPos);
+
+                if (pipe && wire && port3 && port4) {
+                    const pipeStartPos = modules[2].worldToLocal(port3WorldPos);
+                    const pipeEndPos = modules[2].worldToLocal(port4WorldPos);
+
+                    const pipeDirection = new THREE.Vector3().subVectors(pipeEndPos, pipeStartPos);
+                    const pipeLength = pipeDirection.length();
+
+                    pipe.visible = true;
+                    pipe.geometry = new THREE.CylinderGeometry(0.125, 0.125, pipeLength, 8); 
+                    pipe.position.copy(pipeStartPos);
+                    pipe.position.add(pipeDirection.multiplyScalar(0.5));
+                    pipe.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), pipeDirection.normalize());
+                    pipe.scale.y = 0.5; // Starts at 50% length
+                    gsap.to(pipe.scale, { y: 1, duration: 1, ease: "power2.out" });
+
+                    // For wire, slightly different position and then animate
+                    const wireOffset = new THREE.Vector3(0, 0.1, 0); // Offset in Y for X-axis connections
+                    const wireStartPos = new THREE.Vector3().copy(pipeStartPos).add(wireOffset);
+                    const wireEndPos = new THREE.Vector3().copy(pipeEndPos).add(wireOffset);
+                    const wireDirection = new THREE.Vector3().subVectors(wireEndPos, wireStartPos);
+                    const wireLength = wireDirection.length();
+
+                    wire.visible = true;
+                    wire.geometry = new THREE.CylinderGeometry(0.075, 0.075, wireLength, 8); 
+                    wire.position.copy(wireStartPos);
+                    wire.position.add(wireDirection.multiplyScalar(0.5));
+                    wire.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), wireDirection.normalize());
+                    wire.scale.y = 0.5; // Starts at 50% length
+                    gsap.to(wire.scale, { y: 1, duration: 1, ease: "power2.out" }, "<");
+
+                    gsap.to("#info-display", { duration: 0.3, textContent: 'Utility Connection: Second Floor Water/Power & Data Link-up (Horizontal)' }, "<");
+                } else {
+                    console.warn("Could not find utility pipes/wires or ports for second floor horizontal connection animation.");
+                }
+            }, null, "vertical-utility-connect-second-floor-horizontal");
+
+            // Step 6.4: Vertical Utility Connection (Module 1 and Module 3 vertical)
+            animationTimeline.addLabel("vertical-utility-connect-module1-3", "+=0.5");
+            animationTimeline.call(() => {
+                const pipe = modules[0].getObjectByName('utilityPipe-Y+'); // Pipe on module 1, connecting up
+                const wire = modules[0].getObjectByName('utilityWire-Y+');
+                const targetModule = modules[2]; // Module 3
+                const port1WorldPos = new THREE.Vector3();
+                const port1 = modules[0].getObjectByName('utilityPort-Y+');
+                if (port1) port1.getWorldPosition(port1WorldPos);
+
+                const port3WorldPos = new THREE.Vector3();
+                const port3 = targetModule.getObjectByName('utilityPort-Y-'); // Port on module 3, connecting down
+                if (port3) port3.getWorldPosition(port3WorldPos);
+
+                if (pipe && wire && port1 && port3) {
+                    const pipeStartPos = modules[0].worldToLocal(port1WorldPos);
+                    const pipeEndPos = modules[0].worldToLocal(port3WorldPos);
+
+                    const pipeDirection = new THREE.Vector3().subVectors(pipeEndPos, pipeStartPos);
+                    const pipeLength = pipeDirection.length();
+
+                    pipe.visible = true;
+                    pipe.geometry = new THREE.CylinderGeometry(0.125, 0.125, pipeLength, 8); 
+                    pipe.position.copy(pipeStartPos);
+                    pipe.position.add(pipeDirection.multiplyScalar(0.5));
+                    pipe.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), pipeDirection.normalize()); // Y-axis aligned
+                    pipe.scale.y = 0.5; // Starts at 50% length
+                    gsap.to(pipe.scale, { y: 1, duration: 1, ease: "power2.out" });
+
+                    // For wire, slightly different position and then animate
+                    const wireOffset = new THREE.Vector3(0.1, 0, 0); // Offset in X for Y-axis connections
+                    const wireStartPos = new THREE.Vector3().copy(pipeStartPos).add(wireOffset);
+                    const wireEndPos = new THREE.Vector3().copy(pipeEndPos).add(wireOffset);
+                    const wireDirection = new THREE.Vector3().subVectors(wireEndPos, wireStartPos);
+                    const wireLength = wireDirection.length();
+
+                    wire.visible = true;
+                    wire.geometry = new THREE.CylinderGeometry(0.075, 0.075, wireLength, 8); 
+                    wire.position.copy(wireStartPos);
+                    wire.position.add(wireDirection.multiplyScalar(0.5));
+                    wire.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), wireDirection.normalize()); // Y-axis aligned
+                    wire.scale.y = 0.5; // Starts at 50% length
+                    gsap.to(wire.scale, { y: 1, duration: 1, ease: "power2.out" }, "<");
+
+                    gsap.to("#info-display", { duration: 0.3, textContent: 'Utility Connection: Ground to Second Floor Link-up (Module 1-3)' }, "<");
+                } else {
+                    console.warn("Could not find utility pipes/wires or ports for vertical connection Module 1-3 animation.");
+                }
+            }, null, "vertical-utility-connect-module1-3");
+
+            // Step 6.5: Vertical Utility Connection (Module 2 and Module 4 vertical)
+            animationTimeline.addLabel("vertical-utility-connect-module2-4", "+=0.5");
+            animationTimeline.call(() => {
+                const pipe = modules[1].getObjectByName('utilityPipe-Y+'); // Pipe on module 2, connecting up
+                const wire = modules[1].getObjectByName('utilityWire-Y+');
+                const targetModule = modules[3]; // Module 4
+                const port2WorldPos = new THREE.Vector3();
+                const port2 = modules[1].getObjectByName('utilityPort-Y+');
+                if (port2) port2.getWorldPosition(port2WorldPos);
+
+                const port4WorldPos = new THREE.Vector3();
+                const port4 = targetModule.getObjectByName('utilityPort-Y-'); // Port on module 4, connecting down
+                if (port4) port4.getWorldPosition(port4WorldPos);
+
+                if (pipe && wire && port2 && port4) {
+                    const pipeStartPos = modules[1].worldToLocal(port2WorldPos);
+                    const pipeEndPos = modules[1].worldToLocal(port4WorldPos);
+
+                    const pipeDirection = new THREE.Vector3().subVectors(pipeEndPos, pipeStartPos);
+                    const pipeLength = pipeDirection.length();
+
+                    pipe.visible = true;
+                    pipe.geometry = new THREE.CylinderGeometry(0.125, 0.125, pipeLength, 8); 
+                    pipe.position.copy(pipeStartPos);
+                    pipe.position.add(pipeDirection.multiplyScalar(0.5));
+                    pipe.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), pipeDirection.normalize()); // Y-axis aligned
+                    pipe.scale.y = 0.5; // Starts at 50% length
+                    gsap.to(pipe.scale, { y: 1, duration: 1, ease: "power2.out" });
+
+                    // For wire, slightly different position and then animate
+                    const wireOffset = new THREE.Vector3(0.1, 0, 0); // Offset in X for Y-axis connections
+                    const wireStartPos = new THREE.Vector3().copy(pipeStartPos).add(wireOffset);
+                    const wireEndPos = new THREE.Vector3().copy(pipeEndPos).add(wireOffset);
+                    const wireDirection = new THREE.Vector3().subVectors(wireEndPos, wireStartPos);
+                    const wireLength = wireDirection.length();
+
+                    wire.visible = true;
+                    wire.geometry = new THREE.CylinderGeometry(0.075, 0.075, wireLength, 8); 
+                    wire.position.copy(wireStartPos);
+                    wire.position.add(wireDirection.multiplyScalar(0.5));
+                    wire.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), wireDirection.normalize()); // Y-axis aligned
+                    wire.scale.y = 0.5; // Starts at 50% length
+                    gsap.to(wire.scale, { y: 1, duration: 1, ease: "power2.out" }, "<");
+
+                    gsap.to("#info-display", { duration: 0.3, textContent: 'Utility Connection: Ground to Second Floor Link-up (Module 2-4)' }, "<");
+                } else {
+                    console.warn("Could not find utility pipes/wires or ports for vertical connection Module 2-4 animation.");
+                }
+            }, null, "vertical-utility-connect-module2-4");
+
+
+            // Make modules 1 and 2 opaque again after vertical connection details
+            animationTimeline.to(modules[0].getObjectByName('mainMesh').material, { opacity: 1, duration: 0.5 }, "vertical-utility-connect-module2-4+=1.0");
+            animationTimeline.to(modules[1].getObjectByName('mainMesh').material, { opacity: 1, duration: 0.5 }, "<"); // Sync with module 1 opacity
+
+            // Final camera view
+            animationTimeline.to(camera.position, { duration: 1, x: CAM_POSITIONS.final_view.pos.x, y: CAM_POSITIONS.final_view.pos.y, z: CAM_POSITIONS.final_view.pos.z, ease: "power2.out" }, "vertical-utility-connect-module2-4+=1.5");
+            animationTimeline.to(controls.target, { duration: 1, x: CAM_POSITIONS.final_view.target.x, y: CAM_POSITIONS.final_view.target.y, z: CAM_POSITIONS.final_view.target.z, ease: "power2.out" }, "<");
+
+
+            // Link slider to timeline progress
+            progressSlider.addEventListener('input', () => {
+                animationTimeline.progress(progressSlider.value / 100);
+            });
+        }
+
+
+        /**
+         * Updates the information display based on the animation progress.
+         */
+        function updateInfoDisplay() {
+            const progress = animationTimeline.progress();
+            // Round the progress for the slider to avoid excessive decimal places
+            progressSlider.value = Math.round(progress * 100);
+
+            const labels = animationTimeline.labels;
+            let currentLabel = 'Idle';
+            let closestLabelTime = -Infinity;
+
+            for (const label in labels) {
+                if (labels[label] <= animationTimeline.time() && labels[label] > closestLabelTime) {
+                    closestLabelTime = labels[label];
+                    // Update currentLabel based on the new, more granular labels
+                    if (label === 'start') {
+                        currentLabel = 'Assembly Step: Ready';
+                    } else if (label === 'module1-approach') {
+                        currentLabel = 'Module 1: Approaching Foundation Area';
+                    } else if (label === 'module1-place') {
+                        currentLabel = 'Module 1: Precise Foundation Placement';
+                    } else if (label === 'module2-approach') {
+                        currentLabel = 'Module 2: Preparing for Adjacent Placement';
+                    } else if (label === 'module2-place') {
+                        currentLabel = 'Module 2: Precise Adjacent Placement';
+                    } else if (label === 'horizontal-plates-extend') {
+                        currentLabel = 'Connection: Horizontal Receptor Plates Extend';
+                    } else if (label === 'horizontal-bolts-extend') {
+                        currentLabel = 'Connection: Horizontal Bolts Engaging';
+                    } else if (label === 'horizontal-bolts-tighten') {
+                        currentLabel = 'Connection: Horizontal Bolts Tightened & Secured';
+                    } else if (label === 'horizontal-utility-connect') {
+                        currentLabel = 'Utility Connection: Horizontal Water/Power & Data Link-up';
+                    } else if (label === 'module3-approach') {
+                        currentLabel = 'Module 3: Approaching Vertical Stacking Area';
+                    } else if (label === 'module3-place') {
+                        currentLabel = 'Module 3: Precise Vertical Stacking';
+                    } else if (label === 'module4-approach') {
+                        currentLabel = 'Module 4: Approaching Vertical Stacking Area';
+                    } else if (label === 'module4-place') {
+                        currentLabel = 'Module 4: Precise Vertical Stacking';
+                    } else if (label === 'vertical-plates-extend') {
+                        currentLabel = 'Connection: Vertical Receptor Plates Extend';
+                    } else if (label === 'vertical-bolts-extend') {
+                        currentLabel = 'Connection: Vertical Bolts Engaging';
+                    } else if (label === 'vertical-bolts-tighten') {
+                        currentLabel = 'Connection: Vertical Bolts Tightened & Secured';
+                    } else if (label === 'vertical-utility-connect-second-floor-horizontal') {
+                        currentLabel = 'Utility Connection: Second Floor Water/Power & Data Link-up (Horizontal)';
+                    } else if (label === 'vertical-utility-connect-module1-3') {
+                        currentLabel = 'Utility Connection: Ground to Second Floor Link-up (Module 1-3)';
+                    } else if (label === 'vertical-utility-connect-module2-4') {
+                        currentLabel = 'Utility Connection: Ground to Second Floor Link-up (Module 2-4)';
+                    }
+                }
+            }
+            if (animationTimeline.progress() === 1) {
+                currentLabel = 'Assembly Complete!';
+            }
+
+            infoDisplay.textContent = currentLabel;
+        }
+
+        /**
+         * Handles window resizing to adjust camera aspect ratio and renderer size.
+         */
+        function onWindowResize() {
+            const container = document.getElementById('threejs-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+        }
+
+        /**
+         * The main animation loop.
+         */
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // --- Event Listeners for UI ---
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const progressSlider = document.getElementById('progressSlider');
+        const infoDisplay = document.getElementById('info-display');
+
+        playPauseBtn.addEventListener('click', () => {
+            if (animationTimeline.paused()) {
+                animationTimeline.play();
+                playPauseBtn.textContent = 'Pause';
+            } else {
+                animationTimeline.pause();
+                playPauseBtn.textContent = 'Play';
+            }
+        });
+
+        resetBtn.addEventListener('click', () => {
+            animationTimeline.restart().pause(0);
+            playPauseBtn.textContent = 'Play';
+            infoDisplay.textContent = 'Assembly Step: Ready';
+            progressSlider.value = 0;
+            // Reset all module components explicitly for a clean restart
+            modules.forEach(resetModuleVisualState);
+        });
+
+        // Initialize on window load
+        window.onload = function() {
+            init();
+        };
+
+    </script>
+</body>
+</html>
