@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simplified Google Slides HTML Player</title>
+    <style>
+        /* Basic Reset & Font Setup */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #f0f8ff, #add8e6); /* Light blue to sky blue gradient */
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden; /* Prevent horizontal scroll */
+            animation: backgroundFadeIn 1.5s ease-out forwards;
+        }
+
+        @keyframes backgroundFadeIn {
+            from { background-color: #f8f8f8; opacity: 0; }
+            to { background-color: #add8e6; opacity: 1; }
+        }
+
+        /* Main Container - The "Player" Frame */
+        .player-container {
+            background-color: #ffffff;
+            border-radius: 25px; /* More pronounced rounded corners */
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3); /* Deep shadow */
+            padding: 30px;
+            margin: 20px;
+            width: 95%;
+            max-width: 1000px; /* Adjusted max-width for a more focused layout */
+            display: flex;
+            flex-direction: column; /* Stack elements vertically */
+            gap: 25px; /* Space between sections */
+            position: relative;
+            z-index: 1;
+            animation: scaleIn 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; /* Smooth entry animation */
+        }
+
+        @keyframes scaleIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        /* Google Slides Iframe Area - Corrected Responsive CSS */
+        .slides-embed-area {
+            position: relative; /* ESSENTIAL: establishes positioning context for the iframe */
+            /* Maintain aspect ratio. For 960x569, calculate height as percentage of width.
+               (569 / 960) * 100 = 59.27% */
+            padding-bottom: 59.27%; /* This creates the height for the aspect ratio */
+            height: 0; /* Important for the padding-bottom trick to work */
+            overflow: hidden; /* Ensures content respects border-radius */
+            border-radius: 18px; /* Rounded iframe container */
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle inner shadow */
+            background-color: #f0f0f0;
+            animation: fadeInScale 1.2s ease-out forwards;
+        }
+
+        .slides-embed-area iframe {
+            position: absolute; /* Positions the iframe absolutely within its relative parent */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* WackyBox Embed Section */
+        .wackybox-embed-section {
+            background-color: #f8f8f8;
+            border-radius: 18px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            animation: slideUpContent 1s ease-out forwards;
+        }
+
+        @keyframes slideUpContent {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .wackybox-embed-section h2 {
+            color: #4CAF50; /* Green for this section */
+            text-align: center;
+            margin-top: 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #c8e6c9;
+            font-size: 1.6em;
+            letter-spacing: 0.5px;
+            /* No content here, but keeping style for possible future use or structural integrity */
+        }
+
+        .wackybox-iframe {
+            width: 100%;
+            min-height: 400px; /* Generous height for the embedded content */
+            border: 1px solid #ccc;
+            border-radius: 12px;
+            background-color: #fff;
+            box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.1);
+            transition: opacity 0.5s ease-out; /* Smooth transition for content load */
+        }
+
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .player-container {
+                padding: 20px;
+                margin: 10px;
+                border-radius: 15px;
+            }
+            .slides-embed-area {
+                padding-bottom: 75%; /* More squarish for better mobile view if desired */
+            }
+            .wackybox-embed-section {
+                padding: 20px;
+                border-radius: 15px;
+            }
+            .wackybox-embed-section h2 {
+                font-size: 1.4em;
+            }
+            .wackybox-iframe {
+                min-height: 300px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .player-container {
+                padding: 15px;
+                margin: 5px;
+                border-radius: 10px;
+            }
+            .slides-embed-area {
+                padding-bottom: 85%; /* Even more squarish */
+            }
+            .wackybox-embed-section {
+                padding: 15px;
+                border-radius: 10px;
+            }
+            .wackybox-embed-section h2 {
+                font-size: 1.2em;
+            }
+            .wackybox-iframe {
+                min-height: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="player-container">
+        <!-- Google Slides Embed Area -->
+        <div class="slides-embed-area">
+            <!--
+            IMPORTANT: To ensure Google Slides does NOT auto-advance, you MUST modify the 'src' URL.
+            1. Go to File > Share > Publish to the web > Embed tab in Google Slides.
+            2. Copy the entire <iframe> code.
+            3. Find the 'src' URL within that code. It will look like:
+               https://docs.google.com/presentation/d/e/2PACX-1vR_YOUR_PRESENTATION_ID/embed?start=false&loop=false&delayms=3000
+            4. REMOVE EVERYTHING from the '?' onward, so the URL becomes:
+               https://docs.google.com/presentation/d/e/2PACX-1vR_YOUR_PRESENTATION_ID/embed
+            5. Paste this modified URL into the 'src' attribute below, keeping its original width/height.
+            -->
+            <iframe src="https://docs.google.com/presentation/d/e/2PACX-1vRpJ4JGq8Tn1i4uPiL7ED6zDPrnr-vD9cK2BAWcsyXlKnUuPQ6f51XdX6pH1xE95c7XT9vhKCbwoW8w/pubembed"
+                    frameborder="0"
+                    width="960"
+                    height="569"
+                    allowfullscreen="true"
+                    mozallowfullscreen="true"
+                    webkitallowfullscreen="true">
+            </iframe>
+        </div>
+
+        <!-- WackyBox Embed Section -->
+        <div class="wackybox-embed-section">
+            <h2></h2> <!-- Heading removed as requested -->
+            <iframe class="wackybox-iframe" src="https://wackybox.org/present3D" frameborder="0" allowfullscreen></iframe>
+        </div>
+    </div>
+</body>
+</html>
