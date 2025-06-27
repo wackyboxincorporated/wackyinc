@@ -3,1276 +3,870 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modular CLT Housing </title>
+    <title>Advanced Modular CLT Housing Visualization</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script type="importmap">
         {
             "imports": {
-                "three": "https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js",
-                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/"
+                "three": "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/"
             }
         }
     </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap');
+        
         body {
             font-family: 'Inter', sans-serif;
-            overflow: hidden; /* Prevent scrolling */
+            overflow: hidden;
+            background-color: #111;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
+        
         #app-container {
             display: flex;
             flex-direction: column;
             height: 100vh;
             width: 100vw;
-            background-color: #f0f0f0; /* Light background for the app */
+            background-color: #1a1a1a;
         }
+        
+        #header {
+            background: rgba(18, 18, 18, 0.8);
+            backdrop-filter: blur(10px);
+            color: #f0f0f0;
+            padding: 0.75rem 1.5rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 20;
+        }
+
+        #header h1 {
+            margin: 0;
+            font-size: 1.25rem;
+            color: #00dd82;
+            text-shadow: 0 0 10px rgba(0, 221, 130, 0.6);
+        }
+        
         #threejs-container {
-            flex-grow: 1; /* Allows canvas to take available space */
+            flex-grow: 1;
             position: relative;
-            background-color: #e0e7ee; /* Sky-like background */
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            margin: 1rem;
+            background-color: #000;
         }
+        
         canvas {
             display: block;
             width: 100% !important;
             height: 100% !important;
         }
+        
+        #controls-wrapper {
+            position: absolute;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 2rem);
+            max-width: 900px;
+            z-index: 10;
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+
+        #controls-wrapper.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(-50%) translateY(120%);
+        }
+
         #controls {
-            background-color: #ffffff;
-            padding: 1rem;
+            background: rgba(28, 28, 28, 0.75);
+            backdrop-filter: blur(12px);
+            padding: 1rem 1.5rem;
+            border: 1px solid #333;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
             border-radius: 12px;
-            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
-            margin: 1rem;
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
             gap: 1rem;
             align-items: center;
         }
-        button {
-            @apply px-4 py-2 rounded-lg font-medium transition-all duration-300 ease-in-out;
-            @apply bg-blue-500 text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        
+        .control-button {
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            font-size: 0.9rem;
+            padding: 10px 18px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background: linear-gradient(145deg, #3a3a3a, #2c2c2c);
+            color: #f0f0f0;
+            text-shadow: 0 1px 1px rgba(0,0,0,0.4);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
-        button:active {
-            transform: translateY(2px);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        .control-button i { font-size: 1rem; color: #00dd82; }
+        .control-button:hover {
+            background: linear-gradient(145deg, #4a4a4a, #383838);
+            border-color: #666;
+            transform: translateY(-2px);
         }
+        .control-button:active {
+            transform: translateY(0px);
+            background: linear-gradient(145deg, #2c2c2c, #222222);
+        }
+        .control-button.active {
+            background: linear-gradient(145deg, #00b368, #009a58);
+            border-color: #00dd82;
+            color: white;
+        }
+        
         input[type="range"] {
-            @apply w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer;
+            -webkit-appearance: none; appearance: none; width: 100%; height: 8px;
+            background: #222; border-radius: 4px; outline: none;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
         }
+        
         input[type="range"]::-webkit-slider-thumb {
-            @apply appearance-none w-4 h-4 bg-blue-500 rounded-full shadow-lg;
+            -webkit-appearance: none; appearance: none; width: 20px; height: 20px;
+            background: #f0f0f0; border: 2px solid #00dd82; border-radius: 50%;
+            cursor: grab; box-shadow: 0 0 8px rgba(0, 221, 130, 0.7); margin-top: -6px;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-        input[type="range"]::-moz-range-thumb {
-            @apply appearance-none w-4 h-4 bg-blue-500 rounded-full shadow-lg;
-        }
-        #progress-slider-container {
-            width: 250px; /* Fixed width for the slider container */
-            flex-shrink: 0; /* Ensures it doesn't shrink */
-            flex-grow: 0; /* Ensures it doesn't grow */
-        }
+        input[type="range"]:active::-webkit-slider-thumb { cursor: grabbing; transform: scale(1.1); box-shadow: 0 0 12px rgba(0, 221, 130, 1); }
+        
+        .slider-group { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; min-width: 180px; }
+        .slider-label { color: #aaa; font-size: 0.8rem; font-weight: 400; }
+
         #info-display {
-            width: 300px; /* Fixed width */
-            flex-shrink: 0; /* Ensures it doesn't shrink */
-            flex-grow: 0; /* Ensures it doesn't grow */
-            text-align: center;
-            white-space: nowrap; /* Prevent text wrapping */
-            overflow: hidden; /* Hide overflowed content */
-            text-overflow: ellipsis; /* Show ellipsis for truncated text */
-            @apply text-lg font-semibold text-gray-800 bg-gray-100 p-3 rounded-lg;
-            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+            font-size: 1rem; font-weight: 500; color: #00dd82; background-color: rgba(0,0,0,0.3);
+            padding: 8px 12px; border-radius: 8px; box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.4);
+            text-shadow: 0 0 5px rgba(0, 221, 130, 0.5); border: 1px solid #222; white-space: nowrap;
+        }
+
+        #view-controls { display: flex; gap: 0.5rem; }
+        
+        #loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #111;
+            z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: #fff; transition: opacity 0.5s ease;
+        }
+        #loading-overlay.hidden { opacity: 0; pointer-events: none; }
+        #loading-text { font-size: 1.5rem; }
+        #loading-bar-container { width: 300px; height: 4px; background: #333; border-radius: 2px; margin-top: 1rem; }
+        #loading-bar { width: 0%; height: 100%; background: #00dd82; border-radius: 2px; transition: width 0.3s; }
+
+        .tooltip { position: relative; display: inline-block; }
+        .tooltip .tooltiptext {
+            visibility: hidden; width: 140px; background-color: #111; color: #fff; text-align: center;
+            border-radius: 6px; padding: 5px 0; position: absolute; z-index: 1; bottom: 150%;
+            left: 50%; margin-left: -70px; opacity: 0; transition: opacity 0.3s; font-size: 0.8rem;
+        }
+        .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
+
+        @media (max-width: 768px) {
+            #header h1 { font-size: 1rem; }
+            #controls { flex-direction: column; gap: 1rem; }
         }
     </style>
 </head>
 <body>
+    <div id="loading-overlay">
+        <div id="loading-text">Loading Assets...</div>
+        <div id="loading-bar-container"><div id="loading-bar"></div></div>
+    </div>
     <div id="app-container">
-        <div id="threejs-container">
-            <!-- Three.js canvas will be appended here -->
-        </div>
-        <div id="controls">
-            <button id="playPauseBtn">Play</button>
-            <button id="resetBtn">Reset</button>
-            <div id="progress-slider-container">
-                <input type="range" id="progressSlider" min="0" max="100" value="0">
+        <div id="header">
+            <h1>Advanced Modular Housing Assembly</h1>
+            <div id="view-controls">
+                <div class="tooltip">
+                    <button id="toggle-controls-btn" class="control-button"><i class="fas fa-eye-slash"></i></button>
+                    <span class="tooltiptext">Hide Controls</span>
+                </div>
+                <div class="tooltip">
+                    <button id="view-perspective" class="control-button"><i class="fas fa-cube"></i></button>
+                    <span class="tooltiptext">Perspective View</span>
+                </div>
+                <div class="tooltip">
+                    <button id="view-top" class="control-button"><i class="fas fa-arrow-down"></i></button>
+                    <span class="tooltiptext">Top View</span>
+                </div>
+                <div class="tooltip">
+                    <button id="view-side" class="control-button"><i class="fas fa-arrows-left-right"></i></button>
+                    <span class="tooltiptext">Side View</span>
+                </div>
             </div>
-            <div id="info-display">Assembly Step: Idle</div>
+        </div>
+        <div id="threejs-container">
+            <div id="controls-wrapper">
+                <div id="controls">
+                    <button id="playPauseBtn" class="control-button"><i class="fas fa-play"></i> Play</button>
+                    <button id="resetBtn" class="control-button"><i class="fas fa-sync-alt"></i> Reset</button>
+                    <div class="slider-group">
+                        <label for="progressSlider" class="slider-label">Timeline</label>
+                        <input type="range" id="progressSlider" min="0" max="100" value="0">
+                    </div>
+                    <div class="slider-group">
+                        <label for="speedSlider" class="slider-label">Speed: <span id="speedDisplay">1.0x</span></label>
+                        <input type="range" id="speedSlider" min="10" max="1000" value="100">
+                    </div>
+                    <div id="info-display">Waiting to Start</div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script type="module">
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { Sky } from 'three/addons/objects/Sky.js';
 
-        // --- Scene Setup ---
-        let scene, camera, renderer, controls;
-        let animationTimeline;
-        const modules = []; // Array to hold our 3D module objects
-        const textureLoader = new THREE.TextureLoader();
-        const woodTexture = textureLoader.load('https://file.garden/ZMbUnW5nmTe-x54m/download.jpg');
-        woodTexture.wrapS = THREE.RepeatWrapping;
-        woodTexture.wrapT = THREE.RepeatWrapping;
-        woodTexture.repeat.set(2, 2); // Adjust tiling as needed for visual scale
+        // --- Global Components ---
+        let scene, camera, renderer, controls, animationTimeline, sky, sun;
+        const modules = [], moduleGroups = [], furnitureGroups = [];
+        let crane, craneHook, craneCable, fabricationArea, truck;
+        let waterPipe, electricCable;
+        const upVector = new THREE.Vector3(0, 1, 0);
+        
+        // --- Materials ---
+        let cltMaterial, concreteMaterial, glassMaterial, metalMaterial, craneMaterial, woodLogMaterial, truckMaterial;
 
-        // Global material for exterior CLT, allowing consistent transparency changes
-        let exteriorCLTMaterial;
-
+        // --- Configuration ---
         const moduleData = [
-            // Define module configurations for assembly
-            // Position: (x, y, z) relative to initial ground plane
-            // Target Position: where it should end up
-            // Initial Position: where it starts (off-screen for animation)
-            // Color: to differentiate modules (will be overridden by texture, but kept for material differentiation if desired)
-            // Description: for info display
-            {
-                id: 'module1',
-                targetPos: new THREE.Vector3(0, 1.5, 0),
-                initialPos: new THREE.Vector3(-20, 1.5, 0), // Comes from left
-                color: 0x964B00, // CLT Wood Brown (base color, texture will overlay)
-                description: 'Module 1: Foundation Placement'
-            },
-            {
-                id: 'module2',
-                targetPos: new THREE.Vector3(4, 1.5, 0),
-                initialPos: new THREE.Vector3(20, 1.5, 0), // Comes from right
-                color: 0xA0522D, // Slightly different wood tone (base color, texture will overlay)
-                description: 'Module 2: Adjacent Placement'
-            },
-            {
-                id: 'module3',
-                targetPos: new THREE.Vector3(0, 4.5, 0), // Stacks on module 1
-                initialPos: new THREE.Vector3(0, 20, 0), // Comes from top
-                color: 0x8B4513, // Another wood tone (base color, texture will overlay)
-                description: 'Module 3: Vertical Stacking'
-            },
-            {
-                id: 'module4',
-                targetPos: new THREE.Vector3(4, 4.5, 0), // Stacks on module 2
-                initialPos: new THREE.Vector3(4, -20, 0), // Comes from bottom
-                color: 0xB8860B, // Even another wood tone (base color, texture will overlay)
-                description: 'Module 4: Completing the Second Level'
-            }
+            { id: 'module1', targetPos: new THREE.Vector3(0, 0.15, 0) },
+            { id: 'module2', targetPos: new THREE.Vector3(4.2, 0.15, 0) },
+            { id: 'module3', targetPos: new THREE.Vector3(0, 3.3, 0) },
+            { id: 'module4', targetPos: new THREE.Vector3(4.2, 3.3, 0) }
         ];
+        const MODULE_WIDTH = 4, MODULE_HEIGHT = 3, MODULE_DEPTH = 8; // Increased depth
+        const panelThickness = 0.15;
+        const craneBasePosition = new THREE.Vector3(25, 0, -25);
+        const fabricationPosition = new THREE.Vector3(-35, 0.1, 15);
+        const truckStartPosition = new THREE.Vector3(-60, 0, -10);
+        const truckStopPosition = new THREE.Vector3(15, 0, -10);
+        const buildingCenter = new THREE.Vector3(2.1, 3.3, 0);
 
-        // Module dimensions
-        const MODULE_WIDTH = 4;
-        const MODULE_HEIGHT = 3;
-        const MODULE_DEPTH = 4;
+        // --- UI Elements ---
+        let playPauseBtn, resetBtn, progressSlider, speedSlider, speedDisplay, infoDisplay, toggleControlsBtn, controlsWrapper;
 
-        // Chamfer radius for edges (for visual simulation, not actual geometry modification)
-        const CHAMFER_SIZE = 0.1; // Represents 10cm bevel
-
-        // --- Functions ---
-
-        /**
-         * Initializes the Three.js scene, camera, renderer, and controls.
-         */
         function init() {
-            // Scene
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0xe0e7ee); // Light blue sky
-
-            // Camera
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(10, 8, 15); // Initial camera position
-            camera.lookAt(new THREE.Vector3(0, 0, 0));
-
-            // Renderer
-            const container = document.getElementById('threejs-container');
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(container.clientWidth, container.clientHeight);
-            renderer.setPixelRatio(window.devicePixelRatio); // Use device's pixel ratio for sharpness
-            renderer.shadowMap.enabled = true; // Enable shadows
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Softer shadows
-            container.appendChild(renderer.domElement);
-
-            // Orbit Controls
-            controls = new OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true; // Smooth camera movement
-            controls.dampingFactor = 0.05;
-            controls.screenSpacePanning = false; // Prevents panning through the ground
-            controls.maxPolarAngle = Math.PI / 2 - 0.1; // Prevent camera from going below ground
-
-            // Lighting
-            const ambientLight = new THREE.AmbientLight(0x404040, 0.8); // Soft ambient light
-            scene.add(ambientLight);
-
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2); // Directional light for shadows
-            directionalLight.position.set(10, 15, 10);
-            directionalLight.castShadow = true;
-            // Adjust shadow map size for better quality
-            directionalLight.shadow.mapSize.width = 2048;
-            directionalLight.shadow.mapSize.height = 2048;
-            directionalLight.shadow.camera.near = 0.5;
-            directionalLight.shadow.camera.far = 50;
-            directionalLight.shadow.camera.left = -15;
-            directionalLight.shadow.camera.right = 15;
-            directionalLight.shadow.camera.top = 15;
-            directionalLight.shadow.camera.bottom = -15;
-            scene.add(directionalLight);
-            // scene.add(new THREE.DirectionalLightHelper(directionalLight, 5)); // Helper for debug
-
-            // Add a PointLight to the camera for better illumination
-            const cameraLight = new THREE.PointLight(0xffffcc, 1, 100); // Soft yellow light
-            camera.add(cameraLight);
-            scene.add(camera); // Add camera to the scene (with its child light)
-            cameraLight.castShadow = true;
-            cameraLight.shadow.mapSize.width = 1024;
-            cameraLight.shadow.mapSize.height = 1024;
-            cameraLight.shadow.camera.near = 0.1;
-            cameraLight.shadow.camera.far = 20;
-
-
-            // Ground Plane
-            const groundGeometry = new THREE.PlaneGeometry(50, 50);
-            const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x889988, roughness: 0.8, metalness: 0.1 });
-            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-            ground.rotation.x = -Math.PI / 2;
-            ground.receiveShadow = true; // Ground can receive shadows
-            scene.add(ground);
-
-            // Initialize global exteriorCLTMaterial here
-            exteriorCLTMaterial = new THREE.MeshStandardMaterial({
-                map: woodTexture,
-                roughness: 0.7,
-                metalness: 0.05,
-                emissive: new THREE.Color(0x000000),
-                emissiveIntensity: 0.5,
-                transparent: true,
-                opacity: 0.7 // Default transparency for exterior to hint at interior
-            });
-
-            // Create initial modules (off-screen or at assembly start)
-            createModules();
-
-            // Set up animation timeline
-            setupAnimationTimeline();
-
-            // Handle window resizing
-            window.addEventListener('resize', onWindowResize, false);
-            // Start the animation loop
-            animate();
-        }
-
-        /**
-         * Creates a modular housing unit with chamfered edges and detailed connections.
-         * This function builds a group of meshes to simulate the module.
-         * It now includes interior elements.
-         * @param {number} width - Width of the module.
-         * @param {number} height - Height of the module.
-         * @param {number} depth - Depth of the module.
-         * @param {number} baseColor - Base color of the module (texture will overlay).
-         * @returns {THREE.Group} - The complete module as a Three.js Group.
-         */
-        function createDetailedModule(width, height, depth, baseColor) {
-            const moduleGroup = new THREE.Group();
-
-            // Materials for interior elements
-            const interiorWallMaterial = new THREE.MeshStandardMaterial({
-                color: 0xF0F0F0, // Light grey for interior walls
-                roughness: 0.6,
-                metalness: 0.01
-            });
-
-            const interiorFloorMaterial = new THREE.MeshStandardMaterial({
-                color: 0x8B7355, // Light wood/tan for interior floor
-                roughness: 0.7,
-                metalness: 0.01
-            });
-
-            const furnitureMaterial = new THREE.MeshStandardMaterial({ color: 0x554433, roughness: 0.8 }); // Dark wood/furniture color
-
-            // Connection and utility materials (re-using existing)
-            const connectionMaterial = new THREE.MeshStandardMaterial({ color: 0xAAAAAA, roughness: 0.5, metalness: 0.8, transparent: true, opacity: 1 }); 
-            const utilityPortMaterial = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.6, metalness: 0.1, transparent: true, opacity: 1 }); 
-            const pipeMaterial = new THREE.MeshStandardMaterial({ color: 0x00FF00, roughness: 0.3, metalness: 0.1, transparent: true, opacity: 1 }); 
-            const wireMaterial = new THREE.MeshStandardMaterial({ color: 0xFFFF00, roughness: 0.3, metalness: 0.1, transparent: true, opacity: 1 }); 
-
-            // Main module body - now representing the outer shell, made transparent
-            const mainGeometry = new THREE.BoxGeometry(width, height, depth);
-            const mainMesh = new THREE.Mesh(mainGeometry, exteriorCLTMaterial); // Use the global exteriorCLTMaterial
-            mainMesh.castShadow = true;
-            mainMesh.receiveShadow = true;
-            mainMesh.name = 'mainMesh'; // Assign a name to the main mesh for animation targeting
-            moduleGroup.add(mainMesh);
-
-            // Simulate chamfered edges by adding thin bevels
-            // These attach to the exterior of the mainMesh
-            const bevelThickness = CHAMFER_SIZE * 0.5;
-            const bevelLengthAdj = CHAMFER_SIZE * 2; // Adjustment for length
-            const edgeGeometries = [];
-
-            // Edges along width (4)
-            for (let i = 0; i < 2; i++) {
-                for (let j = 0; j < 2; j++) {
-                    const edgeX = new THREE.BoxGeometry(width - bevelLengthAdj, bevelThickness, bevelThickness);
-                    const meshX = new THREE.Mesh(edgeX, exteriorCLTMaterial); // Use exteriorCLTMaterial
-                    meshX.position.set(0, (height / 2 - bevelThickness / 2) * (i ? 1 : -1), (depth / 2 - bevelThickness / 2) * (j ? 1 : -1));
-                    edgeGeometries.push(meshX);
-                }
-            }
-            // Edges along height (4)
-            for (let i = 0; i < 2; i++) {
-                for (let j = 0; j < 2; j++) {
-                    const edgeY = new THREE.BoxGeometry(bevelThickness, height - bevelLengthAdj, bevelThickness);
-                    const meshY = new THREE.Mesh(edgeY, exteriorCLTMaterial); // Use exteriorCLTMaterial
-                    meshY.position.set((width / 2 - bevelThickness / 2) * (i ? 1 : -1), 0, (depth / 2 - bevelThickness / 2) * (j ? 1 : -1));
-                    edgeGeometries.push(meshY);
-                }
-            }
-            // Edges along depth (4)
-            for (let i = 0; i < 2; i++) {
-                for (let j = 0; j < 2; j++) {
-                    const edgeZ = new THREE.BoxGeometry(bevelThickness, bevelThickness, depth - bevelLengthAdj);
-                    const meshZ = new THREE.Mesh(edgeZ, exteriorCLTMaterial); // Use exteriorCLTMaterial
-                    meshZ.position.set((width / 2 - bevelThickness / 2) * (i ? 1 : -1), (height / 2 - bevelThickness / 2) * (j ? 1 : -1), 0);
-                    edgeGeometries.push(meshZ);
-                }
-            }
-
-            edgeGeometries.forEach(mesh => {
-                mesh.castShadow = true;
-                mesh.receiveShadow = true;
-                moduleGroup.add(mesh);
-            });
-
-            // --- Interior Elements ---
-            const interiorOffset = 0.1; // Small offset from outer shell to represent wall thickness
-            const interiorFloorHeight = 0.05; // Thin interior floor
-            const partitionWallThickness = 0.08;
-
-            // Interior Floor
-            const interiorFloorGeom = new THREE.PlaneGeometry(width - interiorOffset * 2, depth - interiorOffset * 2);
-            const interiorFloorMesh = new THREE.Mesh(interiorFloorGeom, interiorFloorMaterial);
-            interiorFloorMesh.rotation.x = -Math.PI / 2; // Rotate to be horizontal
-            // Position just above the bottom of the main module
-            interiorFloorMesh.position.y = -height / 2 + interiorOffset + interiorFloorHeight / 2;
-            interiorFloorMesh.receiveShadow = true;
-            moduleGroup.add(interiorFloorMesh);
-
-            // Interior Ceiling (positioned just below the top of the main module)
-            const interiorCeilingGeom = new THREE.PlaneGeometry(width - interiorOffset * 2, depth - interiorOffset * 2);
-            const interiorCeilingMesh = new THREE.Mesh(interiorCeilingGeom, interiorWallMaterial); // Using interiorWallMaterial for simplicity
-            interiorCeilingMesh.rotation.x = Math.PI / 2; // Rotate to be horizontal
-            interiorCeilingMesh.position.y = height / 2 - interiorOffset - interiorFloorHeight / 2;
-            interiorCeilingMesh.receiveShadow = true;
-            moduleGroup.add(interiorCeilingMesh);
-
-            // Simple Interior Partition Walls
-            const effectiveInteriorHeight = height - (interiorOffset * 2) - interiorFloorHeight;
-
-            // Longitudinal partition (dividing width)
-            const partition1Geom = new THREE.BoxGeometry(partitionWallThickness, effectiveInteriorHeight, depth - interiorOffset * 2);
-            const partition1 = new THREE.Mesh(partition1Geom, interiorWallMaterial);
-            partition1.position.set(width / 4, interiorFloorMesh.position.y + effectiveInteriorHeight / 2, 0);
-            partition1.castShadow = true;
-            partition1.receiveShadow = true;
-            moduleGroup.add(partition1);
-
-            // Transverse partition (dividing depth)
-            const partition2Geom = new THREE.BoxGeometry(width - interiorOffset * 2, effectiveInteriorHeight, partitionWallThickness);
-            const partition2 = new THREE.Mesh(partition2Geom, interiorWallMaterial);
-            partition2.position.set(0, interiorFloorMesh.position.y + effectiveInteriorHeight / 2, -depth / 4);
-            partition2.castShadow = true;
-            partition2.receiveShadow = true;
-            moduleGroup.add(partition2);
-
-            // Basic Furniture placeholders
-            // Bed
-            const bedGeom = new THREE.BoxGeometry(width * 0.4, 0.25, depth * 0.6);
-            const bed = new THREE.Mesh(bedGeom, furnitureMaterial);
-            bed.position.set(-width / 4, interiorFloorMesh.position.y + bedGeom.parameters.y / 2, depth / 4);
-            bed.castShadow = true;
-            moduleGroup.add(bed);
-
-            // Table
-            const tableGeom = new THREE.BoxGeometry(width * 0.25, 0.7, depth * 0.25);
-            const table = new THREE.Mesh(tableGeom, furnitureMaterial);
-            table.position.set(width / 4, interiorFloorMesh.position.y + tableGeom.parameters.y / 2, -depth / 4);
-            table.castShadow = true;
-            moduleGroup.add(table);
-
-            // Chair (smaller box next to table)
-            const chairGeom = new THREE.BoxGeometry(0.25, 0.4, 0.25);
-            const chair = new THREE.Mesh(chairGeom, furnitureMaterial);
-            chair.position.set(width / 4 + 0.5, interiorFloorMesh.position.y + chairGeom.parameters.y / 2, -depth / 4 + 0.5);
-            chair.castShadow = true;
-            moduleGroup.add(chair);
-
-
-            /**
-             * Adds connection points (bolts, receptor plates, utility ports) to a specific face of the module.
-             * @param {string} axis - 'x', 'y', or 'z'
-             * @param {number} direction - 1 for positive, -1 for negative
-             * @param {number} numBolts - Number of bolts to add.
-             */
-            function addConnectionPoints(axis, direction, numBolts = 3) {
-                const boltRadius = 0.08;
-                const boltHeadThickness = 0.05;
-                const boltShaftLength = 0.2;
-                const receptorPlateThickness = 0.05;
-
-                const rotationMap = {
-                    'x': new THREE.Euler(0, Math.PI / 2, 0), // Rotate for bolts along X-axis
-                    'y': new THREE.Euler(-Math.PI / 2, 0, 0), // Rotate for bolts along Y-axis
-                    'z': new THREE.Euler(0, 0, 0) // No rotation needed for Z-axis (default cylinder alignment)
-                };
-
-                const positionOffset = new THREE.Vector3();
-                
-                for (let i = 0; i < numBolts; i++) {
-                    // Calculate offsets along the face perpendicular to the axis
-                    let spacingFactor;
-                    if (axis === 'x') spacingFactor = height / (numBolts + 1);
-                    else if (axis === 'y') spacingFactor = width / (numBolts + 1);
-                    else spacingFactor = height / (numBolts + 1); // For Z, use height as arbitrary perpendicular dimension
-
-                    let initialOffset = (i - (numBolts - 1) / 2) * spacingFactor;
-
-                    if (axis === 'x') {
-                        positionOffset.set(width / 2 * direction, initialOffset, 0);
-                    } else if (axis === 'y') {
-                        positionOffset.set(initialOffset, height / 2 * direction, 0);
-                    } else { // axis === 'z'
-                        positionOffset.set(0, initialOffset, depth / 2 * direction);
-                    }
-
-                    // Bolt Head
-                    const boltHeadGeometry = new THREE.CylinderGeometry(boltRadius * 1.2, boltRadius * 1.2, boltHeadThickness, 6);
-                    const boltHead = new THREE.Mesh(boltHeadGeometry, connectionMaterial);
-                    boltHead.rotation.copy(rotationMap[axis]);
-                    boltHead.position.copy(positionOffset);
-                    boltHead.position[axis] += (boltHeadThickness / 2) * direction; // Position correctly on the face
-                    boltHead.castShadow = true;
-                    boltHead.name = `boltHead-${axis}${direction > 0 ? '+' : '-'}-${i}`;
-                    moduleGroup.add(boltHead);
-
-                    // Bolt Shaft
-                    const boltShaftGeometry = new THREE.CylinderGeometry(boltRadius, boltRadius, boltShaftLength, 8);
-                    const boltShaft = new THREE.Mesh(boltShaftGeometry, connectionMaterial);
-                    boltShaft.rotation.copy(rotationMap[axis]);
-                    boltShaft.position.copy(positionOffset);
-                    boltShaft.position[axis] += (boltHeadThickness + boltShaftLength / 2) * direction; // Position correctly for initial state
-                    boltShaft.castShadow = true;
-                    boltShaft.name = `boltShaft-${axis}${direction > 0 ? '+' : '-'}-${i}`;
-                    moduleGroup.add(boltShaft);
-
-                    // Receptor Plate
-                    let plateWidthDim, plateHeightDim, plateDepthDim;
-                    if (axis === 'x') {
-                        plateWidthDim = receptorPlateThickness; plateHeightDim = spacingFactor * (numBolts + 0.5); plateDepthDim = depth * 0.5;
-                    } else if (axis === 'y') {
-                        plateWidthDim = width * 0.5; plateHeightDim = receptorPlateThickness; plateDepthDim = spacingFactor * (numBolts + 0.5);
-                    } else { // axis === 'z'
-                        plateWidthDim = width * 0.5; plateHeightDim = height * 0.5; plateDepthDim = receptorPlateThickness;
-                    }
-                    const receptorPlateGeometry = new THREE.BoxGeometry(plateWidthDim, plateHeightDim, plateDepthDim);
-                    const receptorPlateMaterial = new THREE.MeshStandardMaterial({ color: 0xCCCCCC, roughness: 0.4, metalness: 0.9, transparent: true, opacity: 1 });
-                    const receptorPlate = new THREE.Mesh(receptorPlateGeometry, receptorPlateMaterial);
-                    receptorPlate.position.copy(positionOffset);
-                    receptorPlate.position[axis] += (receptorPlateThickness / 2) * direction; // Position correctly on the face
-                    receptorPlate.castShadow = true;
-                    receptorPlate.name = `receptorPlate-${axis}${direction > 0 ? '+' : '-'}-${i}`;
-                    moduleGroup.add(receptorPlate);
-                }
-
-                // Utility Port (one per face for demonstration)
-                const utilityPortRadius = 0.2;
-                const utilityPortHeight = 0.1;
-                const utilityPortGeometry = new THREE.CylinderGeometry(utilityPortRadius, utilityPortRadius, utilityPortHeight, 16);
-                const utilityPort = new THREE.Mesh(utilityPortGeometry, utilityPortMaterial);
-
-                utilityPort.rotation.copy(rotationMap[axis]); // Orient port correctly
-
-                // Position utility port at a corner of the face
-                if (axis === 'x') {
-                    utilityPort.position.set(width / 2 * direction, height / 2 - utilityPortRadius, depth / 2 - utilityPortRadius);
-                } else if (axis === 'y') {
-                    utilityPort.position.set(width / 2 - utilityPortRadius, height / 2 * direction, depth / 2 - utilityPortRadius);
-                    if (direction === 1) utilityPort.rotation.z = Math.PI / 2; // Adjust for Y+ axis visual
-                    else utilityPort.rotation.z = -Math.PI / 2; // Adjust for Y- axis visual
-                } else { // axis === 'z'
-                    utilityPort.position.set(width / 2 - utilityPortRadius, height / 2 - utilityPortRadius, depth / 2 * direction);
-                }
-                utilityPort.name = `utilityPort-${axis}${direction > 0 ? '+' : '-'}`;
-                moduleGroup.add(utilityPort);
-
-                // Placeholder for connecting utility pipe/cable (will be animated separately)
-                const utilityPipeGeometry = new THREE.CylinderGeometry(0.125, 0.125, 0.1, 8);
-                const utilityPipe = new THREE.Mesh(utilityPipeGeometry, pipeMaterial);
-                utilityPipe.position.copy(utilityPort.position); // Start at port
-                utilityPipe.visible = false; // Initially hidden
-                utilityPipe.name = `utilityPipe-${axis}${direction > 0 ? '+' : '-'}`;
-                moduleGroup.add(utilityPipe);
-
-                // Placeholder for connecting utility wire (similar to pipe)
-                const utilityWireGeometry = new THREE.CylinderGeometry(0.075, 0.075, 0.1, 8);
-                const utilityWire = new THREE.Mesh(utilityWireGeometry, wireMaterial);
-                
-                // Position wire slightly offset from pipe to be visible
-                let wireOffset = new THREE.Vector3();
-                if (axis === 'x') wireOffset.set(0, 0.1, 0); // Offset in Y for X-axis connections
-                else if (axis === 'y') wireOffset.set(0.1, 0, 0); // Offset in X for Y-axis connections
-                else wireOffset.set(0, 0.1, 0); // Default offset
-
-                utilityWire.position.copy(utilityPort.position).add(wireOffset); 
-                utilityWire.visible = false; // Initially hidden
-                utilityWire.name = `utilityWire-${axis}${direction > 0 ? '+' : '-'}`;
-                moduleGroup.add(utilityWire);
-            }
-
-            // Add connections to specific faces
-            addConnectionPoints('x', 1); // Positive X face (for bolting out)
-            addConnectionPoints('x', -1); // Negative X face (for receiving bolts)
-            addConnectionPoints('y', 1); // Positive Y face (for receiving vertical bolts from above)
-            addConnectionPoints('y', -1); // Negative Y face (for bolting downwards)
-
-
-            return moduleGroup;
-        }
-
-
-        /**
-         * Creates and positions all modules in the scene.
-         */
-        function createModules() {
-            moduleData.forEach(data => {
-                const module = createDetailedModule(MODULE_WIDTH, MODULE_HEIGHT, MODULE_DEPTH, data.color); // Using new detailed module creator
-                module.position.copy(data.initialPos); // Start at initial off-screen position
-                module.userData = { id: data.id, description: data.description }; // Store data on the object
-                scene.add(module);
-                modules.push(module);
-            });
-        }
-
-        /**
-         * Resets a single module's visual state to its initial position and hides connections.
-         * @param {THREE.Group} module - The module to reset.
-         */
-        function resetModuleVisualState(module) {
-            const data = moduleData.find(d => d.id === module.userData.id);
-            if (data) {
-                module.position.copy(data.initialPos);
-            }
-
-            const width = MODULE_WIDTH, height = MODULE_HEIGHT, depth = MODULE_DEPTH;
-            const boltHeadThickness = 0.05;
-            const boltShaftLength = 0.2;
-            const receptorPlateThickness = 0.05;
-
-            // Reset bolt and receptor plate positions for all relevant faces
-            for (let i = 0; i < 3; i++) {
-                // X+ face
-                const boltHeadXPlus = module.getObjectByName(`boltHead-X+-${i}`);
-                const boltShaftXPlus = module.getObjectByName(`boltShaft-X+-${i}`);
-                const receptorPlateXPlus = module.getObjectByName(`receptorPlate-X+-${i}`);
-                if (boltHeadXPlus) boltHeadXPlus.position.x = width / 2 + boltHeadThickness / 2;
-                if (boltShaftXPlus) boltShaftXPlus.position.x = width / 2 + boltHeadThickness + boltShaftLength / 2;
-                if (receptorPlateXPlus) receptorPlateXPlus.position.x = width / 2 + receptorPlateThickness / 2;
-
-                // X- face
-                const boltHeadXMinus = module.getObjectByName(`boltHead-X--${i}`);
-                const boltShaftXMinus = module.getObjectByName(`boltShaft-X--${i}`);
-                const receptorPlateXMinus = module.getObjectByName(`receptorPlate-X--${i}`);
-                if (boltHeadXMinus) boltHeadXMinus.position.x = -width / 2 - boltHeadThickness / 2;
-                if (boltShaftXMinus) boltShaftXMinus.position.x = -width / 2 - (boltHeadThickness + boltShaftLength / 2);
-                if (receptorPlateXMinus) receptorPlateXMinus.position.x = -width / 2 - receptorPlateThickness / 2;
-
-                // Y+ face
-                const boltHeadYPlus = module.getObjectByName(`boltHead-Y+-${i}`);
-                const boltShaftYPlus = module.getObjectByName(`boltShaft-Y+-${i}`);
-                const receptorPlateYPlus = module.getObjectByName(`receptorPlate-Y+-${i}`);
-                if (boltHeadYPlus) boltHeadYPlus.position.y = height / 2 + boltHeadThickness / 2;
-                if (boltShaftYPlus) boltShaftYPlus.position.y = height / 2 + boltHeadThickness + boltShaftLength / 2;
-                if (receptorPlateYPlus) receptorPlateYPlus.position.y = height / 2 + receptorPlateThickness / 2;
-
-                // Y- face
-                const boltHeadYMinus = module.getObjectByName(`boltHead-Y--${i}`);
-                const boltShaftYMinus = module.getObjectByName(`boltShaft-Y--${i}`);
-                const receptorPlateYMinus = module.getObjectByName(`receptorPlate-Y--${i}`);
-                if (boltHeadYMinus) boltHeadYMinus.position.y = -height / 2 - boltHeadThickness / 2;
-                if (boltShaftYMinus) boltShaftYMinus.position.y = -height / 2 - (boltHeadThickness + boltShaftLength / 2);
-                if (receptorPlateYMinus) receptorPlateYMinus.position.y = -height / 2 - receptorPlateThickness / 2;
-            }
-
-            // Reset utility pipes and wires
-            const resetUtilityConnection = (axis, direction, offsetVec) => {
-                const pipe = module.getObjectByName(`utilityPipe-${axis}${direction > 0 ? '+' : '-'}`);
-                const wire = module.getObjectByName(`utilityWire-${axis}${direction > 0 ? '+' : '-'}`);
-                const port = module.getObjectByName(`utilityPort-${axis}${direction > 0 ? '+' : '-'}`);
-
-                if (pipe && port) {
-                    pipe.visible = false;
-                    // Reset to a small placeholder size for the geometry, as it will be re-created for animation
-                    pipe.geometry = new THREE.CylinderGeometry(0.125, 0.125, 0.1, 8); 
-                    pipe.position.copy(port.position);
-                    if (axis === 'x') pipe.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
-                    else if (axis === 'y') pipe.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
-                    pipe.scale.y = 0.5; // Set starting scale for animation consistency
-                }
-                if (wire && port) {
-                    wire.visible = false;
-                    // Reset to a small placeholder size for the geometry, as it will be re-created for animation
-                    wire.geometry = new THREE.CylinderGeometry(0.075, 0.075, 0.1, 8); 
-                    
-                    // Calculate wire's starting position in world coordinates
-                    const portWorldPosition = new THREE.Vector3();
-                    port.getWorldPosition(portWorldPosition); // Get port's world position
-
-                    const portWorldQuaternion = new THREE.Quaternion();
-                    port.getWorldQuaternion(portWorldQuaternion); // Get port's world rotation
-
-                    // Apply the local offset vector using the port's world quaternion
-                    const localOffsetInWorld = offsetVec.clone().applyQuaternion(portWorldQuaternion);
-                    const wireStartWorldPosition = portWorldPosition.add(localOffsetInWorld);
-
-                    // Convert this world position back to the module's local space
-                    const wireStartModuleLocalPosition = new THREE.Vector3();
-                    module.worldToLocal(wireStartWorldPosition, wireStartModuleLocalPosition); 
-                    
-                    wire.position.copy(wireStartModuleLocalPosition); // Set wire's position in module's local space
-
-                    if (axis === 'x') wire.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
-                    else if (axis === 'y') wire.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
-                    wire.scale.y = 0.5; // Set starting scale for animation consistency
-                }
-            };
+            setupUI();
+            const loadingManager = new THREE.LoadingManager();
+            const textureLoader = new THREE.TextureLoader(loadingManager);
             
-            // Define wire offsets consistently
-            const wireOffsetX = new THREE.Vector3(0, 0.1, 0); // Offset in Y for X-axis connections
-            const wireOffsetY = new THREE.Vector3(0.1, 0, 0); // Offset in X for Y-axis connections
+            const woodTexture = textureLoader.load('https://cdn.jsdelivr.net/gh/mrdoob/three.js/examples/textures/hardwood2_diffuse.jpg');
+            const concreteTexture = textureLoader.load('https://cdn.jsdelivr.net/gh/mrdoob/three.js/examples/textures/terrain/rock_b.jpg');
+            const woodLogTexture = textureLoader.load('https://cdn.jsdelivr.net/gh/mrdoob/three.js/examples/textures/bark_perpendicular.jpg');
+            woodTexture.wrapS = woodTexture.wrapT = THREE.RepeatWrapping;
+            concreteTexture.wrapS = concreteTexture.wrapT = THREE.RepeatWrapping;
+            concreteTexture.repeat.set(20, 20);
+            woodLogTexture.wrapS = woodLogTexture.wrapT = THREE.RepeatWrapping;
 
-            resetUtilityConnection('x', 1, wireOffsetX);
-            resetUtilityConnection('x', -1, wireOffsetX);
-            resetUtilityConnection('y', 1, wireOffsetY);
-            resetUtilityConnection('y', -1, wireOffsetY);
-
-
-            // Reset emissive color and opacity of the shared exterior material
-            if (exteriorCLTMaterial) {
-                exteriorCLTMaterial.emissive.setHex(0x000000); // Reset emissive color
-                exteriorCLTMaterial.opacity = 0.7; // Reset opacity to default semi-transparent
-            }
-        }
-
-
-        /**
-         * Sets up the GSAP animation timeline for module assembly.
-         */
-        function setupAnimationTimeline() {
-            animationTimeline = gsap.timeline({ paused: true, onUpdate: updateInfoDisplay, onComplete: () => infoDisplay.textContent = 'Assembly Complete!' });
-
-            // Ensure all modules are positioned and reset correctly at the start of the timeline
-            modules.forEach(resetModuleVisualState);
-
-            // Define constants for component dimensions to use in reset and animation
-            const boltHeadThickness = 0.05;
-            const boltShaftLength = 0.2;
-
-            // Define camera positions and targets for various stages
-            const CAM_POSITIONS = {
-                initial: { pos: new THREE.Vector3(10, 8, 15), target: new THREE.Vector3(0, 0, 0) },
-                module1_focus: { pos: new THREE.Vector3(5, 4, 8), target: new THREE.Vector3(0, 1.5, 0) },
-                modules1_2_horizontal: { pos: new THREE.Vector3(7, 3, 7), target: new THREE.Vector3(2, 1.5, 0) },
-                horizontal_connection_detail: { pos: new THREE.Vector3(4.5, 2.5, 2), target: new THREE.Vector3(2, 1.5, 0) },
-                module3_approach: { pos: new THREE.Vector3(5, 10, 8), target: new THREE.Vector3(0, 4.5, 0) },
-                modules3_4_vertical: { pos: new THREE.Vector3(7, 7, 7), target: new THREE.Vector3(2, 4.5, 0) },
-                vertical_connection_detail: { pos: new THREE.Vector3(4.5, 5.5, 2), target: new THREE.Vector3(2, 4.5, 0) },
-                final_view: { pos: new THREE.Vector3(10, 8, 15), target: new THREE.Vector3(2, 3, 0) } // Overall building view
+            loadingManager.onProgress = (url, itemsLoaded, itemsTotal) => {
+                document.getElementById('loading-bar').style.width = `${(itemsLoaded / itemsTotal) * 100}%`;
             };
 
-            // Step 0: Initial state (all modules off-screen/idle)
-            animationTimeline.addLabel("start");
-            gsap.set("#info-display", { textContent: "Assembly Step: Idle" });
-            gsap.to(camera.position, { duration: 0, x: CAM_POSITIONS.initial.pos.x, y: CAM_POSITIONS.initial.pos.y, z: CAM_POSITIONS.initial.pos.z, ease: "none" });
-            gsap.to(controls.target, { duration: 0, x: CAM_POSITIONS.initial.target.x, y: CAM_POSITIONS.initial.target.y, z: CAM_POSITIONS.initial.target.z, ease: "none" });
-
-
-            // Step 1: Module 1 approaches
-            animationTimeline.to(modules[0].position, {
-                x: moduleData[0].targetPos.x,
-                y: moduleData[0].targetPos.y,
-                z: moduleData[0].targetPos.z,
-                duration: 1.5,
-                ease: "power2.out",
-                onStart: () => gsap.to("#info-display", { duration: 0.3, textContent: 'Module 1: Approaching Foundation Area' })
-            }, "module1-approach");
-            // Camera pans to Module 1
-            animationTimeline.to(camera.position, { duration: 1.5, x: CAM_POSITIONS.module1_focus.pos.x, y: CAM_POSITIONS.module1_focus.pos.y, z: CAM_POSITIONS.module1_focus.pos.z, ease: "power2.out" }, "module1-approach");
-            animationTimeline.to(controls.target, { duration: 1.5, x: CAM_POSITIONS.module1_focus.target.x, y: CAM_POSITIONS.module1_focus.target.y, z: CAM_POSITIONS.module1_focus.target.z, ease: "power2.out" }, "module1-approach");
-
-
-            // Step 1.1: Module 1 fine placement (no camera change, just fine-tuning pos)
-            animationTimeline.to(modules[0].position, {
-                x: moduleData[0].targetPos.x,
-                y: moduleData[0].targetPos.y,
-                z: moduleData[0].targetPos.z,
-                duration: 0.5,
-                ease: "power1.out",
-                onStart: () => gsap.to("#info-display", { duration: 0.3, textContent: 'Module 1: Precise Foundation Placement' })
-            }, "module1-place");
-
-
-            // Step 2: Module 2 approaches (prep phase)
-            animationTimeline.to(modules[1].position, {
-                x: moduleData[1].initialPos.x, // Move back to initial x for a brief moment for dramatic approach
-                y: moduleData[1].targetPos.y,
-                z: moduleData[1].targetPos.z,
-                duration: 0.5, // brief pause
-                ease: "none",
-                onStart: () => gsap.to("#info-display", { duration: 0.3, textContent: 'Module 2: Preparing for Adjacent Placement' })
-            }, "module2-approach");
-            // Camera pans to prepare for Module 2
-            animationTimeline.to(camera.position, { duration: 0.5, x: CAM_POSITIONS.modules1_2_horizontal.pos.x, y: CAM_POSITIONS.modules1_2_horizontal.pos.y, z: CAM_POSITIONS.modules1_2_horizontal.pos.z, ease: "power2.out" }, "module2-approach");
-            animationTimeline.to(controls.target, { duration: 0.5, x: CAM_POSITIONS.modules1_2_horizontal.target.x, y: CAM_POSITIONS.modules1_2_horizontal.target.y, z: CAM_POSITIONS.modules1_2_horizontal.target.z, ease: "power2.out" }, "module2-approach");
-
-            // Actual approach of Module 2
-            animationTimeline.to(modules[1].position, {
-                x: moduleData[1].targetPos.x,
-                y: moduleData[1].targetPos.y,
-                z: moduleData[1].targetPos.z,
-                duration: 1.5,
-                ease: "power2.out",
-                onStart: () => gsap.to("#info-display", { duration: 0.3, textContent: 'Module 2: Approaching Module 1' })
-            }, "module2-approach+=0.5");
-
-
-            // Step 2.1: Module 2 fine placement
-            animationTimeline.to(modules[1].position, {
-                x: moduleData[1].targetPos.x,
-                y: moduleData[1].targetPos.y,
-                z: moduleData[1].targetPos.z,
-                duration: 0.5,
-                ease: "power1.out",
-                onStart: () => gsap.to("#info-display", { duration: 0.3, textContent: 'Module 2: Precise Adjacent Placement' })
-            }, "module2-place");
-            // Camera zooms in slightly for connection detail
-            animationTimeline.to(camera.position, { duration: 0.5, x: CAM_POSITIONS.horizontal_connection_detail.pos.x, y: CAM_POSITIONS.horizontal_connection_detail.pos.y, z: CAM_POSITIONS.horizontal_connection_detail.pos.z, ease: "power1.out" }, "module2-place");
-            animationTimeline.to(controls.target, { duration: 0.5, x: CAM_POSITIONS.horizontal_connection_detail.target.x, y: CAM_POSITIONS.horizontal_connection_detail.target.y, z: CAM_POSITIONS.horizontal_connection_detail.target.z, ease: "power1.out" }, "module2-place");
-
-
-            // Step 3: Horizontal Connection Phase - Receptor Plates Extend
-            animationTimeline.addLabel("horizontal-plates-extend", "+=0.5"); // Short delay to let camera settle
-            // Make module 2 transparent to show internals
-            animationTimeline.to(exteriorCLTMaterial, { opacity: 0.5, duration: 0.5 }, "horizontal-plates-extend"); // Affects all modules using this material
-
-            const rpXNeg0_M2 = modules[1].getObjectByName('receptorPlate-X--0');
-            const rpXNeg1_M2 = modules[1].getObjectByName('receptorPlate-X--1');
-            const rpXNeg2_M2 = modules[1].getObjectByName('receptorPlate-X--2');
-
-            if (rpXNeg0_M2) animationTimeline.to(rpXNeg0_M2.position, { x: -MODULE_WIDTH/2 - 0.1, duration: 0.5 }, "horizontal-plates-extend");
-            if (rpXNeg1_M2) animationTimeline.to(rpXNeg1_M2.position, { x: -MODULE_WIDTH/2 - 0.1, duration: 0.5 }, "<");
-            if (rpXNeg2_M2) animationTimeline.to(rpXNeg2_M2.position, { x: -MODULE_WIDTH/2 - 0.1, duration: 0.5 }, "<");
-            animationTimeline.to("#info-display", { duration: 0.3, textContent: 'Connection: Horizontal Receptor Plates Extend' }, "<");
-
-            // Step 3.1: Horizontal Connection Phase - Bolts Extend
-            animationTimeline.addLabel("horizontal-bolts-extend", "+=0.3"); // Add a small delay
-            ['boltShaft-X+-0', 'boltShaft-X+-1', 'boltShaft-X+-2'].forEach(name => {
-                const boltShaft = modules[0].getObjectByName(name);
-                if (boltShaft) {
-                    animationTimeline.to(boltShaft.position, { x: MODULE_WIDTH/2 + 0.25, duration: 0.7, ease: "power1.out" }, "horizontal-bolts-extend");
-                }
-            });
-            ['boltHead-X+-0', 'boltHead-X+-1', 'boltHead-X+-2'].forEach(name => {
-                const boltHead = modules[0].getObjectByName(name);
-                if (boltHead) {
-                    animationTimeline.to(boltHead.position, { x: MODULE_WIDTH/2 + 0.25 - boltHeadThickness/2, duration: 0.7, ease: "power1.out" }, "<");
-                }
-            });
-            animationTimeline.to("#info-display", { duration: 0.3, textContent: 'Connection: Horizontal Bolts Engaging' }, "<");
-
-            // Step 3.2: Horizontal Connection Phase - Bolts Tighten
-            animationTimeline.addLabel("horizontal-bolts-tighten", "+=0.3"); // Add a small delay
-            ['boltShaft-X+-0', 'boltShaft-X+-1', 'boltShaft-X+-2'].forEach(name => {
-                const boltShaft = modules[0].getObjectByName(name);
-                if (boltShaft) {
-                    animationTimeline.to(boltShaft.position, { x: MODULE_WIDTH/2 + 0.2, duration: 0.3 }, "horizontal-bolts-tighten");
-                }
-            });
-            ['boltHead-X+-0', 'boltHead-X+-1', 'boltHead-X+-2'].forEach(name => {
-                const boltHead = modules[0].getObjectByName(name);
-                if (boltHead) {
-                    animationTimeline.to(boltHead.position, { x: MODULE_WIDTH/2 + 0.2 - boltHeadThickness/2, duration: 0.3 }, "<");
-                }
-            });
-            // Apply emissive to the shared exterior material
-            animationTimeline.to(exteriorCLTMaterial.emissive, { r: 0.1, g: 0.1, b: 0.1, duration: 0.2 }, "<")
-                             .to("#info-display", { duration: 0.3, textContent: 'Connection: Horizontal Bolts Tightened & Secured' }, "<")
-                             .to(exteriorCLTMaterial.emissive, { r: 0, g: 0, b: 0, duration: 0.5 }, "+=0.1");
-
-            // Step 3.3: Horizontal Utility Connection (Pipe and Wire)
-            animationTimeline.addLabel("horizontal-utility-connect", "+=0.5");
-            animationTimeline.call(() => {
-                const pipe = modules[0].getObjectByName('utilityPipe-X+');
-                const wire = modules[0].getObjectByName('utilityWire-X+');
-                const targetModule = modules[1];
-                
-                const port1WorldPos = new THREE.Vector3();
-                const port1 = modules[0].getObjectByName('utilityPort-X+');
-                if (port1) port1.getWorldPosition(port1WorldPos);
-
-                const port2WorldPos = new THREE.Vector3();
-                const port2 = targetModule.getObjectByName('utilityPort-X-'); 
-                if (port2) port2.getWorldPosition(port2WorldPos);
-
-                if (pipe && wire && port1 && port2) {
-                    const pipeStartPos = modules[0].worldToLocal(port1WorldPos);
-                    const pipeEndPos = modules[0].worldToLocal(port2WorldPos);
-
-                    const pipeDirection = new THREE.Vector3().subVectors(pipeEndPos, pipeStartPos);
-                    const pipeLength = pipeDirection.length();
-
-                    pipe.visible = true;
-                    pipe.geometry = new THREE.CylinderGeometry(0.125, 0.125, pipeLength, 8); 
-                    pipe.position.copy(pipeStartPos);
-                    pipe.position.add(pipeDirection.multiplyScalar(0.5)); 
-                    pipe.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), pipeDirection.normalize()); 
-                    pipe.scale.y = 0.5; // Starts at 50% length
-                    gsap.to(pipe.scale, { y: 1, duration: 1, ease: "power2.out" });
-
-                    // For wire, slightly different position and then animate
-                    const wireOffset = new THREE.Vector3(0, 0.1, 0); // Offset in Y for X-axis connections
-                    const wireStartPos = new THREE.Vector3().copy(pipeStartPos).add(wireOffset);
-                    const wireEndPos = new THREE.Vector3().copy(pipeEndPos).add(wireOffset);
-                    const wireDirection = new THREE.Vector3().subVectors(wireEndPos, wireStartPos);
-                    const wireLength = wireDirection.length();
-
-                    wire.visible = true;
-                    wire.geometry = new THREE.CylinderGeometry(0.075, 0.075, wireLength, 8); 
-                    wire.position.copy(wireStartPos);
-                    wire.position.add(wireDirection.multiplyScalar(0.5));
-                    wire.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), wireDirection.normalize());
-                    wire.scale.y = 0.5; // Starts at 50% length
-                    gsap.to(wire.scale, { y: 1, duration: 1, ease: "power2.out" }, "<"); // Start wire animation with pipe
-
-                    gsap.to("#info-display", { duration: 0.3, textContent: 'Utility Connection: Horizontal Water/Power & Data Link-up' }, "<");
-                } else {
-                    console.warn("Could not find utility pipes/wires or ports for horizontal connection animation.");
-                }
-            }, null, "horizontal-utility-connect");
-
-            // Make modules opaque again after horizontal connection details
-            animationTimeline.to(exteriorCLTMaterial, { opacity: 1, duration: 0.5 }, "horizontal-utility-connect+=1.0"); // Affects all modules using this material
-
-
-            // Step 4: Module 3 approaches
-            animationTimeline.to(modules[2].position, {
-                x: moduleData[2].targetPos.x,
-                y: moduleData[2].targetPos.y,
-                z: moduleData[2].targetPos.z,
-                duration: 1.5,
-                ease: "power2.out",
-                onStart: () => gsap.to("#info-display", { duration: 0.3, textContent: 'Module 3: Approaching Vertical Stacking Area' })
-            }, "module3-approach");
-            // Camera pans to Module 3 approach
-            animationTimeline.to(camera.position, { duration: 1.5, x: CAM_POSITIONS.module3_approach.pos.x, y: CAM_POSITIONS.module3_approach.pos.y, z: CAM_POSITIONS.module3_approach.pos.z, ease: "power2.out" }, "module3-approach");
-            animationTimeline.to(controls.target, { duration: 1.5, x: CAM_POSITIONS.module3_approach.target.x, y: CAM_POSITIONS.module3_approach.target.y, z: CAM_POSITIONS.module3_approach.target.z, ease: "power2.out" }, "module3-approach");
-
-
-            // Step 4.1: Module 3 fine placement
-            animationTimeline.to(modules[2].position, {
-                x: moduleData[2].targetPos.x,
-                y: moduleData[2].targetPos.y,
-                z: moduleData[2].targetPos.z,
-                duration: 0.5,
-                ease: "power1.out",
-                onStart: () => gsap.to("#info-display", { duration: 0.3, textContent: 'Module 3: Precise Vertical Stacking' })
-            }, "module3-place");
-
-
-            // Step 5: Module 4 approaches
-            animationTimeline.to(modules[3].position, {
-                x: moduleData[3].targetPos.x,
-                y: moduleData[3].targetPos.y,
-                z: moduleData[3].targetPos.z,
-                duration: 1.5,
-                ease: "power2.out",
-                onStart: () => gsap.to("#info-display", { duration: 0.3, textContent: 'Module 4: Approaching Vertical Stacking Area' })
-            }, "module4-approach");
-            // Camera pans to Module 4 approach and shows both second level modules
-            animationTimeline.to(camera.position, { duration: 1.5, x: CAM_POSITIONS.modules3_4_vertical.pos.x, y: CAM_POSITIONS.modules3_4_vertical.pos.y, z: CAM_POSITIONS.modules3_4_vertical.pos.z, ease: "power2.out" }, "module4-approach");
-            animationTimeline.to(controls.target, { duration: 1.5, x: CAM_POSITIONS.modules3_4_vertical.target.x, y: CAM_POSITIONS.modules3_4_vertical.target.y, z: CAM_POSITIONS.modules3_4_vertical.target.z, ease: "power2.out" }, "module4-approach");
-
-
-            // Step 5.1: Module 4 fine placement
-            animationTimeline.to(modules[3].position, {
-                x: moduleData[3].targetPos.x,
-                y: moduleData[3].targetPos.y,
-                z: moduleData[3].targetPos.z,
-                duration: 0.5,
-                ease: "power1.out",
-                onStart: () => gsap.to("#info-display", { duration: 0.3, textContent: 'Module 4: Precise Vertical Stacking' })
-            }, "module4-place");
-            // Camera zooms in for vertical connection detail
-            animationTimeline.to(camera.position, { duration: 0.5, x: CAM_POSITIONS.vertical_connection_detail.pos.x, y: CAM_POSITIONS.vertical_connection_detail.pos.y, z: CAM_POSITIONS.vertical_connection_detail.pos.z, ease: "power1.out" }, "module4-place");
-            animationTimeline.to(controls.target, { duration: 0.5, x: CAM_POSITIONS.vertical_connection_detail.target.x, y: CAM_POSITIONS.vertical_connection_detail.target.y, z: CAM_POSITIONS.vertical_connection_detail.target.z, ease: "power1.out" }, "module4-place");
-
-
-            // Step 6: Vertical Connection Phase - Receptor Plates Extend
-            animationTimeline.addLabel("vertical-plates-extend", "+=0.5");
-            // Make modules transparent to show internals
-            animationTimeline.to(exteriorCLTMaterial, { opacity: 0.5, duration: 0.5 }, "vertical-plates-extend"); // Affects all modules using this material
-
-            animationTimeline.to("#info-display", { duration: 0.3, textContent: 'Connection: Vertical Receptor Plates Extend' }, "<")
-                             .call(() => {
-                                 // Module 1's +Y receptor plates extend (local y position)
-                                 for(let i=0; i<3; i++) {
-                                     const rp = modules[0].getObjectByName(`receptorPlate-Y+-${i}`);
-                                     if(rp) gsap.to(rp.position, { y: MODULE_HEIGHT/2 + 0.1, duration: 0.5 });
-                                 }
-                                 // Module 2's +Y receptor plates extend (local y position)
-                                 for(let i=0; i<3; i++) {
-                                     const rp = modules[1].getObjectByName(`receptorPlate-Y+-${i}`);
-                                     if(rp) gsap.to(rp.position, { y: MODULE_HEIGHT/2 + 0.1, duration: 0.5 });
-                                 }
-                             });
-
-            // Step 6.1: Vertical Connection Phase - Bolts Extend
-            animationTimeline.addLabel("vertical-bolts-extend", "+=0.3");
-            // Bolts from Module 3's -Y face engage Module 1's +Y receptor plates
-            ['boltShaft-Y--0', 'boltShaft-Y--1', 'boltShaft-Y--2'].forEach(name => {
-                const boltShaft = modules[2].getObjectByName(name); 
-                if (boltShaft) {
-                    animationTimeline.to(boltShaft.position, { y: -MODULE_HEIGHT/2 - 0.25, duration: 0.7, ease: "power1.out" }, "vertical-bolts-extend");
-                }
-            });
-            ['boltHead-Y--0', 'boltHead-Y--1', 'boltHead-Y--2'].forEach(name => {
-                const boltHead = modules[2].getObjectByName(name);
-                if (boltHead) {
-                    animationTimeline.to(boltHead.position, { y: -MODULE_HEIGHT/2 - 0.25 + boltHeadThickness/2, duration: 0.7, ease: "power1.out" }, "<");
-                }
-            });
-            // Bolts from Module 4's -Y face engage Module 2's +Y receptor plates
-            ['boltShaft-Y--0', 'boltShaft-Y--1', 'boltShaft-Y--2'].forEach(name => {
-                const boltShaft = modules[3].getObjectByName(name);
-                if (boltShaft) {
-                    animationTimeline.to(boltShaft.position, { y: -MODULE_HEIGHT/2 - 0.25, duration: 0.7, ease: "power1.out" }, "<");
-                }
-            });
-            ['boltHead-Y--0', 'boltHead-Y--1', 'boltHead-Y--2'].forEach(name => {
-                const boltHead = modules[3].getObjectByName(name);
-                if (boltHead) {
-                    animationTimeline.to(boltHead.position, { y: -MODULE_HEIGHT/2 - 0.25 + boltHeadThickness/2, duration: 0.7, ease: "power1.out" }, "<");
-                }
-            });
-            animationTimeline.to("#info-display", { duration: 0.3, textContent: 'Connection: Vertical Bolts Engaging' }, "<");
-
-            // Step 6.2: Vertical Connection Phase - Bolts Tighten
-            animationTimeline.addLabel("vertical-bolts-tighten", "+=0.3");
-            ['boltShaft-Y--0', 'boltShaft-Y--1', 'boltShaft-Y--2'].forEach(name => {
-                const boltShaft = modules[2].getObjectByName(name);
-                if (boltShaft) {
-                    animationTimeline.to(boltShaft.position, { y: -MODULE_HEIGHT/2 - 0.2, duration: 0.3 }, "vertical-bolts-tighten");
-                }
-            });
-            ['boltHead-Y--0', 'boltHead-Y--1', 'boltHead-Y--2'].forEach(name => {
-                const boltHead = modules[2].getObjectByName(name);
-                if (boltHead) {
-                    animationTimeline.to(boltHead.position, { y: -MODULE_HEIGHT/2 - 0.2 + boltHeadThickness/2, duration: 0.3 }, "<");
-                }
-            });
-            ['boltShaft-Y--0', 'boltShaft-Y--1', 'boltShaft-Y--2'].forEach(name => {
-                const boltShaft = modules[3].getObjectByName(name);
-                if (boltShaft) {
-                    animationTimeline.to(boltShaft.position, { y: -MODULE_HEIGHT/2 - 0.2, duration: 0.3 }, "<");
-                }
-            });
-            ['boltHead-Y--0', 'boltHead-Y--1', 'boltHead-Y--2'].forEach(name => {
-                const boltHead = modules[3].getObjectByName(name);
-                if (boltHead) {
-                    animationTimeline.to(boltHead.position, { y: -MODULE_HEIGHT/2 - 0.2 + boltHeadThickness/2, duration: 0.3 }, "<");
-                }
-            });
-
-            animationTimeline.to(exteriorCLTMaterial.emissive, { r: 0.1, g: 0.1, b: 0.1, duration: 0.2 }, "<")
-                             .to("#info-display", { duration: 0.3, textContent: 'Connection: Vertical Bolts Tightened & Secured' }, "<")
-                             .to(exteriorCLTMaterial.emissive, { r: 0, g: 0, b: 0, duration: 0.5 }, "+=0.1");
-
-
-            // Step 6.3: Vertical Utility Connection (Module 3 and Module 4 Horizontal on second floor)
-            animationTimeline.addLabel("vertical-utility-connect-second-floor-horizontal", "+=0.5");
-            animationTimeline.call(() => {
-                const pipe = modules[2].getObjectByName('utilityPipe-X+');
-                const wire = modules[2].getObjectByName('utilityWire-X+');
-                const targetModule = modules[3];
-                const port3WorldPos = new THREE.Vector3();
-                const port3 = modules[2].getObjectByName('utilityPort-X+');
-                if (port3) port3.getWorldPosition(port3WorldPos);
-
-                const port4WorldPos = new THREE.Vector3();
-                const port4 = targetModule.getObjectByName('utilityPort-X-'); 
-                if (port4) port4.getWorldPosition(port4WorldPos);
-
-                if (pipe && wire && port3 && port4) {
-                    const pipeStartPos = modules[2].worldToLocal(port3WorldPos);
-                    const pipeEndPos = modules[2].worldToLocal(port4WorldPos);
-
-                    const pipeDirection = new THREE.Vector3().subVectors(pipeEndPos, pipeStartPos);
-                    const pipeLength = pipeDirection.length();
-
-                    pipe.visible = true;
-                    pipe.geometry = new THREE.CylinderGeometry(0.125, 0.125, pipeLength, 8); 
-                    pipe.position.copy(pipeStartPos);
-                    pipe.position.add(pipeDirection.multiplyScalar(0.5));
-                    pipe.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), pipeDirection.normalize());
-                    pipe.scale.y = 0.5; // Starts at 50% length
-                    gsap.to(pipe.scale, { y: 1, duration: 1, ease: "power2.out" });
-
-                    // For wire, slightly different position and then animate
-                    const wireOffset = new THREE.Vector3(0, 0.1, 0); // Offset in Y for X-axis connections
-                    const wireStartPos = new THREE.Vector3().copy(pipeStartPos).add(wireOffset);
-                    const wireEndPos = new THREE.Vector3().copy(pipeEndPos).add(wireOffset);
-                    const wireDirection = new THREE.Vector3().subVectors(wireEndPos, wireStartPos);
-                    const wireLength = wireDirection.length();
-
-                    wire.visible = true;
-                    wire.geometry = new THREE.CylinderGeometry(0.075, 0.075, wireLength, 8); 
-                    wire.position.copy(wireStartPos);
-                    wire.position.add(wireDirection.multiplyScalar(0.5));
-                    wire.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), wireDirection.normalize());
-                    wire.scale.y = 0.5; // Starts at 50% length
-                    gsap.to(wire.scale, { y: 1, duration: 1, ease: "power2.out" }, "<");
-
-                    gsap.to("#info-display", { duration: 0.3, textContent: 'Utility Connection: Second Floor Water/Power & Data Link-up (Horizontal)' }, "<");
-                } else {
-                    console.warn("Could not find utility pipes/wires or ports for second floor horizontal connection animation.");
-                }
-            }, null, "vertical-utility-connect-second-floor-horizontal");
-
-            // Step 6.4: Vertical Utility Connection (Module 1 and Module 3 vertical)
-            animationTimeline.addLabel("vertical-utility-connect-module1-3", "+=0.5");
-            animationTimeline.call(() => {
-                const pipe = modules[0].getObjectByName('utilityPipe-Y+'); // Pipe on module 1, connecting up
-                const wire = modules[0].getObjectByName('utilityWire-Y+');
-                const targetModule = modules[2]; // Module 3
-                const port1WorldPos = new THREE.Vector3();
-                const port1 = modules[0].getObjectByName('utilityPort-Y+');
-                if (port1) port1.getWorldPosition(port1WorldPos);
-
-                const port3WorldPos = new THREE.Vector3();
-                const port3 = targetModule.getObjectByName('utilityPort-Y-'); // Port on module 3, connecting down
-                if (port3) port3.getWorldPosition(port3WorldPos);
-
-                if (pipe && wire && port1 && port3) {
-                    const pipeStartPos = modules[0].worldToLocal(port1WorldPos);
-                    const pipeEndPos = modules[0].worldToLocal(port3WorldPos);
-
-                    const pipeDirection = new THREE.Vector3().subVectors(pipeEndPos, pipeStartPos);
-                    const pipeLength = pipeDirection.length();
-
-                    pipe.visible = true;
-                    pipe.geometry = new THREE.CylinderGeometry(0.125, 0.125, pipeLength, 8); 
-                    pipe.position.copy(pipeStartPos);
-                    pipe.position.add(pipeDirection.multiplyScalar(0.5));
-                    pipe.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), pipeDirection.normalize()); // Y-axis aligned
-                    pipe.scale.y = 0.5; // Starts at 50% length
-                    gsap.to(pipe.scale, { y: 1, duration: 1, ease: "power2.out" });
-
-                    // For wire, slightly different position and then animate
-                    const wireOffset = new THREE.Vector3(0.1, 0, 0); // Offset in X for Y-axis connections
-                    const wireStartPos = new THREE.Vector3().copy(pipeStartPos).add(wireOffset);
-                    const wireEndPos = new THREE.Vector3().copy(pipeEndPos).add(wireOffset);
-                    const wireDirection = new THREE.Vector3().subVectors(wireEndPos, wireStartPos);
-                    const wireLength = wireDirection.length();
-
-                    wire.visible = true;
-                    wire.geometry = new THREE.CylinderGeometry(0.075, 0.075, wireLength, 8); 
-                    wire.position.copy(wireStartPos);
-                    wire.position.add(wireDirection.multiplyScalar(0.5));
-                    wire.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), wireDirection.normalize()); // Y-axis aligned
-                    wire.scale.y = 0.5; // Starts at 50% length
-                    gsap.to(wire.scale, { y: 1, duration: 1, ease: "power2.out" }, "<");
-
-                    gsap.to("#info-display", { duration: 0.3, textContent: 'Utility Connection: Ground to Second Floor Link-up (Module 1-3)' }, "<");
-                } else {
-                    console.warn("Could not find utility pipes/wires or ports for vertical connection Module 1-3 animation.");
-                }
-            }, null, "vertical-utility-connect-module1-3");
-
-            // Step 6.5: Vertical Utility Connection (Module 2 and Module 4 vertical)
-            animationTimeline.addLabel("vertical-utility-connect-module2-4", "+=0.5");
-            animationTimeline.call(() => {
-                const pipe = modules[1].getObjectByName('utilityPipe-Y+'); // Pipe on module 2, connecting up
-                const wire = modules[1].getObjectByName('utilityWire-Y+');
-                const targetModule = modules[3]; // Module 4
-                const port2WorldPos = new THREE.Vector3();
-                const port2 = modules[1].getObjectByName('utilityPort-Y+');
-                if (port2) port2.getWorldPosition(port2WorldPos);
-
-                const port4WorldPos = new THREE.Vector3();
-                const port4 = targetModule.getObjectByName('utilityPort-Y-'); // Port on module 4, connecting down
-                if (port4) port4.getWorldPosition(port4WorldPos);
-
-                if (pipe && wire && port2 && port4) {
-                    const pipeStartPos = modules[1].worldToLocal(port2WorldPos);
-                    const pipeEndPos = modules[1].worldToLocal(port4WorldPos);
-
-                    const pipeDirection = new THREE.Vector3().subVectors(pipeEndPos, pipeStartPos);
-                    const pipeLength = pipeDirection.length();
-
-                    pipe.visible = true;
-                    pipe.geometry = new THREE.CylinderGeometry(0.125, 0.125, pipeLength, 8); 
-                    pipe.position.copy(pipeStartPos);
-                    pipe.position.add(pipeDirection.multiplyScalar(0.5));
-                    pipe.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), pipeDirection.normalize()); // Y-axis aligned
-                    pipe.scale.y = 0.5; // Starts at 50% length
-                    gsap.to(pipe.scale, { y: 1, duration: 1, ease: "power2.out" });
-
-                    // For wire, slightly different position and then animate
-                    const wireOffset = new THREE.Vector3(0.1, 0, 0); // Offset in X for Y-axis connections
-                    const wireStartPos = new THREE.Vector3().copy(pipeStartPos).add(wireOffset);
-                    const wireEndPos = new THREE.Vector3().copy(pipeEndPos).add(wireOffset);
-                    const wireDirection = new THREE.Vector3().subVectors(wireEndPos, wireStartPos);
-                    const wireLength = wireDirection.length();
-
-                    wire.visible = true;
-                    wire.geometry = new THREE.CylinderGeometry(0.075, 0.075, wireLength, 8); 
-                    wire.position.copy(wireStartPos);
-                    wire.position.add(wireDirection.multiplyScalar(0.5));
-                    wire.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), wireDirection.normalize()); // Y-axis aligned
-                    wire.scale.y = 0.5; // Starts at 50% length
-                    gsap.to(wire.scale, { y: 1, duration: 1, ease: "power2.out" }, "<");
-
-                    gsap.to("#info-display", { duration: 0.3, textContent: 'Utility Connection: Ground to Second Floor Link-up (Module 2-4)' }, "<");
-                } else {
-                    console.warn("Could not find utility pipes/wires or ports for vertical connection Module 2-4 animation.");
-                }
-            }, null, "vertical-utility-connect-module2-4");
-
-
-            // Make modules opaque again after vertical connection details
-            animationTimeline.to(exteriorCLTMaterial, { opacity: 1, duration: 0.5 }, "vertical-utility-connect-module2-4+=1.0"); // Affects all modules using this material
-
-            // Final camera view
-            animationTimeline.to(camera.position, { duration: 1, x: CAM_POSITIONS.final_view.pos.x, y: CAM_POSITIONS.final_view.pos.y, z: CAM_POSITIONS.final_view.pos.z, ease: "power2.out" }, "vertical-utility-connect-module2-4+=1.5");
-            animationTimeline.to(controls.target, { duration: 1, x: CAM_POSITIONS.final_view.target.x, y: CAM_POSITIONS.final_view.target.y, z: CAM_POSITIONS.final_view.target.z, ease: "power2.out" }, "<");
-
-
-            // Link slider to timeline progress
-            progressSlider.addEventListener('input', () => {
-                animationTimeline.progress(progressSlider.value / 100);
-            });
+            loadingManager.onLoad = () => {
+                document.getElementById('loading-overlay').classList.add('hidden');
+                setupScene(woodTexture, concreteTexture, woodLogTexture);
+                setupEventListeners();
+                animate();
+            };
         }
 
+        function setupScene(woodTexture, concreteTexture, woodLogTexture) {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x111115);
+            scene.fog = new THREE.Fog(0x111115, 100, 250);
 
-        /**
-         * Updates the information display based on the animation progress.
-         */
-        function updateInfoDisplay() {
-            const progress = animationTimeline.progress();
-            // Round the progress for the slider to avoid excessive decimal places
-            progressSlider.value = Math.round(progress * 100);
-
-            const labels = animationTimeline.labels;
-            let currentLabel = 'Idle';
-            let closestLabelTime = -Infinity;
-
-            for (const label in labels) {
-                if (labels[label] <= animationTimeline.time() && labels[label] > closestLabelTime) {
-                    closestLabelTime = labels[label];
-                    // Update currentLabel based on the new, more granular labels
-                    if (label === 'start') {
-                        currentLabel = 'Assembly Step: Ready';
-                    } else if (label === 'module1-approach') {
-                        currentLabel = 'Module 1: Approaching Foundation Area';
-                    } else if (label === 'module1-place') {
-                        currentLabel = 'Module 1: Precise Foundation Placement';
-                    } else if (label === 'module2-approach') {
-                        currentLabel = 'Module 2: Preparing for Adjacent Placement';
-                    } else if (label === 'module2-place') {
-                        currentLabel = 'Module 2: Precise Adjacent Placement';
-                    } else if (label === 'horizontal-plates-extend') {
-                        currentLabel = 'Connection: Horizontal Receptor Plates Extend';
-                    } else if (label === 'horizontal-bolts-extend') {
-                        currentLabel = 'Connection: Horizontal Bolts Engaging';
-                    } else if (label === 'horizontal-bolts-tighten') {
-                        currentLabel = 'Connection: Horizontal Bolts Tightened & Secured';
-                    } else if (label === 'horizontal-utility-connect') {
-                        currentLabel = 'Utility Connection: Horizontal Water/Power & Data Link-up';
-                    } else if (label === 'module3-approach') {
-                        currentLabel = 'Module 3: Approaching Vertical Stacking Area';
-                    } else if (label === 'module3-place') {
-                        currentLabel = 'Module 3: Precise Vertical Stacking';
-                    } else if (label === 'module4-approach') {
-                        currentLabel = 'Module 4: Approaching Vertical Stacking Area';
-                    } else if (label === 'module4-place') {
-                        currentLabel = 'Module 4: Precise Vertical Stacking';
-                    } else if (label === 'vertical-plates-extend') {
-                        currentLabel = 'Connection: Vertical Receptor Plates Extend';
-                    } else if (label === 'vertical-bolts-extend') {
-                        currentLabel = 'Connection: Vertical Bolts Engaging';
-                    } else if (label === 'vertical-bolts-tighten') {
-                        currentLabel = 'Connection: Vertical Bolts Tightened & Secured';
-                    } else if (label === 'vertical-utility-connect-second-floor-horizontal') {
-                        currentLabel = 'Utility Connection: Second Floor Water/Power & Data Link-up (Horizontal)';
-                    } else if (label === 'vertical-utility-connect-module1-3') {
-                        currentLabel = 'Utility Connection: Ground to Second Floor Link-up (Module 1-3)';
-                    } else if (label === 'vertical-utility-connect-module2-4') {
-                        currentLabel = 'Utility Connection: Ground to Second Floor Link-up (Module 2-4)';
-                    }
-                }
-            }
-            if (animationTimeline.progress() === 1) {
-                currentLabel = 'Assembly Complete!';
-            }
-
-            infoDisplay.textContent = currentLabel;
-        }
-
-        /**
-         * Handles window resizing to adjust camera aspect ratio and renderer size.
-         */
-        function onWindowResize() {
             const container = document.getElementById('threejs-container');
-            camera.aspect = container.clientWidth / container.clientHeight;
-            camera.updateProjectionMatrix();
+            camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(30, 18, 35);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
             renderer.setSize(container.clientWidth, container.clientHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 0.7;
+            container.appendChild(renderer.domElement);
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2 - 0.05;
+            controls.target.copy(buildingCenter);
+
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x8d8d8d, 1.2);
+            hemiLight.position.set(0, 50, 0);
+            scene.add(hemiLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
+            dirLight.position.set(-40, 50, 25);
+            dirLight.castShadow = true;
+            dirLight.shadow.camera.top = 40; dirLight.shadow.camera.bottom = -40;
+            dirLight.shadow.camera.left = -40; dirLight.shadow.camera.right = 40;
+            dirLight.shadow.mapSize.width = 4096; dirLight.shadow.mapSize.height = 4096;
+            scene.add(dirLight);
+
+            sky = new Sky();
+            sky.scale.setScalar(450000);
+            scene.add(sky);
+            sun = new THREE.Vector3();
+            const effectController = {
+                turbidity: 2, rayleigh: 1.2, mieCoefficient: 0.003,
+                mieDirectionalG: 0.8, elevation: 35, azimuth: 180
+            };
+            const phi = THREE.MathUtils.degToRad(90 - effectController.elevation);
+            const theta = THREE.MathUtils.degToRad(effectController.azimuth);
+            sun.setFromSphericalCoords(1, phi, theta);
+            sky.material.uniforms['sunPosition'].value.copy(sun);
+            dirLight.position.copy(sun).multiplyScalar(50);
+            
+            const ground = new THREE.Mesh(
+                new THREE.PlaneGeometry(500, 500),
+                new THREE.MeshStandardMaterial({ map: concreteTexture, roughness: 0.9, metalness: 0.1 })
+            );
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+            
+            cltMaterial = new THREE.MeshStandardMaterial({ map: woodTexture, roughness: 0.8, metalness: 0.05, side: THREE.DoubleSide });
+            woodLogMaterial = new THREE.MeshStandardMaterial({ map: woodLogTexture, roughness: 0.9, side: THREE.DoubleSide });
+            metalMaterial = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.4, metalness: 0.8 });
+            glassMaterial = new THREE.MeshPhysicalMaterial({ roughness: 0.05, transmission: 1.0, thickness: 0.1, ior: 1.5, color: 0xade0ff });
+            craneMaterial = new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.4, metalness: 0.6 });
+            truckMaterial = new THREE.MeshStandardMaterial({ color: 0xda3633, roughness: 0.5, metalness: 0.2 });
+
+            createModulesAndComponents();
+            createSiteEnvironment();
+            crane = createCrane();
+            craneHook = createCraneHook();
+            craneCable = createCraneCable();
+            truck = createTruck();
+            scene.add(crane, craneHook, craneCable, truck);
+
+            setupAnimationTimeline();
         }
 
+        function createCrane() {
+            const craneGroup = new THREE.Group();
+            craneGroup.position.copy(craneBasePosition);
+            
+            const tower = new THREE.Mesh(new THREE.BoxGeometry(1.5, 42, 1.5), craneMaterial);
+            tower.position.y = 21; tower.castShadow = true;
+
+            const jib = new THREE.Mesh(new THREE.BoxGeometry(60, 1.2, 1.2), craneMaterial);
+            jib.position.set(21, 41.4, 0); jib.castShadow = true;
+            
+            const counterWeight = new THREE.Mesh(new THREE.BoxGeometry(5, 4, 4), new THREE.MeshStandardMaterial({color: 0x444444}));
+            counterWeight.position.set(-11, 40, 0); counterWeight.castShadow = true;
+            
+            const cabin = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2.5), new THREE.MeshStandardMaterial({color: 0x333333}));
+            cabin.position.set(-2, 38, 0); cabin.castShadow = true;
+            
+            const operator = new THREE.Group();
+            operator.add(jib, counterWeight, cabin);
+            craneGroup.add(tower, operator);
+            craneGroup.userData.operator = operator;
+            return craneGroup;
+        }
+        
+        function createModulesAndComponents() {
+            moduleData.forEach((data, index) => {
+                const moduleGroup = new THREE.Group();
+                moduleGroup.name = `ModuleGroup_${index+1}`;
+                moduleGroup.position.copy(data.targetPos);
+                scene.add(moduleGroup);
+                moduleGroups.push(moduleGroup);
+
+                const components = {
+                    floor: new THREE.Mesh(new THREE.BoxGeometry(MODULE_WIDTH, panelThickness, MODULE_DEPTH), cltMaterial),
+                    roof: new THREE.Mesh(new THREE.BoxGeometry(MODULE_WIDTH, panelThickness, MODULE_DEPTH), cltMaterial),
+                    wall_back: new THREE.Mesh(new THREE.BoxGeometry(MODULE_WIDTH, MODULE_HEIGHT, panelThickness), cltMaterial),
+                    wall_left: new THREE.Mesh(new THREE.BoxGeometry(panelThickness, MODULE_HEIGHT, MODULE_DEPTH), cltMaterial),
+                    wall_right: new THREE.Mesh(new THREE.BoxGeometry(panelThickness, MODULE_HEIGHT, MODULE_DEPTH), cltMaterial),
+                    wall_front_frame: new THREE.Group(),
+                    window_glass: new THREE.Mesh(new THREE.BoxGeometry(MODULE_WIDTH * 0.5, MODULE_HEIGHT * 0.7, 0.05), glassMaterial),
+                    door: new THREE.Mesh(new THREE.BoxGeometry(1, 2.2, 0.08), new THREE.MeshStandardMaterial({color:0x5c3c20})),
+                };
+                
+                const frontWall = new THREE.Group();
+                const topBeam = new THREE.Mesh(new THREE.BoxGeometry(MODULE_WIDTH, 0.4, panelThickness), cltMaterial);
+                topBeam.position.y = MODULE_HEIGHT / 2 - 0.2;
+                const bottomBeam = new THREE.Mesh(new THREE.BoxGeometry(MODULE_WIDTH, 0.4, panelThickness), cltMaterial);
+                bottomBeam.position.y = -MODULE_HEIGHT / 2 + 0.2;
+                const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.4, MODULE_HEIGHT - 0.8, panelThickness), cltMaterial);
+                pillar.position.x = MODULE_WIDTH * 0.1;
+                frontWall.add(topBeam, bottomBeam, pillar);
+                components.wall_front_frame = frontWall;
+
+                components.floor.position.y = panelThickness / 2;
+                components.roof.position.y = MODULE_HEIGHT + panelThickness / 2;
+                components.wall_back.position.set(0, MODULE_HEIGHT / 2 + panelThickness, -MODULE_DEPTH / 2 + panelThickness / 2);
+                components.wall_front_frame.position.set(0, MODULE_HEIGHT / 2 + panelThickness, MODULE_DEPTH / 2 - panelThickness / 2);
+                components.wall_left.position.set(-MODULE_WIDTH / 2 + panelThickness / 2, MODULE_HEIGHT / 2 + panelThickness, 0);
+                components.wall_right.position.set(MODULE_WIDTH / 2 - panelThickness / 2, MODULE_HEIGHT / 2 + panelThickness, 0);
+                components.window_glass.position.copy(components.wall_front_frame.position).add(new THREE.Vector3(-0.6, 0.1, 0));
+                components.door.position.copy(components.wall_front_frame.position).add(new THREE.Vector3(1.5, -0.3, 0));
+
+                Object.values(components).forEach(obj => {
+                    obj.castShadow = true; obj.receiveShadow = true;
+                    obj.userData.finalPosition = obj.position.clone();
+                    obj.position.copy(fabricationPosition).add(new THREE.Vector3(10, 0, 0));
+                    obj.userData.initialPosition = obj.position.clone();
+                    obj.userData.initialRotation = obj.rotation.clone();
+                    obj.visible = false;
+                    scene.add(obj);
+                    moduleGroup.userData[obj.name] = obj;
+                });
+                modules.push(components);
+
+                const furnitureGroup = new THREE.Group();
+                const bed = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.4, 2.8), cltMaterial);
+                bed.position.set(1, 0.3, -2.5);
+                const kitchenette = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.9, 0.6), metalMaterial);
+                kitchenette.position.set(-1.2, 0.45, -3.2);
+                const sofa = new THREE.Mesh(new THREE.BoxGeometry(2, 0.7, 0.8), new THREE.MeshStandardMaterial({color: 0x556b2f}));
+                sofa.position.set(-0.8, 0.35, 1.5);
+                const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), new THREE.MeshStandardMaterial({color:0xffff00, emissive: 0xffff00, emissiveIntensity:0}));
+                lamp.position.set(0, 2.5, 1.5);
+                furnitureGroup.add(bed, kitchenette, sofa, lamp);
+                furnitureGroup.visible = false;
+                furnitureGroup.position.copy(data.targetPos);
+                scene.add(furnitureGroup);
+                furnitureGroups.push(furnitureGroup);
+            });
+        }
+        
+        function createSiteEnvironment() {
+            const pipeGeo = new THREE.CylinderGeometry(0.15, 0.15, 40, 12);
+            const waterMain = new THREE.Mesh(pipeGeo, new THREE.MeshStandardMaterial({color:0x3366ff}));
+            waterMain.rotation.z = Math.PI/2;
+            waterMain.position.set(0, -0.15, -15); scene.add(waterMain);
+            const electricMain = new THREE.Mesh(pipeGeo, new THREE.MeshStandardMaterial({color:0xffcc00}));
+            electricMain.rotation.z = Math.PI/2;
+            electricMain.position.set(0, -0.15, -16); scene.add(electricMain);
+
+            waterPipe = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1, 8), new THREE.MeshStandardMaterial({color:0x0000ff}));
+            waterPipe.position.set(2.1, -0.5, -15);
+            electricCable = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1, 8), new THREE.MeshStandardMaterial({color:0xffcc00}));
+            electricCable.position.set(2.1, -0.5, -16);
+            scene.add(waterPipe, electricCable);
+
+            fabricationArea = new THREE.Group();
+            fabricationArea.position.copy(fabricationPosition);
+            const base = new THREE.Mesh(new THREE.BoxGeometry(12, 0.2, 10), new THREE.MeshStandardMaterial({color: 0x444}));
+            const pressMachine = new THREE.Mesh(new THREE.BoxGeometry(4, 3, 5), metalMaterial);
+            pressMachine.position.set(0, 1.6, 0);
+            fabricationArea.add(base, pressMachine);
+            fabricationArea.visible = false;
+            
+            const logGeo = new THREE.CylinderGeometry(0.2, 0.2, 4, 10);
+            for(let i=0; i < 30; i++) {
+                const log = new THREE.Mesh(logGeo, woodLogMaterial);
+                log.rotation.z = Math.PI/2;
+                log.position.set(-5 + (i%5)*0.4, 0.2 + Math.floor(i/5)*0.4, Math.random()*6-3);
+                log.name = `log_${i}`;
+                fabricationArea.add(log);
+            }
+            scene.add(fabricationArea);
+        }
+
+        function createTruck() {
+            const truckGroup = new THREE.Group();
+            const bodyMat = new THREE.MeshStandardMaterial({color: 0xbb2222, roughness: 0.6});
+            const cab = new THREE.Mesh(new THREE.BoxGeometry(3, 2.5, 2.5), bodyMat);
+            cab.position.set(4.5, 1.25, 0);
+            const cargo = new THREE.Mesh(new THREE.BoxGeometry(7, 3, 2.8), new THREE.MeshStandardMaterial({color: 0xcccccc}));
+            cargo.position.set(0, 1.5, 0);
+            const wheelGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.5, 18);
+            wheelGeo.rotateZ(Math.PI / 2);
+            const wheelMat = new THREE.MeshStandardMaterial({color: 0x111111});
+            const wheelPositions = [ [4.5, 0.5, 1.4], [4.5, 0.5, -1.4], [0, 0.5, 1.4], [0, 0.5, -1.4], [-2, 0.5, 1.4], [-2, 0.5, -1.4] ];
+            wheelPositions.forEach(p => {
+                const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+                wheel.position.set(p[0], p[1], p[2]);
+                truckGroup.add(wheel);
+            });
+            truckGroup.add(cab, cargo);
+            truckGroup.position.copy(truckStartPosition);
+            truckGroup.visible = false;
+            return truckGroup;
+        }
+        
+        function createCraneHook() {
+            const hookGroup = new THREE.Group(); hookGroup.visible = false;
+            hookGroup.position.set(craneBasePosition.x, 35, craneBasePosition.z);
+            
+            const harnessMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.2, metalness: 0.9 });
+            const mainBar = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, MODULE_DEPTH * 0.8), harnessMat);
+            hookGroup.add(mainBar);
+            const topConnector = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.5, 8), harnessMat);
+            topConnector.position.y = 0.35;
+            hookGroup.add(topConnector);
+
+            hookGroup.userData.attachPoint = topConnector;
+            return hookGroup;
+        }
+
+        function createCraneCable() {
+            const cableGeo = new THREE.CylinderGeometry(0.04, 0.04, 1, 8);
+            const cableMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.8 });
+            const cable = new THREE.Mesh(cableGeo, cableMat); cable.visible = false;
+            return cable;
+        }
+
+        function updateCable() {
+            if (!craneCable.visible) return;
+            const jib = crane.userData.operator.children[0];
+            const endOfJibWorldPos = new THREE.Vector3(jib.position.x + craneHook.position.x - crane.position.x - 21, 0, 0);
+            jib.localToWorld(endOfJibWorldPos);
+            
+            const startPoint = new THREE.Vector3(craneHook.position.x, endOfJibWorldPos.y, craneHook.position.z);
+            const endPoint = new THREE.Vector3();
+            craneHook.userData.attachPoint.getWorldPosition(endPoint);
+
+            const distance = startPoint.distanceTo(endPoint);
+            craneCable.position.copy(startPoint).lerp(endPoint, 0.5);
+            craneCable.scale.y = distance;
+            craneCable.quaternion.setFromUnitVectors(upVector, endPoint.clone().sub(startPoint).normalize());
+        }
+
+        function resetScene() {
+            if(animationTimeline) animationTimeline.pause().progress(0);
+            gsap.killTweensOf(camera.position);
+            gsap.killTweensOf(controls.target);
+            controls.enabled = true;
+
+            playPauseBtn.innerHTML = '<i class="fas fa-play"></i> Play';
+            infoDisplay.textContent = 'Waiting to Start';
+            progressSlider.value = 0;
+            
+            while(craneHook.children.length > 1) { // Keep harness
+                const child = craneHook.children[1];
+                scene.add(child);
+                craneHook.remove(child);
+            }
+
+            modules.forEach((moduleComponents) => {
+                 for (const key in moduleComponents) {
+                    const component = moduleComponents[key];
+                    if (component) {
+                        component.position.copy(component.userData.initialPosition);
+                        component.rotation.copy(component.userData.initialRotation);
+                        component.visible = false;
+                    }
+                }
+            });
+            furnitureGroups.forEach(f => {
+                f.visible = false;
+                f.children.forEach(item => {
+                    if(item.material.emissive) item.material.emissiveIntensity = 0;
+                });
+            });
+
+            craneHook.visible = false;
+            craneCable.visible = false;
+            if(crane && crane.userData.operator) crane.userData.operator.rotation.y = 0;
+            
+            fabricationArea.visible = false;
+            fabricationArea.children.forEach(child => {
+                if(child.name.startsWith('log')) child.visible = true;
+            });
+            truck.visible = false;
+            truck.position.copy(truckStartPosition);
+
+            waterPipe.scale.y = 0.01; waterPipe.position.y = -0.5;
+            electricCable.scale.y = 0.01; electricCable.position.y = -0.5;
+
+            setupAnimationTimeline();
+        }
+        
         /**
-         * The main animation loop.
+         * Adds a camera movement animation to a given GSAP timeline.
+         * @param {gsap.core.Timeline} timeline The timeline to add the animation to.
+         * @param {THREE.Vector3} targetPosition The position the camera should look at.
+         * @param {number} duration The duration of the camera movement.
+         * @param {THREE.Vector3} offset The camera's position offset relative to the target.
+         * @param {string|number} insertPoint The point in the timeline to insert the animation.
          */
+        function addCameraAnimationToTimeline(timeline, targetPosition, duration, offset, insertPoint = ">") {
+            timeline.to(camera.position, {
+                x: targetPosition.x + offset.x,
+                y: targetPosition.y + offset.y,
+                z: targetPosition.z + offset.z,
+                duration: duration,
+                ease: 'power2.inOut'
+            }, insertPoint);
+            timeline.to(controls.target, {
+                x: targetPosition.x,
+                y: targetPosition.y,
+                z: targetPosition.z,
+                duration: duration,
+                ease: 'power2.inOut'
+            }, insertPoint);
+        }
+
+        function createFabricationAndPlacementAction(component, moduleGroup, infoText) {
+            const tl = gsap.timeline();
+            
+            let componentHeight;
+            if (component.isGroup) {
+                componentHeight = MODULE_HEIGHT;
+            } else {
+                componentHeight = component.geometry.parameters.height;
+            }
+
+            const finalWorldPos = new THREE.Vector3().copy(component.userData.finalPosition).add(moduleGroup.position);
+            const pickupPos = new THREE.Vector3().copy(fabricationPosition).add(new THREE.Vector3(5, componentHeight / 2, 0));
+            
+            // 1. Fabricate. Add camera animation to this local timeline.
+            addCameraAnimationToTimeline(tl, fabricationPosition, 2, new THREE.Vector3(0, 15, 20), 0);
+            const logsToUse = fabricationArea.children.filter(c => c.name.startsWith('log') && c.visible);
+            if (logsToUse.length > 0) {
+                const log = logsToUse[logsToUse.length - 1];
+                tl.set(infoDisplay, { textContent: `Processing wood for: ${infoText}`})
+                  .to(log.position, { x: 0, duration: 1, ease: 'power1.in' })
+                  .set(log, { visible: false })
+                  .fromTo(fabricationArea.children[1].scale, {x:1,y:1,z:1}, {x:1.05, y:0.95, z:1.05, duration:0.2, yoyo:true, repeat:3});
+            }
+
+            // 2. Component appears, move hook to pickup
+            tl.set(component, { visible: true })
+              .set(infoDisplay, { textContent: `Preparing to lift: ${infoText}`})
+              .to(crane.userData.operator.rotation, { y: Math.atan2(pickupPos.x - craneBasePosition.x, pickupPos.z - craneBasePosition.z), duration: 2, ease: 'power2.inOut' }, 'pickup')
+              .set(craneHook, { visible: true }, 'pickup')
+              .set(craneCable, { visible: true }, 'pickup')
+              .to(craneHook.position, { x: pickupPos.x, z: pickupPos.z, duration: 2, ease: 'power2.inOut' }, 'pickup')
+              .to(craneHook.position, { y: pickupPos.y + 1, duration: 1.5, ease: 'power1.in' });
+
+            // 3. Attach and lift
+            tl.addLabel("lift")
+              .add(() => {
+                  scene.remove(component);
+                  craneHook.add(component);
+                  component.position.set(0, -componentHeight / 2, 0); 
+                  component.rotation.set(0,0,0);
+              }, "lift")
+              .to(craneHook.position, { y: 25, duration: 2, ease: 'power1.out' }, 'lift');
+              
+            // Add camera animation for placement, starting when the lift begins.
+            addCameraAnimationToTimeline(tl, finalWorldPos, 4, new THREE.Vector3(-15, 12, 20), "lift");
+            
+            // 4. Move hook to placement
+            tl.set(infoDisplay, { textContent: `Placing: ${infoText}` })
+              .to(crane.userData.operator.rotation, { y: Math.atan2(finalWorldPos.x - craneBasePosition.x, finalWorldPos.z - craneBasePosition.z), duration: 3, ease: 'power2.inOut' }, 'place')
+              .to(craneHook.position, { x: finalWorldPos.x, z: finalWorldPos.z, duration: 3, ease: 'power2.inOut' }, 'place');
+
+            // 5. Lower and detach
+            tl.to(craneHook.position, { y: finalWorldPos.y + componentHeight / 2 + 0.5, duration: 2, ease: 'power2.in' })
+              .add(() => {
+                  craneHook.remove(component);
+                  moduleGroup.add(component);
+                  component.position.copy(component.userData.finalPosition);
+                  component.rotation.copy(component.userData.initialRotation);
+              })
+              .to(craneHook.position, { y: 35, duration: 1.5, ease: 'power1.out' });
+
+            return tl;
+        }
+
+        function createInteriorFocusAction(moduleGroup) {
+            const tl = gsap.timeline({
+                onStart: () => { controls.enabled = false; },
+                onComplete: () => { controls.enabled = true; }
+            });
+            const windowPosition = new THREE.Vector3(0, 1.5, MODULE_DEPTH/2 - 0.5);
+            moduleGroup.localToWorld(windowPosition);
+            
+            const cameraTargetPos = windowPosition.clone().add(new THREE.Vector3(0, 0, 3));
+            
+            tl.set(infoDisplay, {textContent: `Inspecting ${moduleGroup.name}`})
+              .to(camera.position, { x: cameraTargetPos.x, y: cameraTargetPos.y, z: cameraTargetPos.z, duration: 2, ease: 'power3.inOut' })
+              .to(controls.target, { x: windowPosition.x, y: windowPosition.y, z: windowPosition.z - 2, duration: 2, ease: 'power3.inOut' }, "<")
+              .to({}, {duration: 2})
+              
+            return tl;
+        }
+
+        function setupAnimationTimeline() {
+            animationTimeline = gsap.timeline({ 
+                paused: true, 
+                onUpdate: () => {
+                    progressSlider.value = animationTimeline.progress() * 100;
+                    updateCable();
+                },
+                onComplete: () => {
+                    infoDisplay.textContent = 'Assembly Complete!';
+                    playPauseBtn.innerHTML = '<i class="fas fa-redo"></i> Replay';
+                    addCameraAnimationToTimeline(animationTimeline, buildingCenter, 2, new THREE.Vector3(30,18,35));
+                }
+            });
+
+            // Phase 1: Site Prep Timeline
+            animationTimeline.addLabel('SitePrep')
+                .set(infoDisplay, { textContent: 'Phase 1: Preparing Site' })
+                .set(fabricationArea, { visible: true }, "+=0.5");
+
+            // Phase 2: Assembly Timeline
+            animationTimeline.addLabel('Assembly', "+=1");
+            modules.forEach((moduleComponents, index) => {
+                const m_id = `Module ${index + 1}`;
+                const moduleGroup = moduleGroups[index];
+                const placementOrder = [
+                    { comp: moduleComponents.floor, info: `${m_id} Floor` },
+                    { comp: moduleComponents.wall_back, info: `${m_id} Back Wall` },
+                    { comp: moduleComponents.wall_left, info: `${m_id} Left Wall` },
+                    { comp: moduleComponents.wall_right, info: `${m_id} Right Wall` },
+                    { comp: moduleComponents.wall_front_frame, info: `${m_id} Front Frame` },
+                    { comp: moduleComponents.window_glass, info: `${m_id} Window` },
+                    { comp: moduleComponents.door, info: `${m_id} Door` },
+                    { comp: moduleComponents.roof, info: `${m_id} Roof` },
+                ];
+                placementOrder.forEach(item => {
+                    animationTimeline.add(createFabricationAndPlacementAction(item.comp, moduleGroup, item.info));
+                });
+            });
+
+            // Phase 3: Utilities
+            animationTimeline.addLabel('Utilities', "+=1")
+                .set(infoDisplay, {textContent: 'Phase 3: Connecting Utilities'});
+            addCameraAnimationToTimeline(animationTimeline, waterPipe.position, 1.5, new THREE.Vector3(5, 5, 10), 'Utilities');
+            animationTimeline.to(waterPipe.scale, {y: 150, duration: 1, ease: 'none'})
+                .to(waterPipe.position, {y: 7.5, duration: 1, ease: 'none'}, "<")
+                .to(electricCable.scale, {y: 160, duration: 1, ease: 'none'}, "-=0.5")
+                .to(electricCable.position, {y: 8, duration: 1, ease: 'none'}, "<");
+
+            // Phase 4: Furnishing Timeline
+            animationTimeline.addLabel('Furnishing', "+=1")
+                .set(infoDisplay, { textContent: 'Phase 4: Delivering Furniture' })
+                .set(truck, {visible: true});
+            addCameraAnimationToTimeline(animationTimeline, truckStopPosition, 3, new THREE.Vector3(-15, 8, -15), 'Furnishing');
+            animationTimeline.to(truck.position, {x: truckStopPosition.x, duration: 3, ease: 'power2.inOut'});
+            
+            furnitureGroups.forEach((group) => {
+                animationTimeline.fromTo(group.position, 
+                    {...truckStopPosition, y: 1}, 
+                    {...group.position, duration: 2, ease: 'power2.out'}
+                )
+                .set(group, {visible: true}, "<")
+                .to(group.children.find(c => c.material.emissive).material, {emissiveIntensity: 1, duration: 0.5});
+            });
+
+            animationTimeline.to(truck.position, {x: 60, duration: 3, ease: 'power2.in'}, "+=1");
+
+            // Phase 5: Final Inspection Zooms
+            animationTimeline.addLabel('Inspection', "+=1");
+            moduleGroups.forEach(group => {
+                animationTimeline.add(createInteriorFocusAction(group));
+            });
+
+            animationTimeline.set(infoDisplay, { textContent: 'Finalizing Structure...' });
+        }
+
         function animate() {
             requestAnimationFrame(animate);
             controls.update();
             renderer.render(scene, camera);
         }
 
-        // --- Event Listeners for UI ---
-        const playPauseBtn = document.getElementById('playPauseBtn');
-        const resetBtn = document.getElementById('resetBtn');
-        const progressSlider = document.getElementById('progressSlider');
-        const infoDisplay = document.getElementById('info-display');
-
-        playPauseBtn.addEventListener('click', () => {
-            if (animationTimeline.paused()) {
-                animationTimeline.play();
-                playPauseBtn.textContent = 'Pause';
-            } else {
-                animationTimeline.pause();
-                playPauseBtn.textContent = 'Play';
+        function onWindowResize() {
+            const container = document.getElementById('threejs-container');
+            if (container && renderer) {
+                const w = container.clientWidth;
+                const h = container.clientHeight;
+                camera.aspect = w / h;
+                camera.updateProjectionMatrix();
+                renderer.setSize(w, h);
             }
-        });
+        }
 
-        resetBtn.addEventListener('click', () => {
-            animationTimeline.restart().pause(0);
-            playPauseBtn.textContent = 'Play';
-            infoDisplay.textContent = 'Assembly Step: Ready';
-            progressSlider.value = 0;
-            // Reset all module components explicitly for a clean restart
-            modules.forEach(resetModuleVisualState);
-        });
+        function setupUI() {
+            playPauseBtn = document.getElementById('playPauseBtn');
+            resetBtn = document.getElementById('resetBtn');
+            progressSlider = document.getElementById('progressSlider');
+            speedSlider = document.getElementById('speedSlider');
+            speedDisplay = document.getElementById('speedDisplay');
+            infoDisplay = document.getElementById('info-display');
+            toggleControlsBtn = document.getElementById('toggle-controls-btn');
+            controlsWrapper = document.getElementById('controls-wrapper');
+        }
 
-        // Initialize on window load
-        window.onload = function() {
-            init();
-        };
+        function setupEventListeners() {
+            window.addEventListener('resize', onWindowResize);
+            
+            playPauseBtn.addEventListener('click', () => {
+                if (animationTimeline.progress() === 1) {
+                    resetScene();
+                    setTimeout(() => animationTimeline.play(), 100);
+                    playPauseBtn.innerHTML = '<i class="fas fa-pause"></i> Pause';
+                    return;
+                }
+                animationTimeline.paused(!animationTimeline.paused());
+                playPauseBtn.innerHTML = animationTimeline.paused() ? '<i class="fas fa-play"></i> Play' : '<i class="fas fa-pause"></i> Pause';
+            });
 
+            resetBtn.addEventListener('click', () => {
+                gsap.globalTimeline.clear();
+                resetScene();
+            });
+
+            progressSlider.addEventListener('input', () => {
+                animationTimeline.progress(progressSlider.value / 100).pause();
+                playPauseBtn.innerHTML = '<i class="fas fa-play"></i> Play';
+                updateCable();
+            });
+
+            speedSlider.addEventListener('input', () => {
+                const speed = speedSlider.value / 100;
+                animationTimeline.timeScale(speed);
+                speedDisplay.textContent = `${speed.toFixed(1)}x`;
+            });
+            speedDisplay.textContent = `${(speedSlider.value / 100).toFixed(1)}x`;
+
+            toggleControlsBtn.addEventListener('click', () => {
+                controlsWrapper.classList.toggle('hidden');
+                const icon = toggleControlsBtn.querySelector('i');
+                const tooltip = toggleControlsBtn.parentElement.querySelector('.tooltiptext');
+                if (controlsWrapper.classList.contains('hidden')) {
+                    icon.className = 'fas fa-eye';
+                    tooltip.textContent = 'Show Controls';
+                } else {
+                    icon.className = 'fas fa-eye-slash';
+                    tooltip.textContent = 'Hide Controls';
+                }
+            });
+            
+            const animateCameraView = (pos, target) => {
+                gsap.killTweensOf(camera.position);
+                gsap.killTweensOf(controls.target);
+                controls.enabled = true;
+                animationTimeline.pause();
+                playPauseBtn.innerHTML = '<i class="fas fa-play"></i> Play';
+                gsap.to(camera.position, { ...pos, duration: 1.2, ease: 'power3.inOut'});
+                gsap.to(controls.target, { ...target, duration: 1.2, ease: 'power3.inOut'});
+            }
+            document.getElementById('view-perspective').addEventListener('click', () => animateCameraView({ x: 30, y: 18, z: 35 }, buildingCenter));
+            document.getElementById('view-top').addEventListener('click', () => animateCameraView({ x: buildingCenter.x, y: 50, z: buildingCenter.z }, buildingCenter));
+            document.getElementById('view-side').addEventListener('click', () => animateCameraView({ x: 40, y: 6, z: 0 }, buildingCenter));
+        }
+        
+        init();
     </script>
 </body>
 </html>
