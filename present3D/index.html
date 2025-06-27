@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>modular housing</title>
+    <title>Modular CLT Housing 3D Visualization - Enhanced with Brighter Joints and More Steps</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="importmap">
         {
@@ -117,6 +117,9 @@
         woodTexture.wrapS = THREE.RepeatWrapping;
         woodTexture.wrapT = THREE.RepeatWrapping;
         woodTexture.repeat.set(2, 2); // Adjust tiling as needed for visual scale
+
+        // Global material for exterior CLT, allowing consistent transparency changes
+        let exteriorCLTMaterial;
 
         const moduleData = [
             // Define module configurations for assembly
@@ -232,6 +235,17 @@
             ground.receiveShadow = true; // Ground can receive shadows
             scene.add(ground);
 
+            // Initialize global exteriorCLTMaterial here
+            exteriorCLTMaterial = new THREE.MeshStandardMaterial({
+                map: woodTexture,
+                roughness: 0.7,
+                metalness: 0.05,
+                emissive: new THREE.Color(0x000000),
+                emissiveIntensity: 0.5,
+                transparent: true,
+                opacity: 0.7 // Default transparency for exterior to hint at interior
+            });
+
             // Create initial modules (off-screen or at assembly start)
             createModules();
 
@@ -247,6 +261,7 @@
         /**
          * Creates a modular housing unit with chamfered edges and detailed connections.
          * This function builds a group of meshes to simulate the module.
+         * It now includes interior elements.
          * @param {number} width - Width of the module.
          * @param {number} height - Height of the module.
          * @param {number} depth - Depth of the module.
@@ -255,32 +270,38 @@
          */
         function createDetailedModule(width, height, depth, baseColor) {
             const moduleGroup = new THREE.Group();
-            // Use the loaded woodTexture for the main module body
-            const moduleMaterial = new THREE.MeshStandardMaterial({
-                map: woodTexture,
-                roughness: 0.7,
-                metalness: 0.05,
-                emissive: new THREE.Color(0x000000),
-                emissiveIntensity: 0.5,
-                transparent: true, // Enable transparency
-                opacity: 1 // Initial opacity
-            });
-            // Changed color to brighter grey
-            const connectionMaterial = new THREE.MeshStandardMaterial({ color: 0xAAAAAA, roughness: 0.5, metalness: 0.8, transparent: true, opacity: 1 }); 
-            // Changed color to brighter grey
-            const utilityPortMaterial = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.6, metalness: 0.1, transparent: true, opacity: 1 }); 
-            const pipeMaterial = new THREE.MeshStandardMaterial({ color: 0x00FF00, roughness: 0.3, metalness: 0.1, transparent: true, opacity: 1 }); // Green for "connected" pipe
-            const wireMaterial = new THREE.MeshStandardMaterial({ color: 0xFFFF00, roughness: 0.3, metalness: 0.1, transparent: true, opacity: 1 }); // Yellow for "connected" wire
 
-            // Main module body
+            // Materials for interior elements
+            const interiorWallMaterial = new THREE.MeshStandardMaterial({
+                color: 0xF0F0F0, // Light grey for interior walls
+                roughness: 0.6,
+                metalness: 0.01
+            });
+
+            const interiorFloorMaterial = new THREE.MeshStandardMaterial({
+                color: 0x8B7355, // Light wood/tan for interior floor
+                roughness: 0.7,
+                metalness: 0.01
+            });
+
+            const furnitureMaterial = new THREE.MeshStandardMaterial({ color: 0x554433, roughness: 0.8 }); // Dark wood/furniture color
+
+            // Connection and utility materials (re-using existing)
+            const connectionMaterial = new THREE.MeshStandardMaterial({ color: 0xAAAAAA, roughness: 0.5, metalness: 0.8, transparent: true, opacity: 1 }); 
+            const utilityPortMaterial = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.6, metalness: 0.1, transparent: true, opacity: 1 }); 
+            const pipeMaterial = new THREE.MeshStandardMaterial({ color: 0x00FF00, roughness: 0.3, metalness: 0.1, transparent: true, opacity: 1 }); 
+            const wireMaterial = new THREE.MeshStandardMaterial({ color: 0xFFFF00, roughness: 0.3, metalness: 0.1, transparent: true, opacity: 1 }); 
+
+            // Main module body - now representing the outer shell, made transparent
             const mainGeometry = new THREE.BoxGeometry(width, height, depth);
-            const mainMesh = new THREE.Mesh(mainGeometry, moduleMaterial);
+            const mainMesh = new THREE.Mesh(mainGeometry, exteriorCLTMaterial); // Use the global exteriorCLTMaterial
             mainMesh.castShadow = true;
             mainMesh.receiveShadow = true;
-            mainMesh.name = 'mainMesh'; // Assign a name to the main mesh
+            mainMesh.name = 'mainMesh'; // Assign a name to the main mesh for animation targeting
             moduleGroup.add(mainMesh);
 
             // Simulate chamfered edges by adding thin bevels
+            // These attach to the exterior of the mainMesh
             const bevelThickness = CHAMFER_SIZE * 0.5;
             const bevelLengthAdj = CHAMFER_SIZE * 2; // Adjustment for length
             const edgeGeometries = [];
@@ -289,7 +310,7 @@
             for (let i = 0; i < 2; i++) {
                 for (let j = 0; j < 2; j++) {
                     const edgeX = new THREE.BoxGeometry(width - bevelLengthAdj, bevelThickness, bevelThickness);
-                    const meshX = new THREE.Mesh(edgeX, moduleMaterial); // Use moduleMaterial with texture
+                    const meshX = new THREE.Mesh(edgeX, exteriorCLTMaterial); // Use exteriorCLTMaterial
                     meshX.position.set(0, (height / 2 - bevelThickness / 2) * (i ? 1 : -1), (depth / 2 - bevelThickness / 2) * (j ? 1 : -1));
                     edgeGeometries.push(meshX);
                 }
@@ -298,7 +319,7 @@
             for (let i = 0; i < 2; i++) {
                 for (let j = 0; j < 2; j++) {
                     const edgeY = new THREE.BoxGeometry(bevelThickness, height - bevelLengthAdj, bevelThickness);
-                    const meshY = new THREE.Mesh(edgeY, moduleMaterial); // Use moduleMaterial with texture
+                    const meshY = new THREE.Mesh(edgeY, exteriorCLTMaterial); // Use exteriorCLTMaterial
                     meshY.position.set((width / 2 - bevelThickness / 2) * (i ? 1 : -1), 0, (depth / 2 - bevelThickness / 2) * (j ? 1 : -1));
                     edgeGeometries.push(meshY);
                 }
@@ -307,7 +328,7 @@
             for (let i = 0; i < 2; i++) {
                 for (let j = 0; j < 2; j++) {
                     const edgeZ = new THREE.BoxGeometry(bevelThickness, bevelThickness, depth - bevelLengthAdj);
-                    const meshZ = new THREE.Mesh(edgeZ, moduleMaterial); // Use moduleMaterial with texture
+                    const meshZ = new THREE.Mesh(edgeZ, exteriorCLTMaterial); // Use exteriorCLTMaterial
                     meshZ.position.set((width / 2 - bevelThickness / 2) * (i ? 1 : -1), (height / 2 - bevelThickness / 2) * (j ? 1 : -1), 0);
                     edgeGeometries.push(meshZ);
                 }
@@ -318,6 +339,70 @@
                 mesh.receiveShadow = true;
                 moduleGroup.add(mesh);
             });
+
+            // --- Interior Elements ---
+            const interiorOffset = 0.1; // Small offset from outer shell to represent wall thickness
+            const interiorFloorHeight = 0.05; // Thin interior floor
+            const partitionWallThickness = 0.08;
+
+            // Interior Floor
+            const interiorFloorGeom = new THREE.PlaneGeometry(width - interiorOffset * 2, depth - interiorOffset * 2);
+            const interiorFloorMesh = new THREE.Mesh(interiorFloorGeom, interiorFloorMaterial);
+            interiorFloorMesh.rotation.x = -Math.PI / 2; // Rotate to be horizontal
+            // Position just above the bottom of the main module
+            interiorFloorMesh.position.y = -height / 2 + interiorOffset + interiorFloorHeight / 2;
+            interiorFloorMesh.receiveShadow = true;
+            moduleGroup.add(interiorFloorMesh);
+
+            // Interior Ceiling (positioned just below the top of the main module)
+            const interiorCeilingGeom = new THREE.PlaneGeometry(width - interiorOffset * 2, depth - interiorOffset * 2);
+            const interiorCeilingMesh = new THREE.Mesh(interiorCeilingGeom, interiorWallMaterial); // Using interiorWallMaterial for simplicity
+            interiorCeilingMesh.rotation.x = Math.PI / 2; // Rotate to be horizontal
+            interiorCeilingMesh.position.y = height / 2 - interiorOffset - interiorFloorHeight / 2;
+            interiorCeilingMesh.receiveShadow = true;
+            moduleGroup.add(interiorCeilingMesh);
+
+            // Simple Interior Partition Walls
+            const effectiveInteriorHeight = height - (interiorOffset * 2) - interiorFloorHeight;
+
+            // Longitudinal partition (dividing width)
+            const partition1Geom = new THREE.BoxGeometry(partitionWallThickness, effectiveInteriorHeight, depth - interiorOffset * 2);
+            const partition1 = new THREE.Mesh(partition1Geom, interiorWallMaterial);
+            partition1.position.set(width / 4, interiorFloorMesh.position.y + effectiveInteriorHeight / 2, 0);
+            partition1.castShadow = true;
+            partition1.receiveShadow = true;
+            moduleGroup.add(partition1);
+
+            // Transverse partition (dividing depth)
+            const partition2Geom = new THREE.BoxGeometry(width - interiorOffset * 2, effectiveInteriorHeight, partitionWallThickness);
+            const partition2 = new THREE.Mesh(partition2Geom, interiorWallMaterial);
+            partition2.position.set(0, interiorFloorMesh.position.y + effectiveInteriorHeight / 2, -depth / 4);
+            partition2.castShadow = true;
+            partition2.receiveShadow = true;
+            moduleGroup.add(partition2);
+
+            // Basic Furniture placeholders
+            // Bed
+            const bedGeom = new THREE.BoxGeometry(width * 0.4, 0.25, depth * 0.6);
+            const bed = new THREE.Mesh(bedGeom, furnitureMaterial);
+            bed.position.set(-width / 4, interiorFloorMesh.position.y + bedGeom.parameters.y / 2, depth / 4);
+            bed.castShadow = true;
+            moduleGroup.add(bed);
+
+            // Table
+            const tableGeom = new THREE.BoxGeometry(width * 0.25, 0.7, depth * 0.25);
+            const table = new THREE.Mesh(tableGeom, furnitureMaterial);
+            table.position.set(width / 4, interiorFloorMesh.position.y + tableGeom.parameters.y / 2, -depth / 4);
+            table.castShadow = true;
+            moduleGroup.add(table);
+
+            // Chair (smaller box next to table)
+            const chairGeom = new THREE.BoxGeometry(0.25, 0.4, 0.25);
+            const chair = new THREE.Mesh(chairGeom, furnitureMaterial);
+            chair.position.set(width / 4 + 0.5, interiorFloorMesh.position.y + chairGeom.parameters.y / 2, -depth / 4 + 0.5);
+            chair.castShadow = true;
+            moduleGroup.add(chair);
+
 
             /**
              * Adds connection points (bolts, receptor plates, utility ports) to a specific face of the module.
@@ -567,11 +652,10 @@
             resetUtilityConnection('y', -1, wireOffsetY);
 
 
-            // Reset emissive color and opacity if it was changed
-            const mainMesh = module.getObjectByName('mainMesh');
-            if (mainMesh && mainMesh.material) {
-                mainMesh.material.emissive.setHex(0x000000);
-                mainMesh.material.opacity = 1; // Reset opacity
+            // Reset emissive color and opacity of the shared exterior material
+            if (exteriorCLTMaterial) {
+                exteriorCLTMaterial.emissive.setHex(0x000000); // Reset emissive color
+                exteriorCLTMaterial.opacity = 0.7; // Reset opacity to default semi-transparent
             }
         }
 
@@ -674,7 +758,7 @@
             // Step 3: Horizontal Connection Phase - Receptor Plates Extend
             animationTimeline.addLabel("horizontal-plates-extend", "+=0.5"); // Short delay to let camera settle
             // Make module 2 transparent to show internals
-            animationTimeline.to(modules[1].getObjectByName('mainMesh').material, { opacity: 0.5, duration: 0.5 }, "horizontal-plates-extend");
+            animationTimeline.to(exteriorCLTMaterial, { opacity: 0.5, duration: 0.5 }, "horizontal-plates-extend"); // Affects all modules using this material
 
             const rpXNeg0_M2 = modules[1].getObjectByName('receptorPlate-X--0');
             const rpXNeg1_M2 = modules[1].getObjectByName('receptorPlate-X--1');
@@ -715,11 +799,10 @@
                     animationTimeline.to(boltHead.position, { x: MODULE_WIDTH/2 + 0.2 - boltHeadThickness/2, duration: 0.3 }, "<");
                 }
             });
-            animationTimeline.to(modules[0].getObjectByName('mainMesh').material.emissive, { r: 0.1, g: 0.1, b: 0.1, duration: 0.2 }, "<")
-                             .to(modules[1].getObjectByName('mainMesh').material.emissive, { r: 0.1, g: 0.1, b: 0.1, duration: 0.2 }, "<")
+            // Apply emissive to the shared exterior material
+            animationTimeline.to(exteriorCLTMaterial.emissive, { r: 0.1, g: 0.1, b: 0.1, duration: 0.2 }, "<")
                              .to("#info-display", { duration: 0.3, textContent: 'Connection: Horizontal Bolts Tightened & Secured' }, "<")
-                             .to(modules[0].getObjectByName('mainMesh').material.emissive, { r: 0, g: 0, b: 0, duration: 0.5 }, "+=0.1")
-                             .to(modules[1].getObjectByName('mainMesh').material.emissive, { r: 0, g: 0, b: 0, duration: 0.5 }, "<");
+                             .to(exteriorCLTMaterial.emissive, { r: 0, g: 0, b: 0, duration: 0.5 }, "+=0.1");
 
             // Step 3.3: Horizontal Utility Connection (Pipe and Wire)
             animationTimeline.addLabel("horizontal-utility-connect", "+=0.5");
@@ -772,8 +855,8 @@
                 }
             }, null, "horizontal-utility-connect");
 
-            // Make module 2 opaque again after horizontal connection details
-            animationTimeline.to(modules[1].getObjectByName('mainMesh').material, { opacity: 1, duration: 0.5 }, "horizontal-utility-connect+=1.0");
+            // Make modules opaque again after horizontal connection details
+            animationTimeline.to(exteriorCLTMaterial, { opacity: 1, duration: 0.5 }, "horizontal-utility-connect+=1.0"); // Affects all modules using this material
 
 
             // Step 4: Module 3 approaches
@@ -831,9 +914,8 @@
 
             // Step 6: Vertical Connection Phase - Receptor Plates Extend
             animationTimeline.addLabel("vertical-plates-extend", "+=0.5");
-            // Make modules 1 and 2 transparent to show internals
-            animationTimeline.to(modules[0].getObjectByName('mainMesh').material, { opacity: 0.5, duration: 0.5 }, "vertical-plates-extend");
-            animationTimeline.to(modules[1].getObjectByName('mainMesh').material, { opacity: 0.5, duration: 0.5 }, "<"); // Sync with module 1 transparency
+            // Make modules transparent to show internals
+            animationTimeline.to(exteriorCLTMaterial, { opacity: 0.5, duration: 0.5 }, "vertical-plates-extend"); // Affects all modules using this material
 
             animationTimeline.to("#info-display", { duration: 0.3, textContent: 'Connection: Vertical Receptor Plates Extend' }, "<")
                              .call(() => {
@@ -906,11 +988,9 @@
                 }
             });
 
-            animationTimeline.to(modules[2].getObjectByName('mainMesh').material.emissive, { r: 0.1, g: 0.1, b: 0.1, duration: 0.2 }, "<")
-                             .to(modules[3].getObjectByName('mainMesh').material.emissive, { r: 0.1, g: 0.1, b: 0.1, duration: 0.2 }, "<")
+            animationTimeline.to(exteriorCLTMaterial.emissive, { r: 0.1, g: 0.1, b: 0.1, duration: 0.2 }, "<")
                              .to("#info-display", { duration: 0.3, textContent: 'Connection: Vertical Bolts Tightened & Secured' }, "<")
-                             .to(modules[2].getObjectByName('mainMesh').material.emissive, { r: 0, g: 0, b: 0, duration: 0.5 }, "+=0.1")
-                             .to(modules[3].getObjectByName('mainMesh').material.emissive, { r: 0, g: 0, b: 0, duration: 0.5 }, "<");
+                             .to(exteriorCLTMaterial.emissive, { r: 0, g: 0, b: 0, duration: 0.5 }, "+=0.1");
 
 
             // Step 6.3: Vertical Utility Connection (Module 3 and Module 4 Horizontal on second floor)
@@ -1064,9 +1144,8 @@
             }, null, "vertical-utility-connect-module2-4");
 
 
-            // Make modules 1 and 2 opaque again after vertical connection details
-            animationTimeline.to(modules[0].getObjectByName('mainMesh').material, { opacity: 1, duration: 0.5 }, "vertical-utility-connect-module2-4+=1.0");
-            animationTimeline.to(modules[1].getObjectByName('mainMesh').material, { opacity: 1, duration: 0.5 }, "<"); // Sync with module 1 opacity
+            // Make modules opaque again after vertical connection details
+            animationTimeline.to(exteriorCLTMaterial, { opacity: 1, duration: 0.5 }, "vertical-utility-connect-module2-4+=1.0"); // Affects all modules using this material
 
             // Final camera view
             animationTimeline.to(camera.position, { duration: 1, x: CAM_POSITIONS.final_view.pos.x, y: CAM_POSITIONS.final_view.pos.y, z: CAM_POSITIONS.final_view.pos.z, ease: "power2.out" }, "vertical-utility-connect-module2-4+=1.5");
