@@ -6,6 +6,8 @@
     <title>wb-player 2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
             font-family: 'Roboto Mono', monospace;
@@ -19,6 +21,7 @@
             padding: 1rem;
             box-sizing: border-box;
             position: relative;
+            overflow: hidden; /* Prevent scrollbars from appearing due to animations */
         }
         .container {
             background-color: #282828;
@@ -29,13 +32,15 @@
             width: 500px;
             text-align: center;
             position: relative;
+            animation: fadeIn 1s ease-out; /* Fade in animation for the container */
         }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Hide the default audio controls */
         audio {
-            width: 100%;
-            margin-top: 1.5rem;
-            border-radius: 0.75rem;
-            outline: none;
-            filter: invert(0.9) hue-rotate(180deg);
+            display: none; /* Hide the native audio player */
         }
         h1 {
             color: #ffffff;
@@ -70,6 +75,12 @@
             font-size: 1rem;
             width: 100%;
             box-sizing: border-box;
+            transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+        .input-group input[type="text"]:focus {
+            border-color: #880808;
+            box-shadow: 0 0 0 3px rgba(136, 8, 8, 0.5);
+            outline: none;
         }
         .input-group input[type="text"]::placeholder {
             color: #b0b0b0;
@@ -81,15 +92,21 @@
             border-radius: 0.5rem;
             font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.2s ease-in-out;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
             border: none;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             width: 100%;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
         }
         .input-group button:hover, .file-upload-label:hover {
             background-color: #660000;
+            transform: translateY(-2px);
+        }
+        .input-group button:active, .file-upload-label:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3);
         }
         .file-input-wrapper {
             position: relative;
@@ -112,6 +129,11 @@
             margin-top: 1rem;
             display: none;
             font-size: 0.9rem;
+            animation: slideInFromTop 0.3s ease-out;
+        }
+        @keyframes slideInFromTop {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         .message-box.bg-red-200 {
             background-color: #fed7d7;
@@ -133,11 +155,15 @@
             font-weight: 700;
             cursor: pointer;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-            transition: background-color 0.2s ease-in-out;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
             z-index: 1000;
         }
         #infoButton:hover {
             background-color: #2d3748;
+            transform: scale(1.05);
+        }
+        #infoButton:active {
+            transform: scale(1);
         }
         #infoPage {
             position: fixed;
@@ -172,6 +198,11 @@
             text-align: center;
             color: #f0f0f0;
             position: relative;
+            animation: slideInFromBottom 0.5s ease-out;
+        }
+        @keyframes slideInFromBottom {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         #infoPageContent h2 {
             font-size: 2rem;
@@ -195,11 +226,141 @@
             padding: 0.5rem 0.8rem;
             font-size: 1rem;
             cursor: pointer;
-            transition: background-color 0.2s ease-in-out;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
             border: none;
         }
         #closeInfoButton:hover {
             background-color: #660000;
+            transform: scale(1.1);
+        }
+        #closeInfoButton:active {
+            transform: scale(1);
+        }
+
+        /* Custom Player Controls Styling */
+        .custom-controls {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap; /* Allow controls to wrap on smaller screens */
+            gap: 1rem;
+            margin-top: 1.5rem;
+            background-color: #3a3a3a;
+            padding: 1rem 1.5rem;
+            border-radius: 1rem;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+        .play-pause-button {
+            background-color: #880808;
+            color: white;
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+        }
+        .play-pause-button:hover {
+            background-color: #660000;
+            transform: scale(1.05);
+        }
+        .play-pause-button:active {
+            transform: scale(0.95);
+        }
+
+        .progress-container {
+            flex-grow: 1;
+            height: 0.75rem;
+            background-color: #555;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: #880808;
+            border-radius: 0.375rem;
+            transition: width 0.1s linear; /* Smooth progress update */
+            position: relative;
+        }
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            right: -0.5rem; /* Position the handle slightly outside */
+            top: 50%;
+            transform: translateY(-50%);
+            width: 1rem;
+            height: 1rem;
+            background-color: #fff;
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+            display: none; /* Hidden by default, shown on hover/drag */
+        }
+        .progress-container:hover .progress-bar::after {
+            display: block;
+        }
+        .progress-time {
+            font-size: 0.75rem;
+            color: #d0d0d0;
+            white-space: nowrap;
+        }
+
+        .volume-container, .speed-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .volume-icon, .speed-icon {
+            font-size: 1.2rem;
+            color: #f0f0f0;
+            cursor: pointer;
+        }
+        .volume-slider, .speed-slider {
+            -webkit-appearance: none;
+            width: 6rem;
+            height: 0.5rem;
+            background: #555;
+            border-radius: 0.25rem;
+            outline: none;
+            transition: background 0.2s ease-in-out;
+        }
+        .volume-slider::-webkit-slider-thumb, .speed-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 1rem;
+            height: 1rem;
+            background: #880808;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+            transition: background 0.2s ease-in-out;
+        }
+        .volume-slider::-moz-range-thumb, .speed-slider::-moz-range-thumb {
+            width: 1rem;
+            height: 1rem;
+            background: #880808;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+            transition: background 0.2s ease-in-out;
+        }
+        .volume-slider:hover::-webkit-slider-thumb,
+        .volume-slider:hover::-moz-range-thumb,
+        .speed-slider:hover::-webkit-slider-thumb,
+        .speed-slider:hover::-moz-range-thumb {
+            background: #660000;
+        }
+        .speed-value {
+            font-size: 0.75rem;
+            color: #d0d0d0;
+            width: 2.5rem; /* Fixed width for consistent display */
+            text-align: right;
         }
     </style>
 </head>
@@ -220,13 +381,37 @@
             </div>
         </div>
 
-        <audio controls autoplay loop>
+        <!-- Hidden audio element -->
+        <audio id="audioPlayer" loop>
             <source src="https://wackybox.org/19-4.flac" type="audio/flac">
             Your browser does not support flac files... what the hell are you loading this on?
         </audio>
 
         <div id="audioSourceDisplay" class="audio-source">
             Source: <a href="https://wackybox.org/19-4.flac" target="_blank" class="text-red-700 hover:underline">https://wackybox.org/19-4.flac</a>
+        </div>
+
+        <!-- Custom Player Controls -->
+        <div class="custom-controls">
+            <div id="playPauseButton" class="play-pause-button">
+                <i class="fas fa-play"></i>
+            </div>
+            <div class="progress-time" id="currentTimeDisplay">0:00</div>
+            <div id="progressContainer" class="progress-container">
+                <div id="progressBar" class="progress-bar"></div>
+            </div>
+            <div class="progress-time" id="durationDisplay">0:00</div>
+            
+            <div class="volume-container">
+                <i id="volumeIcon" class="fas fa-volume-up volume-icon"></i>
+                <input type="range" id="volumeSlider" class="volume-slider" min="0" max="1" step="0.01" value="1">
+            </div>
+
+            <div class="speed-container">
+                <i class="fas fa-tachometer-alt speed-icon"></i>
+                <input type="range" id="speedSlider" class="speed-slider" min="0.1" max="10" step="0.05" value="1">
+                <span id="speedValue" class="speed-value">1.00x</span>
+            </div>
         </div>
 
         <div id="messageBox" class="message-box"></div>
@@ -247,7 +432,7 @@
     </div>
 
     <script>
-        const audioPlayer = document.querySelector('audio');
+        const audioPlayer = document.getElementById('audioPlayer');
         const audioUrlInput = document.getElementById('audioUrlInput');
         const loadUrlButton = document.getElementById('loadUrlButton');
         const audioFileInput = document.getElementById('audioFileInput');
@@ -256,6 +441,20 @@
         const infoButton = document.getElementById('infoButton');
         const infoPage = document.getElementById('infoPage');
         const closeInfoButton = document.getElementById('closeInfoButton');
+
+        // Custom UI elements
+        const playPauseButton = document.getElementById('playPauseButton');
+        const playPauseIcon = playPauseButton.querySelector('i');
+        const progressBar = document.getElementById('progressBar');
+        const progressContainer = document.getElementById('progressContainer');
+        const currentTimeDisplay = document.getElementById('currentTimeDisplay');
+        const durationDisplay = document.getElementById('durationDisplay');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const volumeIcon = document.getElementById('volumeIcon');
+        const speedSlider = document.getElementById('speedSlider'); // New speed slider
+        const speedValueDisplay = document.getElementById('speedValue'); // New speed value display
+
+        let isDraggingProgressBar = false; // Flag to indicate if the user is dragging the progress bar
 
         function showMessage(message, type = 'error') {
             messageBox.textContent = message;
@@ -268,6 +467,13 @@
             setTimeout(() => {
                 messageBox.style.display = 'none';
             }, 5000);
+        }
+
+        // Function to format time for display (MM:SS)
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = Math.floor(seconds % 60);
+            return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
         }
 
         // Function to update the displayed audio source
@@ -290,11 +496,15 @@
                     audioPlayer.removeEventListener('canplaythrough', onCanPlayThrough);
                     audioPlayer.removeEventListener('error', onError);
                     audioPlayer.play().then(() => {
+                        playPauseIcon.classList.remove('fa-play');
+                        playPauseIcon.classList.add('fa-pause');
                         resolve();
                     }).catch(e => {
                         // Autoplay prevented, but resource is loaded.
                         console.warn("Autoplay prevented for:", src, e);
                         showMessage("Autoplay prevented. Please click play.", "info");
+                        playPauseIcon.classList.remove('fa-pause');
+                        playPauseIcon.classList.add('fa-play');
                         resolve(); // Resolve even if autoplay fails, as the resource is loaded
                     });
                 };
@@ -392,6 +602,8 @@
                         showMessage("Autoplay prevented. Please click play.", "info");
                     });
                     updateAudioDisplay(fileURL, true); // Update display for local file
+                    playPauseIcon.classList.remove('fa-play');
+                    playPauseIcon.classList.add('fa-pause');
                 } else {
                     showMessage("Please select a valid audio file.");
                     audioFileInput.value = '';
@@ -415,7 +627,135 @@
                 const initialSrc = initialSourceElement.src;
                 updateAudioDisplay(initialSrc);
             }
+            // Initialize volume slider
+            volumeSlider.value = audioPlayer.volume;
+            // Initialize speed slider and display
+            speedSlider.value = audioPlayer.playbackRate;
+            speedValueDisplay.textContent = `${audioPlayer.playbackRate.toFixed(2)}x`;
         };
+
+        // --- Custom Player Controls Logic ---
+
+        // Play/Pause Button
+        playPauseButton.addEventListener('click', () => {
+            if (audioPlayer.paused) {
+                audioPlayer.play().then(() => {
+                    playPauseIcon.classList.remove('fa-play');
+                    playPauseIcon.classList.add('fa-pause');
+                }).catch(e => {
+                    console.error("Error playing audio:", e);
+                    showMessage("Could not play audio. Please ensure a file is loaded.", "error");
+                });
+            } else {
+                audioPlayer.pause();
+                playPauseIcon.classList.remove('fa-pause');
+                playPauseIcon.classList.add('fa-play');
+            }
+        });
+
+        // Update progress bar and time display
+        audioPlayer.addEventListener('timeupdate', () => {
+            if (!isDraggingProgressBar) { // Only update if not dragging
+                const progress = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+                progressBar.style.width = `${progress}%`;
+                currentTimeDisplay.textContent = formatTime(audioPlayer.currentTime);
+            }
+        });
+
+        // Set duration when metadata is loaded
+        audioPlayer.addEventListener('loadedmetadata', () => {
+            durationDisplay.textContent = formatTime(audioPlayer.duration);
+            // Ensure play/pause icon is correct if audio loads and is ready to play
+            if (audioPlayer.paused) {
+                playPauseIcon.classList.remove('fa-pause');
+                playPauseIcon.classList.add('fa-play');
+            } else {
+                playPauseIcon.classList.remove('fa-play');
+                playPauseIcon.classList.add('fa-pause');
+            }
+        });
+
+        // Handle progress bar clicks and drags
+        progressContainer.addEventListener('mousedown', (e) => {
+            isDraggingProgressBar = true;
+            updateProgressBar(e);
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDraggingProgressBar) {
+                updateProgressBar(e);
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDraggingProgressBar = false;
+        });
+
+        function updateProgressBar(e) {
+            const rect = progressContainer.getBoundingClientRect();
+            let clickX = e.clientX - rect.left;
+            // Clamp clickX to be within the bounds of the progress container
+            if (clickX < 0) clickX = 0;
+            if (clickX > rect.width) clickX = rect.width;
+
+            const newTime = (clickX / rect.width) * audioPlayer.duration;
+            if (isFinite(newTime)) { // Ensure newTime is a valid number
+                audioPlayer.currentTime = newTime;
+                // Update progress bar immediately during drag
+                progressBar.style.width = `${(newTime / audioPlayer.duration) * 100}%`;
+                currentTimeDisplay.textContent = formatTime(newTime);
+            }
+        }
+
+        // Volume control
+        volumeSlider.addEventListener('input', () => {
+            audioPlayer.volume = volumeSlider.value;
+            updateVolumeIcon();
+        });
+
+        // Mute/Unmute functionality
+        volumeIcon.addEventListener('click', () => {
+            if (audioPlayer.volume > 0) {
+                audioPlayer.volume = 0;
+                volumeSlider.value = 0;
+            } else {
+                // Restore to a default volume if muted, or previous volume if available
+                audioPlayer.volume = 0.5; // Or store last non-zero volume
+                volumeSlider.value = 0.5;
+            }
+            updateVolumeIcon();
+        });
+
+        // Update volume icon based on volume level
+        function updateVolumeIcon() {
+            if (audioPlayer.volume === 0 || audioPlayer.muted) {
+                volumeIcon.classList.remove('fa-volume-up', 'fa-volume-down');
+                volumeIcon.classList.add('fa-volume-mute');
+            } else if (audioPlayer.volume < 0.5) {
+                volumeIcon.classList.remove('fa-volume-up', 'fa-volume-mute');
+                volumeIcon.classList.add('fa-volume-down');
+            } else {
+                volumeIcon.classList.remove('fa-volume-down', 'fa-volume-mute');
+                volumeIcon.classList.add('fa-volume-up');
+            }
+        }
+
+        // Speed control
+        speedSlider.addEventListener('input', () => {
+            audioPlayer.playbackRate = parseFloat(speedSlider.value);
+            speedValueDisplay.textContent = `${audioPlayer.playbackRate.toFixed(2)}x`;
+        });
+
+        // Handle audio ending
+        audioPlayer.addEventListener('ended', () => {
+            playPauseIcon.classList.remove('fa-pause');
+            playPauseIcon.classList.add('fa-play');
+            progressBar.style.width = '0%'; // Reset progress bar
+            currentTimeDisplay.textContent = '0:00'; // Reset current time
+        });
+
+        // Initial volume icon update
+        updateVolumeIcon();
     </script>
 </body>
 </html>
