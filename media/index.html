@@ -123,17 +123,29 @@
             width: 100%;
             height: 100%;
         }
+        /* Message Box Styling - Changed for pop-up behavior */
         .message-box {
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            margin-top: 1rem;
-            display: none;
-            font-size: 0.9rem;
-            animation: slideInFromTop 0.3s ease-out;
+            padding: 0.75rem 1.5rem; /* Slightly more horizontal padding for pop-up feel */
+            border-radius: 0.75rem; /* More rounded corners */
+            position: fixed; /* Fixed positioning relative to viewport */
+            bottom: 2rem; /* Distance from the bottom of the viewport */
+            left: 50%;
+            transform: translateX(-50%); /* Center horizontally */
+            max-width: 400px; /* Max width for the pop-up */
+            width: 90%; /* Responsive width */
+            box-sizing: border-box; /* Include padding in width */
+            text-align: center;
+            font-size: 1rem; /* Slightly larger font */
+            font-weight: 500;
+            z-index: 1001; /* High z-index to be on top of everything */
+            opacity: 0; /* Start hidden for fade-in */
+            visibility: hidden; /* Hide until activated */
+            transition: opacity 0.4s ease-out, visibility 0.4s; /* Smoother transition */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4); /* Add subtle shadow */
         }
-        @keyframes slideInFromTop {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
+        .message-box.active { /* New class to show the message box */
+            opacity: 1;
+            visibility: visible;
         }
         .message-box.bg-red-200 {
             background-color: #fed7d7;
@@ -143,6 +155,11 @@
             background-color: #c6f6d5;
             color: #2f855a;
         }
+        .message-box.bg-blue-200 { /* For info messages */
+            background-color: #bee3f8;
+            color: #2b6cb0;
+        }
+
         #infoButton {
             position: fixed;
             top: 1rem;
@@ -362,6 +379,66 @@
             width: 2.5rem; /* Fixed width for consistent display */
             text-align: right;
         }
+
+        /* Toggle Switch Styling */
+        .speed-mode-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-left: 0.5rem;
+            font-size: 0.8rem;
+            color: #b0b0b0;
+            white-space: nowrap;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 38px;
+            height: 20px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #555;
+            transition: .4s;
+            border-radius: 20px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #880808;
+        }
+
+        input:focus + .slider {
+            box-shadow: 0 0 1px #880808;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(18px);
+        }
     </style>
 </head>
 <body>
@@ -381,7 +458,7 @@
             </div>
         </div>
 
-        <!-- Hidden audio element -->
+        <!-- Hidden audio element for Time Stretch mode -->
         <audio id="audioPlayer" loop>
             <source src="https://wackybox.org/19-4.flac" type="audio/flac">
             Your browser does not support flac files... what the hell are you loading this on?
@@ -408,9 +485,17 @@
             </div>
 
             <div class="speed-container">
-                <i class="fas fa-tachometer-alt speed-icon"></i>
+                <i id="speedIcon" class="fas fa-tachometer-alt speed-icon"></i>
                 <input type="range" id="speedSlider" class="speed-slider" min="0.1" max="10" step="0.05" value="1">
                 <span id="speedValue" class="speed-value">1.00x</span>
+                <div class="speed-mode-toggle">
+                    <span>Time Stretch</span>
+                    <label class="switch">
+                        <input type="checkbox" id="speedModeToggle">
+                        <span class="slider"></span>
+                    </label>
+                    <span>Freq Level</span>
+                </div>
             </div>
         </div>
 
@@ -432,7 +517,8 @@
     </div>
 
     <script>
-        const audioPlayer = document.getElementById('audioPlayer');
+        // DOM Elements
+        const audioPlayer = document.getElementById('audioPlayer'); // HTML Audio Element for Time Stretch mode
         const audioUrlInput = document.getElementById('audioUrlInput');
         const loadUrlButton = document.getElementById('loadUrlButton');
         const audioFileInput = document.getElementById('audioFileInput');
@@ -451,32 +537,66 @@
         const durationDisplay = document.getElementById('durationDisplay');
         const volumeSlider = document.getElementById('volumeSlider');
         const volumeIcon = document.getElementById('volumeIcon');
-        const speedSlider = document.getElementById('speedSlider'); // New speed slider
-        const speedValueDisplay = document.getElementById('speedValue'); // New speed value display
+        const speedSlider = document.getElementById('speedSlider');
+        const speedValueDisplay = document.getElementById('speedValue');
+        const speedModeToggle = document.getElementById('speedModeToggle');
+        const speedIcon = document.getElementById('speedIcon'); // Get the speed icon element
+
+        // Web Audio API variables
+        let audioContext = null;
+        let audioBuffer = null;
+        let sourceNode = null; // AudioBufferSourceNode
+        let gainNode = null;   // GainNode for volume control in Web Audio
+        let currentOffset = 0; // Current playback position in seconds for Web Audio API
+        let startTime = 0;     // Time when sourceNode started playing (audioContext.currentTime)
+        let currentSpeedMode = 'timeStretch'; // 'timeStretch' (HTML Audio) or 'frequencyLevel' (Web Audio)
+        let isAudioContextReady = false;
+        let currentAudioSource = { url: '', isLocal: false, file: null }; // To track the loaded audio source
 
         let isDraggingProgressBar = false; // Flag to indicate if the user is dragging the progress bar
 
+        /**
+         * Displays a message to the user.
+         * @param {string} message - The message to display.
+         * @param {'error'|'info'|'success'} type - The type of message (determines styling).
+         */
         function showMessage(message, type = 'error') {
             messageBox.textContent = message;
-            messageBox.style.display = 'block';
+            // Remove previous type classes
+            messageBox.classList.remove('bg-red-200', 'text-red-700', 'bg-green-200', 'text-green-700', 'bg-blue-200', 'text-blue-700');
+
             if (type === 'error') {
-                messageBox.className = 'message-box bg-red-200 text-red-700';
-            } else {
-                messageBox.className = 'message-box bg-green-200 text-green-700';
+                messageBox.classList.add('bg-red-200', 'text-red-700');
+            } else if (type === 'info') {
+                messageBox.classList.add('bg-blue-200', 'text-blue-700');
+            } else { // success
+                messageBox.classList.add('bg-green-200', 'text-green-700');
             }
+            
+            messageBox.classList.add('active'); // Show the message box
+
             setTimeout(() => {
-                messageBox.style.display = 'none';
+                messageBox.classList.remove('active'); // Hide the message box after timeout
             }, 5000);
         }
 
-        // Function to format time for display (MM:SS)
+        /**
+         * Formats time in seconds to MM:SS string.
+         * @param {number} seconds - The time in seconds.
+         * @returns {string} Formatted time string.
+         */
         function formatTime(seconds) {
+            if (isNaN(seconds) || seconds < 0) return '0:00';
             const minutes = Math.floor(seconds / 60);
             const remainingSeconds = Math.floor(seconds % 60);
             return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
         }
 
-        // Function to update the displayed audio source
+        /**
+         * Updates the displayed audio source link.
+         * @param {string} src - The URL or Object URL of the audio.
+         * @param {boolean} isLocalFile - True if the source is a local file.
+         */
         function updateAudioDisplay(src, isLocalFile = false) {
             if (isLocalFile) {
                 audioSourceDisplay.innerHTML = 'Source: Local File';
@@ -486,38 +606,134 @@
             messageBox.style.display = 'none';
         }
 
-        // Function to attempt loading and playing an audio URL
-        async function attemptLoadAndPlay(src) {
-            return new Promise((resolve, reject) => {
-                audioPlayer.src = src;
-                audioPlayer.load();
+        /**
+         * Initializes the Web Audio API context and gain node.
+         * This is called on the first user interaction to bypass autoplay policies.
+         */
+        function initWebAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                gainNode = audioContext.createGain();
+                gainNode.connect(audioContext.destination);
+                isAudioContextReady = true;
+                // Set initial volume for Web Audio API
+                gainNode.gain.value = volumeSlider.value;
+            }
+        }
 
-                const onCanPlayThrough = () => {
-                    audioPlayer.removeEventListener('canplaythrough', onCanPlayThrough);
-                    audioPlayer.removeEventListener('error', onError);
-                    audioPlayer.play().then(() => {
-                        playPauseIcon.classList.remove('fa-play');
-                        playPauseIcon.classList.add('fa-pause');
-                        resolve();
-                    }).catch(e => {
-                        // Autoplay prevented, but resource is loaded.
-                        console.warn("Autoplay prevented for:", src, e);
-                        showMessage("Autoplay prevented. Please click play.", "info");
-                        playPauseIcon.classList.remove('fa-pause');
-                        playPauseIcon.classList.add('fa-play');
-                        resolve(); // Resolve even if autoplay fails, as the resource is loaded
+        /**
+         * Loads audio data into an AudioBuffer for Web Audio API playback.
+         * @param {string} src - The URL of the audio file.
+         * @param {boolean} isLocalFile - True if the source is a local file.
+         * @param {File | null} file - The File object if it's a local file.
+         * @returns {Promise<void>} Resolves when audio is decoded, rejects on error.
+         */
+        async function loadAudioForWebAudio(src, isLocalFile = false, file = null) {
+            initWebAudio(); // Ensure audio context is ready
+            
+            // Store the current audio source details
+            currentAudioSource = { url: src, isLocal: isLocalFile, file: file };
+
+            try {
+                let arrayBuffer;
+                if (isLocalFile && file) {
+                    arrayBuffer = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = () => reject(new Error("Failed to read local file."));
+                        reader.readAsArrayBuffer(file);
                     });
-                };
+                } else {
+                    const response = await fetch(src);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    arrayBuffer = await response.arrayBuffer();
+                }
 
-                const onError = () => {
-                    audioPlayer.removeEventListener('canplaythrough', onCanPlayThrough);
-                    audioPlayer.removeEventListener('error', onError);
-                    reject(new Error(`Failed to load audio from ${src}`));
-                };
+                audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                durationDisplay.textContent = formatTime(audioBuffer.duration);
+                showMessage("Audio loaded successfully for Frequency Level mode.", "success");
+            } catch (error) {
+                console.error("Error loading audio for Web Audio API:", error);
+                showMessage(`Failed to load audio for Frequency Level mode: ${error.message}`, "error");
+                audioBuffer = null; // Clear buffer on error
+                throw error; // Re-throw to propagate error
+            }
+        }
 
-                audioPlayer.addEventListener('canplaythrough', onCanPlayThrough);
-                audioPlayer.addEventListener('error', onError);
-            });
+        /**
+         * Plays audio using the Web Audio API.
+         */
+        function playWebAudio() {
+            if (!audioBuffer) {
+                showMessage("No audio loaded for Frequency Level mode.", "error");
+                playPauseIcon.classList.remove('fa-pause');
+                playPauseIcon.classList.add('fa-play');
+                return;
+            }
+            if (sourceNode) {
+                sourceNode.stop();
+                sourceNode.disconnect();
+            }
+            
+            sourceNode = audioContext.createBufferSource();
+            sourceNode.buffer = audioBuffer;
+            sourceNode.connect(gainNode);
+            sourceNode.playbackRate.value = parseFloat(speedSlider.value);
+            
+            // Start from currentOffset
+            startTime = audioContext.currentTime;
+            sourceNode.start(0, currentOffset);
+
+            playPauseIcon.classList.remove('fa-play');
+            playPauseIcon.classList.add('fa-pause');
+
+            // Handle audio ending for Web Audio API
+            sourceNode.onended = () => {
+                if (currentSpeedMode === 'frequencyLevel') { // Only reset if still in this mode
+                    playPauseIcon.classList.remove('fa-pause');
+                    playPauseIcon.classList.add('fa-play');
+                    progressBar.style.width = '0%';
+                    currentTimeDisplay.textContent = '0:00';
+                    currentOffset = 0; // Reset offset for loop
+                    // If looping is desired, create and start a new sourceNode here
+                    if (audioPlayer.loop) { // Using HTML audio loop property as reference
+                        playWebAudio();
+                    }
+                }
+            };
+        }
+
+        /**
+         * Pauses audio playing via Web Audio API.
+         */
+        function pauseWebAudio() {
+            if (sourceNode && audioContext) {
+                // Calculate current offset before stopping
+                currentOffset = audioContext.currentTime - startTime + currentOffset;
+                sourceNode.stop();
+                sourceNode.disconnect();
+                sourceNode = null;
+                playPauseIcon.classList.remove('fa-pause');
+                playPauseIcon.classList.add('fa-play');
+            }
+        }
+
+        /**
+         * Stops all audio playback (both HTML and Web Audio API).
+         */
+        function stopAllAudio() {
+            audioPlayer.pause();
+            if (sourceNode) {
+                pauseWebAudio();
+            }
+            playPauseIcon.classList.remove('fa-pause');
+            playPauseIcon.classList.add('fa-play');
+            progressBar.style.width = '0%';
+            currentTimeDisplay.textContent = '0:00';
+            currentOffset = 0;
+            startTime = 0;
         }
 
         // Event listener for the "Load from URL" button
@@ -568,17 +784,53 @@
                 return;
             }
 
+            stopAllAudio(); // Stop any current playback
+            currentOffset = 0; // Reset offset for new load
+
             try {
                 showMessage(`Attempting to load: ${primaryAttemptUrl}`, "info");
-                await attemptLoadAndPlay(primaryAttemptUrl);
+                // Load for HTML Audio element
+                audioPlayer.src = primaryAttemptUrl;
+                audioPlayer.load();
+
+                // Load for Web Audio API
+                await loadAudioForWebAudio(primaryAttemptUrl, false, null);
+                
                 updateAudioDisplay(primaryAttemptUrl);
+
+                // Play based on current speed mode
+                if (currentSpeedMode === 'timeStretch') {
+                    audioPlayer.play().catch(e => {
+                        console.warn("Autoplay prevented for HTML Audio:", e);
+                        showMessage("Autoplay prevented. Please click play.", "info");
+                    });
+                } else { // frequencyLevel
+                    playWebAudio();
+                }
+
             } catch (error) {
                 console.error("Primary URL load failed:", error);
                 if (isShortFilename && fallbackAttemptUrl) {
                     showMessage("Failed to load from primary source, trying fallback...", "info");
                     try {
-                        await attemptLoadAndPlay(fallbackAttemptUrl);
+                        // Load for HTML Audio element
+                        audioPlayer.src = fallbackAttemptUrl;
+                        audioPlayer.load();
+
+                        // Load for Web Audio API
+                        await loadAudioForWebAudio(fallbackAttemptUrl, false, null);
+
                         updateAudioDisplay(fallbackAttemptUrl);
+
+                        // Play based on current speed mode
+                        if (currentSpeedMode === 'timeStretch') {
+                            audioPlayer.play().catch(e => {
+                                console.warn("Autoplay prevented for HTML Audio:", e);
+                                showMessage("Autoplay prevented. Please click play.", "info");
+                            });
+                        } else { // frequencyLevel
+                            playWebAudio();
+                        }
                     } catch (fallbackError) {
                         console.error("Fallback URL load failed:", fallbackError);
                         showMessage("Failed to load audio from all attempted sources.", "error");
@@ -590,20 +842,38 @@
         });
 
         // Event listener for the file input change
-        audioFileInput.addEventListener('change', (event) => {
+        audioFileInput.addEventListener('change', async (event) => {
             const file = event.target.files[0];
             if (file) {
                 if (file.type.startsWith('audio/')) {
+                    stopAllAudio(); // Stop any current playback
+                    currentOffset = 0; // Reset offset for new load
+
                     const fileURL = URL.createObjectURL(file);
-                    audioPlayer.src = fileURL; // Set source for local file
+                    
+                    // Load for HTML Audio element
+                    audioPlayer.src = fileURL;
                     audioPlayer.load();
-                    audioPlayer.play().catch(e => {
-                        console.error("Error playing local audio:", e);
-                        showMessage("Autoplay prevented. Please click play.", "info");
-                    });
-                    updateAudioDisplay(fileURL, true); // Update display for local file
-                    playPauseIcon.classList.remove('fa-play');
-                    playPauseIcon.classList.add('fa-pause');
+
+                    // Load for Web Audio API
+                    try {
+                        await loadAudioForWebAudio(fileURL, true, file);
+                        updateAudioDisplay(fileURL, true);
+
+                        // Play based on current speed mode
+                        if (currentSpeedMode === 'timeStretch') {
+                            audioPlayer.play().catch(e => {
+                                console.error("Error playing local HTML audio:", e);
+                                showMessage("Autoplay prevented. Please click play.", "info");
+                            });
+                        } else { // frequencyLevel
+                            playWebAudio();
+                        }
+                    } catch (error) {
+                        console.error("Error loading local audio for Web Audio API:", error);
+                        showMessage("Failed to load local audio.", "error");
+                        audioFileInput.value = ''; // Clear file input
+                    }
                 } else {
                     showMessage("Please select a valid audio file.");
                     audioFileInput.value = '';
@@ -626,45 +896,97 @@
             if (initialSourceElement) {
                 const initialSrc = initialSourceElement.src;
                 updateAudioDisplay(initialSrc);
+                // Also load this into Web Audio API buffer initially
+                loadAudioForWebAudio(initialSrc, false, null).catch(e => console.error("Initial Web Audio load failed:", e));
             }
             // Initialize volume slider
             volumeSlider.value = audioPlayer.volume;
             // Initialize speed slider and display
             speedSlider.value = audioPlayer.playbackRate;
             speedValueDisplay.textContent = `${audioPlayer.playbackRate.toFixed(2)}x`;
+            // Initialize toggle state (default is Time Stretch, so checkbox is unchecked)
+            speedModeToggle.checked = false; 
         };
 
         // --- Custom Player Controls Logic ---
 
         // Play/Pause Button
         playPauseButton.addEventListener('click', () => {
-            if (audioPlayer.paused) {
-                audioPlayer.play().then(() => {
-                    playPauseIcon.classList.remove('fa-play');
-                    playPauseIcon.classList.add('fa-pause');
-                }).catch(e => {
-                    console.error("Error playing audio:", e);
-                    showMessage("Could not play audio. Please ensure a file is loaded.", "error");
-                });
-            } else {
-                audioPlayer.pause();
-                playPauseIcon.classList.remove('fa-pause');
-                playPauseIcon.classList.add('fa-play');
+            initWebAudio(); // Ensure context is running on first play
+
+            if (currentSpeedMode === 'timeStretch') {
+                if (audioPlayer.paused) {
+                    audioPlayer.play().then(() => {
+                        playPauseIcon.classList.remove('fa-play');
+                        playPauseIcon.classList.add('fa-pause');
+                    }).catch(e => {
+                        console.error("Error playing HTML audio:", e);
+                        showMessage("Could not play HTML audio. Please ensure a file is loaded.", "error");
+                    });
+                } else {
+                    audioPlayer.pause();
+                    playPauseIcon.classList.remove('fa-pause');
+                    playPauseIcon.classList.add('fa-play');
+                }
+            } else { // frequencyLevel
+                if (sourceNode && audioContext && audioContext.state === 'running' && !sourceNode.buffer) {
+                    // This case handles if sourceNode exists but buffer is somehow cleared (e.g., error)
+                    showMessage("No audio buffer available for playback.", "error");
+                    playPauseIcon.classList.remove('fa-pause');
+                    playPauseIcon.classList.add('fa-play');
+                    return;
+                }
+                
+                // If sourceNode is null, or it was stopped and needs a new one
+                if (!sourceNode || audioContext.currentTime - startTime + currentOffset >= audioBuffer.duration) {
+                    playWebAudio();
+                } else {
+                    pauseWebAudio();
+                }
             }
         });
 
         // Update progress bar and time display
-        audioPlayer.addEventListener('timeupdate', () => {
-            if (!isDraggingProgressBar) { // Only update if not dragging
-                const progress = (audioPlayer.currentTime / audioPlayer.duration) * 100;
-                progressBar.style.width = `${progress}%`;
-                currentTimeDisplay.textContent = formatTime(audioPlayer.currentTime);
-            }
-        });
+        // Using requestAnimationFrame for smoother updates for Web Audio API
+        let animationFrameId;
+        function updateProgress() {
+            if (!isDraggingProgressBar) {
+                let currentProgress = 0;
+                let currentDuration = 0;
 
-        // Set duration when metadata is loaded
+                if (currentSpeedMode === 'timeStretch') {
+                    currentProgress = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+                    currentDuration = audioPlayer.duration;
+                    currentTimeDisplay.textContent = formatTime(audioPlayer.currentTime);
+                } else { // frequencyLevel
+                    if (audioContext && sourceNode && audioBuffer) {
+                        const elapsed = audioContext.currentTime - startTime;
+                        currentOffset = Math.min(currentOffset + elapsed * sourceNode.playbackRate.value, audioBuffer.duration);
+                        startTime = audioContext.currentTime; // Reset startTime for next frame
+                        
+                        currentProgress = (currentOffset / audioBuffer.duration) * 100;
+                        currentDuration = audioBuffer.duration;
+                        currentTimeDisplay.textContent = formatTime(currentOffset);
+                    } else {
+                        currentProgress = 0;
+                        currentDuration = 0;
+                        currentTimeDisplay.textContent = '0:00';
+                    }
+                }
+                progressBar.style.width = `${currentProgress}%`;
+                durationDisplay.textContent = formatTime(currentDuration);
+            }
+            animationFrameId = requestAnimationFrame(updateProgress);
+        }
+        
+        // Start the animation loop
+        animationFrameId = requestAnimationFrame(updateProgress);
+
+        // Set duration when metadata is loaded for HTML Audio
         audioPlayer.addEventListener('loadedmetadata', () => {
-            durationDisplay.textContent = formatTime(audioPlayer.duration);
+            if (currentSpeedMode === 'timeStretch') {
+                durationDisplay.textContent = formatTime(audioPlayer.duration);
+            }
             // Ensure play/pause icon is correct if audio loads and is ready to play
             if (audioPlayer.paused) {
                 playPauseIcon.classList.remove('fa-pause');
@@ -678,12 +1000,12 @@
         // Handle progress bar clicks and drags
         progressContainer.addEventListener('mousedown', (e) => {
             isDraggingProgressBar = true;
-            updateProgressBar(e);
+            updateProgressBarPosition(e);
         });
 
         document.addEventListener('mousemove', (e) => {
             if (isDraggingProgressBar) {
-                updateProgressBar(e);
+                updateProgressBarPosition(e);
             }
         });
 
@@ -691,47 +1013,96 @@
             isDraggingProgressBar = false;
         });
 
-        function updateProgressBar(e) {
+        function updateProgressBarPosition(e) {
             const rect = progressContainer.getBoundingClientRect();
             let clickX = e.clientX - rect.left;
             // Clamp clickX to be within the bounds of the progress container
             if (clickX < 0) clickX = 0;
             if (clickX > rect.width) clickX = rect.width;
 
-            const newTime = (clickX / rect.width) * audioPlayer.duration;
-            if (isFinite(newTime)) { // Ensure newTime is a valid number
-                audioPlayer.currentTime = newTime;
-                // Update progress bar immediately during drag
-                progressBar.style.width = `${(newTime / audioPlayer.duration) * 100}%`;
-                currentTimeDisplay.textContent = formatTime(newTime);
+            let newTime;
+            let duration;
+
+            if (currentSpeedMode === 'timeStretch') {
+                duration = audioPlayer.duration;
+                newTime = (clickX / rect.width) * duration;
+                if (isFinite(newTime)) {
+                    audioPlayer.currentTime = newTime;
+                }
+            } else { // frequencyLevel
+                if (!audioBuffer) return;
+                duration = audioBuffer.duration;
+                newTime = (clickX / rect.width) * duration;
+                if (isFinite(newTime)) {
+                    // Stop current Web Audio playback and restart from new position
+                    if (sourceNode) {
+                        sourceNode.stop();
+                        sourceNode.disconnect();
+                        sourceNode = null;
+                    }
+                    currentOffset = newTime;
+                    playWebAudio();
+                }
             }
+            // Update progress bar immediately during drag
+            progressBar.style.width = `${(newTime / duration) * 100}%`;
+            currentTimeDisplay.textContent = formatTime(newTime);
         }
 
         // Volume control
         volumeSlider.addEventListener('input', () => {
-            audioPlayer.volume = volumeSlider.value;
+            if (currentSpeedMode === 'timeStretch') {
+                audioPlayer.volume = volumeSlider.value;
+            } else { // frequencyLevel
+                if (gainNode) {
+                    gainNode.gain.value = volumeSlider.value;
+                }
+            }
             updateVolumeIcon();
         });
 
         // Mute/Unmute functionality
         volumeIcon.addEventListener('click', () => {
-            if (audioPlayer.volume > 0) {
-                audioPlayer.volume = 0;
+            let currentVolume;
+            if (currentSpeedMode === 'timeStretch') {
+                currentVolume = audioPlayer.volume;
+            } else {
+                currentVolume = gainNode ? gainNode.gain.value : 0;
+            }
+
+            if (currentVolume > 0) {
+                if (currentSpeedMode === 'timeStretch') {
+                    audioPlayer.volume = 0;
+                } else {
+                    if (gainNode) gainNode.gain.value = 0;
+                }
                 volumeSlider.value = 0;
             } else {
                 // Restore to a default volume if muted, or previous volume if available
-                audioPlayer.volume = 0.5; // Or store last non-zero volume
-                volumeSlider.value = 0.5;
+                const defaultVolume = 0.5; // Or store last non-zero volume
+                if (currentSpeedMode === 'timeStretch') {
+                    audioPlayer.volume = defaultVolume;
+                } else {
+                    if (gainNode) gainNode.gain.value = defaultVolume;
+                }
+                volumeSlider.value = defaultVolume;
             }
             updateVolumeIcon();
         });
 
         // Update volume icon based on volume level
         function updateVolumeIcon() {
-            if (audioPlayer.volume === 0 || audioPlayer.muted) {
+            let currentVolume;
+            if (currentSpeedMode === 'timeStretch') {
+                currentVolume = audioPlayer.volume;
+            } else {
+                currentVolume = gainNode ? gainNode.gain.value : 0;
+            }
+
+            if (currentVolume === 0) {
                 volumeIcon.classList.remove('fa-volume-up', 'fa-volume-down');
                 volumeIcon.classList.add('fa-volume-mute');
-            } else if (audioPlayer.volume < 0.5) {
+            } else if (currentVolume < 0.5) {
                 volumeIcon.classList.remove('fa-volume-up', 'fa-volume-mute');
                 volumeIcon.classList.add('fa-volume-down');
             } else {
@@ -742,16 +1113,113 @@
 
         // Speed control
         speedSlider.addEventListener('input', () => {
-            audioPlayer.playbackRate = parseFloat(speedSlider.value);
-            speedValueDisplay.textContent = `${audioPlayer.playbackRate.toFixed(2)}x`;
+            const newSpeed = parseFloat(speedSlider.value);
+            if (currentSpeedMode === 'timeStretch') {
+                audioPlayer.playbackRate = newSpeed;
+            } else { // frequencyLevel
+                if (sourceNode) {
+                    sourceNode.playbackRate.value = newSpeed;
+                }
+            }
+            speedValueDisplay.textContent = `${newSpeed.toFixed(2)}x`;
         });
 
-        // Handle audio ending
+        // Handle audio ending for HTML Audio
         audioPlayer.addEventListener('ended', () => {
-            playPauseIcon.classList.remove('fa-pause');
-            playPauseIcon.classList.add('fa-play');
-            progressBar.style.width = '0%'; // Reset progress bar
-            currentTimeDisplay.textContent = '0:00'; // Reset current time
+            if (currentSpeedMode === 'timeStretch') { // Only reset if still in this mode
+                playPauseIcon.classList.remove('fa-pause');
+                playPauseIcon.classList.add('fa-play');
+                progressBar.style.width = '0%'; // Reset progress bar
+                currentTimeDisplay.textContent = '0:00'; // Reset current time
+            }
+        });
+
+        // Speed Mode Toggle functionality
+        speedModeToggle.addEventListener('change', async () => {
+            const wasPlaying = (currentSpeedMode === 'timeStretch' && !audioPlayer.paused) || 
+                               (currentSpeedMode === 'frequencyLevel' && sourceNode && audioContext.state === 'running');
+            let currentPlaybackTime = 0;
+
+            // Pause current playback and get current time
+            if (currentSpeedMode === 'timeStretch') {
+                currentPlaybackTime = audioPlayer.currentTime;
+                audioPlayer.pause();
+            } else { // frequencyLevel
+                if (sourceNode) {
+                    currentPlaybackTime = audioContext.currentTime - startTime + currentOffset;
+                    pauseWebAudio(); // This also sets sourceNode to null
+                } else {
+                    currentPlaybackTime = currentOffset; // If paused, use the last offset
+                }
+            }
+
+            // Switch mode
+            currentSpeedMode = speedModeToggle.checked ? 'frequencyLevel' : 'timeStretch';
+            showMessage(`Switched to ${currentSpeedMode === 'timeStretch' ? 'Time Stretch' : 'Frequency Level'} mode.`, "info");
+
+            // Resume playback in new mode from saved time
+            if (wasPlaying) {
+                if (currentSpeedMode === 'timeStretch') {
+                    audioPlayer.currentTime = currentPlaybackTime;
+                    audioPlayer.play().catch(e => {
+                        console.error("Error resuming HTML audio after mode switch:", e);
+                        showMessage("Autoplay prevented after mode switch. Please click play.", "info");
+                    });
+                } else { // frequencyLevel
+                    // Ensure audio buffer is loaded for Web Audio API
+                    if (!audioBuffer) {
+                        try {
+                            if (currentAudioSource.isLocal) {
+                                await loadAudioForWebAudio(currentAudioSource.url, true, currentAudioSource.file);
+                            } else {
+                                await loadAudioForWebAudio(currentAudioSource.url, false, null);
+                            }
+                        } catch (error) {
+                            showMessage("Failed to load audio for Frequency Level mode after switch.", "error");
+                            playPauseIcon.classList.remove('fa-pause');
+                            playPauseIcon.classList.add('fa-play');
+                            return;
+                        }
+                    }
+                    currentOffset = currentPlaybackTime;
+                    playWebAudio();
+                }
+            } else {
+                // If not playing, just update the current time display
+                if (currentSpeedMode === 'timeStretch') {
+                    audioPlayer.currentTime = currentPlaybackTime;
+                } else {
+                    currentOffset = currentPlaybackTime;
+                }
+                currentTimeDisplay.textContent = formatTime(currentPlaybackTime);
+                progressBar.style.width = `${(currentPlaybackTime / (currentSpeedMode === 'timeStretch' ? audioPlayer.duration : (audioBuffer ? audioBuffer.duration : 1))) * 100}%`;
+            }
+
+            // Update volume and speed controls to reflect current mode's values
+            if (currentSpeedMode === 'timeStretch') {
+                volumeSlider.value = audioPlayer.volume;
+                speedSlider.value = audioPlayer.playbackRate;
+            } else {
+                volumeSlider.value = gainNode ? gainNode.gain.value : 1;
+                speedSlider.value = sourceNode ? sourceNode.playbackRate.value : 1;
+            }
+            speedValueDisplay.textContent = `${parseFloat(speedSlider.value).toFixed(2)}x`;
+            updateVolumeIcon();
+        });
+
+        // Speed Icon Click to Reset Speed
+        speedIcon.addEventListener('click', () => {
+            const defaultSpeed = 1.00;
+            if (currentSpeedMode === 'timeStretch') {
+                audioPlayer.playbackRate = defaultSpeed;
+            } else { // frequencyLevel
+                if (sourceNode) {
+                    sourceNode.playbackRate.value = defaultSpeed;
+                }
+            }
+            speedSlider.value = defaultSpeed;
+            speedValueDisplay.textContent = `${defaultSpeed.toFixed(2)}x`;
+            showMessage("Speed reset to 1.00x", "info");
         });
 
         // Initial volume icon update
