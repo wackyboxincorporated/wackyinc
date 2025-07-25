@@ -184,7 +184,6 @@
     </div>
 
     <script type="module">
-        // JavaScript logic remains the same...
         // DOM Elements
         const startBtn = document.getElementById('start-btn');
         const stopBtn = document.getElementById('stop-btn');
@@ -227,15 +226,19 @@
 
             if (waitingFor !== 'none') {
                 const cleanedText = text.replace(/[.,!?]/g, '').trim();
-                if (waitingFor === 'replace' && cleanedText === 'all') {
-                    return { action: 'execute_replace_by_number', value: 'all' };
+                
+                if ((waitingFor === 'replace' || waitingFor === 'removeWord') && cleanedText === 'all') {
+                    const action = waitingFor === 'replace' ? 'execute_replace_by_number' : 'execute_remove_word_by_number';
+                    return { action, value: 'all' };
                 }
+
                 const numMatch = cleanedText.match(/^(one|two|three|four|five|six|seven|eight|nine|ten|\d+)$/);
                 if (numMatch) {
                     const numberWords = {one:1, two:2, three:3, four:4, five:5, six:6, seven:7, eight:8, nine:9, ten:10};
                     const value = numberWords[numMatch[1]] || parseInt(numMatch[1], 10);
                     if (waitingFor === 'removeComma') return { action: 'execute_remove_by_number', value: value };
                     if (waitingFor === 'replace') return { action: 'execute_replace_by_number', value: value };
+                    if (waitingFor === 'removeWord') return { action: 'execute_remove_word_by_number', value: value };
                 }
             }
             
@@ -245,6 +248,10 @@
             }
             if (text === 'remove comma') {
                 return { action: 'init_remove_comma' };
+            }
+            const removeWordMatch = text.match(/^remove (.*)/i);
+            if (removeWordMatch && removeWordMatch[1].trim()) {
+                return { action: 'init_remove', target: removeWordMatch[1].trim() };
             }
             if (text === 'scratch that' || text === 'delete sentence') {
                 return { action: 'delete_sentence' };
@@ -260,7 +267,9 @@
                 case 'init_replace': handleInitReplace(command.target, command.replacement, textToOperateOn); break;
                 case 'execute_replace_by_number': handleExecuteReplaceByNumber(command.value, textToOperateOn); break;
                 case 'init_remove_comma': handleInitRemoveComma(textToOperateOn); break;
-                case 'execute_remove_by_number': handleExecuteRemoveByNumber(command.value, textToOperateOn); break;
+                case 'execute_remove_by_number': handleExecuteRemoveCommaByNumber(command.value, textToOperateOn); break;
+                case 'init_remove': handleInitRemove(command.target, textToOperateOn); break;
+                case 'execute_remove_word_by_number': handleExecuteRemoveWordByNumber(command.value, textToOperateOn); break;
                 case 'delete_sentence': handleDeleteSentence(textToOperateOn); break;
                 case 'delete_last_word': handleDeleteLastWord(textToOperateOn); break;
             }
@@ -335,6 +344,77 @@
                 statusEl.textContent = "Status: Invalid selection. Try again.";
             }
         }
+        
+        function handleInitRemove(target, currentText) {
+            if (!target) {
+                statusEl.textContent = "Status: Incomplete remove command.";
+                return;
+            }
+            const regex = new RegExp(escapeRegExp(target), 'gi');
+            const targetPositions = [];
+            let match;
+            while ((match = regex.exec(currentText)) !== null) {
+                targetPositions.push({ index: match.index, text: match[0] });
+            }
+
+            if (targetPositions.length === 0) {
+                statusEl.textContent = `Status: Could not find "${target}"`;
+                return;
+            }
+
+            if (targetPositions.length === 1) {
+                const targetToRemove = targetPositions[0];
+                finalTranscript = currentText.substring(0, targetToRemove.index) + currentText.substring(targetToRemove.index + targetToRemove.text.length);
+                editor.value = finalTranscript;
+                statusEl.textContent = `Status: Removed "${targetToRemove.text}"`;
+            } else {
+                interactiveCommandData = { targets: targetPositions };
+                waitingFor = 'removeWord';
+                clearOverlay();
+                targetPositions.forEach((pos, i) => {
+                    const coords = getCoordsAtIndex(pos.index);
+                    if (coords) {
+                        const indicator = document.createElement('div');
+                        indicator.className = 'indicator';
+                        indicator.textContent = i + 1;
+                        indicator.style.left = `${coords.x}px`;
+                        indicator.style.top = `${coords.y}px`;
+                        overlay.appendChild(indicator);
+                    }
+                });
+                statusEl.textContent = "Status: Say the number to remove, or 'all'.";
+            }
+        }
+
+        function handleExecuteRemoveWordByNumber(value, currentText) {
+            const data = interactiveCommandData;
+            if (waitingFor !== 'removeWord') return;
+
+            if (value === 'all') {
+                let newText = currentText;
+                for (let i = data.targets.length - 1; i >= 0; i--) {
+                    const target = data.targets[i];
+                    newText = newText.substring(0, target.index) + newText.substring(target.index + target.text.length);
+                }
+                finalTranscript = newText;
+                editor.value = finalTranscript;
+                statusEl.textContent = `Status: Removed all ${data.targets.length} instances.`;
+                clearInteractiveState();
+                return;
+            }
+
+            const number = value;
+            if (number > 0 && number <= data.targets.length) {
+                const target = data.targets[number - 1];
+                finalTranscript = currentText.substring(0, target.index) + currentText.substring(target.index + target.text.length);
+                editor.value = finalTranscript;
+                statusEl.textContent = `Status: Removed "${target.text}".`;
+                clearInteractiveState();
+            } else {
+                statusEl.textContent = "Status: Invalid selection. Try again.";
+            }
+        }
+
 
         function handleInitRemoveComma(currentText) {
             const commaPositions = [];
@@ -363,7 +443,7 @@
             statusEl.textContent = "Status: Say the number of the comma to remove.";
         }
 
-        function handleExecuteRemoveByNumber(number, currentText) {
+        function handleExecuteRemoveCommaByNumber(number, currentText) {
             const data = interactiveCommandData;
             if (waitingFor === 'removeComma' && number > 0 && number <= data.targets.length) {
                 const indexToRemove = data.targets[number - 1].index;
