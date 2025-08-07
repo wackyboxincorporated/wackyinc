@@ -1,32 +1,5 @@
-// app.js
+// app.js - UPDATED VERSION
 
-const connectButton = document.getElementById('connectButton');
-const streamButton = document.getElementById('streamButton');
-const statusDisplay = document.getElementById('status');
-
-let port;
-let writer;
-
-// Step 1: Handle the serial connection
-connectButton.addEventListener('click', async () => {
-  try {
-    // Request the user to select a serial port.
-    port = await navigator.serial.requestPort();
-    // Open the port with the baud rate matching the Arduino sketch.
-    await port.open({ baudRate: 115200 }); 
-
-    writer = port.writable.getWriter();
-    
-    statusDisplay.textContent = "✅ Arduino Connected! Ready to stream.";
-    connectButton.disabled = true;
-    streamButton.disabled = false;
-  } catch (error) {
-    statusDisplay.textContent = `Error: ${error.message}`;
-    console.error('Serial connection error:', error);
-  }
-});
-
-// Step 2: Handle the audio streaming
 streamButton.addEventListener('click', async () => {
   if (!writer) {
     statusDisplay.textContent = "Error: Arduino not connected.";
@@ -34,12 +7,23 @@ streamButton.addEventListener('click', async () => {
   }
 
   try {
-    // Request to capture screen audio.
-    // We set video:false because we only care about the audio track.
+    // UPDATED: Request video and audio together for better compatibility.
     const stream = await navigator.mediaDevices.getDisplayMedia({
-      video: false,
-      audio: true, 
+      video: {
+        cursor: "never" // Don't capture the mouse cursor
+      },
+      audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
+      }, 
     });
+
+    // Check if the user actually granted audio permission.
+    const audioTracks = stream.getAudioTracks();
+    if (audioTracks.length === 0) {
+      throw new Error("No audio track was shared. Please ensure you check the 'Share tab audio' box.");
+    }
 
     // Create a new Web Audio API context.
     const audioContext = new AudioContext();
@@ -54,10 +38,9 @@ streamButton.addEventListener('click', async () => {
     const sourceNode = audioContext.createMediaStreamSource(stream);
 
     // Connect the audio source to our processor.
-    // Audio Flow: Captured Stream -> Source Node -> Processor Node
     sourceNode.connect(processorNode);
     
-    // When the processor sends us 8-bit audio data, we send it to the Arduino.
+    // When the processor sends us 8-bit audio data, send it to Arduino.
     processorNode.port.onmessage = (event) => {
       if (writer) {
         writer.write(event.data);
@@ -68,7 +51,7 @@ streamButton.addEventListener('click', async () => {
     streamButton.disabled = true;
 
   } catch (error) {
-    statusDisplay.textContent = `Error: ${error.message}`;
+    statusDisplay.textContent = `❌ Audio stream error: ${error.message}`;
     console.error('Audio stream error:', error);
   }
 });
