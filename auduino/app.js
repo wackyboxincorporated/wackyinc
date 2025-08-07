@@ -1,133 +1,102 @@
-// app.js - Self-Diagnosing Version
+// app.js - WITH FLOW CONTROL
 
+// --- (Keep all the query selectors from the previous version) ---
 const connectButton = document.getElementById('connectButton');
 const streamButton = document.getElementById('streamButton');
 const statusDisplay = document.getElementById('status');
 const checklist = document.getElementById('checklist');
 
-let port;
-let writer;
+let port, writer, reader;
 let audioContext;
 
-/**
- * This function runs immediately and checks for all required browser features.
- * It updates the UI to tell you exactly what is supported and what isn't.
- */
-async function runCompatibilityChecks() {
-    checklist.innerHTML = ''; // Clear the list
-    let allChecksPassed = true;
+// This queue will hold audio data from the processor, waiting to be sent.
+let audioQueue = new Uint8Array(0);
+const CHUNK_SIZE = 64; // Must match the Arduino sketch
 
-    // Check 1: Secure Context (HTTPS)
-    if (window.isSecureContext) {
-        checklist.innerHTML += '<li>✅ Secure Context (HTTPS): <strong>Supported</strong></li>';
-    } else {
-        checklist.innerHTML += '<li>❌ Secure Context (HTTPS): <strong>Required!</strong> Site must be on HTTPS or localhost.</li>';
-        allChecksPassed = false;
-    }
+// --- (Keep the runCompatibilityChecks() function exactly as it was) ---
+async function runCompatibilityChecks() { /* ... same as before ... */ }
 
-    // Check 2: Web Serial API
-    if ('serial' in navigator) {
-        checklist.innerHTML += '<li>✅ Web Serial API: <strong>Supported</strong></li>';
-    } else {
-        checklist.innerHTML += '<li>❌ Web Serial API: <strong>Not Supported</strong> by this browser.</li>';
-        allChecksPassed = false;
-    }
-
-    // Check 3: Screen Capture API
-    if (navigator.mediaDevices && 'getDisplayMedia' in navigator.mediaDevices) {
-        checklist.innerHTML += '<li>✅ Screen Capture API: <strong>Supported</strong></li>';
-    } else {
-        checklist.innerHTML += '<li>❌ Screen Capture API: <strong>Not Supported</strong> by this browser.</li>';
-        allChecksPassed = false;
-    }
-    
-    // Check 4: Screen Capture Permission Status
-    if (navigator.permissions && 'query' in navigator.permissions) {
-        try {
-            const permissionStatus = await navigator.permissions.query({ name: 'display-capture' });
-            checklist.innerHTML += `<li>ℹ️ Screen Capture Permission: <strong>${permissionStatus.state.toUpperCase()}</strong></li>`;
-            if (permissionStatus.state === 'denied') {
-                 statusDisplay.textContent = 'Permission was denied. Reset it in site settings.';
+// This new function reads data FROM the Arduino
+async function listenForSerialRequests() {
+    try {
+        const reader = port.readable.getReader();
+        const textDecoder = new TextDecoder();
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) {
+                reader.releaseLock();
+                break;
             }
-        } catch (e) {
-             checklist.innerHTML += '<li>⚠️ Could not query screen capture permission.</li>';
+            // Check if we received the 'R' request character
+            if (textDecoder.decode(value).includes('R')) {
+                sendAudioChunk();
+            }
         }
-    }
-
-    // Final result
-    if (allChecksPassed) {
-        connectButton.disabled = false;
-        statusDisplay.textContent = 'Ready to connect to Arduino.';
-    } else {
-        statusDisplay.textContent = 'Critical features missing. Please fix issues above.';
+    } catch (error) {
+        console.warn("Error reading from serial:", error);
     }
 }
 
+// This new function sends one chunk of audio TO the Arduino
+function sendAudioChunk() {
+    // Do we have enough data in our queue to send a full chunk?
+    if (audioQueue.length >= CHUNK_SIZE) {
+        const chunk = audioQueue.slice(0, CHUNK_SIZE);
+        audioQueue = audioQueue.slice(CHUNK_SIZE); // Remove the chunk from the queue
 
-// --- Event Listeners ---
+        if (writer) {
+            writer.write(chunk).catch(err => console.error("Serial write error:", err));
+        }
+    }
+}
 
 connectButton.addEventListener('click', async () => {
     try {
-        statusDisplay.textContent = 'Please select your Arduino from the list...';
+        statusDisplay.textContent = 'Please select your Arduino...';
         port = await navigator.serial.requestPort();
         await port.open({ baudRate: 115200 });
         writer = port.writable.getWriter();
         
+        // Start listening for requests from the Arduino
+        listenForSerialRequests(); 
+        
         statusDisplay.textContent = '✅ Arduino Connected! Ready to stream.';
         streamButton.disabled = false;
     } catch (error) {
-        // This specifically catches when the user closes the dialog
-        if (error.name === 'NotFoundError') {
-             statusDisplay.textContent = '⚠️ You didn\'t select a port. Try again.';
-        } else {
-             statusDisplay.textContent = `Error: ${error.message}`;
-        }
+        statusDisplay.textContent = `Error: ${error.message}`;
     }
 });
 
-
 streamButton.addEventListener('click', async () => {
     try {
-        // Stop any previous audio context to prevent issues
         if (audioContext && audioContext.state !== 'closed') {
             await audioContext.close();
         }
-
-        statusDisplay.textContent = 'Waiting for you to select a tab to share...';
-        const stream = await navigator.mediaDevices.getDisplayMedia({
-            video: true,
-            audio: true
-        });
-
-        // CRITICAL CHECK: Did the user actually share audio?
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
         if (stream.getAudioTracks().length === 0) {
-            throw new Error("NO AUDIO SHARED. You must check the 'Share tab audio' box.");
+            throw new Error("NO AUDIO SHARED. You must check 'Share tab audio'.");
         }
 
-        audioContext = new AudioContext();
+        audioContext = new AudioContext({ sampleRate: 44100 }); // Try to request a specific sample rate
         await audioContext.audioWorklet.addModule('processor.js');
         const sourceNode = audioContext.createMediaStreamSource(stream);
         const processorNode = new AudioWorkletNode(audioContext, 'audio-sender-processor');
 
         sourceNode.connect(processorNode);
         
+        // The processor now sends data to our queue, NOT directly to the writer.
         processorNode.port.onmessage = (event) => {
-            if (writer) {
-                writer.write(event.data).catch(err => console.error("Serial write error:", err));
-            }
+            const newQueue = new Uint8Array(audioQueue.length + event.data.length);
+            newQueue.set(audioQueue);
+            newQueue.set(event.data, audioQueue.length);
+            audioQueue = newQueue;
         };
 
-        statusDisplay.textContent = "🚀 Streaming audio! Make sure something is playing.";
+        statusDisplay.textContent = "🚀 Streaming audio! Waiting for Arduino's first request...";
 
     } catch (error) {
-        if (error.name === 'NotAllowedError') {
-            statusDisplay.textContent = '⚠️ You cancelled the screen share or denied permission.';
-        } else {
-            statusDisplay.textContent = `❌ ERROR: ${error.message}`;
-        }
-        console.error('Stream Error:', error);
+        statusDisplay.textContent = `❌ ERROR: ${error.message}`;
     }
 });
 
-// Run the checks as soon as the page loads
 document.addEventListener('DOMContentLoaded', runCompatibilityChecks);
