@@ -28,6 +28,7 @@
 
         a {
             text-decoration: none;
+            color: inherit;
         }
 
         /* --- Desktop Icons --- */
@@ -36,7 +37,7 @@
             flex-direction: column;
             flex-wrap: wrap;
             align-content: flex-start;
-            height: calc(100% - 40px); /* Full height minus taskbar */
+            height: calc(100% - 40px);
             padding: 10px;
         }
 
@@ -214,12 +215,8 @@
             color: white;
         }
         
-        .start-menu-item img { width: 24px; height: 24px; margin-right: 8px; }
-        .start-menu-item span { font-family: 'Tahoma', sans-serif; }
         .start-menu-item b { font-family: 'Tahoma', sans-serif; font-weight: bold; }
-        .start-menu-item .description { font-size: 10px; color: #777; margin-left: auto; }
-        .start-menu-item:hover .description { color: #ccc; }
-
+        
         .start-menu-footer {
             background: linear-gradient(to top, #0947b7, #073891);
             border-top: 1px solid #5a83d8;
@@ -253,28 +250,28 @@
         </div>
         <div class="start-menu-body">
             <div class="start-menu-left">
-                <a href="#" class="start-menu-item"><b>📝 Notepad</b></a>
-                <a href="#" class="start-menu-item"><b>🖼️ Paint</b></a>
+                <a href="https://www.rapidtables.com/tools/notepad.html" target="_blank" class="start-menu-item"><b>📝 Notepad</b></a>
+                <a href="/draw" class="start-menu-item"><b>🖼️ Paint</b></a>
                 <div class="start-menu-left-separator"></div>
-                <a href="#" class="start-menu-item"><b>All Programs ▶</b></a>
+                <a href="/" class="start-menu-item"><b>All Programs ▶</b></a>
             </div>
             <div class="start-menu-right">
-                <a href="#" class="start-menu-item"><b>📁 My Documents</b></a>
-                <a href="#" class="start-menu-item"><b>🖼️ My Pictures</b></a>
-                <a href="#" class="start-menu-item"><b>🎵 My Music</b></a>
-                <a href="#" class="start-menu-item"><b>💻 My Computer</b></a>
+                <a href="/files" class="start-menu-item"><b>📁 My Documents</b></a>
+                <a href="/media" class="start-menu-item"><b>🖼️ My Pictures</b></a>
+                <a href="/media" class="start-menu-item"><b>🎵 My Music</b></a>
+                <a href="/" class="start-menu-item"><b>💻 My Computer</b></a>
                 <div class="start-menu-right-separator"></div>
-                <a href="#" class="start-menu-item"><b>⚙️ Control Panel</b></a>
-                <a href="#" class="start-menu-item"><b>🔎 Search</b></a>
-                <a href="#" class="start-menu-item"><b>🏃 Run...</b></a>
+                <a href="/computer" class="start-menu-item"><b>⚙️ Control Panel</b></a>
+                <a href="https://duckduckgo.com" target="_blank" class="start-menu-item"><b>🔎 Search</b></a>
+                <a href="#" id="run-button" class="start-menu-item"><b>🏃 Run...</b></a>
             </div>
         </div>
         <div class="start-menu-footer">
-            <a class="footer-button">
+            <a href="https://google.com" class="footer-button">
                  <svg fill="#f9ac00" viewBox="-2 -2 24 24"><path d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2zm1 14.075V18h-2v-1.925a7.99 7.99 0 1 1 2 0z"/><path d="M11 5h2v6h-2z"/></svg>
                 Log Off
             </a>
-            <a class="footer-button">
+            <a href="#" id="shutdown-button" class="footer-button">
                  <svg fill="#e33109" viewBox="0 0 24 24"><path d="M13.25,3.3222 C17.5363,4.2495 20.75,8.2322 20.75,13 C20.75,18.3848 16.3848,22.75 11,22.75 C5.6152,22.75 1.25,18.3848 1.25,13 C1.25,8.2322 4.4637,4.2495 8.75,3.3222 L8.75,1.25 L13.25,1.25 L13.25,3.3222 Z M12,6 C11.1716,6 10.5,6.6716 10.5,7.5 L10.5,13.5 C10.5,14.3284 11.1716,15 12,15 C12.8284,15 13.5,14.3284 13.5,13.5 L13.5,7.5 C13.5,6.6716 12.8284,6 12,6 Z"/></svg>
                 Turn Off
             </a>
@@ -308,8 +305,8 @@
             ];
 
             const desktop = document.getElementById('desktop-icons');
-            const iconWidth = 90 + 10; // width + margin
-            const iconHeight = 100 + 10; // height + margin
+            const iconWidth = 90 + 10;
+            const iconHeight = 100 + 10;
             let currentTop = 10;
             let currentLeft = 10;
 
@@ -329,7 +326,6 @@
                 iconLink.appendChild(labelSpan);
                 desktop.appendChild(iconLink);
                 
-                // Position icons in a grid
                 iconLink.style.top = `${currentTop}px`;
                 iconLink.style.left = `${currentLeft}px`;
 
@@ -340,7 +336,6 @@
                 }
             });
 
-            // --- Clock ---
             const clockElement = document.getElementById('clock');
             function updateClock() {
                 const now = new Date();
@@ -350,22 +345,20 @@
             setInterval(updateClock, 1000);
             updateClock();
 
-            // --- Start Menu ---
             const startButton = document.getElementById('start-button');
             const startMenu = document.getElementById('start-menu');
             startButton.addEventListener('click', (e) => {
-                e.stopPropagation(); // Prevent click from bubbling to the desktop
+                e.stopPropagation();
                 startMenu.style.display = startMenu.style.display === 'block' ? 'none' : 'block';
             });
 
-            // Hide start menu if clicking anywhere else
             document.addEventListener('click', (e) => {
                 if (!startMenu.contains(e.target) && e.target !== startButton) {
                     startMenu.style.display = 'none';
                 }
             });
-
-            // --- Draggable Icons ---
+            
+            // --- Draggable Icons Logic ---
             let activeIcon = null;
             let isDragging = false;
             let hasDragged = false;
@@ -376,14 +369,12 @@
                 if (targetIcon) {
                     e.preventDefault();
                     isDragging = true;
-                    hasDragged = false; // Reset drag state on new mousedown
+                    hasDragged = false;
                     activeIcon = targetIcon;
                     activeIcon.classList.add('dragging');
-                    
                     const rect = activeIcon.getBoundingClientRect();
                     offsetX = e.clientX - rect.left;
                     offsetY = e.clientY - rect.top;
-                    
                     document.querySelectorAll('.icon.selected').forEach(sel => sel.classList.remove('selected'));
                     activeIcon.classList.add('selected');
                 } else {
@@ -395,35 +386,47 @@
                 if (isDragging && activeIcon) {
                     hasDragged = true;
                     e.preventDefault();
-                    
                     let newLeft = e.clientX - offsetX;
                     let newTop = e.clientY - offsetY;
-
                     const taskbarHeight = 30;
                     newTop = Math.max(0, newTop);
                     newLeft = Math.max(0, newLeft);
                     newTop = Math.min(window.innerHeight - activeIcon.clientHeight - taskbarHeight, newTop);
                     newLeft = Math.min(window.innerWidth - activeIcon.clientWidth, newLeft);
-
                     activeIcon.style.left = `${newLeft}px`;
                     activeIcon.style.top = `${newTop}px`;
                 }
             });
 
-            document.addEventListener('mouseup', (e) => {
-                if (activeIcon) {
-                    activeIcon.classList.remove('dragging');
-                }
+            document.addEventListener('mouseup', () => {
+                if (activeIcon) activeIcon.classList.remove('dragging');
                 isDragging = false;
                 activeIcon = null;
             });
             
             desktop.addEventListener('click', (e) => {
-                let targetIcon = e.target.closest('.icon');
-                if (targetIcon && hasDragged) {
-                    e.preventDefault();
-                }
+                if (e.target.closest('.icon') && hasDragged) e.preventDefault();
             }, true);
+
+            // --- Functional Start Menu Buttons ---
+            const runButton = document.getElementById('run-button');
+            runButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                const destination = prompt('Enter a folder name to visit on wackybox.org:', '');
+                if (destination) {
+                    window.location.href = `/${destination.trim()}`;
+                }
+            });
+
+            const shutdownButton = document.getElementById('shutdown-button');
+            shutdownButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.body.innerHTML = `
+                    <div style="background-color:#000; color:#fff; width:100%; height:100%; display:flex; justify-content:center; align-items:center; font-family: 'Perfect DOS VGA', monospace; font-size: 2em;">
+                        It is now safe to turn off your computer.
+                    </div>
+                `;
+            });
 
         });
     </script>
