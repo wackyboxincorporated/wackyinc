@@ -1,0 +1,125 @@
+/* General styling */
+body {
+    background-color: #000000;
+    color: #E0E0E0; /* Light gray for main text */
+    font-family: 'Courier New', 'Courier', monospace;
+    margin: 0;
+    padding: 20px;
+    line-height: 1.6;
+}
+
+/* Container for content */
+.container {
+    max-width: 1024px;
+    margin: 0 auto;
+    background-color: #1A1A1A; /* Slightly lighter dark gray for the content box */
+    padding: 30px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+}
+
+/* Header styling */
+header {
+    text-align: center;
+    border-bottom: 2px solid #333333;
+    padding-bottom: 20px;
+    margin-bottom: 30px;
+	
+}
+
+header h1 {
+    font-family: 'Montserrat', sans-serif;
+    color: #4A90E2; /* A nice blue for the main title */
+    font-size: 2.5em;
+    font-weight: 700;
+    margin: 0;
+}
+
+header .subtitle {
+    font-style: italic;
+    color: #8C8C8C; /* Slightly darker gray for the subtitle */
+    margin-top: 5px;
+}
+
+/* Main content styling */
+main {
+    padding: 0 10px;
+}
+
+h2 {
+    font-family: 'Montserrat', sans-serif;
+    color: #6AABFF; /* A slightly lighter blue for section titles */
+    border-left: 4px solid #4A90E2;
+    padding-left: 15px;
+    margin-top: 40px;
+    margin-bottom: 15px;
+}
+
+p {
+    margin-bottom: 20px;
+    font-size: 1.1em;
+}
+
+/* Footer styling */
+footer {
+    text-align: center;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 2px solid #333333;
+    color: #555555; /* Dark gray for the copyright text */
+    font-size: 0.9em;
+}
+
+/* Link adjustments for a darker theme */
+a {
+    color: #4A90E2;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+a:hover {
+    color: #6AABFF;
+    text-decoration: underline;
+}
+
+/* New SPA styling */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 200px;
+    height: 100vh;
+    background-color: #0A0A0A; /* Darker black for more contrast */
+    padding: 20px 0;
+    z-index: 100;
+    border-right: 2px solid #6AABFF; /* A slightly lighter blue for the border */
+}
+
+.sidebar ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar li {
+    margin-bottom: 10px;
+}
+
+.sidebar a {
+    display: block;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 0 10px;
+    background-color: #2A2A2A;
+    transition: background-color 0.3s ease;
+    text-align: center;
+}
+
+.sidebar a:hover {
+    background-color: #333333;
+    text-decoration: none;
+}
+
+.container {
+    margin-left: 240px; /* Adjust this value to match the sidebar's width + padding/gap */
+}
