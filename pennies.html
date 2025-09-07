@@ -250,13 +250,18 @@
         const key = 'my-secret-key';
         
         function xorDecrypt(encryptedText, key) {
-            let decrypted = '';
-            for (let i = 0; i < encryptedText.length; i++) {
-                const charCode = encryptedText.charCodeAt(i) ^ key.charCodeAt(i % key.length);
-                decrypted += String.fromCharCode(charCode);
-            }
-            return decrypted;
+    try {
+        const decoded = atob(encryptedText);
+        let decrypted = '';
+        for (let i = 0; i < decoded.length; i++) {
+            const charCode = decoded.charCodeAt(i) ^ key.charCodeAt(i % key.length);
+            decrypted += String.fromCharCode(charCode);
         }
+        return decrypted;
+    } catch (e) {
+        return 'Error: Invalid base64 or key';
+    }
+}
 
         async function getIPAddress() {
             try {
