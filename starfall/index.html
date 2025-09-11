@@ -1,7 +1,8 @@
+
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Starfall: 3D WebGL Shooter (Enhanced)</title>
+    <title>The Starfall</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -53,10 +54,12 @@
         }
         .screen h1 { font-size: 3em; color: var(--ui-color); text-shadow: 4px 4px 0px #000; }
         .screen p { font-size: 1em; max-width: 600px; line-height: 1.5; }
-        .screen button {
-            font-family: 'Press Start 2P', cursive; font-size: 1.5em; color: black; background: var(--ui-color);
-            border: none; padding: 15px 30px; margin-top: 20px; cursor: pointer;
+        .screen button, .screen .file-label {
+            font-family: 'Press Start 2P', cursive; font-size: 1em; color: black; background: var(--ui-color);
+            border: none; padding: 15px 30px; margin-top: 15px; cursor: pointer; display: block; width: 400px;
         }
+        .screen .file-label { text-align: center; }
+        .screen button:disabled { background: #555; color: #888; cursor: not-allowed; }
 
         #start-screen h1 {
             font-family: 'Orbitron', sans-serif;
@@ -64,9 +67,10 @@
             letter-spacing: 0.1em;
             text-shadow: 4px 4px 0 #000, 0 0 20px var(--ui-color);
         }
+         #start-screen button { font-size: 1.5em; width: auto; }
 
         #upgrade-screen button { display: block; margin: 15px auto; width: 400px; text-align: left; }
-        #upgrade-screen button:disabled { background: #555; color: #888; cursor: not-allowed; }
+        #upgrade-screen #continue-button { text-align: center; }
 
         #game-container.shake { animation: shake 0.5s; }
         @keyframes shake {
@@ -115,9 +119,15 @@
             <h1>STARFALL</h1>
             <p>MOVE: WASD or Arrow Keys<br>LOCK TARGET: Tab<br>CLEAR TARGET: C<br>SHOOT: Spacebar<br>PAUSE: P</p>
             <button id="start-button">START GAME</button>
+            <button id="load-start-button">LOAD GAME</button>
         </div>
         <div id="pause-screen" class="screen" style="display: none; background: rgba(0,0,0,0.5); pointer-events: all;">
              <h1>PAUSED</h1>
+             <button id="resume-button">RESUME</button>
+             <button id="save-button">SAVE GAME</button>
+             <button id="export-button">EXPORT SAVE (JSON)</button>
+             <label for="import-input" class="file-label">IMPORT SAVE (JSON)</label>
+             <input type="file" id="import-input" accept=".json" style="display: none;">
         </div>
         <div id="upgrade-screen" class="screen" style="display: none;">
             <h1>STAGE COMPLETE</h1>
@@ -150,7 +160,8 @@
     // 3. PARTICLE SYSTEM
     // 4. GAME OBJECTS & MODELS
     // 5. GAME STATE & LOGIC
-    // 6. MAIN LOOP & INITIALIZATION
+    // 6. SAVE/LOAD SYSTEM
+    // 7. MAIN LOOP & INITIALIZATION
     
     // --- 1. CORE WEBGL & SHADERS ---
     const canvas = document.getElementById('glcanvas');
@@ -202,28 +213,21 @@
 
     // --- 2. AUDIO ENGINE ---
 
-    // A more robust BGM handler for loading and playing stage-specific music.
     const BGM_HANDLER = {
         audioCtx: null,
         buffers: {},
         currentSource: null,
         currentStage: -1,
         volume: 0.6,
-        tracks: [ // Placeholder URLs for stage music. Add your own tracks here!
-            'https://file.garden/ZPjrzSdXf2vX5mNF/head_on.wav',          // Stage 1-2
-            'https://file.garden/ZPjrzSdXf2vX5mNF/through_space.mp3',   // Stage 3-4
-            'https://file.garden/ZPjrzSdXf2vX5mNF/level_3_action.mp3',  // Boss 1
-            'https://file.garden/ZPjrzSdXf2vX5mNF/high_octane.mp3',     // Stage 6-8
-            'https://file.garden/ZPjrzSdXf2vX5mNF/cyber-attack.mp3',    // Stage 9-12
-            'https://file.garden/ZPjrzSdXf2vX5mNF/final_boss.mp3'       // Final Boss
+        tracks: [
+            'https://file.garden/ZPjrzSdXf2vX5mNF/Stage%201%20(actually).ogg',
+            'https://file.garden/ZPjrzSdXf2vX5mNF/Stage%201.ogg',
+            'https://file.garden/ZPjrzSdXf2vX5mNF/Stage%202.ogg',
+            'https://file.garden/ZPjrzSdXf2vX5mNF/Stage%203.ogg',
+            'https://file.garden/ZPjrzSdXf2vX5mNF/cyber-attack.mp3',
+            'https://file.garden/ZPjrzSdXf2vX5mNF/final_boss.mp3'
         ],
-
-        init() {
-            if (!this.audioCtx) {
-                this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-        },
-
+        init() { if (!this.audioCtx) this.audioCtx = new (window.AudioContext || window.webkitAudioContext)(); },
         getTrackForStage(stage) {
             if (stage >= 13) return this.tracks[5];
             if (stage >= 9) return this.tracks[4];
@@ -232,150 +236,44 @@
             if (stage >= 3) return this.tracks[1];
             return this.tracks[0];
         },
-
         loadTrack(url) {
             return new Promise((resolve, reject) => {
-                if (this.buffers[url]) {
-                    return resolve(this.buffers[url]);
-                }
-                fetch(url)
-                    .then(response => response.arrayBuffer())
-                    .then(arrayBuffer => this.audioCtx.decodeAudioData(arrayBuffer))
-                    .then(audioBuffer => {
-                        this.buffers[url] = audioBuffer;
-                        resolve(audioBuffer);
-                    })
-                    .catch(error => {
-                        console.error(`Failed to load track: ${url}`, error);
-                        reject(error);
-                    });
+                if (this.buffers[url]) return resolve(this.buffers[url]);
+                fetch(url).then(response => response.arrayBuffer()).then(arrayBuffer => this.audioCtx.decodeAudioData(arrayBuffer)).then(audioBuffer => { this.buffers[url] = audioBuffer; resolve(audioBuffer); }).catch(error => { console.error(`Failed to load track: ${url}`, error); reject(error); });
             });
         },
-
         async play(stage) {
             this.init();
             if (this.currentStage === stage && this.currentSource) return;
-
             const trackUrl = this.getTrackForStage(stage);
             if (!trackUrl) return;
-
             this.stop();
             this.currentStage = stage;
-
             try {
                 const buffer = await this.loadTrack(trackUrl);
                 const source = this.audioCtx.createBufferSource();
                 const gainNode = this.audioCtx.createGain();
-                
-                source.buffer = buffer;
-                source.loop = true;
-                gainNode.gain.value = this.volume;
-                source.connect(gainNode);
-                gainNode.connect(this.audioCtx.destination);
-                source.start();
-                this.currentSource = source;
-            } catch (error) {
-                console.error("Could not play BGM for stage", stage);
-            }
+                source.buffer = buffer; source.loop = true; gainNode.gain.value = this.volume; source.connect(gainNode); gainNode.connect(this.audioCtx.destination); source.start(); this.currentSource = source;
+            } catch (error) { console.error("Could not play BGM for stage", stage); }
         },
-
-        stop() {
-            if (this.currentSource) {
-                this.currentSource.stop();
-                this.currentSource.disconnect();
-                this.currentSource = null;
-            }
-            this.currentStage = -1;
-        },
-
-        pause() {
-            if (this.audioCtx && this.audioCtx.state === 'running') {
-                this.audioCtx.suspend();
-            }
-        },
-
-        resume() {
-             if (this.audioCtx && this.audioCtx.state === 'suspended') {
-                this.audioCtx.resume();
-            }
-        }
+        stop() { if (this.currentSource) { this.currentSource.stop(); this.currentSource.disconnect(); this.currentSource = null; } this.currentStage = -1; },
+        pause() { if (this.audioCtx && this.audioCtx.state === 'running') this.audioCtx.suspend(); },
+        resume() { if (this.audioCtx && this.audioCtx.state === 'suspended') this.audioCtx.resume(); }
     };
     
     function playSound(freq, duration, type = 'sine', vol = 0.3) {
         if (!BGM_HANDLER.audioCtx) return;
-        const audioCtx = BGM_HANDLER.audioCtx;
-        const osc = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
-        osc.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        gainNode.gain.setValueAtTime(vol, audioCtx.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-        osc.start();
-        osc.stop(audioCtx.currentTime + duration);
+        const audioCtx = BGM_HANDLER.audioCtx; const osc = audioCtx.createOscillator(); const gainNode = audioCtx.createGain(); osc.connect(gainNode); gainNode.connect(audioCtx.destination); osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime); gainNode.gain.setValueAtTime(vol, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration); osc.start(); osc.stop(audioCtx.currentTime + duration);
     }
-    const SFX = {
-        shoot: () => playSound(440, 0.1, 'triangle', 0.2),
-        hit: () => playSound(220, 0.2, 'sawtooth', 0.4),
-        explosion: () => playSound(100, 0.5, 'square', 0.5),
-        powerup: () => playSound(880, 0.3, 'sine', 0.4),
-        playerHit: () => playSound(150, 0.4, 'sawtooth', 0.6),
-        stageComplete: () => playSound(1046.50, 0.4, 'sine', 0.5),
-        warning: () => playSound(200, 0.1, 'square', 0.2)
-    };
+    const SFX = { shoot: () => playSound(440, 0.1, 'triangle', 0.2), hit: () => playSound(220, 0.2, 'sawtooth', 0.4), explosion: () => playSound(100, 0.5, 'square', 0.5), powerup: () => playSound(880, 0.3, 'sine', 0.4), playerHit: () => playSound(150, 0.4, 'sawtooth', 0.6), stageComplete: () => playSound(1046.50, 0.4, 'sine', 0.5), warning: () => playSound(200, 0.1, 'square', 0.2) };
     
     // --- 3. PARTICLE SYSTEM ---
     let particles = [];
-    function emitParticles(x, y, z, count, color, speed, life) {
-        for (let i = 0; i < count; i++) {
-            particles.push({
-                x, y, z,
-                vx: (Math.random() - 0.5) * speed,
-                vy: (Math.random() - 0.5) * speed,
-                vz: (Math.random() - 0.5) * speed,
-                life: Math.random() * life,
-                maxLife: life,
-                color,
-                size: Math.random() * 3 + 1
-            });
-        }
-    }
-    function updateParticles(dt) {
-        particles.forEach(p => {
-            p.x += p.vx * dt;
-            p.y += p.vy * dt;
-            p.z += p.vz * dt;
-            p.life -= dt;
-        });
-        particles = particles.filter(p => p.life > 0);
-    }
+    function emitParticles(x, y, z, count, color, speed, life) { for (let i = 0; i < count; i++) particles.push({ x, y, z, vx: (Math.random() - 0.5) * speed, vy: (Math.random() - 0.5) * speed, vz: (Math.random() - 0.5) * speed, life: Math.random() * life, maxLife: life, color, size: Math.random() * 3 + 1 }); }
+    function updateParticles(dt) { particles.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; p.life -= dt; }); particles = particles.filter(p => p.life > 0); }
     
     // --- 4. GAME OBJECTS & MODELS ---
-    const models = {
-        player: { pos: new Float32Array([0,.5,0, -.8,-.5,0, .8,-.5,0, -1.5,-.5,0, 1.5,-.5,0, 0,-.5,-1]), colors: new Float32Array([.9,.9,1,1, .7,.7,.8,1, .7,.7,.8,1, .2,.5,1,1, .2,.5,1,1, .2,.5,1,1]) },
-        bullet: { pos: new Float32Array([0,.25,0, -.1,-.25,0, .1,-.25,0]), colors: new Float32Array([1,1,.8,1, 1,1,.8,1, 1,1,.8,1]) },
-        chaser: { pos: new Float32Array([0,.7,0, -.7,0,0, .7,0,0, 0,-.7,0, .7,0,0, -.7,0,0]), colors: new Float32Array([1,.2,.2,1, 1,.4,.2,1, 1,.4,.2,1, .8,.1,.1,1, .8,.3,.1,1, .8,.3,.1,1]) },
-        shooter: { pos: new Float32Array([-1,0,0,0,0,1,0,1,0,0,0,1,1,0,0,0,1,0,1,0,0,0,0,-1,0,1,0,0,0,0,-1,-1,0,0,0,1,0,-1,0,0,0,-1,0,0,0,1,0,0,1,0,-1,0,1,0,0,1,0,0,0,-1,0,0,0,-1,0,0,-1,0,-1,0,0,-1]), colors: new Float32Array([.8,.2,.8,1,.8,.2,.8,1,.9,.5,.9,1,.8,.2,.8,1,.8,.2,.8,1,.9,.5,.9,1,.8,.2,.8,1,.8,.2,.8,1,.9,.5,.9,1,.8,.2,.8,1,.8,.2,.8,1,.9,.5,.9,1,.6,0,.6,1,.5,0,.5,1,.6,0,.6,1,.6,0,.6,1,.5,0,.5,1,.6,0,.6,1,.6,0,.6,1,.5,0,.5,1,.6,0,.6,1,.6,0,.6,1,.5,0,.5,1,.6,0,.6,1]) },
-        spiral: { pos: new Float32Array([0,1,0, -0.2,0.2,0, 0.2,0.2,0, 0,-1,0, 0.2,-0.2,0, -0.2,-0.2,0, 1,0,0, 0.2,0.2,0, 0.2,-0.2,0, -1,0,0, -0.2,-0.2,0, -0.2,0.2,0]), colors: new Float32Array([.2,.8,.8,1, .2,.8,.8,1, .2,.8,.8,1, .2,.8,.8,1, .2,.8,.8,1, .2,.8,.8,1, .5,1,1,1, .5,1,1,1, .5,1,1,1, .5,1,1,1, .5,1,1,1, .5,1,1,1]) },
-        dodger: { pos: new Float32Array([0,0.5,0, -0.5,-0.5,0, 0.5,-0.5,0]), colors: new Float32Array([.1,.8,.1,1, .1,.8,.1,1, .1,.8,.1,1])},
-        sniper: { pos: new Float32Array([0,1.5,0, 0,-1.5,0, -0.2,0,0, 0,1.5,0, 0.2,0,0, 0,-1.5,0]), colors: new Float32Array([.9,.9,.2,1, .9,.9,.2,1, .9,.9,.2,1, .9,.9,.2,1, .9,.9,.2,1, .9,.9,.2,1])},
-        tank: { pos: new Float32Array([-1,1,0, 1,1,0, -1,-1,0, 1,1,0, 1,-1,0, -1,-1,0]), colors: new Float32Array([.5,.5,.5,1, .5,.5,.5,1, .5,.5,.5,1, .5,.5,.5,1, .5,.5,.5,1, .5,.5,.5,1])},
-        mineLayer: { pos: new Float32Array([0,0.7,0, -0.7,0,0, 0,-0.7,0, 0.7,0,0, -0.7,0,0, 0,0.7,0]), colors: new Float32Array([1,.5,0,1, 1,.5,0,1, 1,.5,0,1, 1,.5,0,1, 1,.5,0,1, 1,.5,0,1])},
-        bomber: { pos: new Float32Array([-2,0.2,0, 2,0.2,0, -2,-0.2,0, 2,0.2,0, 2,-0.2,0, -2,-0.2,0]), colors: new Float32Array([.3, .3, .8, 1, .3, .3, .8, 1, .3, .3, .8, 1, .3, .3, .8, 1, .3, .3, .8, 1, .3, .3, .8, 1])},
-        coreShield: { pos: new Float32Array([0,1,0, -1,0,0, 1,0,0]), colors: new Float32Array([0,1,1,1, 0,1,1,1, 0,1,1,1])},
-        enemyBullet: { pos: new Float32Array([0,0,0, 0.2,0,0.2, 0,0.2,0.2]), colors: new Float32Array([1,0,0,1, 1,0,0,1, 1,0,0,1]) },
-        mine: { pos: new Float32Array([-.3,0,0, .3,0,0, 0,.3,0, .3,0,0, -.3,0,0, 0,-.3,0]), colors: new Float32Array([1,.3,0,1,1,.3,0,1,1,.3,0,1,1,.3,0,1,1,.3,0,1,1,.3,0,1]) },
-        sniperBullet: { pos: new Float32Array([0,1,0, -0.1,-1,0, 0.1,-1,0]), colors: new Float32Array([1,1,0,1, 1,1,0,1, 1,1,0,1]) },
-        boss: { pos: new Float32Array([0,3,0, -4,0,0, 4,0,0, 0,-3,0, 4,0,0, -4,0,0]), colors: new Float32Array([.5,0,0,1, .3,0,0,1, .3,0,0,1, .5,0,0,1, .3,0,0,1, .3,0,0,1]) },
-        theCore: { pos: new Float32Array([0,0,2, -2,0,0, 0,2,0, 0,0,2, 0,2,0, 2,0,0, 0,0,2, 2,0,0, 0,-2,0, 0,0,2, 0,-2,0, -2,0,0, 0,2,0, -2,0,0, -2,2,0, 2,0,0, 2,2,0, 2,-2,0, -2,-2,0, -2,0,0, -2,2,0, 2,-2,0, 2,0,0, 2,2,0, -2,-2,0]), colors: new Float32Array([.8,0,0,1, .8,0,0,1, .8,0,0,1, .8,0,0,1, .8,0,0,1, .8,0,0,1, .8,0,0,1, .8,0,0,1, .8,0,0,1, .8,0,0,1, .8,0,0,1, .8,0,0,1, .6,0,0,1, .6,0,0,1, .6,0,0,1, .6,0,0,1, .6,0,0,1, .6,0,0,1, .6,0,0,1, .6,0,0,1, .6,0,0,1, .6,0,0,1, .6,0,0,1, .6,0,0,1])},
-        warningBox: { pos: new Float32Array([-1,1,0,1,1,0,-1,.9,0,1,1,0,1,.9,0,-1,.9,0,-1,-1,0,1,-1,0,-1,-.9,0,1,-1,0,1,-.9,0,-1,-.9,0,-1,1,0,-.9,1,0,-1,-1,0,-.9,1,0,-.9,-1,0,-1,-1,0,1,1,0,.9,1,0,1,-1,0,.9,1,0,.9,-1,0,1,-1,0]), colors: new Float32Array(Array(8*3*4).fill(1).map((v, i) => (i+1)%4===0?.7:(i%4===0?1:0))) },
-        powerupShield: { pos: new Float32Array([0,0,.5, -.5,0,0, .5,0,0]), colors: new Float32Array([0,.7,1,1, 0,.7,1,1, 0,.7,1,1]) },
-        powerupRapid: { pos: new Float32Array([-.5,.5,0, .5,.5,0, 0,-.5,0]), colors: new Float32Array([1,1,0,1, 1,1,0,1, 1,1,0,1]) },
-        powerupMulti: { pos: new Float32Array([0,0,0, 1,0,0, 0,1,0, 0,0,0, -1,0,0, 0,-1,0]), colors: new Float32Array([1,.5,0,1, 1,.5,0,1, 1,.5,0,1, 1,.5,0,1, 1,.5,0,1, 1,.5,0,1]) },
-        powerupBeam: { pos: new Float32Array([0.1,0.5,0, -0.1,0.2,0, 0.1,0.2,0, -0.1,0.2,0, -0.1,-0.1,0, 0.1,-0.1,0, 0.1,-0.1,0, -0.1,-0.4,0, 0.1,-0.4,0]), colors: new Float32Array([1,0,1,1, 1,0,1,1, 1,0,1,1, 1,0,1,1, 1,0,1,1, 1,0,1,1, 1,0,1,1, 1,0,1,1, 1,0,1,1]) },
-        beam: { pos: new Float32Array([-0.1,0,0, 0.1,0,0, -0.1,1,0, -0.1,1,0, 0.1,0,0, 0.1,1,0]), colors: new Float32Array([1,.8,1,0.2, 1,.8,1,0.2, 1,0,1,1, 1,0,1,1, 1,.8,1,0.2, 1,0,1,1]) }
-    };
+    const models = { player: { pos: new Float32Array([0,.5,0, -.8,-.5,0, .8,-.5,0, -1.5,-.5,0, 1.5,-.5,0, 0,-.5,-1]), colors: new Float32Array([.9,.9,1,1, .7,.7,.8,1, .7,.7,.8,1, .2,.5,1,1, .2,.5,1,1, .2,.5,1,1]) }, bullet: { pos: new Float32Array([0,.25,0, -.1,-.25,0, .1,-.25,0]), colors: new Float32Array([1,1,.8,1, 1,1,.8,1, 1,1,.8,1]) }, chaser: { pos: new Float32Array([0,.7,0, -.7,0,0, .7,0,0, 0,-.7,0, .7,0,0, -.7,0,0]), colors: new Float32Array([1,.2,.2,1, 1,.4,.2,1, 1,.4,.2,1, .8,.1,.1,1, .8,.3,.1,1, .8,.3,.1,1]) }, shooter: { pos: new Float32Array([-1,0,0,0,0,1,0,1,0,0,0,1,1,0,0,0,1,0,1,0,0,0,0,-1,0,1,0,0,0,0,-1,-1,0,0,0,1,0,-1,0,0,0,-1,0,0,0,1,0,0,1,0,-1,0,1,0,0,1,0,0,0,-1,0,0,0,-1,0,0,-1,0,-1,0,0,-1]), colors: new Float32Array([.8,.2,.8,1,.8,.2,.8,1,.9,.5,.9,1,.8,.2,.8,1,.8,.2,.8,1,.9,.5,.9,1,.8,.2,.8,1,.8,.2,.8,1,.9,.5,.9,1,.8,.2,.8,1,.8,.2,.8,1,.9,.5,.9,1,.6,0,.6,1,.5,0,.5,1,.6,0,.6,1,.6,0,.6,1,.5,0,.5,1,.6,0,.6,1,.6,0,.6,1,.5,0,.5,1,.6,0,.6,1,.6,0,.6,1,.5,0,.5,1,.6,0,.6,1]) }, spiral: { pos: new Float32Array([0,1,0, -0.2,0.2,0, 0.2,0.2,0, 0,-1,0, 0.2,-0.2,0, -0.2,-0.2,0, 1,0,0, 0.2,0.2,0, 0.2,-0.2,0, -1,0,0, -0.2,-0.2,0, -0.2,0.2,0]), colors: new Float32Array([.2,.8,.8,1, .2,.8,.8,1, .2,.8,.8,1, .2,.8,.8,1, .2,.8,.8,1, .2,.8,.8,1, .5,1,1,1, .5,1,1,1, .5,1,1,1, .5,1,1,1, .5,1,1,1, .5,1,1,1]) }, dodger: { pos: new Float32Array([0,0.5,0, -0.5,-0.5,0, 0.5,-0.5,0]), colors: new Float32Array([.1,.8,.1,1, .1,.8,.1,1, .1,.8,.1,1])}, sniper: { pos: new Float32Array([0,1.5,0, 0,-1.5,0, -0.2,0,0, 0,1.5,0, 0.2,0,0, 0,-1.5,0]), colors: new Float32Array([.9,.9,.2,1, .9,.9,.2,1, .9,.9,.2,1, .9,.9,.2,1, .9,.9,.2,1, .9,.9,.2,1])}, tank: { pos: new Float32Array([-1,1,0, 1,1,0, -1,-1,0, 1,1,0, 1,-1,0, -1,-1,0]), colors: new Float32Array([.5,.5,.5,1, .5,.5,.5,1, .5,.5,.5,1, .5,.5,.5,1, .5,.5,.5,1, .5,.5,.5,1])}, mineLayer: { pos: new Float32Array([0,0.7,0, -0.7,0,0, 0,-0.7,0, 0.7,0,0, -0.7,0,0, 0,0.7,0]), colors: new Float32Array([1,.5,0,1, 1,.5,0,1, 1,.5,0,1, 1,.5,0,1, 1,.5,0,1, 1,.5,0,1])}, bomber: { pos: new Float32Array([-2,0.2,0, 2,0.2,0, -2,-0.2,0, 2,0.2,0, 2,-0.2,0, -2,-0.2,0]), colors: new Float32Array([.3, .3, .8, 1, .3, .3, .8, 1, .3, .3, .8, 1, .3, .3, .8, 1, .3, .3, .8, 1, .3, .3, .8, 1])}, coreShield: { pos: new Float32Array([0,1,0, -1,0,0, 1,0,0]), colors: new Float32Array([0,1,1,1, 0,1,1,1, 0,1,1,1])}, enemyBullet: { pos: new Float32Array([0,0,0, 0.2,0,0.2, 0,0.2,0.2]), colors: new Float32Array([1,0,0,1, 1,0,0,1, 1,0,0,1]) }, mine: { pos: new Float32Array([-.3,0,0, .3,0,0, 0,.3,0, .3,0,0, -.3,0,0, 0,-.3,0]), colors: new Float32Array([1,.3,0,1,1,.3,0,1,1,.3,0,1,1,.3,0,1,1,.3,0,1,1,.3,0,1]) }, sniperBullet: { pos: new Float32Array([0,1,0, -0.1,-1,0, 0.1,-1,0]), colors: new Float32Array([1,1,0,1, 1,1,0,1, 1,1,0,1]) }, boss: { pos: new Float32Array([0,3,0, -4,0,0, 4,0,0, 0,-3,0, 4,0,0, -4,0,0]), colors: new Float32Array([.5,0,0,1, .3,0,0,1, .3,0,0,1, .5,0,0,1, .3,0,0,1, .3,0,0,1]) }, theCore: { pos: new Float32Array([0,0,2, -2,0,0, 0,2,0, 0,0,2, 0,2,0, 2,0,0, 0,0,2, 2,0,0, 0,-2,0, 0,0,2, 0,-2,0, -2,0,0, 0,2,0, -2,0,0, -2,2,0, 2,0,0, 2,2,0, 2,-2,0, -2,-2,0, -2,0,0, -2,2,0, 2,-2,0, 2,0,0, 2,2,0, -2,-2,0]), colors: new Float32Array([.8,0,0,1, .8,0,0,1, .8,0,0,1, .8,0,0,1, .8,0,0,1, .8,0,0,1, .8,0,0,1, .8,0,0,1, .8,0,0,1, .8,0,0,1, .8,0,0,1, .8,0,0,1, .6,0,0,1, .6,0,0,1, .6,0,0,1, .6,0,0,1, .6,0,0,1, .6,0,0,1, .6,0,0,1, .6,0,0,1, .6,0,0,1, .6,0,0,1, .6,0,0,1, .6,0,0,1])}, warningBox: { pos: new Float32Array([-1,1,0,1,1,0,-1,.9,0,1,1,0,1,.9,0,-1,.9,0,-1,-1,0,1,-1,0,-1,-.9,0,1,-1,0,1,-.9,0,-1,-.9,0,-1,1,0,-.9,1,0,-1,-1,0,-.9,1,0,-.9,-1,0,-1,-1,0,1,1,0,.9,1,0,1,-1,0,.9,1,0,.9,-1,0,1,-1,0]), colors: new Float32Array(Array(8*3*4).fill(1).map((v, i) => (i+1)%4===0?.7:(i%4===0?1:0))) }, powerupShield: { pos: new Float32Array([0,0,.5, -.5,0,0, .5,0,0]), colors: new Float32Array([0,.7,1,1, 0,.7,1,1, 0,.7,1,1]) }, powerupRapid: { pos: new Float32Array([-.5,.5,0, .5,.5,0, 0,-.5,0]), colors: new Float32Array([1,1,0,1, 1,1,0,1, 1,1,0,1]) }, powerupMulti: { pos: new Float32Array([0,0,0, 1,0,0, 0,1,0, 0,0,0, -1,0,0, 0,-1,0]), colors: new Float32Array([1,.5,0,1, 1,.5,0,1, 1,.5,0,1, 1,.5,0,1, 1,.5,0,1, 1,.5,0,1]) }, powerupBeam: { pos: new Float32Array([0.1,0.5,0, -0.1,0.2,0, 0.1,0.2,0, -0.1,0.2,0, -0.1,-0.1,0, 0.1,-0.1,0, 0.1,-0.1,0, -0.1,-0.4,0, 0.1,-0.4,0]), colors: new Float32Array([1,0,1,1, 1,0,1,1, 1,0,1,1, 1,0,1,1, 1,0,1,1, 1,0,1,1, 1,0,1,1, 1,0,1,1, 1,0,1,1]) }, beam: { pos: new Float32Array([-0.1,0,0, 0.1,0,0, -0.1,1,0, -0.1,1,0, 0.1,0,0, 0.1,1,0]), colors: new Float32Array([1,.8,1,0.2, 1,.8,1,0.2, 1,0,1,1, 1,0,1,1, 1,.8,1,0.2, 1,0,1,1]) } };
 
     // --- 5. GAME STATE & LOGIC ---
     let gameState;
@@ -383,159 +281,57 @@
     
     function createInitialState() {
         return {
-            mode: 'START_SCREEN', // START_SCREEN, PLAYING, PAUSED, UPGRADE_SCREEN, GAME_OVER, VICTORY_SCREEN
+            mode: 'START_SCREEN',
             previousMode: 'START_SCREEN',
-            player: {
-                x: 0, y: -12, z: 0, size: 1.0, speed: 20.0, rotation: 0,
-                hp: 100, maxHp: 100,
-                shield: 50, maxShield: 50, shieldRegen: 5, shieldCooldown: 0,
-                upgrades: { fireRate: 1, damage: 1, maxShield: 1, maxHp: 1 },
-                upgradePoints: 0, xp: 0, xpToNext: 100,
-                lockedEnemy: null
-            },
+            player: { x: 0, y: -12, z: 0, size: 1.0, speed: 20.0, rotation: 0, hp: 100, maxHp: 100, shield: 50, maxShield: 50, shieldRegen: 5, shieldCooldown: 0, upgrades: { fireRate: 1, damage: 1, maxShield: 1, maxHp: 1 }, upgradePoints: 0, xp: 0, xpToNext: 100, lockedEnemy: null },
             camera: { x:0, y:0, z:25 },
-            bullets: [],
-            enemies: [],
-            enemyBullets: [],
-            powerups: [],
+            bullets: [], enemies: [], enemyBullets: [], powerups: [],
             activePowerups: { rapid: 0, multi: 0, beam: 0 },
-            beamOscillator: null,
-            boss: null,
-            keys: {},
-            lastTime: 0, score: 0, stageScore: 0, stage: 1,
-            shootCooldown: 0,
-            timeSinceLastSpawn: 0,
-            spawnInterval: 2,
-            stageConfig: {
-                1: { enemyTypes: ['chaser'], spawnInterval: 2.0, goal: 1000 },
-                2: { enemyTypes: ['chaser', 'shooter'], spawnInterval: 1.5, goal: 3000 },
-                3: { enemyTypes: ['shooter', 'spiral'], spawnInterval: 1.2, goal: 6000 },
-                4: { enemyTypes: ['chaser', 'shooter', 'spiral'], spawnInterval: 0.8, goal: 10000 },
-                5: { enemyTypes: [], spawnInterval: 999, isBossStage: true, goal: Infinity },
-                6: { enemyTypes: ['chaser', 'spiral'], spawnInterval: 0.5, goal: 15000 },
-                7: { enemyTypes: ['shooter', 'spiral'], spawnInterval: 0.6, goal: 22000 },
-                8: { enemyTypes: ['dodger', 'shooter', 'spiral'], spawnInterval: 0.7, goal: 30000 },
-                9: { enemyTypes: ['sniper', 'chaser'], spawnInterval: 1.0, goal: 38000 },
-                10: { enemyTypes: ['tank', 'spiral'], spawnInterval: 1.2, goal: 48000 },
-                11: { enemyTypes: ['mineLayer', 'shooter', 'dodger'], spawnInterval: 0.6, goal: 60000 },
-                12: { enemyTypes: ['bomber', 'sniper', 'tank'], spawnInterval: 0.5, goal: 75000 },
-                13: { enemyTypes: [], spawnInterval: 999, isBossStage: true, goal: Infinity }
-            },
+            beamOscillator: null, boss: null, keys: {}, lastTime: 0, score: 0, stageScore: 0, stage: 1, shootCooldown: 0, timeSinceLastSpawn: 0, spawnInterval: 2,
+            stageConfig: { 1: { enemyTypes: ['chaser'], spawnInterval: 2.0, goal: 1000 }, 2: { enemyTypes: ['chaser', 'shooter'], spawnInterval: 1.5, goal: 3000 }, 3: { enemyTypes: ['shooter', 'spiral'], spawnInterval: 1.2, goal: 6000 }, 4: { enemyTypes: ['chaser', 'shooter', 'spiral'], spawnInterval: 0.8, goal: 10000 }, 5: { enemyTypes: [], spawnInterval: 999, isBossStage: true, goal: Infinity }, 6: { enemyTypes: ['chaser', 'spiral'], spawnInterval: 0.5, goal: 15000 }, 7: { enemyTypes: ['shooter', 'spiral'], spawnInterval: 0.6, goal: 22000 }, 8: { enemyTypes: ['dodger', 'shooter', 'spiral'], spawnInterval: 0.7, goal: 30000 }, 9: { enemyTypes: ['sniper', 'chaser'], spawnInterval: 1.0, goal: 38000 }, 10: { enemyTypes: ['tank', 'spiral'], spawnInterval: 1.2, goal: 48000 }, 11: { enemyTypes: ['mineLayer', 'shooter', 'dodger'], spawnInterval: 0.6, goal: 60000 }, 12: { enemyTypes: ['bomber', 'sniper', 'tank'], spawnInterval: 0.5, goal: 75000 }, 13: { enemyTypes: [], spawnInterval: 999, isBossStage: true, goal: Infinity } },
             stars: [],
             upgradeCosts: { fireRate: 1, damage: 1, maxShield: 1, maxHp: 1 }
         };
     }
 
     function cycleTarget() {
-        const { player } = gameState;
-        let potentialTargets = [...gameState.enemies];
-        if (gameState.boss) potentialTargets.push(gameState.boss);
-
-        if (potentialTargets.length === 0) {
-            player.lockedEnemy = null;
-            return;
-        }
-
-        potentialTargets.sort((a, b) => {
-            const distA = Math.hypot(player.x - a.x, player.y - a.y);
-            const distB = Math.hypot(player.x - b.x, player.y - b.y);
-            return distA - distB;
-        });
-
+        const { player } = gameState; let potentialTargets = [...gameState.enemies]; if (gameState.boss) potentialTargets.push(gameState.boss);
+        if (potentialTargets.length === 0) { player.lockedEnemy = null; return; }
+        potentialTargets.sort((a, b) => Math.hypot(player.x - a.x, player.y - a.y) - Math.hypot(player.x - b.x, player.y - b.y));
         const currentIndex = player.lockedEnemy ? potentialTargets.indexOf(player.lockedEnemy) : -1;
-        const nextIndex = (currentIndex + 1) % potentialTargets.length;
-        player.lockedEnemy = potentialTargets[nextIndex];
+        player.lockedEnemy = potentialTargets[(currentIndex + 1) % potentialTargets.length];
     }
 
     function update(dt) {
         if (gameState.mode !== 'PLAYING') return;
-
-        const { player, keys } = gameState;
-        
-        let moveX = 0; let moveY = 0;
-        if (keys['a'] || keys['A'] || keys['ArrowLeft']) moveX -= 1;
-        if (keys['d'] || keys['D'] || keys['ArrowRight']) moveX += 1;
-        if (keys['w'] || keys['W'] || keys['ArrowUp']) moveY += 1;
-        if (keys['s'] || keys['S'] || keys['ArrowDown']) moveY -= 1;
-        
-        const moveMagnitude = Math.sqrt(moveX * moveX + moveY * moveY);
-        if (moveMagnitude > 0) {
-            player.x += (moveX / moveMagnitude) * player.speed * dt;
-            player.y += (moveY / moveMagnitude) * player.speed * dt;
-        }
-
-        const bounds = {x: 22, y: 15};
-        player.x = Math.max(-bounds.x, Math.min(bounds.x, player.x));
-        player.y = Math.max(-bounds.y, Math.min(bounds.y, player.y));
-
-        player.shieldCooldown = Math.max(0, player.shieldCooldown - dt);
-        if (player.shieldCooldown === 0 && player.shield < player.maxShield) {
-            player.shield = Math.min(player.maxShield, player.shield + player.shieldRegen * dt);
-        }
-
-        if (player.lockedEnemy && (player.lockedEnemy.hp <= 0 || (!gameState.enemies.includes(player.lockedEnemy) && player.lockedEnemy !== gameState.boss))) {
-            player.lockedEnemy = null;
-        }
-        if (player.lockedEnemy) {
-            emitParticles(player.lockedEnemy.x, player.lockedEnemy.y, player.lockedEnemy.z, 1, [1, 1, 0, 1], 0, 0.1);
-        }
-
+        const { player, keys } = gameState; let moveX = 0; let moveY = 0;
+        if (keys['a'] || keys['A'] || keys['ArrowLeft']) moveX -= 1; if (keys['d'] || keys['D'] || keys['ArrowRight']) moveX += 1; if (keys['w'] || keys['W'] || keys['ArrowUp']) moveY += 1; if (keys['s'] || keys['S'] || keys['ArrowDown']) moveY -= 1;
+        const moveMagnitude = Math.hypot(moveX, moveY); if (moveMagnitude > 0) { player.x += (moveX / moveMagnitude) * player.speed * dt; player.y += (moveY / moveMagnitude) * player.speed * dt; }
+        const bounds = {x: 22, y: 15}; player.x = Math.max(-bounds.x, Math.min(bounds.x, player.x)); player.y = Math.max(-bounds.y, Math.min(bounds.y, player.y));
+        player.shieldCooldown = Math.max(0, player.shieldCooldown - dt); if (player.shieldCooldown === 0 && player.shield < player.maxShield) player.shield = Math.min(player.maxShield, player.shield + player.shieldRegen * dt);
+        if (player.lockedEnemy && (player.lockedEnemy.hp <= 0 || (!gameState.enemies.includes(player.lockedEnemy) && player.lockedEnemy !== gameState.boss))) player.lockedEnemy = null;
+        if (player.lockedEnemy) emitParticles(player.lockedEnemy.x, player.lockedEnemy.y, player.lockedEnemy.z, 1, [1, 1, 0, 1], 0, 0.1);
         let shootDirection = vec3.create();
-        if (player.lockedEnemy) {
-            vec3.set(shootDirection, player.lockedEnemy.x - player.x, player.lockedEnemy.y - player.y, player.lockedEnemy.z - player.z);
-            vec3.normalize(shootDirection, shootDirection);
-            player.rotation = Math.atan2(shootDirection[1], shootDirection[0]) - Math.PI / 2;
-        } else {
-            vec3.set(shootDirection, 0, 1, 0); // Aim "up" the screen
-            player.rotation = 0; 
-        }
-
+        if (player.lockedEnemy) { vec3.set(shootDirection, player.lockedEnemy.x - player.x, player.lockedEnemy.y - player.y, player.lockedEnemy.z - player.z); vec3.normalize(shootDirection, shootDirection); player.rotation = Math.atan2(shootDirection[1], shootDirection[0]) - Math.PI / 2; } else { vec3.set(shootDirection, 0, 1, 0); player.rotation = 0; }
         gameState.shootCooldown = Math.max(0, gameState.shootCooldown - dt);
-        
         if (keys[' '] && gameState.activePowerups.beam > 0) {
             if (!gameState.beamOscillator) { if (BGM_HANDLER.audioCtx) { gameState.beamOscillator = BGM_HANDLER.audioCtx.createOscillator(); const gainNode = BGM_HANDLER.audioCtx.createGain(); gameState.beamOscillator.connect(gainNode); gainNode.connect(BGM_HANDLER.audioCtx.destination); gameState.beamOscillator.type = 'sawtooth'; gameState.beamOscillator.frequency.setValueAtTime(50, BGM_HANDLER.audioCtx.currentTime); gainNode.gain.setValueAtTime(0.3, BGM_HANDLER.audioCtx.currentTime); gameState.beamOscillator.start(); } }
-            const beamDamage = 200 * (1 + (player.upgrades.damage - 1) * 0.25) * dt;
-            [...gameState.enemies, gameState.boss].filter(Boolean).forEach(e => { if (e.isInvulnerable) return; const dx = e.x - player.x; const dy = e.y - player.y; const pDist = (dx*shootDirection[0])+(dy*shootDirection[1]); if (pDist > 0) { const perpDist = Math.abs(dx*shootDirection[1]-dy*shootDirection[0]); if (perpDist < e.size+0.5) { e.hp -= beamDamage; emitParticles(e.x, e.y, e.z, 2, [1,.5,1,1], 5, .2); } } });
+            const beamDamage = 200 * (1 + (player.upgrades.damage - 1) * 0.25) * dt; [...gameState.enemies, gameState.boss].filter(Boolean).forEach(e => { if (e.isInvulnerable) return; const dx = e.x - player.x; const dy = e.y - player.y; const pDist = (dx*shootDirection[0])+(dy*shootDirection[1]); if (pDist > 0) { const perpDist = Math.abs(dx*shootDirection[1]-dy*shootDirection[0]); if (perpDist < e.size+0.5) { e.hp -= beamDamage; emitParticles(e.x, e.y, e.z, 2, [1,.5,1,1], 5, .2); } } });
         } else {
             if (gameState.beamOscillator) { gameState.beamOscillator.stop(); gameState.beamOscillator = null; }
             const fireRate = 0.2 / (1 + (player.upgrades.fireRate - 1) * 0.2) / (gameState.activePowerups.rapid > 0 ? 3 : 1);
-            if (keys[' '] && gameState.shootCooldown === 0) {
-                SFX.shoot(); gameState.shootCooldown = fireRate;
-                const bulletDamage = 10 * (1 + (player.upgrades.damage - 1) * 0.25);
-                const fireBullet = (dir, offsetX = 0) => { const shipAngle = player.rotation + Math.PI/2; const perpAngle = shipAngle + Math.PI/2; const startX = player.x + Math.cos(shipAngle) + Math.cos(perpAngle)*offsetX; const startY = player.y + Math.sin(shipAngle) + Math.sin(perpAngle)*offsetX; gameState.bullets.push({ x:startX, y:startY, z:player.z, size:0.5, damage:bulletDamage, vx:dir[0]*100, vy:dir[1]*100, vz:dir[2]*100 }); };
-                fireBullet(shootDirection);
-                if (gameState.activePowerups.multi > 0) { fireBullet(shootDirection, -0.8); fireBullet(shootDirection, 0.8); }
-            }
+            if (keys[' '] && gameState.shootCooldown === 0) { SFX.shoot(); gameState.shootCooldown = fireRate; const bulletDamage = 10 * (1 + (player.upgrades.damage - 1) * 0.25); const fireBullet = (dir, offsetX = 0) => { const shipAngle = player.rotation + Math.PI/2; const perpAngle = shipAngle + Math.PI/2; const startX = player.x + Math.cos(shipAngle) + Math.cos(perpAngle)*offsetX; const startY = player.y + Math.sin(shipAngle) + Math.sin(perpAngle)*offsetX; gameState.bullets.push({ x:startX, y:startY, z:player.z, size:0.5, damage:bulletDamage, vx:dir[0]*100, vy:dir[1]*100, vz:dir[2]*100 }); }; fireBullet(shootDirection); if (gameState.activePowerups.multi > 0) { fireBullet(shootDirection, -0.8); fireBullet(shootDirection, 0.8); } }
         }
-        
-        gameState.activePowerups.rapid = Math.max(0, gameState.activePowerups.rapid - dt);
-        gameState.activePowerups.multi = Math.max(0, gameState.activePowerups.multi - dt);
-        gameState.activePowerups.beam = Math.max(0, gameState.activePowerups.beam - dt);
+        gameState.activePowerups.rapid = Math.max(0, gameState.activePowerups.rapid - dt); gameState.activePowerups.multi = Math.max(0, gameState.activePowerups.multi - dt); gameState.activePowerups.beam = Math.max(0, gameState.activePowerups.beam - dt);
         if (gameState.activePowerups.beam === 0 && gameState.beamOscillator) { gameState.beamOscillator.stop(); gameState.beamOscillator = null; }
-
-        gameState.bullets.forEach(b => { b.x += b.vx * dt; b.y += b.vy * dt; b.z += b.vz * dt; });
-        gameState.bullets = gameState.bullets.filter(b => b.z > -150 && b.z < 50 && Math.abs(b.x) < 50 && Math.abs(b.y) < 50);
+        gameState.bullets.forEach(b => { b.x += b.vx * dt; b.y += b.vy * dt; b.z += b.vz * dt; }); gameState.bullets = gameState.bullets.filter(b => b.z > -150 && b.z < 50 && Math.abs(b.x) < 50 && Math.abs(b.y) < 50);
         gameState.enemyBullets.forEach(b => { b.x+=(b.vx||0)*dt; b.y+=(b.vy||0)*dt; b.z+=(b.vz||40)*dt; if(b.life) { b.life-=dt; if(b.life<=0) { b.hp=0; SFX.explosion(); for(let i=0;i<8;i++) { const angle=(i/8)*Math.PI*2; gameState.enemyBullets.push({x:b.x,y:b.y,z:b.z,size:0.8,type:'enemyBullet',vx:Math.cos(angle)*25,vy:Math.sin(angle)*25,vz:0}); } } } });
         gameState.enemyBullets = gameState.enemyBullets.filter(b => b.z < 20 && Math.abs(b.x) < 50 && Math.abs(b.y) < 50);
-        gameState.powerups.forEach(p => p.z += 10 * dt);
-        gameState.powerups = gameState.powerups.filter(p => p.z < 20);
-
+        gameState.powerups.forEach(p => p.z += 10 * dt); gameState.powerups = gameState.powerups.filter(p => p.z < 20);
         const config = gameState.stageConfig[gameState.stage];
         if (!config.isBossStage) {
-            gameState.timeSinceLastSpawn += dt;
-            if (gameState.timeSinceLastSpawn > config.spawnInterval) {
-                gameState.timeSinceLastSpawn = 0;
-                const type = config.enemyTypes[Math.floor(Math.random() * config.enemyTypes.length)];
-                const hpMap = { shooter:30, spiral:40, chaser:20, dodger:15, sniper:25, tank:80, mineLayer:40, bomber:20 };
-                gameState.enemies.push({ type, hp:hpMap[type], maxHp:hpMap[type], x:(Math.random()-.5)*bounds.x*2, y:(Math.random()-.5)*bounds.y*2, z:-100, size:type==='tank'?2.5:1.5, shootCooldown:Math.random()*2+1 });
-            }
-        } else if (config.isBossStage && !gameState.boss) {
-            let bossHp, bossSize, bossType;
-            if (gameState.stage === 13) { bossHp=15000; bossSize=8; bossType='theCore'; } else { bossHp=gameState.stage===5?3500:7500; bossSize=gameState.stage===5?5:7; bossType='boss'; }
-            gameState.boss = { type:bossType, x:0, y:5, z:-80, size:bossSize, hp:bossHp, maxHp:bossHp, phase:1, phaseTime:0, moveTarget:{x:0, y:5} };
-            document.getElementById('boss-hud').style.display = 'block'; setTimeout(() => document.getElementById('boss-hud').style.opacity = 1, 100);
-        }
-
+            gameState.timeSinceLastSpawn += dt; if (gameState.timeSinceLastSpawn > config.spawnInterval) { gameState.timeSinceLastSpawn = 0; const type = config.enemyTypes[Math.floor(Math.random() * config.enemyTypes.length)]; const hpMap = { shooter:30, spiral:40, chaser:20, dodger:15, sniper:25, tank:80, mineLayer:40, bomber:20 }; gameState.enemies.push({ type, hp:hpMap[type], maxHp:hpMap[type], x:(Math.random()-.5)*bounds.x*2, y:(Math.random()-.5)*bounds.y*2, z:-100, size:type==='tank'?2.5:1.5, shootCooldown:Math.random()*2+1 }); }
+        } else if (config.isBossStage && !gameState.boss) { let bossHp, bossSize, bossType; if (gameState.stage === 13) { bossHp=15000; bossSize=8; bossType='theCore'; } else { bossHp=gameState.stage===5?3500:7500; bossSize=gameState.stage===5?5:7; bossType='boss'; } gameState.boss = { type:bossType, x:0, y:5, z:-80, size:bossSize, hp:bossHp, maxHp:bossHp, phase:1, phaseTime:0, moveTarget:{x:0, y:5} }; document.getElementById('boss-hud').style.display = 'block'; setTimeout(() => document.getElementById('boss-hud').style.opacity = 1, 100); }
         gameState.enemies.forEach(e => {
             e.z += 25 * dt;
             if (e.type === 'shooter') { e.shootCooldown -= dt; if (e.shootCooldown <= 0) { gameState.enemyBullets.push({ x: e.x, y: e.y, z: e.z, size: 0.8, type: 'enemyBullet' }); e.shootCooldown = 3; } }
@@ -547,105 +343,150 @@
             if (e.type === 'bomber') { e.z -= 5 * dt; e.moveTimer = (e.moveTimer || 4) - dt; if (e.moveTimer <= 0) { e.hp = 0;} if(!e.vx) e.vx = Math.random() > 0.5 ? 15 : -15; e.x += e.vx * dt; e.shootCooldown -= dt; if (e.shootCooldown <= 0) { gameState.enemyBullets.push({x: e.x, y:e.y, z:e.z, size:0.5, type:'enemyBullet', vz: 20}); e.shootCooldown=0.2; } }
         });
         gameState.enemies = gameState.enemies.filter(e => e.z < 20);
-        
         if (gameState.boss) {
             const boss = gameState.boss;
             if (boss.type === 'theCore') {
-                boss.phaseTime += dt; boss.z = Math.min(0, boss.z + 15 * dt);
-                const hpRatio = boss.hp / boss.maxHp;
+                boss.phaseTime += dt; boss.z = Math.min(0, boss.z + 15 * dt); const hpRatio = boss.hp / boss.maxHp;
                 if (boss.phase === 1 && hpRatio < 0.75) { boss.phase = 2; boss.phaseTime = 0; boss.isInvulnerable = true; [[15,10], [-15,10], [15,-10], [-15,-10]].forEach(pos => gameState.enemies.push({type:'coreShield', hp:500, maxHp:500, x:pos[0], y:pos[1], z:-10, size:2})); }
                 if (boss.phase === 2 && gameState.enemies.filter(e => e.type === 'coreShield').length === 0) { boss.phase = 3; boss.isInvulnerable = false; boss.phaseTime = 0; }
-                if (boss.phase === 3 && hpRatio < 0.50) { boss.phase = 4; boss.phaseTime = 0; }
-                if (boss.phase === 4 && hpRatio < 0.25) { boss.phase = 5; boss.phaseTime = 0; }
+                if (boss.phase === 3 && hpRatio < 0.50) { boss.phase = 4; boss.phaseTime = 0; } if (boss.phase === 4 && hpRatio < 0.25) { boss.phase = 5; boss.phaseTime = 0; }
                 if (boss.phase === 1) { boss.shootCooldown=(boss.shootCooldown||0)-dt; if(boss.shootCooldown<=0) { boss.shootCooldown=1.2; for(let i=0;i<3;i++) gameState.enemies.push({type:'dodger', hp:10, maxHp:10, x:boss.x, y:boss.y, z:boss.z, size:1}); } }
                 if (boss.phase === 3) { boss.internalAngle=(boss.internalAngle||0)+5*dt; boss.shootCooldown=(boss.shootCooldown||0)-dt; if(boss.shootCooldown<=0) { boss.shootCooldown=0.05; const a=boss.internalAngle; gameState.enemyBullets.push({type:'enemyBullet', x:boss.x, y:boss.y, z:boss.z, vx:Math.cos(a)*40, vy:Math.sin(a)*40}); } }
-                if (boss.phase === 5) {
-                    boss.chargeTime = (boss.chargeTime || 0) + dt; boss.warningFlashTimer = (boss.warningFlashTimer || 0) - dt;
-                    if (boss.warningFlashTimer <= 0) {
-                        boss.warningFlashTimer = 0.5;
-                        if ((boss.warningFlashCount || 0) < 6) { boss.showWarningBox = !boss.showWarningBox; boss.warningFlashCount = (boss.warningFlashCount || 0) + 1; if(boss.showWarningBox) SFX.warning(); } else { boss.showWarningBox = false; }
-                    }
-                    if (boss.chargeTime > 3) { for(let i=0;i<20;i++) emitParticles(boss.x+(Math.random()-.5)*50, boss.y+(Math.random()-.5)*40, boss.z, 5, [1,.2,.2,1], 5, 1); damagePlayer(150*dt); }
-                    if (boss.chargeTime > 8) { boss.chargeTime = 0; boss.warningFlashCount = 0; boss.showWarningBox = false; }
-                }
-            } else { // Void Drifter Logic
-                boss.phaseTime+=dt; boss.x+=(boss.moveTarget.x-boss.x)*dt*.5; boss.y+=(boss.moveTarget.y-boss.y)*dt*.5; boss.z=Math.min(0,boss.z+15*dt);
-                if(boss.phaseTime>7){ boss.phaseTime=0; boss.phase=(boss.phase%3)+1; boss.moveTarget.x=(Math.random()-.5)*15; boss.moveTarget.y=Math.random()*10; }
-                if(boss.phase===1&&Math.random()<.2){ for(let i=-2;i<=2;i++) gameState.enemyBullets.push({type:'enemyBullet', x:boss.x+i*4, y:boss.y, z:boss.z, size:1}); }
-                if(boss.phase===2&&Math.random()<.1){ gameState.enemies.push({type:'chaser', hp:10, maxHp:10, x:boss.x, y:boss.y, z:boss.z, size:1}); }
-                if(boss.phase===3){ boss.novaCooldown=(boss.novaCooldown||0)-dt; if(boss.novaCooldown<=0){ boss.novaCooldown=1.5; const count=gameState.stage===5?24:32; for(let i=0;i<count;i++){ const angle=(i/count)*Math.PI*2; gameState.enemyBullets.push({type:'enemyBullet',x:boss.x,y:boss.y,z:boss.z,size:.8,vx:Math.cos(angle)*35,vy:Math.sin(angle)*35,vz:0});}}}
-            }
+                if (boss.phase === 5) { boss.chargeTime = (boss.chargeTime || 0) + dt; boss.warningFlashTimer = (boss.warningFlashTimer || 0) - dt; if (boss.warningFlashTimer <= 0) { boss.warningFlashTimer = 0.5; if ((boss.warningFlashCount || 0) < 6) { boss.showWarningBox = !boss.showWarningBox; boss.warningFlashCount = (boss.warningFlashCount || 0) + 1; if(boss.showWarningBox) SFX.warning(); } else { boss.showWarningBox = false; } } if (boss.chargeTime > 3) { for(let i=0;i<20;i++) emitParticles(boss.x+(Math.random()-.5)*50, boss.y+(Math.random()-.5)*40, boss.z, 5, [1,.2,.2,1], 5, 1); damagePlayer(150*dt); } if (boss.chargeTime > 8) { boss.chargeTime = 0; boss.warningFlashCount = 0; boss.showWarningBox = false; } }
+            } else { boss.phaseTime+=dt; boss.x+=(boss.moveTarget.x-boss.x)*dt*.5; boss.y+=(boss.moveTarget.y-boss.y)*dt*.5; boss.z=Math.min(0,boss.z+15*dt); if(boss.phaseTime>7){ boss.phaseTime=0; boss.phase=(boss.phase%3)+1; boss.moveTarget.x=(Math.random()-.5)*15; boss.moveTarget.y=Math.random()*10; } if(boss.phase===1&&Math.random()<.2){ for(let i=-2;i<=2;i++) gameState.enemyBullets.push({type:'enemyBullet', x:boss.x+i*4, y:boss.y, z:boss.z, size:1}); } if(boss.phase===2&&Math.random()<.1){ gameState.enemies.push({type:'chaser', hp:10, maxHp:10, x:boss.x, y:boss.y, z:boss.z, size:1}); } if(boss.phase===3){ boss.novaCooldown=(boss.novaCooldown||0)-dt; if(boss.novaCooldown<=0){ boss.novaCooldown=1.5; const count=gameState.stage===5?24:32; for(let i=0;i<count;i++){ const angle=(i/count)*Math.PI*2; gameState.enemyBullets.push({type:'enemyBullet',x:boss.x,y:boss.y,z:boss.z,size:.8,vx:Math.cos(angle)*35,vy:Math.sin(angle)*35,vz:0});}}} }
         }
-
         function checkCollision(objA, objB) { return Math.hypot(objA.x-objB.x, objA.y-objB.y, objA.z-objB.z) < (objA.size+objB.size); }
-
-        gameState.bullets.forEach(b => {
-            gameState.enemies.forEach(e => { if (checkCollision(b, e)) { SFX.hit(); b.hp = 0; e.hp -= b.damage; emitParticles(e.x, e.y, e.z, 5, [1, .5, .2, 1], 10, 0.5); } });
-            if (gameState.boss && !gameState.boss.isInvulnerable && checkCollision(b, gameState.boss)) { SFX.hit(); b.hp = 0; gameState.boss.hp -= b.damage; emitParticles(b.x, b.y, b.z, 3, [1, .2, .2, 1], 5, 0.3); }
-        });
-
-        gameState.enemies.filter(e => e.hp <= 0).forEach(e => {
-            SFX.explosion(); gameContainer.classList.add('shake'); setTimeout(() => gameContainer.classList.remove('shake'), 500);
-            emitParticles(e.x, e.y, e.z, 30, [1, .5, 0, 1], 20, 1);
-            const scoreVal = (e.maxHp || 20) * gameState.stage;
-            gameState.score += scoreVal; gameState.stageScore += scoreVal;
-            player.xp += (e.maxHp || 20) * gameState.stage * 1.5;
-            if (Math.random() < 0.15) { const types=['shield','rapid','multi','beam']; gameState.powerups.push({x:e.x,y:e.y,z:e.z,size:1.5,type:types[Math.floor(Math.random()*types.length)]}); }
-        });
-        
-        if (gameState.boss && gameState.boss.hp <= 0) {
-            const isFinalBoss = gameState.stage === 13;
-            const scoreVal = isFinalBoss ? 500000 : 50000;
-            gameState.score += scoreVal; gameState.stageScore += scoreVal;
-            player.xp += isFinalBoss ? 10000 : 1000;
-            emitParticles(gameState.boss.x, gameState.boss.y, gameState.boss.z, 500, [1,1,1,1], 50, 5);
-            gameState.boss = null;
-            if (isFinalBoss) { setGameMode('VICTORY_SCREEN'); } else if (gameState.stageConfig[gameState.stage + 1]) { gameState.stage++; setGameMode('UPGRADE_SCREEN'); } else { setGameMode('GAME_OVER'); }
-        }
-
-        function damagePlayer(amount) {
-            SFX.playerHit(); player.shieldCooldown = 2.0;
-            const shieldDamage = Math.min(player.shield, amount);
-            player.shield -= shieldDamage;
-            player.hp -= (amount - shieldDamage);
-            emitParticles(player.x, player.y, player.z, 20, [.2, .5, 1, 1], 15, 0.8);
-            if (player.hp <= 0) setGameMode('GAME_OVER');
-        }
-
+        gameState.bullets.forEach(b => { gameState.enemies.forEach(e => { if (checkCollision(b, e)) { SFX.hit(); b.hp = 0; e.hp -= b.damage; emitParticles(e.x, e.y, e.z, 5, [1, .5, .2, 1], 10, 0.5); } }); if (gameState.boss && !gameState.boss.isInvulnerable && checkCollision(b, gameState.boss)) { SFX.hit(); b.hp = 0; gameState.boss.hp -= b.damage; emitParticles(b.x, b.y, b.z, 3, [1, .2, .2, 1], 5, 0.3); } });
+        gameState.enemies.filter(e => e.hp <= 0).forEach(e => { SFX.explosion(); gameContainer.classList.add('shake'); setTimeout(() => gameContainer.classList.remove('shake'), 500); emitParticles(e.x, e.y, e.z, 30, [1, .5, 0, 1], 20, 1); const scoreVal = (e.maxHp || 20) * gameState.stage; gameState.score += scoreVal; gameState.stageScore += scoreVal; player.xp += (e.maxHp || 20) * gameState.stage * 1.5; if (Math.random() < 0.15) { const types=['shield','rapid','multi','beam']; gameState.powerups.push({x:e.x,y:e.y,z:e.z,size:1.5,type:types[Math.floor(Math.random()*types.length)]}); } });
+        if (gameState.boss && gameState.boss.hp <= 0) { const isFinalBoss = gameState.stage === 13; const scoreVal = isFinalBoss ? 500000 : 50000; gameState.score += scoreVal; gameState.stageScore += scoreVal; player.xp += isFinalBoss ? 10000 : 1000; emitParticles(gameState.boss.x, gameState.boss.y, gameState.boss.z, 500, [1,1,1,1], 50, 5); gameState.boss = null; if (isFinalBoss) { setGameMode('VICTORY_SCREEN'); } else if (gameState.stageConfig[gameState.stage + 1]) { gameState.stage++; setGameMode('UPGRADE_SCREEN'); } else { setGameMode('GAME_OVER'); } }
+        function damagePlayer(amount) { SFX.playerHit(); player.shieldCooldown = 2.0; const shieldDamage = Math.min(player.shield, amount); player.shield -= shieldDamage; player.hp -= (amount - shieldDamage); emitParticles(player.x, player.y, player.z, 20, [.2, .5, 1, 1], 15, 0.8); if (player.hp <= 0) setGameMode('GAME_OVER'); }
         gameState.enemyBullets.forEach(b => { if (checkCollision(b, player)) { b.hp = 0; damagePlayer(10); } });
         gameState.enemies.forEach(e => { if (checkCollision(e, player)) { e.hp = 0; damagePlayer(25); } });
-        
         gameState.powerups.forEach(p => { if (Math.hypot(p.x-player.x,p.y-player.y,p.z-player.z)<player.size+p.size+1.5) { SFX.powerup();p.hp=0; if(p.type==='shield')player.shield=Math.min(player.maxShield,player.shield+50); if(p.type==='rapid')gameState.activePowerups.rapid+=5; if(p.type==='multi')gameState.activePowerups.multi+=8; if(p.type==='beam')gameState.activePowerups.beam+=6; } });
-
-        gameState.bullets = gameState.bullets.filter(o => o.hp !== 0);
-        gameState.enemies = gameState.enemies.filter(o => o.hp > 0);
-        gameState.enemyBullets = gameState.enemyBullets.filter(o => o.hp !== 0);
-        gameState.powerups = gameState.powerups.filter(o => o.hp !== 0);
-        
+        gameState.bullets = gameState.bullets.filter(o => o.hp !== 0); gameState.enemies = gameState.enemies.filter(o => o.hp > 0); gameState.enemyBullets = gameState.enemyBullets.filter(o => o.hp !== 0); gameState.powerups = gameState.powerups.filter(o => o.hp !== 0);
         if (player.xp >= player.xpToNext) { player.xp -= player.xpToNext; player.xpToNext *= 1.5; player.upgradePoints++; }
         if (config && !config.isBossStage && gameState.stageScore >= config.goal) { if (gameState.stageConfig[gameState.stage + 1]) { gameState.stage++; setGameMode('UPGRADE_SCREEN'); } }
         updateParticles(dt);
     }
     
-    // --- 6. MAIN LOOP & INITIALIZATION ---
-    let mainShader, particleShader;
-    let particlePosBuffer, particleColorBuffer;
+    // --- 6. SAVE/LOAD SYSTEM ---
+    const SAVE_KEY = 'starfallSaveData';
+
+    function saveGame() {
+        const dataToSave = {
+            player: {
+                maxHp: gameState.player.maxHp,
+                maxShield: gameState.player.maxShield,
+                upgrades: gameState.player.upgrades,
+                upgradePoints: gameState.player.upgradePoints,
+                xp: gameState.player.xp,
+                xpToNext: gameState.player.xpToNext,
+            },
+            score: gameState.score,
+            stage: gameState.stage,
+            upgradeCosts: gameState.upgradeCosts
+        };
+        try {
+            const json = JSON.stringify(dataToSave);
+            localStorage.setItem(SAVE_KEY, json);
+            alert("Game Saved!");
+        } catch (e) {
+            console.error("Failed to save game:", e);
+            alert("Error: Could not save game.");
+        }
+    }
+
+    function loadGame(saveData) {
+        let loadedData;
+        if (saveData) {
+            loadedData = saveData;
+        } else {
+            const savedJSON = localStorage.getItem(SAVE_KEY);
+            if (!savedJSON) {
+                alert("No save data found.");
+                return;
+            }
+            try {
+                loadedData = JSON.parse(savedJSON);
+            } catch (e) {
+                console.error("Failed to parse save data:", e);
+                alert("Error: Save data is corrupted.");
+                return;
+            }
+        }
+        
+        initGame(); // Reset to a clean slate
+
+        // Apply saved data
+        Object.assign(gameState.player, loadedData.player);
+        gameState.score = loadedData.score;
+        gameState.stage = loadedData.stage;
+        gameState.upgradeCosts = loadedData.upgradeCosts;
+
+        // Restore health and shield to max and reset stage progress
+        gameState.player.hp = gameState.player.maxHp;
+        gameState.player.shield = gameState.player.maxShield;
+        gameState.stageScore = 0;
+        
+        alert("Game Loaded!");
+        BGM_HANDLER.play(gameState.stage);
+        setGameMode('PLAYING');
+    }
+
+    function exportGame() {
+        const savedJSON = localStorage.getItem(SAVE_KEY);
+        if (!savedJSON) {
+            alert("No save data to export. Please save the game first.");
+            return;
+        }
+        const blob = new Blob([savedJSON], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'starfall_save.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function importGame(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                // Basic validation
+                if (importedData.player && importedData.stage) {
+                    localStorage.setItem(SAVE_KEY, e.target.result); // Save imported file as current save
+                    loadGame(importedData);
+                } else {
+                    alert("Invalid save file format.");
+                }
+            } catch (err) {
+                console.error("Error reading or parsing imported file:", err);
+                alert("Could not import save file. It may be corrupted.");
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = ''; // Reset input to allow re-importing the same file
+    }
+
+    // --- 7. MAIN LOOP & INITIALIZATION ---
+    let mainShader, particleShader, particlePosBuffer, particleColorBuffer;
 
     function render(now) {
         now *= 0.001;
         const deltaTime = Math.min(0.1, now - (gameState.lastTime || now));
         gameState.lastTime = now;
-        
         gl.clearColor(0,0,.05,1); gl.clearDepth(1.0); gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
-
         const { player, keys } = gameState;
         const pMatrix = mat4.create(); mat4.perspective(pMatrix, 45*Math.PI/180, gl.canvas.clientWidth/gl.canvas.clientHeight, .1, 200);
         const vMatrix = mat4.create(); mat4.lookAt(vMatrix, [gameState.camera.x, gameState.camera.y, gameState.camera.z], [gameState.camera.x, gameState.camera.y, 0], [0,1,0]);
-
         if(gameState.mode === 'PLAYING') update(deltaTime);
-
         drawDynamicObjects(particleShader, gameState.stars.map(s => ({...s, z: (s.z - player.y * 0.1 * s.depth) % 100})), vMatrix, pMatrix, gl.POINTS);
-        
         if(gameState.mode === 'PLAYING') {
             drawModelAt(models.player, player.x, player.y, player.z, vMatrix, pMatrix, player.rotation, [0,0,1]);
             emitParticles(player.x, player.y - 0.5, player.z, 1, [0.2,0.5,1,0.5], 2, 0.5);
@@ -653,47 +494,29 @@
             gameState.enemies.forEach(e => drawModelAt(models[e.type], e.x, e.y, e.z, vMatrix, pMatrix, now, [0,1,0], [e.size/1.5, e.size/1.5, e.size/1.5]));
             gameState.enemyBullets.forEach(b => drawModelAt(models[b.type], b.x, b.y, b.z, vMatrix, pMatrix));
             gameState.powerups.forEach(p => drawModelAt(models['powerup'+p.type.charAt(0).toUpperCase()+p.type.slice(1)], p.x, p.y, p.z, vMatrix, pMatrix, now, [0,1,0]));
-            if(gameState.boss) {
-                drawModelAt(models[gameState.boss.type], gameState.boss.x, gameState.boss.y, gameState.boss.z, vMatrix, pMatrix, now*.2, [.3,.5,.2]);
-                if (gameState.boss.showWarningBox) drawModelAt(models.warningBox, gameState.boss.x, gameState.boss.y, gameState.boss.z, vMatrix, pMatrix, 0, [0,0,1], [25, 20, 1]);
-            }
+            if(gameState.boss) { drawModelAt(models[gameState.boss.type], gameState.boss.x, gameState.boss.y, gameState.boss.z, vMatrix, pMatrix, now*.2, [.3,.5,.2]); if (gameState.boss.showWarningBox) drawModelAt(models.warningBox, gameState.boss.x, gameState.boss.y, gameState.boss.z, vMatrix, pMatrix, 0, [0,0,1], [25, 20, 1]); }
             if(keys[' '] && gameState.activePowerups.beam > 0) { const angle = player.rotation + Math.PI/2; drawModelAt(models.beam, player.x + Math.cos(angle), player.y + Math.sin(angle), player.z, vMatrix, pMatrix, player.rotation, [0,0,1], [1,150,1]); }
         }
-
         if(particles.length > 0) drawDynamicObjects(particleShader, particles, vMatrix, pMatrix, gl.POINTS);
-        updateUI();
-        requestAnimationFrame(render);
+        updateUI(); requestAnimationFrame(render);
     }
     
     function drawModel(model, mvMatrix, pMatrix) {
-        gl.useProgram(mainShader.prog);
-        gl.uniformMatrix4fv(mainShader.uniforms.pMatrix, false, pMatrix);
-        gl.uniformMatrix4fv(mainShader.uniforms.mvMatrix, false, mvMatrix);
-        gl.bindBuffer(gl.ARRAY_BUFFER, model.posBuffer);
-        gl.vertexAttribPointer(mainShader.attribs.vPos, 3, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(mainShader.attribs.vPos);
-        gl.bindBuffer(gl.ARRAY_BUFFER, model.colorBuffer);
-        gl.vertexAttribPointer(mainShader.attribs.vColor, 4, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(mainShader.attribs.vColor);
+        gl.useProgram(mainShader.prog); gl.uniformMatrix4fv(mainShader.uniforms.pMatrix, false, pMatrix); gl.uniformMatrix4fv(mainShader.uniforms.mvMatrix, false, mvMatrix);
+        gl.bindBuffer(gl.ARRAY_BUFFER, model.posBuffer); gl.vertexAttribPointer(mainShader.attribs.vPos, 3, gl.FLOAT, false, 0, 0); gl.enableVertexAttribArray(mainShader.attribs.vPos);
+        gl.bindBuffer(gl.ARRAY_BUFFER, model.colorBuffer); gl.vertexAttribPointer(mainShader.attribs.vColor, 4, gl.FLOAT, false, 0, 0); gl.enableVertexAttribArray(mainShader.attribs.vColor);
         gl.drawArrays(gl.TRIANGLES, 0, model.pos.length / 3);
     }
-    
     function drawModelAt(model, x, y, z, vMatrix, pMatrix, rotationAngle=0, rotationAxis=[0,1,0], scale=[1,1,1]) {
-        if (!model) return;
-        const mv = mat4.create();
-        mat4.multiply(mv, vMatrix, mat4.fromTranslation(mat4.create(), [x,y,z]));
-        if(rotationAngle !== 0) mat4.rotate(mv, mv, rotationAngle, rotationAxis);
-        if(scale[0]!==1||scale[1]!==1||scale[2]!==1) mat4.scale(mv, mv, scale);
+        if (!model) return; const mv = mat4.create(); mat4.multiply(mv, vMatrix, mat4.fromTranslation(mat4.create(), [x,y,z]));
+        if(rotationAngle !== 0) mat4.rotate(mv, mv, rotationAngle, rotationAxis); if(scale[0]!==1||scale[1]!==1||scale[2]!==1) mat4.scale(mv, mv, scale);
         drawModel(model, mv, pMatrix);
     }
-
     function drawDynamicObjects(shader, objects, vMatrix, pMatrix, mode) {
         if(objects.length === 0) return;
-        const posData = new Float32Array(objects.length*4);
-        const colorData = new Float32Array(objects.length*4);
+        const posData = new Float32Array(objects.length*4); const colorData = new Float32Array(objects.length*4);
         objects.forEach((obj, i) => { posData.set([obj.x, obj.y, obj.z, obj.size], i*4); const lifeFade = obj.maxLife ? obj.life/obj.maxLife : 1; colorData.set([obj.color[0], obj.color[1], obj.color[2], obj.color[3]*lifeFade], i*4); });
-        gl.useProgram(shader.prog);
-        gl.bindBuffer(gl.ARRAY_BUFFER, particlePosBuffer); gl.bufferData(gl.ARRAY_BUFFER, posData, gl.DYNAMIC_DRAW); gl.vertexAttribPointer(shader.attribs.vPos, 4, gl.FLOAT, false, 0, 0); gl.enableVertexAttribArray(shader.attribs.vPos);
+        gl.useProgram(shader.prog); gl.bindBuffer(gl.ARRAY_BUFFER, particlePosBuffer); gl.bufferData(gl.ARRAY_BUFFER, posData, gl.DYNAMIC_DRAW); gl.vertexAttribPointer(shader.attribs.vPos, 4, gl.FLOAT, false, 0, 0); gl.enableVertexAttribArray(shader.attribs.vPos);
         gl.bindBuffer(gl.ARRAY_BUFFER, particleColorBuffer); gl.bufferData(gl.ARRAY_BUFFER, colorData, gl.DYNAMIC_DRAW); gl.vertexAttribPointer(shader.attribs.vColor, 4, gl.FLOAT, false, 0, 0); gl.enableVertexAttribArray(shader.attribs.vColor);
         gl.uniformMatrix4fv(shader.uniforms.pMatrix, false, pMatrix); gl.uniformMatrix4fv(shader.uniforms.vMatrix, false, vMatrix);
         gl.drawArrays(mode, 0, objects.length);
@@ -702,12 +525,9 @@
     function updateUI() {
         if (gameState.mode !== 'PLAYING' && gameState.mode !== 'PAUSED') return;
         const { player } = gameState;
-        document.getElementById('health-value').textContent = Math.max(0, Math.ceil(player.hp));
-        document.getElementById('shield-value').textContent = Math.max(0, Math.ceil(player.shield));
-        document.getElementById('xp-bar-inner').style.width = `${player.xp/player.xpToNext*100}%`;
-        document.getElementById('score').textContent = gameState.score;
-        document.getElementById('stage').textContent = gameState.stage;
-        const config = gameState.stageConfig[gameState.stage];
+        document.getElementById('health-value').textContent = Math.max(0, Math.ceil(player.hp)); document.getElementById('shield-value').textContent = Math.max(0, Math.ceil(player.shield));
+        document.getElementById('xp-bar-inner').style.width = `${player.xp/player.xpToNext*100}%`; document.getElementById('score').textContent = gameState.score;
+        document.getElementById('stage').textContent = gameState.stage; const config = gameState.stageConfig[gameState.stage];
         const goalTotalEl = document.getElementById('goal-total');
         if(config.isBossStage){ goalTotalEl.parentElement.style.display = 'none'; } else { goalTotalEl.parentElement.style.display = 'block'; goalTotalEl.textContent = config.goal; document.getElementById('goal-score').textContent = gameState.stageScore; }
         const timersEl = document.getElementById('powerup-timers'); timersEl.innerHTML = '';
@@ -720,39 +540,26 @@
 
     function setGameMode(mode) {
         if(gameState.beamOscillator) { gameState.beamOscillator.stop(); gameState.beamOscillator = null; }
-
-        if (mode === 'PAUSED') { BGM_HANDLER.pause(); } 
-        else if (gameState.mode === 'PAUSED' && mode === 'PLAYING') { BGM_HANDLER.resume(); }
-
+        if (mode === 'PAUSED') { BGM_HANDLER.pause(); } else if (gameState.mode === 'PAUSED' && mode === 'PLAYING') { BGM_HANDLER.resume(); }
         gameState.mode = mode;
         ['start-screen','hud','upgrade-screen','game-over-screen','victory-screen','pause-screen'].forEach(id => document.getElementById(id).style.display = 'none');
-        document.getElementById('boss-hud').style.opacity = 0;
-        setTimeout(() => document.getElementById('boss-hud').style.display = 'none', 1000);
+        document.getElementById('boss-hud').style.opacity = 0; setTimeout(() => document.getElementById('boss-hud').style.display = 'none', 1000);
 
         if (mode === 'START_SCREEN') { document.getElementById('start-screen').style.display = 'flex'; } 
-        else if (mode === 'PLAYING') { gameState.stageScore = gameState.stageScore || 0; document.getElementById('hud').style.display = 'block'; if(gameState.boss) { document.getElementById('boss-hud').style.display = 'block'; setTimeout(() => document.getElementById('boss-hud').style.opacity = 1, 100); } } 
+        else if (mode === 'PLAYING') { document.getElementById('hud').style.display = 'block'; if(gameState.boss) { document.getElementById('boss-hud').style.display = 'block'; setTimeout(() => document.getElementById('boss-hud').style.opacity = 1, 100); } } 
         else if (mode === 'PAUSED') { document.getElementById('hud').style.display = 'block'; document.getElementById('pause-screen').style.display = 'flex'; }
-        else if (mode === 'UPGRADE_SCREEN') { SFX.stageComplete(); document.getElementById('upgrade-screen').style.display = 'flex'; document.getElementById('upgrade-points').textContent = gameState.player.upgradePoints; updateUpgradeButtons(); BGM_HANDLER.play(gameState.stage + 1); } 
+        else if (mode === 'UPGRADE_SCREEN') { SFX.stageComplete(); document.getElementById('upgrade-screen').style.display = 'flex'; document.getElementById('upgrade-points').textContent = gameState.player.upgradePoints; updateUpgradeButtons(); BGM_HANDLER.play(gameState.stage); } 
         else if (mode === 'GAME_OVER') { BGM_HANDLER.stop(); document.getElementById('game-over-screen').style.display = 'flex'; document.getElementById('final-score').textContent = gameState.score; } 
         else if (mode === 'VICTORY_SCREEN') { BGM_HANDLER.stop(); document.getElementById('victory-screen').style.display = 'flex'; document.getElementById('victory-final-score').textContent = gameState.score; }
     }
     
     function updateUpgradeButtons() {
-        const { player, upgradeCosts } = gameState;
-        const canAfford = (cost) => player.upgradePoints >= cost;
+        const { player, upgradeCosts } = gameState; const canAfford = (cost) => player.upgradePoints >= cost;
         const updateBtn = (id, type) => { const btn=document.getElementById(id); btn.disabled=!canAfford(upgradeCosts[type]); btn.querySelector('span').textContent = `(Cost: ${upgradeCosts[type]} XP)`; };
         updateBtn('upgrade-firerate','fireRate'); updateBtn('upgrade-damage','damage'); updateBtn('upgrade-shield','maxShield'); updateBtn('upgrade-health','maxHp');
     }
-    
     function applyUpgrade(type) {
-        const cost = gameState.upgradeCosts[type];
-        if (gameState.player.upgradePoints >= cost) {
-            gameState.player.upgradePoints -= cost; gameState.player.upgrades[type]++; gameState.upgradeCosts[type] = Math.floor(gameState.upgradeCosts[type]*1.5);
-            if(type === 'maxShield') gameState.player.maxShield += 25;
-            if(type === 'maxHp') gameState.player.maxHp += 25;
-            document.getElementById('upgrade-points').textContent = gameState.player.upgradePoints;
-            updateUpgradeButtons();
-        }
+        const cost = gameState.upgradeCosts[type]; if (gameState.player.upgradePoints >= cost) { gameState.player.upgradePoints -= cost; gameState.player.upgrades[type]++; gameState.upgradeCosts[type] = Math.floor(gameState.upgradeCosts[type]*1.5); if(type === 'maxShield') gameState.player.maxShield += 25; if(type === 'maxHp') gameState.player.maxHp += 25; document.getElementById('upgrade-points').textContent = gameState.player.upgradePoints; updateUpgradeButtons(); }
     }
 
     function initGame() {
@@ -762,39 +569,29 @@
         particlePosBuffer = gl.createBuffer(); particleColorBuffer = gl.createBuffer();
         for (const key in models) { models[key].posBuffer=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, models[key].posBuffer); gl.bufferData(gl.ARRAY_BUFFER, models[key].pos, gl.STATIC_DRAW); models[key].colorBuffer=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, models[key].colorBuffer); gl.bufferData(gl.ARRAY_BUFFER, models[key].colors, gl.STATIC_DRAW); }
         gameState = createInitialState();
-        for(let i=0; i<500; i++) { gameState.stars.push({ x:(Math.random()-.5)*200, y:(Math.random()-.5)*200, z:(Math.random()-.5)*200, size:Math.random()*2+.5, depth:Math.random()*.5+.1, color:[.8,.8,1,1] }); }
+        if (gameState.stars.length === 0) { for(let i=0; i<500; i++) { gameState.stars.push({ x:(Math.random()-.5)*200, y:(Math.random()-.5)*200, z:(Math.random()-.5)*200, size:Math.random()*2+.5, depth:Math.random()*.5+.1, color:[.8,.8,1,1] }); } }
     }
 
     function setupEventListeners() {
         document.addEventListener('keydown', e => {
-            gameState.keys[e.key] = true;
-            BGM_HANDLER.init(); // Initialize on first interaction
+            gameState.keys[e.key] = true; BGM_HANDLER.init();
             if (e.key === 'Tab') { e.preventDefault(); cycleTarget(); }
             if (e.key === 'c' || e.key === 'C') { gameState.player.lockedEnemy = null; }
-            if (e.key === 'p' || e.key === 'P') {
-                e.preventDefault();
-                if (gameState.mode === 'PLAYING') {
-                    gameState.previousMode = 'PLAYING';
-                    setGameMode('PAUSED');
-                } else if (gameState.mode === 'PAUSED') {
-                    setGameMode(gameState.previousMode);
-                }
-            }
+            if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') { e.preventDefault(); if (gameState.mode === 'PLAYING') { gameState.previousMode = 'PLAYING'; setGameMode('PAUSED'); } else if (gameState.mode === 'PAUSED') { setGameMode(gameState.previousMode); } }
         });
         document.addEventListener('keyup', e => { gameState.keys[e.key]=false; if (e.key===' '&&gameState.beamOscillator) { gameState.beamOscillator.stop(); gameState.beamOscillator = null; } });
-
         const startGame = () => { initGame(); BGM_HANDLER.play(1); gameState.stageScore=0; setGameMode('PLAYING'); };
         
         document.getElementById('start-button').addEventListener('click', startGame);
         document.getElementById('restart-button').addEventListener('click', startGame);
         document.getElementById('victory-restart-button').addEventListener('click', startGame);
-        
-        document.getElementById('continue-button').addEventListener('click', () => {
-            gameState.player.hp = gameState.player.maxHp;
-            gameState.player.shield = gameState.player.maxShield;
-            gameState.stageScore = 0;
-            setGameMode('PLAYING');
-        });
+        document.getElementById('load-start-button').addEventListener('click', () => loadGame());
+        document.getElementById('resume-button').addEventListener('click', () => setGameMode('PLAYING'));
+        document.getElementById('save-button').addEventListener('click', saveGame);
+        document.getElementById('export-button').addEventListener('click', exportGame);
+        document.getElementById('import-input').addEventListener('change', importGame);
+
+        document.getElementById('continue-button').addEventListener('click', () => { gameState.player.hp = gameState.player.maxHp; gameState.player.shield = gameState.player.maxShield; gameState.stageScore = 0; BGM_HANDLER.play(gameState.stage); setGameMode('PLAYING'); });
         document.getElementById('upgrade-firerate').addEventListener('click', () => applyUpgrade('fireRate'));
         document.getElementById('upgrade-damage').addEventListener('click', () => applyUpgrade('damage'));
         document.getElementById('upgrade-shield').addEventListener('click', () => applyUpgrade('maxShield'));
