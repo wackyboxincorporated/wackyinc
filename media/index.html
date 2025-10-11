@@ -6,7 +6,6 @@
     <title>wb-player 2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
@@ -458,7 +457,6 @@
             </div>
         </div>
 
-        <!-- Hidden audio element for Time Stretch mode -->
         <audio id="audioPlayer" loop>
             <source src="https://wackybox.org/19-4.flac" type="audio/flac">
             Your browser does not support flac files... what the hell are you loading this on?
@@ -468,7 +466,6 @@
             Source: <a href="https://wackybox.org/19-4.flac" target="_blank" class="text-red-700 hover:underline">https://wackybox.org/19-4.flac</a>
         </div>
 
-        <!-- Custom Player Controls -->
         <div class="custom-controls">
             <div id="playPauseButton" class="play-pause-button">
                 <i class="fas fa-play"></i>
@@ -554,6 +551,27 @@
         let currentAudioSource = { url: '', isLocal: false, file: null }; // To track the loaded audio source
 
         let isDraggingProgressBar = false; // Flag to indicate if the user is dragging the progress bar
+
+        /**
+         * Parses the query parameter from the URL, specifically looking for `?={url}`.
+         * The standard URLSearchParams doesn't easily handle a single nameless parameter like `?={url}`.
+         * We look for the first occurrence of '?' followed immediately by '='.
+         * @returns {string | null} The decoded URL string from the query, or null if not found.
+         */
+        function getPreloadUrl() {
+            const url = window.location.search; // Gets the query string, e.g., "?=https://..."
+            if (url.startsWith('?=')) {
+                // Decode the URL part after "?=" and trim any quotes
+                const encodedUrl = url.substring(2);
+                let decodedUrl = decodeURIComponent(encodedUrl);
+                // The user example uses quotes: ?="https://...". We strip them.
+                if (decodedUrl.startsWith('"') && decodedUrl.endsWith('"')) {
+                    decodedUrl = decodedUrl.substring(1, decodedUrl.length - 1);
+                }
+                return decodedUrl.trim();
+            }
+            return null;
+        }
 
         /**
          * Displays a message to the user.
@@ -736,6 +754,41 @@
             startTime = 0;
         }
 
+        // Function to handle loading an audio from a URL
+        async function loadAudioFromUrl(url) {
+            stopAllAudio(); // Stop any current playback
+            currentOffset = 0; // Reset offset for new load
+            audioUrlInput.value = url; // Update the input box with the full URL
+
+            // Check if the URL has a valid audio extension
+            const audioExtensions = ['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a', '.opus'];
+            const isAudioUrl = audioExtensions.some(ext => url.toLowerCase().endsWith(ext));
+
+            if (!isAudioUrl) {
+                showMessage("Invalid URL format. Please provide a direct link to an audio file (e.g., .mp3, .flac).", "error");
+                return;
+            }
+
+            try {
+                showMessage(`Attempting to load: ${url}`, "info");
+                // Load for HTML Audio element
+                audioPlayer.src = url;
+                audioPlayer.load();
+
+                // Load for Web Audio API
+                await loadAudioForWebAudio(url, false, null);
+                
+                updateAudioDisplay(url);
+
+                // Autoplay is likely to be prevented by browsers, so just load and update display
+                showMessage("Audio pre-loaded. Click play to start.", "success");
+
+            } catch (error) {
+                console.error("URL load failed:", error);
+                showMessage("Failed to load audio. Please check the URL or try a different file.", "error");
+            }
+        }
+
         // Event listener for the "Load from URL" button
         loadUrlButton.addEventListener('click', async () => {
             let urlInput = audioUrlInput.value.trim();
@@ -890,15 +943,24 @@
             infoPage.classList.remove('active');
         });
 
-        // Set initial audio source display when the window loads
+        // Set initial audio source display and pre-load if URL parameter is present
         window.onload = () => {
-            const initialSourceElement = audioPlayer.querySelector('source');
-            if (initialSourceElement) {
-                const initialSrc = initialSourceElement.src;
-                updateAudioDisplay(initialSrc);
-                // Also load this into Web Audio API buffer initially
-                loadAudioForWebAudio(initialSrc, false, null).catch(e => console.error("Initial Web Audio load failed:", e));
+            const preloadUrl = getPreloadUrl();
+
+            if (preloadUrl) {
+                // If a preload URL is provided, load it instead of the default source
+                loadAudioFromUrl(preloadUrl);
+            } else {
+                // Otherwise, proceed with the default source setup
+                const initialSourceElement = audioPlayer.querySelector('source');
+                if (initialSourceElement) {
+                    const initialSrc = initialSourceElement.src;
+                    updateAudioDisplay(initialSrc);
+                    // Also load this into Web Audio API buffer initially
+                    loadAudioForWebAudio(initialSrc, false, null).catch(e => console.error("Initial Web Audio load failed:", e));
+                }
             }
+
             // Initialize volume slider
             volumeSlider.value = audioPlayer.volume;
             // Initialize speed slider and display
@@ -906,6 +968,9 @@
             speedValueDisplay.textContent = `${audioPlayer.playbackRate.toFixed(2)}x`;
             // Initialize toggle state (default is Time Stretch, so checkbox is unchecked)
             speedModeToggle.checked = false; 
+            
+            // Initial volume icon update
+            updateVolumeIcon();
         };
 
         // --- Custom Player Controls Logic ---
@@ -938,7 +1003,7 @@
                 }
                 
                 // If sourceNode is null, or it was stopped and needs a new one
-                if (!sourceNode || audioContext.currentTime - startTime + currentOffset >= audioBuffer.duration) {
+                if (!sourceNode || audioContext.currentTime - startTime + currentOffset >= (audioBuffer ? audioBuffer.duration : 0)) {
                     playWebAudio();
                 } else {
                     pauseWebAudio();
@@ -1186,13 +1251,17 @@
                 }
             } else {
                 // If not playing, just update the current time display
+                let duration = 1;
                 if (currentSpeedMode === 'timeStretch') {
                     audioPlayer.currentTime = currentPlaybackTime;
+                    duration = audioPlayer.duration;
                 } else {
                     currentOffset = currentPlaybackTime;
+                    duration = audioBuffer ? audioBuffer.duration : 1;
                 }
+                
                 currentTimeDisplay.textContent = formatTime(currentPlaybackTime);
-                progressBar.style.width = `${(currentPlaybackTime / (currentSpeedMode === 'timeStretch' ? audioPlayer.duration : (audioBuffer ? audioBuffer.duration : 1))) * 100}%`;
+                progressBar.style.width = `${(currentPlaybackTime / duration) * 100}%`;
             }
 
             // Update volume and speed controls to reflect current mode's values
@@ -1201,7 +1270,8 @@
                 speedSlider.value = audioPlayer.playbackRate;
             } else {
                 volumeSlider.value = gainNode ? gainNode.gain.value : 1;
-                speedSlider.value = sourceNode ? sourceNode.playbackRate.value : 1;
+                // Note: The sourceNode is recreated on playWebAudio(), so we use the slider value as the source
+                speedSlider.value = parseFloat(speedSlider.value); 
             }
             speedValueDisplay.textContent = `${parseFloat(speedSlider.value).toFixed(2)}x`;
             updateVolumeIcon();
@@ -1221,9 +1291,6 @@
             speedValueDisplay.textContent = `${defaultSpeed.toFixed(2)}x`;
             showMessage("Speed reset to 1.00x", "info");
         });
-
-        // Initial volume icon update
-        updateVolumeIcon();
     </script>
 </body>
 </html>
