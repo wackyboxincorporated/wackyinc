@@ -1,0 +1,1489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>w3D 0.8a - i7 Offload: Data Textures & Constraints (Fixed)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+        :root {
+            --primary-color: #0f0;
+            --bg-color: #000;
+            --sidebar-bg: rgba(0, 20, 0, 0.85);
+            --border-color: #0f0;
+            --highlight-color: #ff0;
+        }
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            font-family: 'VT323', monospace;
+            cursor: none;
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 4px;
+            background-color: var(--primary-color);
+            transform: translate(-50%, -50%);
+            mix-blend-mode: difference;
+            pointer-events: none;
+            z-index: 100;
+        }
+        #sidebar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 250px;
+            height: 100%;
+            background: var(--sidebar-bg);
+            border-right: 2px solid var(--border-color);
+            box-shadow: 5px 0 15px rgba(0, 255, 0, 0.2);
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(0);
+            padding: 15px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+            cursor: auto;
+        }
+        #sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+        #sidebar-toggle {
+            position: absolute;
+            top: 15px;
+            left: 265px;
+            width: 30px;
+            height: 40px;
+            background: var(--sidebar-bg);
+            border: 2px solid var(--border-color);
+            border-left: none;
+            border-top-right-radius: 5px;
+            border-bottom-right-radius: 5px;
+            color: var(--primary-color);
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: left 0.3s ease-in-out;
+        }
+        #sidebar.collapsed + #sidebar-toggle {
+            left: 0;
+        }
+        .sidebar-section {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+        }
+        .sidebar-section h3 {
+            margin: 0 0 10px 0;
+            text-shadow: 0 0 5px var(--primary-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 5px;
+        }
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--primary-color);
+            padding: 8px;
+            font-family: 'VT323', monospace;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+        }
+        .btn:hover, .btn.active {
+            background: var(--primary-color);
+            color: var(--bg-color);
+            text-shadow: 0 0 5px var(--bg-color);
+        }
+        .control-container {
+            display: flex;
+            flex-direction: column;
+            margin-top: 10px;
+        }
+         .control-container.row {
+            flex-direction: row;
+            align-items: center;
+        }
+        .control-container label {
+            white-space: nowrap;
+            margin-right: 10px;
+            align-self: flex-start;
+            margin-bottom: 5px;
+        }
+         .control-container.row label {
+             margin-bottom: 0;
+         }
+        .control-container input[type="checkbox"] {
+            margin-right: 10px;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border: 1px solid var(--border-color);
+            position: relative;
+            cursor: pointer;
+        }
+        .control-container input[type="checkbox"]:checked::before {
+            content: 'X';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--primary-color);
+            font-size: 14px;
+        }
+        select, input[type="color"], input[type="file"], input[type="number"] {
+            width: 100%;
+            background: transparent;
+            color: var(--primary-color);
+            border: 1px solid var(--border-color);
+            font-family: 'VT323', monospace;
+            font-size: 16px;
+            box-sizing: border-box;
+            padding: 4px;
+        }
+        /* Hide number input spinners */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+        input[type="file"] {
+            padding: 0;
+        }
+        input::file-selector-button {
+            background: transparent;
+            border: none;
+            border-right: 1px solid var(--border-color);
+            color: var(--primary-color);
+            padding: 4px 8px;
+            font-family: 'VT323', monospace;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        select option {
+            background: var(--bg-color);
+        }
+        input[type="color"] {
+             height: 30px;
+             padding: 2px;
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        input[type="color"]::-webkit-color-swatch {
+            border: none;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+            cursor: pointer;
+            width: 100%;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            background: #050;
+            height: 4px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            margin-top: -6px;
+            background-color: var(--primary-color);
+            height: 16px;
+            width: 8px;
+            border: 1px solid var(--border-color);
+        }
+        .btn-full {
+            width: 100%;
+            margin-top: 10px;
+            background: #500;
+            border-color: #f00;
+            color: #f00;
+        }
+        .btn-full:hover {
+            background: #f00;
+            color: #000;
+        }
+        #perf-status {
+            font-size: 12px;
+            color: var(--highlight-color);
+            margin-top: 5px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <div class="sidebar-section">
+            <h3>Shapes</h3>
+            <div class="btn-grid">
+                <button class="btn" id="btn-sphere">Sphere</button>
+                <button class="btn" id="btn-cube">Cube</button>
+                <button class="btn" id="btn-cylinder">Cylinder</button>
+                <button class="btn" id="btn-pyramid">Pyramid</button>
+            </div>
+            <div class="control-container">
+                <label for="size-slider">Size</label>
+                <input type="range" id="size-slider" min="0.2" max="5" step="0.1" value="1.0">
+            </div>
+             <div class="control-container">
+                <label for="material-select">Material</label>
+                <select id="material-select">
+                    <option value="0">Solid Color</option>
+                    <option value="1">Glass</option>
+                    <option value="2">Metal</option>
+                    <option value="3">Pure Mirror</option>
+                </select>
+            </div>
+            <div class="control-container" id="shape-color-container">
+                <label for="shape-color-picker">Color</label>
+                <input type="color" id="shape-color-picker" value="#00ff00">
+            </div>
+            <div class="control-container row">
+                <input type="checkbox" id="check-physics" checked>
+                <label for="check-physics">Physics</label>
+            </div>
+            <div class="control-container row">
+                <input type="checkbox" id="check-gravity" checked>
+                <label for="check-gravity">Gravity</label>
+            </div>
+             <div class="control-container row">
+                <input type="checkbox" id="check-emissive">
+                <label for="check-emissive">Emission</label>
+            </div>
+        </div>
+        
+        <div class="sidebar-section">
+            <h3>Animation</h3>
+            <div class="control-container">
+                 <label for="anim-select">Type</label>
+                <select id="anim-select">
+                    <option value="0">None</option>
+                    <option value="1">Spin (H)</option>
+                    <option value="2">Orbit (H)</option>
+                    <option value="3">Spin (V)</option>
+                    <option value="4">Orbit (V)</option>
+                    <option value="5">Spin (3D)</option>
+                    <option value="6">Orbit (3D)</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="sidebar-section">
+            <h3>Constraints (i7 Feature)</h3>
+            <p style="margin: 0; font-size: 14px;">Physics constraints are active on the first 2 shapes (Anchor and Rope)</p>
+            <button class="btn" id="btn-add-constraints">Activate Constraints</button>
+             <button class="btn" id="btn-remove-constraints">Clear Constraints</button>
+        </div>
+
+        <div class="sidebar-section">
+            <h3>Lights</h3>
+            <div class="btn-grid">
+                 <button class="btn" id="btn-pointlight">Point Light</button>
+            </div>
+             <div class="control-container">
+                <label for="light-color-picker">Light Color</label>
+                <input type="color" id="light-color-picker" value="#ffffff">
+            </div>
+            <div class="control-container row">
+                <input type="checkbox" id="check-playerlight" checked>
+                <label for="check-playerlight">Headlamp (F)</label>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <h3>Sky</h3>
+            <div class="control-container">
+                <label for="sky-type-select">Sky Type</label>
+                <select id="sky-type-select">
+                    <option value="0">Solid Color</option>
+                    <option value="1">Skybox Image</option>
+                </select>
+            </div>
+            <div class="control-container" id="sky-color-container">
+                <label for="sky-color-picker">Sky Color</label>
+                <input type="color" id="sky-color-picker" value="#000000">
+            </div>
+            <div class="control-container" id="sky-image-container" style="display: none;">
+                <label for="sky-image-upload">Skybox Image</label>
+                <input type="file" id="sky-image-upload" accept="image/*">
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <h3>Scene (i7/P520 Optimizations)</h3>
+             <div class="control-container">
+                <label for="res-slider">Resolution Scale</label>
+                <input type="range" id="res-slider" min="0.025" max="1.5" step="0.025" value="1.0">
+            </div>
+            <div class="control-container">
+                <label for="dist-slider">Render Distance</label>
+                <input type="range" id="dist-slider" min="20" max="500" step="1" value="200">
+            </div>
+             <div class="control-container">
+                <label for="steps-slider">Raymarching Steps</label>
+                <input type="range" id="steps-slider" min="32" max="255" step="1" value="128">
+            </div>
+             <div class="control-container">
+                <label for="shadow-slider">Shadow Quality</label>
+                <input type="range" id="shadow-slider" min="8" max="64" step="1" value="48">
+            </div>
+             <div class="control-container">
+                <label for="shadow-soft-slider">Shadow Softness</label>
+                <input type="range" id="shadow-soft-slider" min="1.0" max="32.0" step="0.5" value="8.0">
+            </div>
+            <div class="control-container row">
+                <input type="checkbox" id="check-culling" checked>
+                <label for="check-culling">View Frustum Culling</label>
+            </div>
+            <div class="control-container row">
+                <input type="checkbox" id="check-perf" checked>
+                <label for="check-perf">Perf. Optimizations</label>
+            </div>
+            <div class="control-container row">
+                <input type="checkbox" id="check-autofps">
+                <label for="check-autofps">Auto FPS Target</label>
+            </div>
+             <div class="control-container">
+                <label for="input-targetfps">Target FPS</label>
+                <input type="number" id="input-targetfps" value="60" min="15" max="240">
+            </div>
+             <div class="btn-grid">
+                <button class="btn" id="btn-spawn-grid">Spawn 100 Cubes</button>
+            </div>
+            <button class="btn btn-full" id="btn-delete-all">Delete All Shapes</button>
+            <div id="perf-status">CPU Worker: Initializing...</div>
+        </div>
+    </div>
+    <div id="sidebar-toggle">&lt;</div>
+
+    <div id="crosshair">+</div>
+    <canvas id="glCanvas"></canvas>
+
+    <script id="vertex-shader" type="notjs">
+        attribute vec2 a_position;
+        void main() {
+            gl_Position = vec4(a_position, 0.0, 1.0);
+        }
+    </script>
+
+    <script id="fragment-shader" type="notjs">
+        precision highp float;
+
+        uniform vec2 u_resolution;
+        uniform float u_time;
+        uniform vec3 u_cameraPos;
+        uniform vec3 u_cameraFront;
+        uniform vec3 u_cameraUp;
+        
+        // --- Quality & Performance Uniforms ---
+        uniform float u_renderDistance;
+        uniform int u_raySteps;
+        uniform int u_shadowSteps;
+        uniform float u_shadowSoftness;
+        uniform bool u_perfMode;
+
+        // --- Sky Uniforms ---
+        uniform int u_skyType;
+        uniform vec3 u_skyColor;
+        uniform sampler2D u_skybox;
+
+        // --- DATA TEXTURE UNIFORM (P520 DATA PIPE) ---
+        // This is a 512x4 texture storing all shape data, bypassing the uniform limit.
+        uniform sampler2D u_shapeDataTexture;
+        uniform int u_shapeCount; // This is the count of *visible* shapes.
+        const int MAX_SHAPES_LIMIT = 512;
+        const int MAX_LIGHTS = 8;
+        const float HIT_DIST = 0.001;
+        const float PI = 3.14159265359;
+        
+        // --- LIGHT UNIFORMS (Small enough to remain as arrays) ---
+        uniform int u_lightCount;
+        uniform vec3 u_lights_pos[MAX_LIGHTS];
+        uniform vec3 u_lights_color[MAX_LIGHTS];
+        uniform bool u_playerLightActive;
+        uniform vec3 u_playerLightPos;
+
+        // --- Preview Data ---
+        uniform bool u_preview_active;
+        uniform int u_preview_type;
+        uniform vec3 u_preview_pos;
+        uniform vec4 u_preview_param;
+
+        // --- Type Constants (must match JS) ---
+        const int SHAPE_SPHERE = 1; const int SHAPE_BOX = 2; const int SHAPE_CYLINDER = 3; const int SHAPE_PYRAMID = 4;
+        const int ANIM_SPIN_H = 1; const int ANIM_ORBIT_H = 2; const int ANIM_SPIN_V = 3; const int ANIM_ORBIT_V = 4; const int ANIM_SPIN_3D = 5; const int ANIM_ORBIT_3D = 6;
+        const int MATERIAL_SOLID = 0; const int MATERIAL_GLASS = 1; const int MATERIAL_METAL = 2; const int MATERIAL_MIRROR = 3;
+        const int SKY_SOLID = 0; const int SKY_IMAGE = 1;
+
+        struct ShapeData {
+            vec3 pos;
+            int type;
+            vec4 param;
+            vec4 color; // rgb, emissive
+            vec4 meta; // x=material, y=animType, z=0, w=0
+            int material; 
+            int anim;     
+        };
+
+        struct HitInfo {
+            float dist;
+            vec3 color;
+            float emissive;
+            int material;
+            bool hit;
+        };
+        
+        // --- HELPER TO SAMPLE DATA TEXTURE ---
+        vec4 get_data_pixel(int shapeIndex, int column) {
+            // Convert 1D shape index and column (0-3) into a 2D texture coordinate
+            float u = (float(column) + 0.5) / 4.0;
+            float v = (float(shapeIndex) + 0.5) / float(MAX_SHAPES_LIMIT);
+            return texture2D(u_shapeDataTexture, vec2(u, v));
+        }
+
+        ShapeData getShapeData(int index) {
+            ShapeData s;
+            // Column 0: Position (rgb) and Type (a)
+            vec4 d0 = get_data_pixel(index, 0);
+            s.pos = d0.rgb;
+            s.type = int(d0.a);
+            
+            // Column 1: Parameters (xyzw)
+            s.param = get_data_pixel(index, 1);
+            
+            // Column 2: Color (rgb) and Emissive (a)
+            s.color = get_data_pixel(index, 2);
+            
+            // Column 3: Metadata (x=material, y=animType)
+            s.meta = get_data_pixel(index, 3);
+            s.material = int(s.meta.x);
+            s.anim = int(s.meta.y);
+
+            return s;
+        }
+
+        mat2 rot(float a) { float s=sin(a),c=cos(a); return mat2(c,-s,s,c); }
+        float sdSphere(vec3 p,float s){return length(p)-s;}
+        float sdBox(vec3 p,vec3 b){vec3 q=abs(p)-b;return length(max(q,0.))+min(max(q.x,max(q.y,q.z)),0.);}
+        float sdCylinder(vec3 p,float h,float r){vec2 d=abs(vec2(length(p.xz),p.y))-vec2(r,h);return min(max(d.x,d.y),0.)+length(max(d,0.));}
+        float sdPyramid(vec3 p,float h,float w){p.y=-p.y+h*0.5;p.xz=abs(p.xz);float m=h/(w*0.5);return max((length(p.xz)-w*0.5),p.y+m*max(p.x,p.z)-h);}
+
+        float getShapeDist(int type, vec3 p, vec4 param) {
+            if (type == SHAPE_SPHERE) return sdSphere(p, param.x);
+            if (type == SHAPE_BOX) return sdBox(p, param.xyz);
+            if (type == SHAPE_CYLINDER) return sdCylinder(p, param.y, param.x);
+            if (type == SHAPE_PYRAMID) return sdPyramid(p, param.x, param.x);
+            return u_renderDistance;
+        }
+        
+       HitInfo map_the_world(vec3 p) {
+            HitInfo res;
+            res.dist = p.y;
+            vec2 check_uv = mod(floor(p.xz * 0.5), 2.0);
+            res.color = (check_uv.x == check_uv.y) ? vec3(0.8, 0.1, 0.1) : vec3(0.9);
+            res.emissive = 0.0;
+            res.material = MATERIAL_SOLID;
+            res.hit = false;
+
+            for (int i = 0; i < MAX_SHAPES_LIMIT; i++) {
+                if (i >= u_shapeCount) break; // Iterate only over the *visible* count
+                
+                ShapeData s = getShapeData(i); // Fetch data from the texture
+                vec3 visual_pos = s.pos;
+                vec3 p_local = p;
+                int anim = s.anim;
+                float t = u_time * 2.0;
+
+                if (anim == ANIM_ORBIT_H) { visual_pos.xz += vec2(cos(t*0.5), sin(t*0.5)) * 3.0; }
+                if (anim == ANIM_ORBIT_V) { visual_pos.xy += vec2(cos(t*0.5), sin(t*0.5)) * 3.0; }
+                if (anim == ANIM_ORBIT_3D) { visual_pos.xz += vec2(cos(t*0.5), sin(t*0.5)) * 3.0; visual_pos.xy += vec2(cos(t*0.35), sin(t*0.35)) * 3.0; }
+                
+                p_local -= visual_pos;
+
+                if (anim == ANIM_SPIN_H) { p_local.xz *= rot(t); }
+                if (anim == ANIM_SPIN_V) { p_local.xy *= rot(t); }
+                if (anim == ANIM_SPIN_3D) { p_local.xz *= rot(t); p_local.xy *= rot(t * 0.7); }
+                
+                float d = getShapeDist(s.type, p_local, s.param);
+                
+                if (d < res.dist) {
+                    res.dist = d; 
+                    res.color = s.color.rgb; 
+                    res.emissive = s.color.a; 
+                    res.material = s.material;
+                }
+            }
+            return res;
+        }
+
+        vec3 get_normal(vec3 p) {
+            vec2 e=vec2(HIT_DIST,0.);return normalize(vec3(map_the_world(p+e.xyy).dist-map_the_world(p-e.xyy).dist,map_the_world(p+e.yxy).dist-map_the_world(p-e.yxy).dist,map_the_world(p+e.yyx).dist-map_the_world(p-e.yyx).dist));
+        }
+
+        float get_shadow(vec3 p, vec3 lightDir, float maxDist, float dist_from_cam) {
+            int current_shadow_steps = u_shadowSteps;
+            if (u_perfMode) {
+                // Reduce shadow quality exponentially with distance
+                float shadow_lod = smoothstep(25.0, 150.0, dist_from_cam);
+                current_shadow_steps = int(mix(float(u_shadowSteps), 8.0, shadow_lod));
+            }
+
+            float shadowDist=HIT_DIST*4.,shadowIntensity=1.;
+            for(int i=0;i<64;i++){
+                if(i>=current_shadow_steps)break;
+                vec3 sp=p+lightDir*shadowDist;
+                float d=map_the_world(sp).dist;
+                if(d<HIT_DIST)return .1;
+                shadowIntensity=min(shadowIntensity,u_shadowSoftness*d/shadowDist);
+                shadowDist+=d;
+                if(shadowDist>maxDist)break;
+            }
+            return clamp(shadowIntensity,.1,1.);
+        }
+
+        vec3 get_lighting(vec3 p, vec3 normal) {
+            float dist_from_cam = length(p - u_cameraPos);
+            vec3 lighting=vec3(.15);
+            for(int i=0;i<MAX_LIGHTS;i++){
+                if(i>=u_lightCount)break;
+                vec3 lightPos=u_lights_pos[i];
+                vec3 lightDir=normalize(lightPos-p);
+                float distToLight=length(lightPos-p);
+                float diffuse=max(dot(normal,lightDir),0.);
+                float shadow=get_shadow(p+normal*HIT_DIST*2.,lightDir,distToLight, dist_from_cam);
+                lighting+=u_lights_color[i]*diffuse*shadow;
+            }
+            if(u_playerLightActive){
+                vec3 lightDir=normalize(u_playerLightPos-p);
+                float distToLight=length(u_playerLightPos-p);
+                float attenuation=1./(1.+.1*distToLight+.02*distToLight*distToLight);
+                float diffuse=max(dot(normal,lightDir),0.);
+                float shadow=get_shadow(p+normal*HIT_DIST*2.,lightDir,distToLight, dist_from_cam);
+                lighting+=vec3(.8,.8,1.)*diffuse*shadow*attenuation*2.;
+            }
+            return lighting;
+        }
+        
+        void main() {
+            vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / u_resolution.y;
+            vec3 cameraDir=normalize(u_cameraFront),cameraRight=normalize(cross(cameraDir,u_cameraUp)),newCameraUp=cross(cameraRight,cameraDir),initialRayDir=normalize(cameraDir+cameraRight*uv.x+newCameraUp*uv.y);
+            vec3 final_color=vec3(0.),color_mask=vec3(1.),current_ray_pos=u_cameraPos,current_ray_dir=initialRayDir;
+
+            float foveation_factor = 0.0;
+            if (u_perfMode) {
+                foveation_factor = smoothstep(0.8, 1.5, length(uv));
+            }
+
+            for(int i=0;i<4;i++){
+                int current_steps = u_raySteps;
+                if (u_perfMode) {
+                    if (i > 0) current_steps = int(max(32.0, float(u_raySteps) / 2.0));
+                    current_steps = int(mix(float(current_steps), float(current_steps) * 0.4, foveation_factor));
+                }
+
+                float total_dist=0.;HitInfo hit_info;hit_info.hit=false;
+                for(int j=0;j<255;j++){
+                    if(j>=current_steps)break;
+                    vec3 p=current_ray_pos+current_ray_dir*total_dist;
+                    hit_info=map_the_world(p);
+                    if(hit_info.dist<HIT_DIST){
+                        hit_info.hit=true;
+                        break;
+                    }
+                    total_dist+=hit_info.dist;
+                    if(total_dist>u_renderDistance)break;
+                }
+
+                if(hit_info.hit){
+                    vec3 hit_point=current_ray_pos+current_ray_dir*total_dist,normal=get_normal(hit_point),bias=normal*HIT_DIST*2.;
+                    if(hit_info.emissive>.5){final_color+=hit_info.color*color_mask;break;}
+                    if(hit_info.material==MATERIAL_SOLID){final_color+=hit_info.color*get_lighting(hit_point,normal)*color_mask;break;}
+                    if(hit_info.material==MATERIAL_METAL){current_ray_dir=reflect(current_ray_dir,normal);current_ray_pos=hit_point+bias;color_mask*=hit_info.color;continue;}
+                    if(hit_info.material==MATERIAL_MIRROR){float edge=1.-abs(dot(normal,current_ray_dir));edge=smoothstep(0.,.3,edge);final_color+=vec3(.2,1.,.4)*edge*color_mask;current_ray_dir=reflect(current_ray_dir,normal);current_ray_pos=hit_point+bias;color_mask*=.95;continue;}
+                    if(hit_info.material==MATERIAL_GLASS){bool outside=dot(current_ray_dir,normal)<0.;vec3 out_normal=outside?normal:-normal;float eta=outside?(1./1.5):1.5;vec3 refracted_dir=refract(current_ray_dir,out_normal,eta);if(dot(refracted_dir,refracted_dir)==0.){current_ray_dir=reflect(current_ray_dir,out_normal);current_ray_pos=hit_point+(out_normal*HIT_DIST*2.);}else{current_ray_dir=refracted_dir;current_ray_pos=hit_point-(out_normal*HIT_DIST*2.);}color_mask*=hit_info.color*.8+vec3(.2);continue;}
+                }else{
+                    vec3 sky_color;
+                    if (u_skyType == SKY_SOLID) {
+                        sky_color = u_skyColor;
+                    } else if (u_skyType == SKY_IMAGE) {
+                        vec3 rd = normalize(current_ray_dir);
+                        vec2 sky_uv = vec2(atan(rd.x, rd.z) / (2.0 * PI) + 0.5, acos(rd.y) / PI);
+                        sky_color = texture2D(u_skybox, sky_uv).rgb;
+                    }
+                    final_color += sky_color * color_mask;
+                    break;
+                }
+            }
+            if(u_preview_active){float preview_dist_to_cam=length(u_preview_pos-u_cameraPos);float preview_sdf=getShapeDist(u_preview_type,(u_cameraPos+initialRayDir*preview_dist_to_cam)-u_preview_pos,u_preview_param);if(preview_sdf<.01){final_color=mix(final_color,vec3(.5,1.,.5),.5);}}
+            final_color=pow(final_color,vec3(.4545));final_color=floor(final_color*16.)/16.;gl_FragColor=vec4(final_color,1.);
+        }
+    </script>
+
+
+    <script>
+        // --- WebGL Helper Functions (Needed for setup and texture) ---
+        // Note: The fix requires the OES_texture_float extension for performance
+        function createShader(gl, type, source) { const shader = gl.createShader(type); gl.shaderSource(shader, source); gl.compileShader(shader); if (gl.getShaderParameter(shader, gl.COMPILE_STATUS)) return shader; console.error(gl.getShaderInfoLog(shader)); gl.deleteShader(shader); }
+        function createProgram(gl, vs, fs) { const p = gl.createProgram(); gl.attachShader(p, vs); gl.attachShader(p, fs); gl.linkProgram(p); if (gl.getProgramParameter(p, gl.LINK_STATUS)) return p; console.error(gl.getProgramInfoLog(p)); gl.deleteProgram(p); }
+        function resizeCanvasToDisplaySize(canvas, resolutionScale = 1.0) { const dW=canvas.clientWidth,dH=canvas.clientHeight;const nW=Math.floor(dW*resolutionScale),nH=Math.floor(dH*resolutionScale);if(canvas.width!==nW||canvas.height!==nH){canvas.width=nW;canvas.height=nH;return true;}return false; }
+        function createTextureFromImage(image) {
+            const texture = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+            return texture;
+        }
+
+        // --- Main Setup ---
+        const canvas = document.getElementById('glCanvas');
+        // Ensure we request WebGL context with the float texture extension for high-fidelity data
+        const gl = canvas.getContext('webgl');
+        if (!gl) alert('WebGL not supported!');
+
+        // Check for required float texture extension for high-quality data
+        const float_tex = gl.getExtension('OES_texture_float');
+        if (!float_tex) {
+            console.warn("OES_texture_float not supported. Data texture fidelity may be reduced, but the uniform error is fixed.");
+        }
+
+
+        const program = createProgram(gl, createShader(gl, gl.VERTEX_SHADER, document.getElementById('vertex-shader').textContent), createShader(gl, gl.FRAGMENT_SHADER, document.getElementById('fragment-shader').textContent));
+        gl.useProgram(program);
+
+        // --- GL Locations ---
+        // [FIX 1]: Changed '//' to '/*' and '*/' to prevent syntax error on minified/single-line files.
+        const locs = { pos: gl.getAttribLocation(program, "a_position"), res: gl.getUniformLocation(program, "u_resolution"), time: gl.getUniformLocation(program, "u_time"), camPos: gl.getUniformLocation(program, "u_cameraPos"), camFront: gl.getUniformLocation(program, "u_cameraFront"), camUp: gl.getUniformLocation(program, "u_cameraUp"), /* SHAPE DATA TEXTURE LOCATION */ shapeDataTexture: gl.getUniformLocation(program, "u_shapeDataTexture"), shapeCount: gl.getUniformLocation(program, "u_shapeCount"), /* LIGHT UNIFORMS (kept small) */ lightCount: gl.getUniformLocation(program, "u_lightCount"), lights_pos: gl.getUniformLocation(program, "u_lights_pos"), lights_color: gl.getUniformLocation(program, "u_lights_color"), playerLightActive: gl.getUniformLocation(program, "u_playerLightActive"), playerLightPos: gl.getUniformLocation(program, "u_playerLightPos"), preview_active: gl.getUniformLocation(program, "u_preview_active"), preview_type: gl.getUniformLocation(program, "u_preview_type"), preview_pos: gl.getUniformLocation(program, "u_preview_pos"), preview_param: gl.getUniformLocation(program, "u_preview_param"), renderDistance: gl.getUniformLocation(program, "u_renderDistance"), raySteps: gl.getUniformLocation(program, "u_raySteps"), shadowSteps: gl.getUniformLocation(program, "u_shadowSteps"), shadowSoftness: gl.getUniformLocation(program, "u_shadowSoftness"), perfMode: gl.getUniformLocation(program, "u_perfMode"), skyType: gl.getUniformLocation(program, "u_skyType"), skyColor: gl.getUniformLocation(program, "u_skyColor"), skybox: gl.getUniformLocation(program, "u_skybox"), };
+
+        // --- Scene & State ---
+        const MAX_SHAPES_GLOBAL = 512;
+        const SHAPE_DATA_TEX_WIDTH = 4; // 4 vec4 columns per shape
+        const SHAPE_DATA_TEX_HEIGHT = MAX_SHAPES_GLOBAL; // 512 rows for 512 shapes
+        const MAX_LIGHTS = 8;
+
+        let scene = {
+            shapes: [],
+            lights: [],
+            constraints: []
+        };
+
+        let placementMode = {
+            active: false,
+            type: null,
+            object: null
+        };
+        let previewShape = {
+            active: false,
+            type: 0,
+            pos: [0,0,0],
+            param: [0,0,0,0]
+        };
+        let playerLightOn = true;
+
+        let skyState = {
+            type: 0,
+            color: [0.0, 0.0, 0.0],
+            texture: null
+        };
+
+        let shapeDataTexture = gl.createTexture(); // The GPU-side data texture
+
+        const SHAPE_TYPE = { SPHERE: 1, BOX: 2, CYLINDER: 3, PYRAMID: 4 };
+        const ANIM_TYPE = { NONE: 0, SPIN_H: 1, ORBIT_H: 2, SPIN_V: 3, ORBIT_V: 4, SPIN_3D: 5, ORBIT_3D: 6 };
+        const MATERIAL_TYPE = { SOLID: 0, GLASS: 1, METAL: 2, MIRROR: 3 };
+        const SKY_TYPE = { SOLID: 0, IMAGE: 1 };
+        const CONSTRAINT_TYPE = { DISTANCE: 1, POINT_ANCHOR: 2 };
+
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]), gl.STATIC_DRAW);
+
+        // --- Camera and Input ---
+        let cameraPos = [0, 2, -10], cameraFront = [0, 0, 1], cameraUp = [0, 1, 0];
+        let yaw = 90, pitch = 0;
+        const keysPressed = {};
+        let pointerLocked = false;
+
+        // --- Physics ---
+        const GRAVITY = -9.8;
+        const groundLevel = 0.0;
+        const SOLVER_ITERATIONS = 8;
+        const CONSTRAINT_ITERATIONS = 5;
+
+        // --- Multi-threaded Uniform Preparation (i7 Feature) ---
+        let uniformWorker; // The worker result now contains the flattened Float32Array for the data texture
+        let workerResult = {
+            shapeCount: 0,
+            lightsData: {},
+            textureData: null
+        };
+        let workerIsBusy = false;
+
+        // --- FPS Management ---
+        const frameTimes = [];
+        let lastFpsUpdateTime = 0;
+        const FPS_UPDATE_INTERVAL = 0.25; // in seconds
+
+        // --- Vector Math ---
+        const vec3 = {
+            add: (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]],
+            subtract: (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]],
+            scale: (a, s) => [a[0] * s, a[1] * s, a[2] * s],
+            length: (a) => Math.sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]),
+            normalize: (a) => {
+                const l = vec3.length(a);
+                return l > 0 ? vec3.scale(a, 1 / l) : [0,0,0];
+            },
+            cross: (a, b) => [a[1]*b[2] - a[2]*b[1], a[2]*b[0] - a[0]*b[2], a[0]*b[1] - a[1]*b[0]],
+            dot: (a, b) => a[0]*b[0] + a[1]*b[1] + a[2]*b[2]
+        };
+
+        const degToRad = (d) => d * Math.PI / 180;
+
+
+        // --- UI Elements ---
+        const ui = {
+            sidebar: document.getElementById('sidebar'),
+            toggle: document.getElementById('sidebar-toggle'),
+            buttons: {
+                sphere: document.getElementById('btn-sphere'),
+                cube: document.getElementById('btn-cube'),
+                cylinder: document.getElementById('btn-cylinder'),
+                pyramid: document.getElementById('btn-pyramid'),
+                pointlight: document.getElementById('btn-pointlight'),
+                deleteAll: document.getElementById('btn-delete-all'),
+                addConstraint: document.getElementById('btn-add-constraints'),
+                removeConstraint: document.getElementById('btn-remove-constraints'),
+                spawnGrid: document.getElementById('btn-spawn-grid')
+            },
+            checkboxes: {
+                physics: document.getElementById('check-physics'),
+                gravity: document.getElementById('check-gravity'),
+                emissive: document.getElementById('check-emissive'),
+                playerLight: document.getElementById('check-playerlight'),
+                perf: document.getElementById('check-perf'),
+                autoFps: document.getElementById('check-autofps'),
+                culling: document.getElementById('check-culling')
+            },
+            sliders: {
+                size: document.getElementById('size-slider'),
+                resolution: document.getElementById('res-slider'),
+                distance: document.getElementById('dist-slider'),
+                steps: document.getElementById('steps-slider'),
+                shadow: document.getElementById('shadow-slider'),
+                shadowSoft: document.getElementById('shadow-soft-slider')
+            },
+            selects: {
+                anim: document.getElementById('anim-select'),
+                material: document.getElementById('material-select'),
+                skyType: document.getElementById('sky-type-select')
+            },
+            pickers: {
+                shape: document.getElementById('shape-color-picker'),
+                light: document.getElementById('light-color-picker'),
+                sky: document.getElementById('sky-color-picker')
+            },
+            inputs: {
+                skyImage: document.getElementById('sky-image-upload'),
+                targetFps: document.getElementById('input-targetfps')
+            },
+            containers: {
+                shapeColor: document.getElementById('shape-color-container'),
+                skyColor: document.getElementById('sky-color-container'),
+                skyImage: document.getElementById('sky-image-container')
+            },
+            status: document.getElementById('perf-status')
+        };
+
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? [
+                parseInt(result[1], 16) / 255.0,
+                parseInt(result[2], 16) / 255.0,
+                parseInt(result[3], 16) / 255.0
+            ] : [1, 0, 1];
+        }
+
+        // --- Multi-threaded Uniform Preparation (Web Worker Logic) ---
+        // This is the i7 feature, offloading the CPU work to the worker
+
+        const workerSource = `
+            // Helper function for vec3.scale and vec3.normalize are defined inside the worker for performance
+
+            const MAX_SHAPES_GLOBAL = ${MAX_SHAPES_GLOBAL};
+            const SHAPE_DATA_TEX_WIDTH = ${SHAPE_DATA_TEX_WIDTH};
+            const MAX_LIGHTS = ${MAX_LIGHTS};
+
+            onmessage = (e) => {
+                const { scene, playerLightPos, playerLightActive, performanceMode, cullingActive, cameraPos, cameraFront, cameraUp, distLimit, usePhysics, useGravity } = e.data;
+
+                // --- LOCAL PHYSICS UPDATE (Simple Integration) ---
+                if (usePhysics) {
+                    const deltaTime = e.data.deltaTime;
+                    const GRAVITY = -9.8;
+                    const groundLevel = 0.0;
+                    const SOLVER_ITERATIONS = 8;
+                    const CONSTRAINT_ITERATIONS = 5;
+
+                    const vec3 = {
+                        add: (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]],
+                        subtract: (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]],
+                        scale: (a, s) => [a[0] * s, a[1] * s, a[2] * s],
+                        length: (a) => Math.sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]),
+                        normalize: (a) => {
+                            const l = Math.sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]);
+                            return l > 0 ? [a[0] / l, a[1] / l, a[2] / l] : [0,0,0];
+                        },
+                        dot: (a, b) => a[0]*b[0] + a[1]*b[1] + a[2]*b[2]
+                    };
+
+                    const getGroundVector = (p) => {
+                        const distToGround = p[1] - groundLevel;
+                        const normal = [0, 1, 0];
+                        return vec3.scale(normal, distToGround);
+                    };
+
+                    for (const shape of scene.shapes) {
+                        // Verlet integration step 1: Update position
+                        const velocity = vec3.subtract(shape.pos, shape.prevPos);
+                        shape.prevPos = [...shape.pos];
+
+                        let newPos = vec3.add(shape.pos, velocity);
+
+                        // Apply acceleration (Gravity)
+                        if (useGravity) {
+                           newPos[1] += GRAVITY * deltaTime * deltaTime;
+                        }
+
+                        // Apply soft movement constraint for demonstration
+                        if (shape.isAnchor) {
+                            newPos = [...shape.pos]; // If it's an anchor, its position is fixed
+                        }
+
+                        shape.pos = newPos;
+                    }
+
+                    // Constraint solver loop (for Distance/Point Constraints)
+                    for (let iter = 0; iter < CONSTRAINT_ITERATIONS; iter++) {
+                         // Apply distance constraints
+                        for (const constraint of scene.constraints) {
+                            if (constraint.type === 1) { // Distance Constraint
+                                const s1 = scene.shapes[constraint.s1Index];
+                                const s2 = scene.shapes[constraint.s2Index];
+                                const delta = vec3.subtract(s2.pos, s1.pos);
+                                const dist = vec3.length(delta);
+                                const diff = (dist - constraint.length) / dist;
+                                
+                                const delta_scaled = vec3.scale(delta, diff * 0.5);
+
+                                // Inverse mass check (simplified to check if they are anchors)
+                                if (!s1.isAnchor) {
+                                    s1.pos = vec3.add(s1.pos, delta_scaled);
+                                }
+                                if (!s2.isAnchor) {
+                                    s2.pos = vec3.subtract(s2.pos, delta_scaled);
+                                }
+                            }
+                        }
+
+                        // Apply ground constraint
+                        for (const shape of scene.shapes) {
+                            if (shape.pos[1] < groundLevel) {
+                                // Push back to ground level
+                                const correction = vec3.subtract(shape.pos, shape.prevPos);
+                                shape.pos[1] = groundLevel;
+                                // Simple bounce logic
+                                shape.prevPos[1] = groundLevel + 0.1 * correction[1];
+                            }
+                        }
+                    }
+                }
+                
+                // --- Uniform Data Texture Preparation ---
+                const dataArray = new Float32Array(MAX_SHAPES_GLOBAL * SHAPE_DATA_TEX_WIDTH * 4);
+                let visibleShapeCount = 0;
+                let cullingPlanes = [];
+
+                if (cullingActive) {
+                    // Pre-calculate view frustum planes (Simplified: just distance)
+                    const distPlane = [cameraFront[0], cameraFront[1], cameraFront[2], vec3.dot(cameraPos, cameraFront) + distLimit];
+                    cullingPlanes.push(distPlane);
+                }
+
+                for (let i = 0; i < scene.shapes.length; i++) {
+                    const shape = scene.shapes[i];
+
+                    // SIMPLE CULLING CHECK: Only render shapes within distance limit (frustum culling simplified)
+                    const distToCamera = vec3.length(vec3.subtract(shape.pos, cameraPos));
+                    let isVisible = true;
+                    if (cullingActive && distToCamera > distLimit) {
+                        isVisible = false;
+                    }
+
+
+                    if (isVisible) {
+                        // The GPU only iterates over visible shapes, so we compact the data.
+                        const baseIndex = visibleShapeCount * SHAPE_DATA_TEX_WIDTH * 4;
+                        
+                        // Column 0: Position (vec3) + Type (float)
+                        dataArray[baseIndex + 0] = shape.pos[0];
+                        dataArray[baseIndex + 1] = shape.pos[1];
+                        dataArray[baseIndex + 2] = shape.pos[2];
+                        dataArray[baseIndex + 3] = shape.type;
+
+                        // Column 1: Parameters (vec4)
+                        dataArray[baseIndex + 4] = shape.param[0];
+                        dataArray[baseIndex + 5] = shape.param[1];
+                        dataArray[baseIndex + 6] = shape.param[2];
+                        dataArray[baseIndex + 7] = shape.param[3];
+
+                        // Column 2: Color (vec3) + Emissive (float)
+                        dataArray[baseIndex + 8] = shape.color[0];
+                        dataArray[baseIndex + 9] = shape.color[1];
+                        dataArray[baseIndex + 10] = shape.color[2];
+                        dataArray[baseIndex + 11] = shape.emissive;
+
+                        // Column 3: Metadata (vec4) - x=material, y=animType
+                        dataArray[baseIndex + 12] = shape.material;
+                        dataArray[baseIndex + 13] = shape.anim;
+                        dataArray[baseIndex + 14] = 0.0;
+                        dataArray[baseIndex + 15] = 0.0;
+
+                        visibleShapeCount++;
+                    }
+                }
+
+                // --- Light Data Preparation ---
+                const lightsData = {
+                    lightsPos: [],
+                    lightsColor: []
+                };
+
+                for (let i = 0; i < scene.lights.length; i++) {
+                    const light = scene.lights[i];
+                    if (i < MAX_LIGHTS) {
+                        lightsData.lightsPos.push(...light.pos);
+                        lightsData.lightsColor.push(...light.color);
+                    }
+                }
+
+                // Send the visible data back to the main thread
+                postMessage({
+                    shapeCount: visibleShapeCount,
+                    textureData: dataArray.buffer,
+                    lightsData: lightsData,
+                    playerLightPos: playerLightPos,
+                    playerLightActive: playerLightActive,
+                    performanceMode: performanceMode,
+                    // Return the potentially updated scene for the next frame
+                    updatedScene: scene
+                }, [dataArray.buffer]);
+            };
+        `;
+        
+        try {
+            const blob = new Blob([workerSource], { type: 'application/javascript' });
+            uniformWorker = new Worker(URL.createObjectURL(blob));
+
+            uniformWorker.onmessage = (e) => {
+                const { shapeCount, textureData, lightsData, playerLightPos, playerLightActive, performanceMode, updatedScene } = e.data;
+                workerResult.shapeCount = shapeCount;
+                workerResult.lightsData = lightsData;
+                workerResult.textureData = new Float32Array(textureData);
+                workerIsBusy = false;
+                
+                // Update the main scene state with the calculated physics
+                scene = updatedScene;
+
+                ui.status.textContent = `CPU Worker: Ready | Visible: ${shapeCount}/${scene.shapes.length} | Phys: ${scene.constraints.length}C`;
+            };
+
+            uniformWorker.onerror = (e) => {
+                console.error("Worker Error:", e);
+                ui.status.textContent = `CPU Worker: ERROR - ${e.message}`;
+                workerIsBusy = false;
+            };
+
+        } catch (error) {
+            console.error("Could not create Web Worker (i7 Feature disabled):", error);
+            uniformWorker = null;
+            ui.status.textContent = "CPU Worker: Not Available (i7 Feature Disabled)";
+        }
+
+
+        // --- Shape Management ---
+        function createShape(type, size, color, material, anim, emissive) {
+            const sizeMap = {
+                [SHAPE_TYPE.SPHERE]: [size, 0, 0, 0],
+                [SHAPE_TYPE.BOX]: [size, size, size, 0],
+                [SHAPE_TYPE.CYLINDER]: [size/2, size, 0, 0], // radius, height
+                [SHAPE_TYPE.PYRAMID]: [size, size, 0, 0] // height, width
+            };
+            const newShape = {
+                type: type,
+                param: sizeMap[type],
+                color: hexToRgb(color),
+                emissive: emissive ? 1.0 : 0.0,
+                material: material,
+                anim: anim,
+                pos: [...cameraPos], // Start at camera position
+                prevPos: [...cameraPos], // For physics
+                isAnchor: false
+            };
+            // Raycast placement
+            newShape.pos = placeObjectRaycast();
+            newShape.prevPos = newShape.pos; // Initialize prevPos to pos for physics stability
+            scene.shapes.push(newShape);
+        }
+
+        function deleteShape(index) {
+            if (index >= 0 && index < scene.shapes.length) {
+                scene.shapes.splice(index, 1);
+                // Clear any constraints involving this shape
+                 scene.constraints = scene.constraints.filter(c => c.s1Index !== index && c.s2Index !== index)
+                    .map(c => {
+                        // Re-index constraints for remaining shapes
+                        if (c.s1Index > index) c.s1Index--;
+                        if (c.s2Index > index) c.s2Index--;
+                        return c;
+                    });
+            }
+        }
+        
+        function deleteAllShapes() {
+            scene.shapes = [];
+            scene.lights = [];
+            scene.constraints = [];
+            placementMode.active = false;
+            previewShape.active = false;
+        }
+
+        // --- Light Management ---
+        function createLight(color) {
+             const newLight = {
+                color: hexToRgb(color),
+                pos: placeObjectRaycast(), // Place at raycast hit point
+            };
+            if (scene.lights.length < MAX_LIGHTS) {
+                 scene.lights.push(newLight);
+            } else {
+                scene.lights[0] = newLight; // Replace the oldest one
+            }
+        }
+
+        // --- Constraint Management ---
+        function addDistanceConstraint(s1Index, s2Index) {
+            const s1 = scene.shapes[s1Index];
+            const s2 = scene.shapes[s2Index];
+            const delta = vec3.subtract(s2.pos, s1.pos);
+            const length = vec3.length(delta);
+            scene.constraints.push({
+                type: CONSTRAINT_TYPE.DISTANCE,
+                s1Index: s1Index,
+                s2Index: s2Index,
+                length: length
+            });
+        }
+        
+        function activateConstraints() {
+            // Anchor shape 1 (fixed) and connect shape 2 (rope)
+            if (scene.shapes.length >= 2) {
+                scene.shapes[0].isAnchor = true;
+                scene.shapes[1].isAnchor = false;
+                addDistanceConstraint(0, 1);
+            }
+            // Additional constraint for a larger system
+             if (scene.shapes.length >= 3) {
+                 addDistanceConstraint(1, 2);
+             }
+        }
+
+        function clearConstraints() {
+            scene.constraints = [];
+            scene.shapes.forEach(s => s.isAnchor = false);
+        }
+
+        // --- Raycasting / Placement Logic ---
+        function placeObjectRaycast() {
+             // In a real raymarcher, this would involve running the SDF on the CPU to find a hit point.
+             // For this demo, we'll use a simplified model for placement in front of the camera.
+             const distanceInFront = 5.0;
+             return vec3.add(cameraPos, vec3.scale(cameraFront, distanceInFront));
+        }
+        
+        function updatePreviewObject() {
+            if (!placementMode.active) {
+                previewShape.active = false;
+                return;
+            }
+            
+            // Set the preview shape's data
+            const size = parseFloat(ui.sliders.size.value);
+            const type = placementMode.type;
+            const color = ui.pickers.shape.value;
+            const emissive = ui.checkboxes.emissive.checked;
+            const material = parseInt(ui.selects.material.value);
+            const anim = parseInt(ui.selects.anim.value);
+
+            const sizeMap = {
+                [SHAPE_TYPE.SPHERE]: [size, 0, 0, 0],
+                [SHAPE_TYPE.BOX]: [size, size, size, 0],
+                [SHAPE_TYPE.CYLINDER]: [size/2, size, 0, 0],
+                [SHAPE_TYPE.PYRAMID]: [size, size, 0, 0]
+            };
+
+            previewShape.active = true;
+            previewShape.type = type;
+            previewShape.param = sizeMap[type];
+            // The GLSL fragment shader only uses the SDF for preview, so color/material/anim aren't strictly needed for the preview itself.
+            // But we'll set the position to the intended placement location.
+            previewShape.pos = placeObjectRaycast();
+        }
+
+        // --- Texturing ---
+        function updateShapeDataTexture() {
+            if (!workerResult.textureData) return;
+
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, shapeDataTexture);
+            
+            // The size is fixed at 512x4, but we only upload the number of visible shapes * 4 rows.
+            // Using a float texture is key here, which requires the OES_texture_float extension.
+
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, SHAPE_DATA_TEX_WIDTH, SHAPE_DATA_TEX_HEIGHT, 0, gl.RGBA, gl.FLOAT, workerResult.textureData);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        }
+
+        function loadSkybox(image) {
+            skyState.texture = createTextureFromImage(image);
+        }
+
+        // --- Main Render Loop ---
+        let lastTime = 0;
+        function render(time) {
+            time *= 0.001; // convert to seconds
+            const deltaTime = time - lastTime;
+
+            // [FIX 2] - Correct FPS Limiter Logic
+            // Calculate target frame time (in seconds)
+            let targetFrameTime = 1 / 60; // Default
+            if (ui.checkboxes.autoFps.checked) {
+                // Auto-adjust FPS based on performance (simple example: low shape count = high FPS, high = low)
+                const shapes = scene.shapes.length;
+                let autoTarget = 60;
+                if (shapes > 100) autoTarget = 30;
+                if (shapes > 300) autoTarget = 15;
+                targetFrameTime = 1 / autoTarget;
+            } else {
+                targetFrameTime = 1 / parseInt(ui.inputs.targetFps.value);
+            }
+
+            // If not enough time has passed since the last frame, skip this render
+            if (deltaTime < targetFrameTime) {
+                requestAnimationFrame(render); // Ask to check again on the next available frame
+                return; // Skip the rest of the function
+            }
+            
+            // Enough time has passed, so update lastTime and render the frame
+            lastTime = time; // You could also use (time - (deltaTime % targetFrameTime)) for more stable long-term timing
+
+            // --- Update FPS Status ---
+            frameTimes.push(deltaTime);
+            if (time - lastFpsUpdateTime > FPS_UPDATE_INTERVAL) {
+                const totalTime = frameTimes.reduce((a, b) => a + b, 0);
+                const fps = frameTimes.length / totalTime;
+                ui.status.textContent = `CPU Worker: Ready | Visible: ${workerResult.shapeCount}/${scene.shapes.length} | Phys: ${scene.constraints.length}C | FPS: ${Math.round(fps)}`;
+                frameTimes.length = 0;
+                lastFpsUpdateTime = time;
+            }
+
+
+            // --- Performance/Resolution Scaling ---
+            const resolutionScale = parseFloat(ui.sliders.resolution.value);
+            resizeCanvasToDisplaySize(gl.canvas, resolutionScale);
+            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+            // --- Start Worker Thread for Physics and Uniform Prep (i7 Offload) ---
+            if (uniformWorker && !workerIsBusy) {
+                workerIsBusy = true;
+                uniformWorker.postMessage({
+                    scene: scene,
+                    playerLightPos: cameraPos,
+                    playerLightActive: ui.checkboxes.playerLight.checked,
+                    performanceMode: ui.checkboxes.perf.checked,
+                    cullingActive: ui.checkboxes.culling.checked,
+                    cameraPos: cameraPos,
+                    cameraFront: cameraFront,
+                    cameraUp: cameraUp,
+                    distLimit: parseFloat(ui.sliders.distance.value),
+                    deltaTime: deltaTime, // Pass the *actual* delta time
+                    usePhysics: ui.checkboxes.physics.checked,
+                    useGravity: ui.checkboxes.gravity.checked
+                });
+            } else if (!uniformWorker) {
+                 // Fallback for non-worker mode (do physics on main thread - slow!)
+                 // NOTE: This fallback logic is currently omitted for brevity, focusing on the i7 feature.
+                 // In a full implementation, the logic from the workerSource would run here.
+            }
+            
+
+            // --- Camera Movement ---
+            handleCameraInput(deltaTime); // Pass the *actual* delta time
+
+            // --- Update GL State from Worker Result ---
+            updateShapeDataTexture();
+
+            // --- Set Uniforms ---
+            gl.uniform2f(locs.res, gl.canvas.width, gl.canvas.height);
+            gl.uniform1f(locs.time, time);
+            gl.uniform3fv(locs.camPos, cameraPos);
+            gl.uniform3fv(locs.camFront, cameraFront);
+            gl.uniform3fv(locs.camUp, cameraUp);
+            
+            gl.uniform1f(locs.renderDistance, parseFloat(ui.sliders.distance.value));
+            gl.uniform1i(locs.raySteps, parseInt(ui.sliders.steps.value));
+            gl.uniform1i(locs.shadowSteps, parseInt(ui.sliders.shadow.value));
+            gl.uniform1f(locs.shadowSoftness, parseFloat(ui.sliders.shadowSoft.value));
+            gl.uniform1i(locs.perfMode, ui.checkboxes.perf.checked);
+
+            // Sky uniforms
+            gl.uniform1i(locs.skyType, parseInt(ui.selects.skyType.value));
+            gl.uniform3fv(locs.skyColor, hexToRgb(ui.pickers.sky.value));
+            if (skyState.texture) {
+                 gl.activeTexture(gl.TEXTURE1);
+                 gl.bindTexture(gl.TEXTURE_2D, skyState.texture);
+                 gl.uniform1i(locs.skybox, 1);
+            }
+            
+            // Shape Data Texture
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, shapeDataTexture);
+            gl.uniform1i(locs.shapeDataTexture, 0);
+            gl.uniform1i(locs.shapeCount, workerResult.shapeCount);
+
+            // Light Uniforms (from worker)
+            gl.uniform1i(locs.lightCount, workerResult.lightsData.lightsPos ? workerResult.lightsData.lightsPos.length / 3 : 0);
+            gl.uniform3fv(locs.lights_pos, workerResult.lightsData.lightsPos || []);
+            gl.uniform3fv(locs.lights_color, workerResult.lightsData.lightsColor || []);
+            gl.uniform1i(locs.playerLightActive, workerResult.playerLightActive);
+            gl.uniform3fv(locs.playerLightPos, workerResult.playerLightPos || cameraPos);
+
+            // Preview Data
+            gl.uniform1i(locs.preview_active, placementMode.active);
+            gl.uniform1i(locs.preview_type, previewShape.type);
+            gl.uniform3fv(locs.preview_pos, previewShape.pos);
+            gl.uniform4fv(locs.preview_param, previewShape.param);
+
+
+            // --- Draw ---
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+            gl.enableVertexAttribArray(locs.pos);
+            gl.vertexAttribPointer(locs.pos, 2, gl.FLOAT, false, 0, 0);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+            
+            // --- [FIX 2] --- Old, non-working FPS logic removed ---
+            
+            // Request the next frame
+            requestAnimationFrame(render);
+        }
+        
+        // --- Input Handlers ---
+        function setupInput() {
+            canvas.addEventListener('click', () => {
+                if (!pointerLocked) {
+                    canvas.requestPointerLock();
+                } else {
+                    // Left click to place object
+                    if (placementMode.active) {
+                        const size = parseFloat(ui.sliders.size.value);
+                        const color = ui.pickers.shape.value;
+                        const material = parseInt(ui.selects.material.value);
+                        const anim = parseInt(ui.selects.anim.value);
+                        const emissive = ui.checkboxes.emissive.checked;
+
+                        if (placementMode.object === 'shape') {
+                            createShape(placementMode.type, size, color, material, anim, emissive);
+                        } else if (placementMode.object === 'light') {
+                            createLight(ui.pickers.light.value);
+                        }
+                    }
+                }
+            });
+
+            document.addEventListener('pointerlockchange', () => {
+                pointerLocked = document.pointerLockElement === canvas;
+                if (!pointerLocked) {
+                    // When unlocked, disable placement mode if it was active
+                    if (placementMode.active) {
+                        placementMode.active = false;
+                        updatePreviewObject();
+                    }
+                }
+            });
+
+            document.addEventListener('keydown', (e) => {
+                keysPressed[e.key.toLowerCase()] = true;
+                if (e.key.toLowerCase() === 'f') {
+                    ui.checkboxes.playerLight.checked = !ui.checkboxes.playerLight.checked;
+                }
+                if (e.key.toLowerCase() === 'delete' && pointerLocked) {
+                    // Try to delete the object the player is pointing at (needs raycast on JS side, omitted for this demo)
+                    // For now, let's just delete the last object for a simple keybind
+                    deleteShape(scene.shapes.length - 1);
+                }
+            });
+
+            document.addEventListener('keyup', (e) => {
+                keysPressed[e.key.toLowerCase()] = false;
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (pointerLocked) {
+                    yaw += e.movementX * 0.1; pitch -= e.movementY * 0.1; pitch = Math.max(-89, Math.min(89, pitch));
+                    cameraFront = vec3.normalize([Math.cos(degToRad(yaw)) * Math.cos(degToRad(pitch)), Math.sin(degToRad(pitch)), Math.sin(degToRad(yaw)) * Math.cos(degToRad(pitch))]);
+                } else {
+                    updatePreviewObject();
+                }
+            });
+        }
+
+        function handleCameraInput(deltaTime) {
+            updatePreviewObject(); // Keep preview updated even when not locked
+            const speed = 5.0 * deltaTime; // Movement speed is now tied to the corrected delta time
+            const right = vec3.normalize(vec3.cross(cameraFront, cameraUp));
+            if (keysPressed['w']) cameraPos = vec3.add(cameraPos, vec3.scale(cameraFront, speed));
+            if (keysPressed['s']) cameraPos = vec3.subtract(cameraPos, vec3.scale(cameraFront, speed));
+            if (keysPressed['a']) cameraPos = vec3.subtract(cameraPos, vec3.scale(right, speed));
+            if (keysPressed['d']) cameraPos = vec3.add(cameraPos, vec3.scale(right, speed));
+            if (keysPressed['q']) cameraPos = vec3.subtract(cameraPos, vec3.scale(cameraUp, speed));
+            if (keysPressed['e']) cameraPos = vec3.add(cameraPos, vec3.scale(cameraUp, speed));
+        }
+        
+        // --- UI Logic ---
+        function setupUI() {
+             ui.toggle.addEventListener('click', () => {
+                ui.sidebar.classList.toggle('collapsed');
+            });
+
+            // Shape Buttons
+            ui.buttons.sphere.addEventListener('click', () => { placementMode = { active: true, type: SHAPE_TYPE.SPHERE, object: 'shape' }; updatePreviewObject(); });
+            ui.buttons.cube.addEventListener('click', () => { placementMode = { active: true, type: SHAPE_TYPE.BOX, object: 'shape' }; updatePreviewObject(); });
+            ui.buttons.cylinder.addEventListener('click', () => { placementMode = { active: true, type: SHAPE_TYPE.CYLINDER, object: 'shape' }; updatePreviewObject(); });
+            ui.buttons.pyramid.addEventListener('click', () => { placementMode = { active: true, type: SHAPE_TYPE.PYRAMID, object: 'shape' }; updatePreviewObject(); });
+            ui.buttons.pointlight.addEventListener('click', () => { placementMode = { active: true, type: null, object: 'light' }; updatePreviewObject(); });
+            ui.buttons.deleteAll.addEventListener('click', deleteAllShapes);
+            ui.buttons.addConstraint.addEventListener('click', activateConstraints);
+            ui.buttons.removeConstraint.addEventListener('click', clearConstraints);
+            ui.buttons.spawnGrid.addEventListener('click', () => {
+                const size = 1.0;
+                const color = '#ff0000';
+                const material = MATERIAL_TYPE.SOLID;
+                const anim = ANIM_TYPE.NONE;
+                const emissive = false;
+                const startPos = [...cameraPos]; // Save original camera pos
+
+                // Place a 10x10x1 grid of cubes
+                for (let x = -5; x < 5; x++) {
+                    for (let z = -5; z < 5; z++) {
+                         const newShape = {
+                            type: SHAPE_TYPE.BOX,
+                            param: [size, size, size, 0],
+                            color: hexToRgb(color),
+                            emissive: emissive ? 1.0 : 0.0,
+                            material: material,
+                            anim: anim,
+                            pos: [x * 3 + startPos[0], startPos[1], z * 3 + startPos[2]],
+                            prevPos: [x * 3 + startPos[0], startPos[1], z * 3 + startPos[2]], // For physics
+                            isAnchor: false
+                        };
+                        scene.shapes.push(newShape);
+                    }
+                }
+            });
+
+
+            // Hide/Show Sky Color/Image inputs
+            ui.selects.skyType.addEventListener('change', () => {
+                const type = parseInt(ui.selects.skyType.value);
+                ui.containers.skyColor.style.display = (type === SKY_TYPE.SOLID) ? 'flex' : 'none';
+                ui.containers.skyImage.style.display = (type === SKY_TYPE.IMAGE) ? 'flex' : 'none';
+            });
+            
+            ui.inputs.skyImage.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const image = new Image();
+                        image.onload = () => {
+                            loadSkybox(image);
+                        };
+                        image.src = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // Sliders and Checkboxes don't need complex event handlers, the render loop just reads their values.
+        }
+
+
+        // --- Initialization ---
+        function init() {
+            setupInput();
+            setupUI();
+            
+            // Create a default light and an initial ground block (non-interactive)
+             scene.lights.push({ pos: [10, 10, 10], color: [1.0, 1.0, 1.0] });
+             scene.shapes.push({
+                type: SHAPE_TYPE.BOX,
+                param: [100.0, 1.0, 100.0, 0], // Big, flat box
+                color: [0.3, 0.3, 0.3],
+                emissive: 0.0,
+                material: MATERIAL_TYPE.SOLID,
+                anim: ANIM_TYPE.NONE,
+                pos: [0, -0.5, 0],
+                prevPos: [0, -0.5, 0],
+                isAnchor: true
+            });
+            
+            // Set initial skybox texture (a default black image if none loaded)
+            const defaultSkybox = new Image();
+            defaultSkybox.onload = () => loadSkybox(defaultSkybox);
+            defaultSkybox.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='; // 1x1 black pixel
+
+            render(0); // Start the loop
+        }
+
+        init();
+    </script>
+</body>
+</html>
