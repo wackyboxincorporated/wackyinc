@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>504</title>
+    <style>
+        /* Global Reset and Pitch Black Background */
+        body {
+            background-color: black;
+            margin: 0;
+            overflow: hidden; /* Hide potential scrollbars */
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            cursor: pointer; /* Indicate interaction is needed */
+        }
+
+        /* VTxxx Font Style */
+        #hi-text {
+            /* Using a system monospace font stack for a classic VTxxx/Terminal look */
+            font-family: 'Courier New', 'Lucida Console', monospace;
+            color: #FFFFFF; /* White text on black background */
+            font-size: 8; /* Large size */
+            user-select: none; /* Prevent text selection */
+            transition: color 0.5s ease;
+            text-align: center;
+            /* === ADDED THIS FOR NARROWER MARGINS (e.g., 60% of the viewport width) === */
+            max-width: 60vw; 
+            /* ========================================================================= */
+        }
+
+        /* Hide the audio element */
+        #audio-player {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="hi-text">you have maybe one more chance to stop bothering me</div>
+    <audio id="audio-player" src="trapped.mp3" loop></audio>
+
+    <script>
+        const audio = document.getElementById('audio-player');
+        const hiText = document.getElementById('hi-text');
+
+        // Function to start playback and remove the event listener
+        function startPlayback() {
+            // Check if audio is already playing to avoid trying to play again
+            if (audio.paused) {
+                
+                // === ADDED LINE TO SET VOLUME TO MINIMUM AUDIBLE LEVEL (0.01) ===
+                audio.volume = 0.01; 
+                // ===============================================================
+
+                audio.play()
+                    .then(() => {
+                        // Success: Audio started playing
+                        console.log('Audio playback started.');
+                        // Remove the event listener once playback starts successfully
+                        document.body.removeEventListener('click', startPlayback);
+                        hiText.style.color = '#FFFFFF'; // Ensure text is white after starting
+                        document.body.style.cursor = 'default'; // Change cursor back
+                    })
+                    .catch(error => {
+                        // Failure: Often occurs if the browser is blocking autoplay
+                        console.error('Autoplay failed, user interaction is still required.', error);
+                        hiText.style.color = 'yellow'; // Visual cue that something is needed
+                    });
+            }
+        }
+
+        // Add a click listener to the entire body to start the audio.
+        // This satisfies modern browser autoplay policies that require a user gesture.
+        document.body.addEventListener('click', startPlayback);
+
+        // Optional: Add a pulsating effect to the text before the click
+        let isPulsing = true;
+        function pulse() {
+            if (!isPulsing) return;
+            // Briefly fade to dark gray and back to white
+            hiText.style.color = '#333333';
+            setTimeout(() => {
+                hiText.style.color = '#FFFFFF';
+            }, 500);
+        }
+        
+        // Start pulsing the text until the audio starts
+        const pulseInterval = setInterval(() => {
+            if (audio.paused) {
+                pulse();
+            } else {
+                clearInterval(pulseInterval);
+                isPulsing = false;
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
