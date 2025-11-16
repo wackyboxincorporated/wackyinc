@@ -2,1810 +2,2061 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Wackybox Incorporated Desktop</title>
-    
-    <script src="https://cdn.jsdelivr.net/npm/three@0.138.0/build/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.138.0/examples/js/loaders/RGBELoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.138.0/examples/js/controls/OrbitControls.js"></script>
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>wb-player 2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-       /* fucking app */
-        html, body {
-            margin: 0;
-            padding: 0;
-            /* NEW: 100dvh (dynamic viewport height) is better for mobile browsers with toolbars */
-            height: 100vh; /* Fallback */
-            height: 100dvh;
-            width: 100%;
-            overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Tahoma', sans-serif;
-            -webkit-font-smoothing: antialiased;
-            user-select: none;
-            background: #2e7141;
-            position: fixed; /* Prevents bouncing on mobile */
+        /* * === THEME & COLOR SYSTEM ===
+         * all colors are controlled by css variables.
+         * themes are applied by adding a class to the <body>.
+        */
+        :root {
+            /* default (original) theme */
+            --color-primary: #880808;
+            --color-primary-hover: #660000;
+            --color-secondary: #4a5568;
+            --color-background: #000000;
+            --color-surface: #282828;
+            --color-surface-light: #3a3a3a;
+            --color-text: #f0f0f0;
+            --color-text-dim: #b0b0b0;
+            --color-text-bright: #ffffff;
+            --color-border: #4a5568;
+            --color-shadow-light: rgba(255, 255, 255, 0.1);
+            --color-shadow-dark: rgba(0, 0, 0, 0.7);
+            --color-gradient-start: var(--color-primary);
+            --color-gradient-end: var(--color-primary-hover);
         }
 
-        .desktop {
-            height: 100%;
-            width: 100%;
-            background-size: cover;
-            background-position: center;
-            position: relative;
-            transition: background 0.5s ease; /* NEW: Animate wallpaper changes */
+        body.theme-ocean-blue {
+            --color-primary: #007bff;
+            --color-primary-hover: #0056b3;
+            --color-secondary: #17a2b8;
+            --color-background: #0a192f;
+            --color-surface: #172a45;
+            --color-surface-light: #233f6a;
+            --color-text: #ccd6f6;
+            --color-text-dim: #8892b0;
+            --color-text-bright: #e6f1ff;
+            --color-border: #007bff;
         }
 
-        /* massive ugrade*/
-        #desktop-icon-container {
-            display: flex;
-            flex-direction: column;
-            flex-wrap: wrap;
-            align-content: flex-start;
-            /* NEW: Respect safe area on top and taskbar on bottom */
-            height: calc(100% - 30px - env(safe-area-inset-top, 0));
-            width: 100%;
-            padding: 10px;
-            padding-top: calc(10px + env(safe-area-inset-top, 0));
-            box-sizing: border-box;
-            gap: 10px;
+        body.theme-solid-gray {
+            --color-primary: #6c757d;
+            --color-primary-hover: #5a6268;
+            --color-secondary: #495057;
+            --color-background: #212529;
+            --color-surface: #343a40;
+            --color-surface-light: #495057;
+            --color-text: #f8f9fa;
+            --color-text-dim: #adb5bd;
+            --color-text-bright: #ffffff;
+            --color-border: #6c757d;
         }
 
-        .icon {
-            width: clamp(75px, 6vw, 90px);
-            height: clamp(85px, 7vw, 100px);
-            text-align: center;
-            cursor: pointer;
-            border: 1px solid transparent;
-            padding: 5px 0;
-            box-sizing: border-box;
-            transition: all 0.1s ease-out;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            border-radius: 6px;
+        body.theme-wacky-green {
+            /* based on the provided green gradient image */
+            --color-primary: #4CAF50;
+            --color-primary-hover: #45a049;
+            --color-secondary: #2E8B57;
+            --color-background: #1b2f1b;
+            --color-surface: #2a402a;
+            --color-surface-light: #385538;
+            --color-text: #e0f0e0;
+            --color-text-dim: #a0c0a0;
+            --color-text-bright: #ffffff;
+            --color-border: #4CAF50;
+            --color-gradient-start: #4CAF50;
+            --color-gradient-end: #2E8B57;
         }
 
-        .icon:hover, .icon.dragging, .icon.selected {
-            background-color: rgba(255, 255, 255, 0.3);
-            border: 1px dotted #ffffff;
-            transform: scale(1.03);
+        body.theme-synthwave {
+            --color-primary: #f9208e;
+            --color-primary-hover: #c71a74;
+            --color-secondary: #00f0ff;
+            --color-background: #10001f;
+            --color-surface: #250a3d;
+            --color-surface-light: #3a1a5c;
+            --color-text: #e5cfff;
+            --color-text-dim: #a595b1;
+            --color-text-bright: #ffffff;
+            --color-border: #f9208e;
+            --color-gradient-start: #f9208e;
+            --color-gradient-end: #00f0ff;
         }
-
-        .icon-img {
-            width: clamp(40px, 3.5vw, 48px);
-            height: clamp(40px, 3.5vw, 48px);
-            margin: 5px auto;
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-            flex-shrink: 0;
-        }
-
-        .icon-name {
-            color: white;
-            font-size: clamp(10px, 1vw, 12px);
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-            word-wrap: break-word;
-            padding: 0 2px;
-            line-height: 1.2;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            text-align: center;
-        }
-
-        /* how to do it */
-        .window {
-            position: absolute;
-            width: 600px;
-            height: 400px;
-            background: rgba(255, 255, 255, 0.95);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-            resize: both;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            z-index: 1000;
-            border-radius: 8px;
-            min-width: 250px;
-            min-height: 150px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            
-            /* NEW: Window open/close animation */
-            transform: scale(1);
-            opacity: 1;
-            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.15s ease-out;
-        }
-        .window.opening {
-            transform: scale(0.9);
-            opacity: 0;
-        }
-        .window.closing {
-            transform: scale(0.9);
-            opacity: 0;
-            transition: transform 0.15s ease-in, opacity 0.15s ease-in;
-        }
-
-
-        .window.minimized { display: none; }
-        .window.maximized { 
-            /* NEW: Respect taskbar and safe area when maximized */
-            top: env(safe-area-inset-top, 0) !important; 
-            left: env(safe-area-inset-left, 0) !important; 
-            width: calc(100vw - env(safe-area-inset-left, 0) - env(safe-area-inset-right, 0)) !important; 
-            height: calc(100vh - 30px - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0)) !important; 
-            resize: none; border-radius: 0; 
-        }
-        .window.maximized .window-header { border-radius: 0; }
-
-        .window-header {
-            cursor: move;
-            background: rgba(240, 240, 240, 0.7);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            color: #333;
-            padding: 6px 8px;
-            font-size: 13px; font-weight: bold;
-            display: flex; justify-content: space-between; align-items: center;
-            user-select: none; 
-            border-top-left-radius: 8px; 
-            border-top-right-radius: 8px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-        }
-
-        .window-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 3px; }
-        .window-controls { display: flex; }
         
-        .window-controls button {
-            background: transparent;
-            border: none;
-            color: #333;
-            width: 28px; height: 28px;
-            line-height: 28px;
-            text-align: center;
-            cursor: pointer;
-            font-weight: normal;
-            font-family: 'Segoe UI', sans-serif;
-            font-size: 16px;
-            margin-left: 2px;
-            border-radius: 4px;
-        }
-        .window-controls button:hover { background: rgba(0, 0, 0, 0.1); }
-        .window-controls .close-btn { font-weight: bold; font-size: 18px; line-height: 26px; }
-        .window-controls .close-btn:hover { background: #e81123; color: white; }
-
-        .window-content {
-            flex-grow: 1; padding: 2px; background-color: #fff;
-            overflow: auto; font-size: 12px; color: #333;
-            border: none;
+        body.theme-sunlight {
+            --color-primary: #f39c12;
+            --color-primary-hover: #e67e22;
+            --color-secondary: #d35400;
+            --color-background: #fdfaf6;
+            --color-surface: #ffffff;
+            --color-surface-light: #f8f9fa;
+            --color-text: #34495e;
+            --color-text-dim: #7f8c8d;
+            --color-text-bright: #2c3e50;
+            --color-border: #f39c12;
+            --color-shadow-light: rgba(0, 0, 0, 0.1);
+            --color-shadow-dark: rgba(0, 0, 0, 0.2);
         }
 
-        /* absolutely useless comments i cant be bothered to write good ones*/
-        .taskbar {
-            position: absolute; bottom: 0; left: 0; 
-            width: 100%; height: 30px;
-            /* NEW: Respect safe area */
-            padding-left: env(safe-area-inset-left, 0);
-            padding-right: env(safe-area-inset-right, 0);
-            padding-bottom: env(safe-area-inset-bottom, 0);
-            height: calc(30px + env(safe-area-inset-bottom, 0));
-
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(255, 255, 255, 0.3);
-            z-index: 9000; display: flex;
-            align-items: center; padding: 0 5px;
-            box-sizing: border-box;
+        body.theme-ember {
+            --color-primary: #e74c3c;
+            --color-primary-hover: #c0392b;
+            --color-secondary: #f39c12;
+            --color-background: #1a1a1a;
+            --color-surface: #2c2c2c;
+            --color-surface-light: #3e3e3e;
+            --color-text: #ecf0f1;
+            --color-text-dim: #bdc3c7;
+            --color-text-bright: #ffffff;
+            --color-border: #e74c3c;
+            --color-gradient-start: #e74c3c;
+            --color-gradient-end: #f39c12;
         }
-        .start-button {
-            background: #479e2c;
-            color: white; font-weight: bold; padding: 2px 12px; border-radius: 4px;
-            border: none;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-            cursor: pointer; font-size: 14px; font-style: italic;
-            transition: background 0.1s;
+        
+        /* === BASE STYLES === */
+        html {
+            font-size: 16px; /* base font size */
         }
-        .start-button:hover { background: #5ac03a; }
-        .start-button:active { background: #3f8a26; }
-
-        .task-items { flex-grow: 1; height: 100%; display: flex; align-items: center; margin-left: 10px; gap: 4px; }
-        .task-item {
-            background: rgba(255, 255, 255, 0.3);
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            color: #333; padding: 2px 8px;
-            height: 22px; max-width: 150px; overflow: hidden; text-overflow: ellipsis;
-            white-space: nowrap; font-size: 12px; cursor: pointer;
-            border-radius: 4px;
-        }
-        .task-item.active { 
-            background: rgba(255, 255, 255, 0.7);
-            font-weight: bold;
-            border-color: rgba(0, 0, 0, 0.2);
-        }
-
-        #start-menu {
-            position: absolute; 
-            /* NEW: Respect safe area */
-            bottom: calc(30px + env(safe-area-inset-bottom, 0)); 
-            left: env(safe-area-inset-left, 0); 
-            width: 250px;
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(0, 0, 0, 0.2);
-            border-bottom: none;
-            border-top-right-radius: 6px;
-            z-index: 8999;
-            color: #333;
-            
-            /* NEW: Animation */
-            display: block;
-            visibility: hidden;
-            opacity: 0;
-            transform: translateY(20px) scale(0.95);
-            transition: transform 0.2s ease-out, opacity 0.2s ease-out, visibility 0s 0.2s;
-        }
-        #start-menu.open {
-            visibility: visible;
-            opacity: 1;
-            transform: translateY(0) scale(1);
-            transition: transform 0.2s ease-out, opacity 0.2s ease-out;
-        }
-
-        #start-menu-content { padding: 5px; }
-        .menu-section { border-top: 1px solid rgba(0, 0, 0, 0.1); margin-top: 5px; padding-top: 5px; }
-        .menu-item { 
-            padding: 5px 10px; cursor: pointer; display: flex; 
-            align-items: center; gap: 8px; border-radius: 4px; 
-        }
-        .menu-item:hover { background: rgba(0, 120, 215, 0.8); color: white; }
-        .menu-icon { width: 24px; height: 24px; }
-
-        /* ykw ill write them but they wont be very helpful and they'll just be generic */
-        .password-modal, .app-launch-prompt {
-            padding: 20px;
+        body {
+            font-family: 'Roboto Mono', monospace;
+            background-color: var(--color-background);
+            color: var(--color-text);
             display: flex;
-            flex-direction: column;
-            gap: 12px;
-            align-items: center;
-            text-align: center;
-            height: 100%;
             justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
             box-sizing: border-box;
+            position: relative;
+            overflow-x: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
-        .password-modal input[type="password"] {
-            padding: 8px;
-            border: 1px solid #999;
-            border-radius: 4px;
+        .container {
+            background-color: var(--color-surface);
+            padding: clamp(1.5rem, 5vw, 2.5rem);
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 25px var(--color-shadow-dark);
+            max-width: 500px;
             width: 90%;
             text-align: center;
-        }
-        .password-modal button, .app-launch-prompt-buttons button {
-            padding: 8px 16px;
-            background: #f0f0f0;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            cursor: pointer;
-            box-shadow: 0 1px 1px rgba(0,0,0,0.1);
-        }
-        .password-modal button:active, .app-launch-prompt-buttons button:active {
-            background: #e0e0e0;
-            box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
-        }
-        .error-message {
-            color: red;
-            font-weight: bold;
-            height: 15px;
-            font-size: 11px;
-        }
-        .app-launch-prompt p { margin: 0 0 15px 0; font-size: 13px; }
-        .app-launch-prompt-buttons { display: flex; justify-content: center; gap: 15px; }
-        .app-launch-prompt-buttons button { min-width: 100px; }
-
-        /* Locked Folder Styles  */
-        .folder-grid { display: flex; flex-wrap: wrap; padding: 5px; gap: 5px; }
-        .folder-grid .icon { position: static; padding: 2px; }
-        .folder-grid .icon:hover { background-color: rgba(0, 85, 255, 0.3); border: 1px dotted #ffffff; }
-        
-        /* Fucking Icons SVG --- */
-        .icon-img.folder { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23FFD700' d='M10 4H4c-1.11 0-2 .89-2 2v12a2 2 0 002 2h16c1.11 0 2-.89 2-2V8a2 2 0 00-2-2h-8l-2-2z'/%3E%3C/svg%3E"); }
-        .icon-img.locked-folder { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000000' d='M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z'/%3E%3C/svg%3E"); }
-        .icon-img.document { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23FFFFFF' stroke='%233B76CC' stroke-width='1.5' d='M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm4 18H6V4h7v4h4v12z'/%3E%3C/svg%3E"); }
-        .icon-img.code { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%236C757D' d='M14.6 16.6l-1.2-1.2 3.4-3.4-3.4-3.4 1.2-1.2 4.6 4.6zm-5.2 0l-4.6-4.6 4.6-4.6 1.2 1.2-3.4 3.4 3.4 3.4-1.2 1.2z'/%3E%3C/svg%3E"); }
-        .icon-img.audio { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%234CAF50' d='M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z'/%3E%3C/svg%3E"); }
-        .icon-img.video { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23F44336' d='M18 10l4-4v12l-4-4H4a2 2 0 01-2-2v-4a2 2 0 012-2h14z'/%3E%3C/svg%3E"); }
-        .icon-img.image { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%232196F3' d='M19 5v14H5V5h14m0-2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zM8.5 10.5l2.5 3.01L14.5 9L19 16.5V19H5v-2.5l3.5-4.5z'/%3E%3C/svg%3E"); }
-        .icon-img.zip { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000000' d='M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2M18 20H6V4H13V9H18V20M11 19H13V18H11V19M11 17H13V16H11V17M11 15H13V14H11V15M11 13H13V12H11V13M15 13V12H13V11H15V10H13V9H15V8H13C11.9 8 11 8.9 11 10V11H9V10H7V11H9V12H7V13H9V14H7V15H9V16H7V17H9V18H7V19H9V20H11C11 21.1 11.9 22 13 22H15V21H13V20H15V19H13V18H15V17H13V16H15V15H13V14H15V13Z'/%3E%3C/svg%3E");
-} }
-        .icon-img.unknown { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23AAAAAA' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z'/%3E%3C/svg%3E"); }
-        .icon-img.webapp-chat { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%2342A5F5' d='M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z'/%3E%3C/svg%3E"); }
-        .icon-img.webapp-draw { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23FF7043' d='M20.71 5.63l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z'/%3E%3C/svg%3E"); }
-        .icon-img.webapp-globe { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%2326C6DA' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z'/%3E%3C/svg%3E"); }
-        .icon-img.webapp-present { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23FFA726' d='M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12zM5 15h2v-2H5v2zm0-4h2V9H5v2zm0-4h2V5H5v2zm4 8h10V5H9v10z'/%3E%3C/svg%3E"); }
-        .icon-img.webapp-computer { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%238BC34A' d='M20 18c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z'/%3E%3C/svg%3E"); }
-        .icon-img.webapp-space { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%237E57C2' d='M12 2c-3.97 0-7.65 1.58-10.33 4.21.34.05.68.08 1.03.08 3.4 0 6.34-2.02 7.8-5.02.43-.88 1.3-1.42 2.27-1.42.4 0 .78.1.13.29C15.89 2.1 19.53 4.22 22 7.55c-1.39-2.04-3.5-3.53-5.83-4.44-.31-.11-.5-.41-.5-.75 0-.55-.45-1-1-1-1.34 0-2.61.34-3.77.95zM4.26 8.33C4.09 9.17 4 10.07 4 11c0 4.41 3.59 8 8 8s8-3.59 8-8c0-1.99-.74-3.8-1.97-5.26C16.92 6.53 14.59 7 12 7c-2.05 0-4.14-.3-5.85-.92-.61-.22-1.28.26-1.28.92.01.2.06.39.14.57zM12 9c2.76 0 5 2.24 5 5s-2.24 5-5 5-5-2.24-5-5 2.24-5 5-5z'/%3E%3C/svg%3E"); }
-        /* NEW: System App Icons */
-        .icon-img.webapp-notepad { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23FFFFFF' stroke='%23333' stroke-width='1.5' d='M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z'/%3E%3Cpath fill='%23B0BEC5' d='M13 3.5V9h5.5L13 3.5z'/%3E%3Cpath fill='%23546E7A' d='M6 14h12v1H6zM6 16h12v1H6zM6 12h12v1H6zM6 10h8v1H6z'/%3E%3C/svg%3E"); }
-        .icon-img.webapp-settings { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23607D8B' d='M19.4 12.9c.1-.3.1-.6.1-.9s0-.6-.1-.9l2.1-1.6c.2-.1.2-.4.1-.6l-2-3.5c-.1-.2-.4-.2-.6-.1l-2.5 1c-.5-.4-1-.7-1.5-.9l-.4-2.7c0-.2-.2-.4-.4-.4h-4c-.2 0-.4.2-.4.4l-.4 2.7c-.5.2-1 .5-1.5.9l-2.5-1c-.2-.1-.5 0-.6.1l-2 3.5c-.1.2-.1.5.1.6l2.1 1.6c-.1.3-.1.6-.1.9s0 .6.1.9l-2.1 1.6c-.2.1-.2.4-.1.6l2 3.5c.1.2.4.2.6.1l2.5-1c.5.4 1 .7 1.5.9l.4 2.7c0 .2.2.4.4.4h4c.2 0 .4-.2.4.4l.4-2.7c.5-.2 1-.5 1.5-.9l2.5 1c.2.1.5 0 .6-.1l2-3.5c.1-.2.1-.5-.1-.6l-2.1-1.6zM12 15.5c-1.9 0-3.5-1.6-3.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5z'/%3E%3C/svg%3E"); }
-
-
-        /* New mobile new Fone */
-        #mobile-homescreen {
-            display: none; /* Hidden by default */
-            height: 100%;
-            width: 100%;
-        }
-        #mobile-icon-pages {
-            width: 100%;
-            height: calc(100% - 20px); /* Space for dots */
+            position: relative;
+            animation: fadeIn 1s ease-out;
+            transition: background-color 0.3s ease;
             display: flex;
-            overflow-x: auto;
-            scroll-snap-type: x mandatory;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-            /* NEW: Respect safe area on top */
-            padding-top: env(safe-area-inset-top, 0);
-            box-sizing: border-box;
+            flex-direction: column;
+            gap: 1rem;
         }
-        #mobile-icon-pages::-webkit-scrollbar { display: none; }
-
-        .mobile-page {
-            width: 100%;
-            height: 100%;
-            flex-shrink: 0;
-            scroll-snap-align: start;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-            grid-auto-rows: 95px;
-            gap: 10px;
-            padding: 15px;
-            box-sizing: border-box;
-            align-content: flex-start;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        .mobile-page .icon { 
-            position: static;
-            width: auto;
-            height: 95px;
-        }
-        .mobile-page .icon:hover, .mobile-page .icon:active {
-            background-color: rgba(255, 255, 255, 0.3);
-            border: 1px dotted #ffffff;
-            transform: scale(1.03);
-        }
-
-        #mobile-page-dots {
-            position: absolute;
-            bottom: 0; left: 0;
-            width: 100%;
-            height: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-            /* be so kind to the navigation bar */
-            padding-bottom: calc(env(safe-area-inset-bottom, 0) + 5px);
-            box-sizing: border-box;
-        }
-        .dot {
-            width: 8px; height: 8px;
-            background: rgba(255, 255, 255, 0.4);
-            border-radius: 50%;
-            transition: background 0.3s;
-        }
-        .dot.active { background: white; }
-
-        /* NEW: Mobile App Management */
-        #mobile-top-bar {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%;
-            height: calc(30px + env(safe-area-inset-top, 0));
-            padding-top: env(safe-area-inset-top, 0);
-            padding-left: env(safe-area-inset-left, 0);
-            padding-right: env(safe-area-inset-right, 0);
-            background: rgba(0,0,0,0.3);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            z-index: 10000;
+        audio {
             display: none;
-            color: white;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 10px;
-            box-sizing: border-box;
         }
-        #mobile-menu-btn {
-            font-size: 20px;
-            cursor: pointer;
-            padding: 5px;
+        h1 {
+            color: var(--color-text-bright);
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            transition: color 0.3s ease;
         }
-        #mobile-clock {
-            font-weight: 500;
+        p {
+            color: var(--color-text);
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            transition: color 0.3s ease;
         }
-        
-        #mobile-app-container {
-            position: absolute;
-            /* an the top br */
-            top: calc(30px + env(safe-area-inset-top, 0));
-            left: env(safe-area-inset-left, 0);
-            width: calc(100% - env(safe-area-inset-left, 0) - env(safe-area-inset-right, 0));
-            height: calc(100% - 30px - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0));
-            background: #fff;
-            z-index: 9998;
-            display: none;
-            overflow: hidden; /* NEW: This will contain the sliding pages */
+        .audio-source {
+            font-size: 0.875rem;
+            color: var(--color-text-dim);
+            word-break: break-all;
+            margin-top: 0;
+            min-height: 1.25rem;
+            transition: color 0.3s ease;
         }
-
-        .mobile-app-page {
-            width: 100%;
-            height: 100%;
+        .audio-source a {
+            color: var(--color-primary);
+            transition: color 0.3s ease;
+        }
+        .audio-source a:hover {
+            text-decoration: underline;
+        }
+        .input-group {
             display: flex;
             flex-direction: column;
-            position: absolute;
-            background: #fff;
-            color: #333;
-            /* NEW: Animation */
-            transform: translateX(100%);
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            will-change: transform;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
         }
-        .mobile-app-page.active {
-            transform: translateX(0);
-            z-index: 1001; /* Active page is on top */
-        }
-        .mobile-app-page.closing {
-            transform: translateX(100%);
-            z-index: 1001; /* Keep on top while closing */
-        }
-
-        .mobile-app-header {
+        .input-group input[type="text"] {
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--color-border);
+            background-color: var(--color-surface-light);
+            color: var(--color-text);
+            border-radius: 0.25rem;
+            font-size: 1rem;
             width: 100%;
-            height: 40px;
-            background: #f0f0f0;
-            border-bottom: 1px solid #ccc;
-            display: flex;
-            align-items: center;
-            padding: 0 10px;
             box-sizing: border-box;
-            flex-shrink: 0;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease, color 0.3s ease;
         }
-        .mobile-app-title {
-            font-weight: bold;
-            font-size: 14px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            flex-grow: 1;
-            text-align: center;
-        }
-        .mobile-app-minimize-btn,
-        .mobile-app-close-btn {
-            font-size: 24px;
-            font-weight: bold;
-            color: #555;
-            cursor: pointer;
-            padding: 0 8px;
-        }
-        .mobile-app-minimize-btn {
-            font-size: 18px;
-            font-weight: bold;
-        }
-
-        .mobile-app-content {
-            flex-grow: 1;
-            overflow: auto;
-            display: flex;
-            flex-direction: column;
-        }
-        .mobile-app-content > * {
-            flex-grow: 1;
-        }
-        .mobile-app-content .window-content {
-            padding: 0;
-            height: 100%;
-        }
-
-        #mobile-sidebar {
-            position: absolute;
-            top: 0; left: 0;
-            width: 250px;
-            height: 100%;
-            background: rgba(50, 50, 50, 0.95);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            z-index: 10001;
-            transform: translateX(-100%);
-            transition: transform 0.3s ease-out;
-            color: white;
-            display: none;
-            flex-direction: column;
-            /* NEW: Respect safe areas */
-            padding-top: env(safe-area-inset-top, 0);
-            padding-bottom: env(safe-area-inset-bottom, 0);
-            box-sizing: border-box;
-        }
-        #mobile-sidebar.open {
-            transform: translateX(0);
-        }
-        .sidebar-header {
-            padding: 10px;
-            padding-left: calc(10px + env(safe-area-inset-left, 0));
-            font-size: 18px;
-            font-weight: bold;
-            border-bottom: 1px solid #555;
-        }
-        .sidebar-button {
-            display: flex;
-            align-items: center;
-            padding: 12px 15px;
-            padding-left: calc(15px + env(safe-area-inset-left, 0));
-            gap: 10px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        .sidebar-button:hover, .sidebar-button:active {
-            background: rgba(255, 255, 255, 0.1);
-        }
-        #mobile-task-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            flex-grow: 1;
-            overflow-y: auto;
-        }
-        .mobile-task-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 15px;
-            padding-left: calc(15px + env(safe-area-inset-left, 0));
-            border-bottom: 1px solid #444;
-            font-size: 13px;
-        }
-        .mobile-task-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-        .mobile-task-item.active {
-            background: rgba(0, 120, 215, 0.8);
-            font-weight: bold;
-        }
-        .mobile-task-item-name {
-            flex-grow: 1;
-            padding-right: 10px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            cursor: pointer;
-        }
-        .mobile-task-item-close {
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-            padding: 2px 5px;
-            border-radius: 3px;
-        }
-        .mobile-task-item-close:hover {
-            background: rgba(255, 0, 0, 0.7);
-        }
-
-        #mobile-sidebar-overlay {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 10000;
-            display: none;
-            opacity: 0;
-            transition: opacity 0.3s ease-out;
-        }
-        #mobile-sidebar-overlay.open {
-            display: block;
-            opacity: 1;
-        }
-
-        /* yes stles */
-        #calculator {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            background: #333;
-            color: white;
-            font-family: 'Segoe UI', 'Tahoma', sans-serif;
-        }
-        #calc-display {
-            background: #333;
-            color: white;
-            text-align: right;
-            padding: 20px;
-            /* NEW: Scalable font size */
-            font-size: clamp(2em, 10vw, 3em);
-            font-weight: 300;
-            box-sizing: border-box;
-            border: none;
-            width: 100%;
-            flex-shrink: 0;
-        }
-        #calc-buttons {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            flex-grow: 1;
-        }
-        .calc-btn {
-            background: #555;
-            border: 1px solid #333;
-            color: white;
-            /* NEW: Scalable font size */
-            font-size: clamp(1.2em, 5vw, 1.8em);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .calc-btn:active {
-            background: #666;
-        }
-        .calc-btn.op { background: #ff9500; }
-        .calc-btn.op:active { background: #e08400; }
-        .calc-btn.func { background: #444; }
-        .calc-btn.func:active { background: #555; }
-        .calc-btn.zero { grid-column: span 2; }
-
-        #clock-app {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            background: #111;
-            color: #0f0;
-            font-family: 'DS-Digital', 'Lucida Console', monospace;
-            padding: 10px;
-            box-sizing: border-box;
-            text-align: center;
-        }
-        #clock-time {
-            /* font should scale but probably wont */
-            font-size: clamp(3em, 20vw, 8em);
-            letter-spacing: 2px;
-        }
-        #clock-date {
-            /* NEW: Scalable font size */
-            font-size: clamp(1em, 5vw, 2em);
-        }
-
-        #notepad-app {
-            display: flex;
-            width: 100%;
-            height: 100%;
-        }
-        #notepad-textarea {
-            flex-grow: 1;
-            border: none;
-            padding: 10px;
-            font-family: 'Lucida Console', monospace;
-            font-size: 14px;
-            resize: none;
-            box-sizing: border-box;
-        }
-        #notepad-textarea:focus {
+        .input-group input[type="text"]:focus {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px var(--color-primary-hover);
             outline: none;
         }
+        .input-group input[type="text"]::placeholder {
+            color: var(--color-text-dim);
+        }
+        .input-group button, .file-upload-label {
+            background-color: var(--color-primary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.25rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            box-shadow: 0 4px 6px var(--color-shadow-dark);
+        }
+        .input-group button:hover, .file-upload-label:hover {
+            background-color: var(--color-primary-hover);
+            transform: translateY(-2px);
+        }
+        .input-group button:active, .file-upload-label:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 3px var(--color-shadow-dark);
+        }
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
 
-        #settings-app {
-            padding: 20px;
+        /* === MESSAGE BOX === */
+        .message-box {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.375rem;
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            max-width: 400px;
+            width: 90%;
+            box-sizing: border-box;
+            text-align: center;
+            font-size: 1rem;
+            font-weight: 500;
+            z-index: 1001;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease-out, visibility 0.4s;
+            box-shadow: 0 4px 15px var(--color-shadow-dark);
+        }
+        .message-box.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .message-box.type-error { background-color: #fed7d7; color: #c53030; }
+        .message-box.type-success { background-color: #c6f6d5; color: #2f855a; }
+        .message-box.type-info { background-color: #bee3f8; color: #2b6cb0; }
+
+        /* === CORNER BUTTONS (INFO & SETTINGS) === */
+        .corner-button {
+            position: fixed;
+            top: 1rem;
+            background-color: var(--color-secondary);
+            color: white;
+            border-radius: 0.25rem;
+            padding: 0.75rem 1rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 10px var(--color-shadow-dark);
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+            z-index: 1000;
+        }
+        .corner-button:hover {
+            background-color: var(--color-surface-light);
+            transform: scale(1.05);
+        }
+        .corner-button:active {
+            transform: scale(1);
+        }
+        #infoButton {
+            right: 1rem;
+        }
+        #settingsButton {
+            left: 1rem;
+        }
+
+        /* === MODAL PAGES (INFO & SETTINGS) === */
+        .modal-page {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
             display: flex;
-            flex-direction: column;
-            gap: 20px;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            padding: 1rem;
+            box-sizing: border-box;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s;
+        }
+        .modal-page.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: var(--color-surface);
+            padding: 2.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 25px var(--color-shadow-dark);
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
             overflow-y: auto;
+            text-align: left;
+            color: var(--color-text);
+            position: relative;
+            animation: slideInFromBottom 0.5s ease-out;
+            transition: background-color 0.3s ease;
         }
-        .setting-group {
+        @keyframes slideInFromBottom {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modal-content h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: var(--color-text-bright);
+            text-align: center;
+        }
+        .modal-content h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--color-text-bright);
+            border-bottom: 1px solid var(--color-border);
+            padding-bottom: 0.5rem;
+        }
+        .modal-content p {
+            font-size: 1rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+            color: var(--color-text);
+        }
+        .modal-content ul {
+            font-size: 1rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+            color: var(--color-text);
+            list-style: disc;
+            padding-left: 1.5rem;
+        }
+        .modal-close-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background-color: var(--color-primary);
+            color: white;
+            border-radius: 0.25rem;
+            padding: 0.5rem 0.8rem;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+            border: none;
+            line-height: 1;
+        }
+        .modal-close-button:hover {
+            background-color: var(--color-primary-hover);
+            transform: scale(1.1);
+        }
+        .modal-close-button:active {
+            transform: scale(1);
+        }
+
+        /* === PLAYLIST STYLING === */
+        #playlistContainer {
+            width: 100%;
+        }
+        .playlist-toggle-button {
+            background-color: var(--color-secondary);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+            border: none;
+            width: 100%;
+            text-align: left;
             display: flex;
-            flex-direction: column;
-            gap: 8px;
+            justify-content: space-between;
+            align-items: center;
         }
-        .setting-group label {
-            font-weight: bold;
-            font-size: 16px;
+        .playlist-toggle-button:hover {
+            background-color: var(--color-surface-light);
         }
-        .setting-group select, .setting-group button {
-            padding: 8px;
-            font-size: 14px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+        .playlist-list {
+            background-color: var(--color-surface-light);
+            border-radius: 0.25rem;
+            margin-top: 0.5rem;
+            max-height: 150px;
+            overflow-y: auto;
+            padding: 0.5rem;
+            transition: background-color 0.3s ease;
         }
-        .setting-group small {
-            font-size: 12px;
-            color: #777;
+        .playlist-list.hidden {
+            display: none;
+        }
+        .playlist-list li {
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            border-radius: 0.25rem;
+            transition: background-color 0.2s, color 0.2s;
+            color: var(--color-text);
+            text-align: left;
+        }
+        .playlist-list li:hover {
+            background-color: var(--color-secondary);
+            color: white;
+        }
+        .playlist-list li.active {
+            background-color: var(--color-primary);
+            color: white;
+            font-weight: 700;
+        }
+        .playlist-list li.playlist-info {
+            font-size: 0.75rem;
+            color: var(--color-text-dim);
+            cursor: default;
+        }
+        .playlist-list li.playlist-info:hover {
+            background-color: transparent;
+            color: var(--color-text-dim);
+        }
+        .playlist-toggle-button i {
+            transition: transform 0.3s ease;
+        }
+        .playlist-toggle-button.active i {
+            transform: rotate(180deg);
         }
 
+        /* === CUSTOM PLAYER CONTROLS === */
+        .custom-controls {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap; /* allow wrapping on desktop */
+            gap: 1rem;
+            margin-top: 0.5rem;
+            background-color: var(--color-surface-light);
+            padding: 1rem;
+            border-radius: 0.375rem;
+            box-shadow: inset 0 2px 5px var(--color-shadow-dark);
+            transition: background-color 0.3s ease;
+        }
+        .control-button {
+            background-color: var(--color-primary);
+            color: white;
+            width: 3rem;
+            height: 3rem;
+            border-radius: 0.375rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+            box-shadow: 0 4px 8px var(--color-shadow-dark);
+            flex-shrink: 0;
+        }
+        .control-button:hover {
+            background-color: var(--color-primary-hover);
+            transform: scale(1.05);
+        }
+        .control-button:active {
+            transform: scale(0.95);
+        }
+        .control-button.small {
+            width: 2.5rem;
+            height: 2.5rem;
+            font-size: 1rem;
+            background-color: var(--color-secondary);
+        }
+        .control-button.small:hover {
+            background-color: var(--color-primary-hover);
+        }
+        .control-button.small.active {
+            background-color: var(--color-primary);
+            box-shadow: inset 0 2px 4px var(--color-shadow-dark);
+        }
+        
+        /* progress bar row */
+        .progress-row {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .progress-container {
+            flex-grow: 1;
+            height: 0.75rem;
+            background-color: var(--color-surface);
+            border-radius: 0.125rem;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px var(--color-shadow-dark);
+        }
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(to right, var(--color-gradient-start), var(--color-gradient-end));
+            border-radius: 0.125rem;
+            transition: width 0.1s linear;
+            position: relative;
+        }
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            right: -0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 1rem;
+            height: 1rem;
+            background-color: #fff;
+            border-radius: 0.125rem;
+            box-shadow: 0 2px 5px var(--color-shadow-dark);
+            display: none;
+        }
+        .progress-container:hover .progress-bar::after {
+            display: block;
+        }
+        .progress-time {
+            font-size: 0.75rem;
+            color: var(--color-text-dim);
+            white-space: nowrap;
+        }
 
-        /* media query 4mobel */
-        @media (max-width: 768px), (max-height: 500px) and (orientation: landscape) {
-            /* Hide Desktop UI */
-            #desktop-icon-container { display: none; }
-            .taskbar, #start-menu { display: none !important; }
-            .window { display: none !important; } /* Hide all desktop-style windows */
+        .volume-container, .speed-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .volume-icon, .speed-icon {
+            font-size: 1.2rem;
+            color: var(--color-text);
+            cursor: pointer;
+        }
+        
+        /* === CUSTOM SLIDERS === */
+        .styled-slider {
+            -webkit-appearance: none;
+            width: 6rem;
+            height: 0.5rem;
+            background: var(--color-surface);
+            border-radius: 0.125rem;
+            outline: none;
+            transition: background 0.2s ease-in-out;
+        }
+        .styled-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 1rem;
+            height: 1rem;
+            background: var(--color-primary);
+            border-radius: 0.125rem;
+            cursor: pointer;
+            box-shadow: 0 2px 5px var(--color-shadow-dark);
+            transition: background 0.2s ease-in-out;
+        }
+        .styled-slider::-moz-range-thumb {
+            width: 1rem;
+            height: 1rem;
+            background: var(--color-primary);
+            border-radius: 0.125rem;
+            cursor: pointer;
+            box-shadow: 0 2px 5px var(--color-shadow-dark);
+            transition: background 0.2s ease-in-out;
+        }
+        .styled-slider:hover::-webkit-slider-thumb,
+        .styled-slider:hover::-moz-range-thumb {
+            background: var(--color-primary-hover);
+        }
+        .speed-value {
+            font-size: 0.75rem;
+            color: var(--color-text-dim);
+            width: 2.5rem;
+            text-align: right;
+        }
 
-            /* fone */
-            #mobile-homescreen { display: block; }
-            #mobile-top-bar { display: flex; }
-            #mobile-sidebar { display: flex; }
+        .speed-mode-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-left: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--color-text-dim);
+            white-space: nowrap;
+        }
+
+        /* === CUSTOM SWITCH (TOGGLE) === */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 38px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--color-surface);
+            transition: .4s;
+            border-radius: 0.125rem;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 0.125rem;
+        }
+        input:checked + .slider {
+            background-color: var(--color-primary);
+        }
+        input:focus + .slider {
+            box-shadow: 0 0 1px var(--color-primary);
+        }
+        input:checked + .slider:before {
+            transform: translateX(18px);
+        }
+
+        /* === VISUALIZER === */
+        #audioVisualizer {
+            width: 100%;
+            height: 60px;
+            background-color: var(--color-surface-light);
+            border-radius: 0.375rem;
+            box-shadow: inset 0 2px 5px var(--color-shadow-dark);
+            transition: background-color 0.3s ease;
+        }
+
+        /* === SETTINGS PAGE === */
+        .settings-group {
+            margin-bottom: 1.5rem;
+        }
+        .settings-label {
+            display: block;
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--color-text);
+        }
+        .settings-description {
+            font-size: 0.875rem;
+            color: var(--color-text-dim);
+            margin-bottom: 1rem;
+        }
+        .setting-control {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        /* theme selector */
+        .theme-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 1rem;
+        }
+        .theme-option {
+            padding: 1rem 0.5rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            text-align: center;
+            font-weight: 600;
+            border: 2px solid var(--color-border);
+            background-color: var(--color-surface-light);
+            color: var(--color-text);
+            transition: all 0.2s ease;
+        }
+        .theme-option:hover {
+            transform: translateY(-2px);
+            border-color: var(--color-primary);
+        }
+        .theme-option.active {
+            background-color: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary-hover);
+            box-shadow: 0 4px 10px var(--color-shadow-dark);
+        }
+
+        /* === RESPONSIVE LAYOUT (MOBILE) === */
+        @media (max-width: 600px) {
+            body {
+                padding: 0;
+            }
+            .container {
+                width: 100%;
+                max-width: 100%;
+                height: 100vh;
+                min-height: -webkit-fill-available; /* safari fix */
+                border-radius: 0;
+                padding: 1rem;
+                box-shadow: none;
+                justify-content: flex-start;
+                overflow-y: auto; /* allow scrolling on small screens */
+            }
+
+            h1 { font-size: 1.5rem; }
+            p { font-size: 0.875rem; }
+            
+            .input-group {
+                margin-bottom: 0.5rem;
+            }
+            
+            #playlistContainer {
+                margin-top: 0;
+            }
+            
+            #audioVisualizer {
+                height: 50px;
+                order: 1; /* move visualizer before controls */
+            }
+
+            .custom-controls {
+                flex-direction: column; /* stack all controls */
+                align-items: stretch; /* stretch items */
+                padding: 1rem;
+                margin-top: 0;
+                order: 2; /* move controls after visualizer */
+            }
+            
+            /* main play/loop buttons row */
+            .controls-row-1 {
+                display: flex;
+                justify-content: center;
+                gap: 1.5rem;
+                width: 100%;
+            }
+
+            .progress-row {
+                order: -1; /* move progress bar to top */
+            }
+            
+            /* full-width sliders */
+            .volume-container, .speed-container {
+                width: 100%;
+                justify-content: space-between;
+                gap: 0.75rem;
+            }
+            .styled-slider {
+                width: auto;
+                flex-grow: 1;
+            }
+            .speed-mode-toggle {
+                margin-left: 0;
+                gap: 0.5rem;
+            }
+            .speed-container {
+                flex-wrap: wrap; /* allow speed toggle to wrap */
+            }
+            .speed-mode-toggle {
+                flex-basis: 100%; /* make toggle take full width if it wraps */
+                justify-content: center;
+                margin-top: 0.5rem;
+            }
+            
+            .corner-button {
+                padding: 0.5rem 0.75rem;
+                font-size: 1rem;
+            }
+            
+            .modal-content {
+                width: 100%;
+                height: 100%;
+                max-height: 100%;
+                border-radius: 0;
+            }
         }
         
     </style>
 </head>
 <body>
+    <div class="container">
+        <h1>wb-player version 2</h1>
+        <p>enter a url or select a local file...</p>
 
-<div class="desktop" id="desktop-root">
-    
-    <div id="desktop-icon-container" class="icon-container"></div>
-    <div id="window-area"></div>
-    <div id="start-menu">
-        <div id="start-menu-content">
-            <h4>Programs</h4>
-            <div id="start-programs"></div>
-            <div class="menu-section">
-                <h4>Documents</h4>
-                <div id="start-docs"></div>
+        <div class="input-group">
+            <input type="text" id="audioUrlInput" placeholder="enter audio url (e.g., .mp3, .flac)">
+            <button id="loadUrlButton">load from url</button>
+        </div>
+
+        <div class="input-group">
+            <div class="file-input-wrapper">
+                <input type="file" id="audioFileInput" accept="audio/*">
+                <label for="audioFileInput" class="file-upload-label">pick something off your device!</label>
             </div>
         </div>
-    </div>
-    <div class="taskbar">
-        <div id="start-button" class="start-button">Start</div>
-        <div id="task-items" class="task-items"></div>
-    </div>
-    
-    <div id="mobile-top-bar">
-        <span id="mobile-menu-btn">&#9776;</span>
-        <span id="mobile-clock"></span>
-    </div>
-    
-    <div id="mobile-homescreen">
-        <div id="mobile-icon-pages"></div>
-        <div id="mobile-page-dots"></div>
-    </div>
-    
-    <div id="mobile-app-container">
+
+        <audio id="audioPlayer" loop crossorigin="anonymous">
+            <source src="https://wackybox.org/19-4.flac" type="audio/flac">
+            your browser does not support flac files... what the hell are you loading this on?
+        </audio>
+
+        <div id="audioSourceDisplay" class="audio-source">
+            source: <a href="https://wackybox.org/19-4.flac" target="_blank">https://wackybox.org/19-4.flac</a>
         </div>
-    
-    <div id="mobile-sidebar">
-        <div class="sidebar-header">wbOS!</div>
-        <div class="sidebar-button" id="mobile-home-btn">
-            <span style="font-size: 20px;">&#8962;</span> <span>home!</span>
+
+        <div id="playlistContainer">
+            <button id="togglePlaylistButton" class="playlist-toggle-button">
+                wackybox demo list (click to show)
+                <i class="fas fa-chevron-down ml-2"></i>
+            </button>
+            <ul id="playlist" class="playlist-list hidden">
+                </ul>
         </div>
-        <div class="sidebar-header" style="font-size: 14px; padding-top: 15px;">current apps!</div>
-        <ul id="mobile-task-list">
+
+        <canvas id="audioVisualizer" width="450" height="60"></canvas>
+
+        <div class="custom-controls">
+            <div class="progress-row">
+                <div class="progress-time" id="currentTimeDisplay">0:00</div>
+                <div id="progressContainer" class="progress-container">
+                    <div id="progressBar" class="progress-bar"></div>
+                </div>
+                <div class="progress-time" id="durationDisplay">0:00</div>
+            </div>
+
+            <div class="controls-row-1">
+                <div id="playPauseButton" class="control-button">
+                    <i class="fas fa-play"></i>
+                </div>
+                <div id="loopButton" class="control-button small active">
+                    <i class="fas fa-repeat"></i>
+                </div>
+            </div>
+            
+            <div class="volume-container">
+                <i id="volumeIcon" class="fas fa-volume-up volume-icon"></i>
+                <input type="range" id="volumeSlider" class="styled-slider volume-slider" min="0" max="1" step="0.01" value="1">
+            </div>
+
+            <div class="speed-container">
+                <i id="speedIcon" class="fas fa-tachometer-alt speed-icon"></i>
+                <input type="range" id="speedSlider" class="styled-slider speed-slider" min="0.1" max="10" step="0.05" value="1">
+                <span id="speedValue" class="speed-value">1.00x</span>
+                <div class="speed-mode-toggle">
+                    <span>time stretch</span>
+                    <label class="switch">
+                        <input type="checkbox" id="speedModeToggle">
+                        <span class="slider"></span>
+                    </label>
+                    <span>freq level</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="messageBox" class="message-box"></div>
+    </div>
+
+    <!-- info button -->
+    <button id="infoButton" class="corner-button">i</button>
+    
+    <!-- settings button (new) -->
+    <button id="settingsButton" class="corner-button">
+        <i class="fas fa-cog"></i>
+    </button>
+
+    <!-- info page modal -->
+    <div id="infoPage" class="modal-page">
+        <div id="infoPageContent" class="modal-content">
+            <button id="closeInfoButton" class="modal-close-button">x</button>
+            <h2>about wb-player</h2>
+            <p>wb-player 2. this application allows you to play audio files directly from a url or by selecting them from your local storage !</p>
+            <p>it supports most audio formats. just paste a direct link to an audio file or select one from storage.</p>
+            <p>features for ease of use - sanitise inputs with spaces so 1 trial.opus doesn't need %20. - </p>
+            <p>automatically tries to fetch files from two repositories if no domain is given. because im cool like that</p>
+            <p>assumes https if not specified before domain so that "wackybox.org/minecraft.ogg" is valid too.</p>
+
+            <h3>keyboard shortcuts</h3>
+            <ul>
+                <li><strong>spacebar:</strong> play / pause</li>
+                <li><strong>m:</strong> mute / unmute</li>
+                <li><strong>arrow left / right:</strong> seek 5s backward / forward</li>
+                <li><strong>arrow up / down:</strong> volume up / down</li>
             </ul>
+        </div>
     </div>
-    <div id="mobile-sidebar-overlay"></div>
 
-</div>
+    <!-- settings page modal (new) -->
+    <div id="settingsPage" class="modal-page">
+        <div id="settingsPageContent" class="modal-content">
+            <button id="closeSettingsButton" class="modal-close-button">x</button>
+            <h2>settings</h2>
+            
+            <!-- loading mode setting -->
+            <div class="settings-group">
+                <h3>loading mode</h3>
+                <div class="setting-control">
+                    <span>pre-load</span>
+                    <label class="switch">
+                        <input type="checkbox" id="loadingModeToggle">
+                        <span class="slider"></span>
+                    </label>
+                    <span>stream</span>
+                </div>
+                <p class="settings-description">
+                    <strong>pre-load:</strong> loads the entire audio file into memory.
+                    <br>
+                    <strong>stream:</strong> streams the audio. 
+                </p>
+            </div>
 
-<script>
-    const BASE_URL = 'https://wackybox.org/';
-    const MEDIA_PLAYER_APP_URL = `${BASE_URL}media?=`;
+            <!-- theme selector setting -->
+            <div class="settings-group">
+                <h3>theme</h3>
+                <div id="themeSelector" class="theme-selector">
+                    <div class="theme-option" data-theme="theme-default">default !</div>
+                    <div class="theme-option" data-theme="theme-ocean-blue">ocean blue !</div>
+                    <div class="theme-option" data-theme="theme-solid-gray">solid gray !</div>
+                    <div class="theme-option" data-theme="theme-wacky-green">wacky green !</div>
+                    <div class="theme-option" data-theme="theme-synthwave">synthwave !</div>
+                    <div class="theme-option" data-theme="theme-sunlight">sunlight !</div>
+                    <div class="theme-option" data-theme="theme-ember">ember !</div>
+                </div>
+            </div>
 
-    // I'll do better comments
-    let desktopItems = [];
-    let LOCKED_FOLDER = {};
-    let highestZIndex = 1000;
-    let openWindows = {}; // handles Both desktop windows and mobile apps
-    let openMobileAppOrder = []; // Stack for mobile app history
-    
-    // media query matching
-    const isMobile = () => window.matchMedia("(max-width: 768px), (max-height: 500px) and (orientation: landscape)").matches;
-    
-    let appSettings = {
-        wallpaper: 'default', // 'default', 'ocean', 'solid'
-    };
-    const SETTINGS_KEY = 'wackybox_settings';
+        </div>
+    </div>
 
-    // settings
-    function saveSettings() {
-        try {
-            localStorage.setItem(SETTINGS_KEY, JSON.stringify(appSettings));
-        } catch (e) {
-            console.error("Failed to save settings:", e);
-        }
-    }
-
-    function loadSettings() {
-        try {
-            const savedSettings = localStorage.getItem(SETTINGS_KEY);
-            if (savedSettings) {
-                appSettings = JSON.parse(savedSettings);
-            }
-        } catch (e) {
-            console.error("Failed to load settings:", e);
-            appSettings = { wallpaper: 'default' }; // Reset to default on error
-        }
-        applySettings();
-    }
-    
-    function applySettings() {
-        const desktop = document.getElementById('desktop-root');
-        switch(appSettings.wallpaper) {
-            case 'ocean':
-                desktop.style.background = 'radial-gradient(circle at 80% 80%, #a2d2ff 0%, #3a86ff 50%, #003566 100%)';
-                break;
-            case 'solid':
-                desktop.style.background = '#4a5759';
-                break;
-            case 'default':
-            default:
-                desktop.style.background = 'radial-gradient(circle at 10% 90%, #6ec25d 0%, #3a8542 50%, #2e7141 100%)';
-                break;
-        }
-    }
-
-    //gigo power 5abgers
-    async function initializeDesktop() {
-        loadSettings(); // load thee aeeings
-        
-        let rawDesktopItems = [];
-        try {
-            const response = await fetch('desktop-items.json');
-            if (!response.ok) throw new Error('Network response was not ok');
-            rawDesktopItems = await response.json();
-        } catch (error) {
-            console.error('Failed to load desktop items:', error);
-            document.body.innerHTML = `<h2 style="color:white; font-family: sans-serif; text-align: center; padding-top: 50px;">Error: Could not load desktop items.</h2><p style="color:white; font-family: sans-serif; text-align: center;">copy whatever's in the console and send it in wChat at wackybox.org/chat2</p>`;
-            return;
-        }
-
-        const appIconMapping = {
-            'chat': 'webapp-chat', 'chat2': 'webapp-chat', 'draw': 'webapp-draw', 'ourworld': 'webapp-globe',
-            'present': 'webapp-present', 'present3D': 'webapp-present', 'computer': 'webapp-computer',
-            'pc': 'webapp-computer', 'space': 'webapp-space', 'space2': 'webapp-space', 'starfall': 'webapp-space'
-        };
-
-        const processedItems = rawDesktopItems.map(item => {
-            if (item.type === 'folder') {
-                return {
-                    ...item,
-                    type: 'webapp',
-                    class: appIconMapping[item.name] || 'folder',
-                    url: `${BASE_URL}${item.name}/`
-                };
-            }
-            return item;
-        });
-
-        const mediaFiles = processedItems.filter(item => item.class === 'audio' || item.class === 'video');
-        const filteredDesktopItems = processedItems.filter(item => item.class !== 'audio' && item.class !== 'video');
-
-        LOCKED_FOLDER = {
-            name: 'Wackycom Media Vault',
-            type: 'locked_folder',
-            class: 'locked-folder',
-            password: 'wackycom600',
-            contents: mediaFiles
-        };
-
-        // NEW: Add more built-in system apps
-        const systemApps = [
-            { name: 'Calculator', type: 'system_app', class: 'webapp-computer', action: 'openCalculator' },
-            { name: 'Clock', type: 'system_app', class: 'webapp-globe', action: 'openClock' },
-            { name: 'Notepad', type: 'system_app', class: 'webapp-notepad', action: 'openNotepad' },
-            { name: 'Settings', type: 'system_app', class: 'webapp-settings', action: 'openSettings' }
+    <script>
+       // the demo list
+        const wackyboxDemoPlaylist = [
+            "laptop.mp3",
+            "yes.mp3",
+            "Toyota Corolling.mp3",
+            "t get get t.mp3",
+            "You're even.mp3",
+            "2 times over I said.mp3",
+            "what're you on.mp3",
+            "back in the water.flac",
+            "1 trial.opus",
+            "https://wackybox.org/19-4.flac",
+            "wackybox.org/minecraft.ogg"
         ];
-
-        desktopItems = [...filteredDesktopItems, LOCKED_FOLDER, ...systemApps];
-
-        renderUI();
-        if (!isMobile()) {
-            setupStartMenu();
-        } else {
-            setupMobileControls();
-        }
-    }
-
-
-    // ui render
-    function renderUI() {
-        renderDesktopIcons();
-        renderMobileIcons();
-    }
-
-    function renderDesktopIcons() {
-        const container = document.getElementById('desktop-icon-container');
-        if (!container) return;
-        container.innerHTML = '';
-
-        desktopItems.forEach(item => {
-            const iconDiv = createIconElement(item);
-            iconDiv.addEventListener('dblclick', () => launchItem(item));
-            dragElement(iconDiv);
-            container.appendChild(iconDiv);
-        });
-    }
-
-    function renderMobileIcons() {
-        const pagesContainer = document.getElementById('mobile-icon-pages');
-        const dotsContainer = document.getElementById('mobile-page-dots');
-        if (!pagesContainer || !dotsContainer) return;
-
-        pagesContainer.innerHTML = '';
-        dotsContainer.innerHTML = '';
-
-        const pageHeight = pagesContainer.clientHeight - 30;
-        const pageWidth = pagesContainer.clientWidth - 30;
         
-        const iconGridHeight = 95 + 10;
-        const iconGridWidth = 80 + 10; 
+        // --- DOM Elements ---
+        const audioPlayer = document.getElementById('audioPlayer');
+        const audioUrlInput = document.getElementById('audioUrlInput');
+        const loadUrlButton = document.getElementById('loadUrlButton');
+        const audioFileInput = document.getElementById('audioFileInput');
+        const audioSourceDisplay = document.getElementById('audioSourceDisplay');
+        const messageBox = document.getElementById('messageBox');
         
-        if (pageHeight <= 0 || pageWidth <= 0 || iconGridHeight <= 0 || iconGridWidth <= 0) {
-            return;
-        }
+        // modals
+        const infoButton = document.getElementById('infoButton');
+        const infoPage = document.getElementById('infoPage');
+        const closeInfoButton = document.getElementById('closeInfoButton');
+        const settingsButton = document.getElementById('settingsButton');
+        const settingsPage = document.getElementById('settingsPage');
+        const closeSettingsButton = document.getElementById('closeSettingsButton');
 
-        const iconsPerCol = Math.floor(pageHeight / iconGridHeight);
-        const iconsPerRow = Math.floor(pageWidth / iconGridWidth);
-        const iconsPerPage = Math.max(1, iconsPerCol * iconsPerRow);
-        const numPages = Math.ceil(desktopItems.length / iconsPerPage);
+        // custom ui elements
+        const playPauseButton = document.getElementById('playPauseButton');
+        const playPauseIcon = playPauseButton.querySelector('i');
+        const progressBar = document.getElementById('progressBar');
+        const progressContainer = document.getElementById('progressContainer');
+        const currentTimeDisplay = document.getElementById('currentTimeDisplay');
+        const durationDisplay = document.getElementById('durationDisplay');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const volumeIcon = document.getElementById('volumeIcon');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedValueDisplay = document.getElementById('speedValue');
+        const speedModeToggle = document.getElementById('speedModeToggle');
+        const speedIcon = document.getElementById('speedIcon');
+        const loopButton = document.getElementById('loopButton');
 
-        for (let i = 0; i < numPages; i++) {
-            const page = document.createElement('div');
-            page.className = 'mobile-page';
-            pagesContainer.appendChild(page);
+        // playlist ui
+        const togglePlaylistButton = document.getElementById('togglePlaylistButton');
+        const playlistElement = document.getElementById('playlist');
 
-            const dot = document.createElement('span');
-            dot.className = 'dot';
-            dotsContainer.appendChild(dot);
-        }
+        // settings ui
+        const loadingModeToggle = document.getElementById('loadingModeToggle');
+        const themeSelector = document.getElementById('themeSelector');
+
+        // visualizer
+        const visualizerCanvas = document.getElementById('audioVisualizer');
+        const canvasCtx = visualizerCanvas.getContext('2d');
         
-        if (dotsContainer.firstChild) {
-            dotsContainer.firstChild.classList.add('active');
-        }
-
-        pagesContainer.onscroll = () => {
-            const pageIndex = Math.round(pagesContainer.scrollLeft / pagesContainer.clientWidth);
-            document.querySelectorAll('.dot').forEach((dot, index) => {
-                dot.classList.toggle('active', index === pageIndex);
-            });
-        };
-
-        desktopItems.forEach((item, index) => {
-            const pageIndex = Math.floor(index / iconsPerPage);
-            const currentPage = pagesContainer.children[pageIndex];
-            if (currentPage) {
-                const iconDiv = createIconElement(item);
-                iconDiv.addEventListener('click', () => launchItem(item));
-                currentPage.appendChild(iconDiv);
-            }
-        });
-    }
-    
-    function createIconElement(item) {
-        const iconDiv = document.createElement('div');
-        iconDiv.className = 'icon';
-        iconDiv.innerHTML = `<div class="icon-img ${item.class || 'folder'}"></div><div class="icon-name">${item.name}</div>`;
-        return iconDiv;
-    }
-
-    // laynchar
-    function launchItem(item) {
-        if (isMobile()) closeMobileSidebar();
-
-        if (item.type === 'webapp') {
-            openWebAppPrompt(item);
-            return;
-        }
+        // --- Web Audio API variables ---
+        let audioContext = null; // the single audio context
+        let audioBuffer = null;
+        let sourceNode = null; // audiobuffersourcenode
+        let gainNode = null;   // gainnode for volume control
+        let analyserNode = null; // analysernode for visualizer
+        let mediaElementSource = null; // mediaelementaudiosourcenode
+        let visualizerDataArray = null;
+        let visualizerFrameId = null;
         
-        if (item.type === 'locked_folder') {
-            openPasswordModal(item.name, item.password, () => {
-                openLockedFolderWindow(item.name, item.contents);
-            });
-            return;
-        }
+        let currentOffset = 0; // current playback position in seconds
+        let startTime = 0;     // time when sourcenode started playing
+        let currentSpeedMode = 'timeStretch'; // 'timeStretch' (html audio) or 'frequencyLevel' (web audio)
+        let isWebAudioGraphReady = false; // tracks if visualizer graph is built
+        let currentAudioSource = { url: '', isLocal: false, file: null };
 
-        if (item.type === 'system_app') {
-            if (item.action === 'openCalculator') openCalculatorApp();
-            if (item.action === 'openClock') openClockApp();
-            if (item.action === 'openNotepad') openNotepadApp();
-            if (item.action === 'openSettings') openSettingsApp();
-            return;
-        }
+        let isDraggingProgressBar = false;
+        let animationFrameId;
 
-        if (item.action === 'newTab') { openFileInNewTab(item.name); return; }
+        // --- App Settings State ---
+        let currentLoadingMode = 'preload'; // 'preload' or 'stream'
+        let currentTheme = 'theme-default';
 
-        switch (item.class) {
-            case 'audio': openMediaPlayerWindow(item.name); break;
-            case 'video': openVideoPlayerWindow(item.name); break;
-            case 'image': openImageViewWindow(item.name); break;
-            case 'document': case 'code': case 'unknown': openTextViewWindow(item.name); break;
-            case 'zip': default: openErrorWindow(item.name, 'No program is associated with this file type.'); break;
-        }
-    }
+        // --- audio loading state ---
+        let primaryUrlToTry = '';
+        let fallbackUrlToTry = '';
+        let isTryingFallback = false;
 
-    // windows mobile 
-    function openWindow(title, contentHTML, options = {}) {
-        const windowId = `win-${Date.now()}`;
+        // --- Core Functions ---
         
-        if (isMobile()) {
-            return openMobileWindow(windowId, title, contentHTML, options);
-        } else {
-            return openDesktopWindow(windowId, title, contentHTML, options);
-        }
-    }
-
-    function openDesktopWindow(windowId, title, contentHTML, options = {}) {
-        highestZIndex++;
-        const windowDiv = document.createElement('div');
-        // gay
-        windowDiv.className = 'window opening';
-        windowDiv.style.zIndex = highestZIndex;
-        windowDiv.id = windowId;
-
-        if (options.width) windowDiv.style.width = options.width;
-        if (options.height) windowDiv.style.height = options.height;
-        if (options.minWidth) windowDiv.style.minWidth = options.minWidth;
-        if (options.minHeight) windowDiv.style.minHeight = options.minHeight;
-
-        windowDiv.innerHTML = `
-            <div class="window-header">
-                <span class="window-title">${title}</span>
-                <div class="window-controls">
-                    ${options.hideMinimize ? '' : '<button class="minimize-btn" title="Minimize">_</button>'}
-                    ${options.hideMaximize ? '' : '<button class="maximize-btn" title="Maximize">&#9633;</button>'}
-                    <button class="close-btn" title="Close">&#10006;</button>
-                </div>
-            </div>
-            <div class="window-content">${contentHTML}</div>
-        `;
-        
-        document.getElementById('window-area').appendChild(windowDiv);
-        
-        const winWidth = windowDiv.offsetWidth;
-        const winHeight = windowDiv.offsetHeight;
-        const viewWidth = window.innerWidth;
-        const viewHeight = window.innerHeight - 30; // 30px taskbar
-
-        windowDiv.style.left = `${Math.max(5, (viewWidth - winWidth) / 2)}px`;
-        windowDiv.style.top = `${Math.max(5, (viewHeight - winHeight) / 2)}px`;
-        
-        // ok
-        requestAnimationFrame(() => {
-            windowDiv.classList.remove('opening');
-        });
-        
-        const header = windowDiv.querySelector('.window-header');
-        windowDiv.addEventListener('mousedown', () => bringWindowToFront(windowId));
-        windowDiv.querySelector('.close-btn').addEventListener('click', () => closeWindow(windowId));
-        
-        if (!options.hideMinimize) { windowDiv.querySelector('.minimize-btn').addEventListener('click', () => minimizeWindow(windowId)); }
-        if (!options.hideMaximize) { 
-            const maximizeBtn = windowDiv.querySelector('.maximize-btn');
-            maximizeBtn.addEventListener('click', () => maximizeWindow(windowId));
-            header.addEventListener('dblclick', () => maximizeWindow(windowId));
-        }
-
-        dragElement(windowDiv);
-        add_taskbar_item(windowId, title);
-        openWindows[windowId] = windowDiv;
-        
-        bringWindowToFront(windowId);
-        
-        return windowDiv;
-    }
-    
-    function openMobileWindow(windowId, title, contentHTML, options = {}) {
-        const appPage = document.createElement('div');
-        appPage.className = 'mobile-app-page';
-        appPage.id = windowId;
-        
-        appPage.innerHTML = `
-            <div class="mobile-app-header">
-                <span class="mobile-app-minimize-btn">&#9472;</span>
-                <span class="mobile-app-title">${title}</span>
-                <span class="mobile-app-close-btn">&times;</span>
-            </div>
-            <div class="mobile-app-content">${contentHTML}</div>
-        `;
-        
-        document.getElementById('mobile-app-container').appendChild(appPage);
-        appPage.querySelector('.mobile-app-close-btn').addEventListener('click', () => closeWindow(windowId));
-        // e
-        appPage.querySelector('.mobile-app-minimize-btn').addEventListener('click', () => showMobileHome(true));
-        
-        openWindows[windowId] = appPage;
-        
-        bringWindowToFront(windowId);
-
-        return appPage;
-    }
-
-    function closeWindow(windowId) {
-        const win = openWindows[windowId];
-        if (!win) return;
-        
-        delete openWindows[windowId];
-
-        if (isMobile()) {
-            removeMobileTask(windowId);
-            
-            // Remove from stack
-            openMobileAppOrder = openMobileAppOrder.filter(id => id !== windowId);
-            
-            //amatin
-            win.classList.add('closing');
-            win.addEventListener('transitionend', () => {
-                win.remove();
-            }, { once: true });
-            
-            // show the next app or home sceen
-            const nextAppId = openMobileAppOrder[openMobileAppOrder.length - 1];
-            if (nextAppId) {
-                bringWindowToFront(nextAppId);
-            } else {
-                showMobileHome(false); // Go (it's already empty)
-            }
-        } else {
-            // j
-            win.classList.add('closing');
-            win.addEventListener('transitionend', () => {
-                win.remove();
-            }, { once: true });
-            remove_taskbar_item(windowId);
-        }
-    }
-    
-    function minimizeWindow(windowId) {
-        if (isMobile()) {
-            // ion
-            showMobileHome(true);
-        } else {
-            // Deskation
-            const win = document.getElementById(windowId);
-            if (win) {
-                win.classList.add('minimized');
-                document.querySelector(`.task-item[data-window-id="${windowId}"]`).classList.remove('active');
+/**
+         * ensures an audiocontext exists, for decoding.
+         * does not set up the graph or resume the context.
+         */
+        function getAudioContextForDecoding() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
             }
         }
-    }
-    
-    function maximizeWindow(windowId) {
-        if (isMobile()) return;
-        const win = document.getElementById(windowId);
-        win?.classList.toggle('maximized');
-    }
-    
-    function bringWindowToFront(windowId) {
-        const win = openWindows[windowId];
-        if (!win) return;
-        
-        if (isMobile()) {
-            document.getElementById('mobile-homescreen').style.display = 'none';
-            document.getElementById('mobile-app-container').style.display = 'block';
-            
-            // Update app stack
-            openMobileAppOrder = openMobileAppOrder.filter(id => id !== windowId);
-            openMobileAppOrder.push(windowId);
-            
-            // NEW: Animation
-            // De-activate all
-            Object.values(openWindows).forEach(appPage => {
-                appPage.classList.remove('active');
-            });
-            // Activate target
-            win.classList.add('active');
-            
-            updateMobileTaskList();
 
-        } else {
-            // Desktop logic
-            highestZIndex++;
-            win.style.zIndex = highestZIndex;
-            win.classList.remove('minimized');
-            
-            document.querySelectorAll('.task-item').forEach(item => item.classList.remove('active'));
-            const taskItem = document.querySelector(`.task-item[data-window-id="${windowId}"]`);
-            if (taskItem) taskItem.classList.add('active');
-        }
-    }
+        /**
+         * sets up the full web audio graph (visualizer, gain)
+         * must be called by a user gesture (play, seek)
+         */
+        function setupWebAudioGraph() {
+            if (isWebAudioGraphReady) return; // already done
 
-    // --- Wers ---
-    function openIframeWindow(title, url) {
-        const content = `<iframe src="${url}" style="width:100%; height:100%; border:none;" title="${title}" sandbox="allow-scripts allow-same-origin"></iframe>`;
-        const win = openWindow(title, content, { width: '80vw', height: '75vh' });
-        
-        const contentArea = win.querySelector('.window-content, .mobile-app-content');
-        if (contentArea) contentArea.style.padding = '0';
-    }
-
-    function openWebAppPrompt(item) {
-        const promptContent = `
-            <div class="app-launch-prompt">
-                <p>How would you like to open <strong>${item.name}</strong>?</p>
-                <div class="app-launch-prompt-buttons">
-                    <button id="open-in-tab">New Tab</button>
-                    <button id="open-in-window">In App</button>
-                </div>
-            </div>
-        `;
-        const modalWin = openWindow(`Launch App`, promptContent, {
-            width: '350px',
-            height: '160px',
-            minWidth: '300px',
-            minHeight: '150px',
-            hideMaximize: true,
-            hideMinimize: true
-        });
-
-        modalWin.querySelector('#open-in-tab').addEventListener('click', () => {
-            window.open(item.url, '_blank');
-            closeWindow(modalWin.id);
-        });
-
-        modalWin.querySelector('#open-in-window').addEventListener('click', () => {
-            openIframeWindow(item.name, item.url);
-            closeWindow(modalWin.id);
-        });
-    }
-
-    function openPasswordModal(folderName, expectedPassword, onSuccessCallback) {
-        const modalContent = `
-            <div class="password-modal">
-                <p>Enter password to unlock <strong>${folderName}</strong>:</p>
-                <input type="password" id="password-input" placeholder="Password" autofocus>
-                <div id="password-error" class="error-message"></div>
-                <button id="submit-password">Unlock</button>
-            </div>
-        `;
-
-        const modalWin = openWindow('security', modalContent, {
-            width: '300px',
-            height: '180px',
-            minWidth: '250px',
-            minHeight: '150px',
-            hideMaximize: true,
-            hideMinimize: true
-        });
-
-        const input = modalWin.querySelector('#password-input');
-        const submitBtn = modalWin.querySelector('#submit-password');
-        const errorDiv = modalWin.querySelector('#password-error');
-
-        const checkPassword = () => {
-            if (input.value === expectedPassword) {
-                closeWindow(modalWin.id);
-                onSuccessCallback();
-            } else {
-                errorDiv.textContent = 'Incorrect password.';
-                input.value = '';
-                input.focus();
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
             }
-        };
+            
+            // resume context on gesture
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
 
-        submitBtn.addEventListener('click', checkPassword);
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') checkPassword();
-        });
-        
-        setTimeout(() => input.focus(), 100);
-    }
+            // create nodes if they don't exist
+            if (!gainNode) {
+                gainNode = audioContext.createGain();
+                gainNode.gain.value = volumeSlider.value;
+            }
+            if (!analyserNode) {
+                analyserNode = audioContext.createAnalyser();
+                analyserNode.fftSize = 256;
+                const bufferLength = analyserNode.frequencyBinCount;
+                visualizerDataArray = new Uint8Array(bufferLength);
+            }
 
-    function openLockedFolderWindow(folderName, contents) {
-        const folderGridDiv = document.createElement('div');
-        folderGridDiv.className = 'folder-grid';
-        
-        contents.forEach(item => {
-            const iconDiv = createIconElement(item);
-            const eventType = isMobile() ? 'click' : 'dblclick';
-            iconDiv.addEventListener(eventType, (e) => {
-                e.stopPropagation();
-                launchItem(item);
-            });
-            folderGridDiv.appendChild(iconDiv);
-        });
-        
-        const win = openWindow(`${folderName} - Explorer`, '', {width: '400px', height: '300px'});
-        const contentArea = win.querySelector('.window-content, .mobile-app-content');
-        contentArea.style.padding = '5px';
-        contentArea.appendChild(folderGridDiv);
-    }
+            // create and connect the <audio> element source
+            if (!mediaElementSource) {
+                try {
+                    mediaElementSource = audioContext.createMediaElementSource(audioPlayer);
+                    mediaElementSource.connect(gainNode);
+                } catch(e) {
+                    console.error("error creating media element source:", e);
+                    showMessage("error linking audio visualizer.", "error");
+                    return;
+                }
+            }
+            
+            // connect gain to analyser and destination
+            gainNode.connect(analyserNode);
+            analyserNode.connect(audioContext.destination);
 
-    // you can literlly find the vault password because its exposed in plaintext in this file lol
-    
-    function openVideoPlayerWindow(fileName) { 
-        const videoUrl = `${BASE_URL}${encodeURIComponent(fileName)}`; 
-        const content = `<video src="${videoUrl}" controls autoplay style="width:100%; height:100%; background:#000;"></video>`; 
-        const win = openWindow(`Video Player - ${fileName}`, content); 
-        const contentArea = win.querySelector('.window-content, .mobile-app-content');
-        if (contentArea) contentArea.style.padding = '0'; 
-    }
-    
-    function openMediaPlayerWindow(fileName) {
-        const mediaFileUrl = `${BASE_URL}${encodeURIComponent(fileName)}`;
-        const playerLink = `${MEDIA_PLAYER_APP_URL}%22${mediaFileUrl}%22`;
-        const content = `<iframe src="${playerLink}" style="width:100%; height:100%; border:none;" title="Media Player"></iframe>`;
-        const win = openWindow(`Media Player - ${fileName}`, content, {width: '350px', height: '200px'});
-        const contentArea = win.querySelector('.window-content, .mobile-app-content');
-        if (contentArea) contentArea.style.padding = '0';
-    }
+            isWebAudioGraphReady = true;
+            resizeVisualizer();
+            drawVisualizer(); // start the visualizer loop
+        }
 
-    function openImageViewWindow(fileName) { 
-        const imageUrl = `${BASE_URL}${encodeURIComponent(fileName)}`; 
-        const isHdr = fileName.toLowerCase().endsWith('.hdr'); 
-        const content = isHdr 
-            ? `<div id="hdr-container-${Date.now()}" style="width:100%; height:100%; background:#000;"></div>` 
-            : `<img src="${imageUrl}" style="width:100%; height:100%; object-fit:contain; display:block; margin:auto; background:#000;" alt="${fileName}">`; 
-        
-        const win = openWindow(`Image Viewer - ${fileName}`, content, {width: '70vw', height: '70vh'}); 
-        const contentArea = win.querySelector('.window-content, .mobile-app-content');
-        if (contentArea) contentArea.style.padding = '0';
-        
-        if (isHdr) { 
+        /**
+         * parses the query parameter `?={url}`.
+         */
+        function getPreloadUrl() {
+            const url = window.location.search;
+            if (url.startsWith('?=')) {
+                const encodedUrl = url.substring(2);
+                let decodedUrl = decodeURIComponent(encodedUrl);
+                if (decodedUrl.startsWith('"') && decodedUrl.endsWith('"')) {
+                    decodedUrl = decodedUrl.substring(1, decodedUrl.length - 1);
+                }
+                return decodedUrl.trim();
+            }
+            return null;
+        }
+
+        /**
+         * displays a message to the user.
+         */
+        function showMessage(message, type = 'error') {
+            messageBox.textContent = message;
+            messageBox.className = 'message-box'; // reset classes
+            messageBox.classList.add(`type-${type}`);
+            
+            messageBox.classList.add('active');
             setTimeout(() => {
-                const containerId = win.querySelector('div[id^="hdr-container"]').id; 
-                initHdrViewer(containerId, imageUrl); 
-            }, 10);
-        } 
-    }
-    
-    function initHdrViewer(containerId, imageUrl) { 
-        const container = document.getElementById(containerId);
-        if (!container || container.clientWidth === 0 || container.clientHeight === 0) {
-            setTimeout(() => initHdrViewer(containerId, imageUrl), 50);
-            return;
+                messageBox.classList.remove('active');
+            }, 5000);
         }
-        const width = container.clientWidth;
-        const height = container.clientHeight;
-        const scene = new THREE.Scene(); 
-        const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000); 
-        camera.position.set(0, 0, 0.1);
-        const renderer = new THREE.WebGLRenderer({ antialias: true }); 
-        renderer.setSize(width, height); 
-        renderer.toneMapping = THREE.ACESFilmicToneMapping; 
-        renderer.toneMappingExposure = 1.5;
-        container.innerHTML = '';
-        container.appendChild(renderer.domElement); 
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableZoom = true;
-        controls.enablePan = false;
-        controls.target.set(0, 0, 0);
-        new THREE.RGBELoader().load(imageUrl, function (texture) { 
-            texture.mapping = THREE.EquirectangularReflectionMapping; 
-            scene.background = texture; 
-            scene.environment = texture; 
-            renderer.render(scene, camera); 
-            animate(); 
-        },
-        undefined,
-        (error) => {
-            console.error('An error occurred while loading the HDR file:', error);
-            container.innerHTML = '<div style="color:white; padding: 20px;">Error loading HDR file. Check console for details.</div>';
-        });
-        const resizeHandler = (entries) => {
-            const entry = entries[0];
-            const w = entry.contentRect.width;
-            const h = entry.contentRect.height;
-            if (w > 0 && h > 0) {
-                renderer.setSize(w, h);
-                camera.aspect = w / h;
-                camera.updateProjectionMatrix();
+
+        /**
+         * formats time in seconds to mm:ss string.
+         */
+        function formatTime(seconds) {
+            if (isNaN(seconds) || seconds < 0) return '0:00';
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = Math.floor(seconds % 60);
+            return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+        }
+
+        /**
+         * updates the displayed audio source link.
+         */
+        function updateAudioDisplay(src, isLocalFile = false) {
+            if (isLocalFile) {
+                audioSourceDisplay.innerHTML = 'source: local file';
+            } else {
+                audioSourceDisplay.innerHTML = `source: <a href="${src}" target="_blank">${src}</a>`;
             }
-        };
-        new ResizeObserver(resizeHandler).observe(container);
-        function animate() {
-            if(!document.getElementById(containerId)) return; // Stop animation if window is closed
-            requestAnimationFrame(animate);
-            controls.update(); 
-            renderer.render(scene, camera);
         }
-    }
-
-    async function openTextViewWindow(fileName) { 
-        const content = `<textarea style="width: 100%; height: 100%; box-sizing: border-box; border: none; padding: 5px; font-family: 'Lucida Console', monospace; resize: none;" readonly>Loading content for ${fileName}...</textarea>`; 
-        const win = openWindow(`Viewer - ${fileName}`, content); 
-        const textarea = win.querySelector('textarea'); 
-        const contentArea = win.querySelector('.window-content, .mobile-app-content');
-        if (contentArea) contentArea.style.padding = '0';
-        try { 
-            const response = await fetch(`${BASE_URL}${encodeURIComponent(fileName)}`); 
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`); 
-            const text = await response.text(); 
-            textarea.value = text; 
-        } catch (error) { 
-            textarea.value = `--- ERROR ---\n\nCould not fetch file content for "${fileName}".\n\nReason: ${error.message}`; 
-        } 
-    }
-    
-    function openFileInNewTab(fileName) { window.open(`${BASE_URL}${fileName}`, '_blank'); }
-    
-    function openErrorWindow(fileName, message) { 
-        const content = `<div style="padding:10px;"><h3 style="color: red;">Error</h3><p><strong>File:</strong> ${fileName}</p><p><strong>Reason:</strong> ${message}</p></div>`; 
-        openWindow('System Error', content); 
-    }
-
-    // .....bakffyuf
-    function add_taskbar_item(windowId, title) { 
-        if (isMobile()) return;
-        const item = document.createElement('div'); 
-        item.className = 'task-item'; 
-        item.textContent = title; 
-        item.setAttribute('data-window-id', windowId); 
-        item.onclick = () => bringWindowToFront(windowId); 
-        document.getElementById('task-items').appendChild(item); 
-    }
-    
-    function remove_taskbar_item(windowId) { 
-        if (isMobile()) return;
-        const item = document.querySelector(`.task-item[data-window-id="${windowId}"]`); 
-        if (item) item.remove(); 
-    }
-    
-    function setupStartMenu() { 
-        const startBtn = document.getElementById('start-button'); 
-        const startMenu = document.getElementById('start-menu'); 
-        const programsContainer = document.getElementById('start-programs'); 
-        const docsContainer = document.getElementById('start-docs'); 
         
-        // NEem apps
-        const apps = [ 
-            { name: 'Settings', class: 'webapp-settings', action: () => openSettingsApp() },
-            { name: 'Notepad', class: 'webapp-notepad', action: () => openNotepadApp() },
-            { name: 'Calculator', class: 'webapp-computer', action: () => openCalculatorApp() },
-            { name: 'Clock', class: 'webapp-globe', action: () => openClockApp() },
-            { name: 'Image Viewer', class: 'image', action: () => openImageViewWindow('Bliss_(Windows_XP).png') }, 
-            { name: 'Video Player', class: 'video', action: () => openVideoPlayerWindow(LOCKED_FOLDER.contents?.find(i => i.class === 'video')?.name || 'craft.mp4') }, 
-            { name: 'Media Player', class: 'audio', action: () => openMediaPlayerWindow(LOCKED_FOLDER.contents?.find(i => i.class === 'audio')?.name || 'Confusion.mp3') } 
-        ]; 
-        apps.forEach(app => { 
-            const item = document.createElement('div'); 
-            item.className = 'menu-item'; 
-            item.innerHTML = `<div class="icon-img ${app.class}" style="width:24px; height:24px;"></div> <span>${app.name}</span>`; 
-            item.onclick = () => { app.action(); startMenu.classList.remove('open'); }; 
-            programsContainer.appendChild(item); 
-        }); 
-        
-        desktopItems.filter(i => i.type === 'file' && ['document', 'image', 'code'].includes(i.class)).slice(0, 5).forEach(doc => { 
-            const item = document.createElement('div'); 
-            item.className = 'menu-item'; 
-            item.innerHTML = `<div class="icon-img ${doc.class}" style="width:24px; height:24px;"></div> <span>${doc.name}</span>`; 
-            item.onclick = () => { launchItem(doc); startMenu.classList.remove('open'); }; 
-            docsContainer.appendChild(item); 
-        }); 
-        
-        // ass
-        startBtn.addEventListener('click', (e) => { e.stopPropagation(); startMenu.classList.toggle('open'); }); 
-        document.addEventListener('click', () => startMenu.classList.remove('open')); 
-        startMenu.addEventListener('click', e => e.stopPropagation()); 
-    }
-
-    // --obile--
-    function setupMobileControls() {
-        const clockEl = document.getElementById('mobile-clock');
-        function updateClock() {
-            const now = new Date();
-            clockEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        }
-        updateClock();
-        setInterval(updateClock, 1000);
-        
-        const menuBtn = document.getElementById('mobile-menu-btn');
-        const homeBtn = document.getElementById('mobile-home-btn');
-        const sidebar = document.getElementById('mobile-sidebar');
-        const overlay = document.getElementById('mobile-sidebar-overlay');
-        
-        menuBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            sidebar.classList.add('open');
-            overlay.classList.add('open');
-        });
-        
-        homeBtn.addEventListener('click', () => {
-            showMobileHome(true);
-            closeMobileSidebar();
-        });
-        
-        overlay.addEventListener('click', closeMobileSidebar);
-    }
-    
-    function closeMobileSidebar() {
-        document.getElementById('mobile-sidebar').classList.remove('open');
-        document.getElementById('mobile-sidebar-overlay').classList.remove('open');
-    }
-    
-    function showMobileHome(clearActiveApp) {
-        document.getElementById('mobile-homescreen').style.display = 'block';
-        document.getElementById('mobile-app-container').style.display = 'none';
-        
-        // Nack is already empty.
-        if (clearActiveApp) {
-            openMobileAppOrder.pop(); 
-        }
-        updateMobileTaskList();
-    }
-    
-    function addMobileTask(windowId, title) {
-        updateMobileTaskList();
-    }
-    
-    function removeMobileTask(windowId) {
-        updateMobileTaskList();
-    }
-
-    function updateMobileTaskList() {
-        const taskList = document.getElementById('mobile-task-list');
-        if (!taskList) return;
-        taskList.innerHTML = '';
-        
-        const activeAppId = openMobileAppOrder[openMobileAppOrder.length - 1];
-
-        for (const windowId in openWindows) {
-            const win = openWindows[windowId];
-            const title = win.querySelector('.mobile-app-title, .window-title')?.textContent || 'Untitled';
-            
-            const item = document.createElement('li');
-            item.className = 'mobile-task-item';
-            if (windowId === activeAppId) {
-                item.classList.add('active');
+        /**
+         * handles resizing of the visualizer canvas.
+         */
+        function resizeVisualizer() {
+            if (visualizerCanvas.clientWidth > 0) {
+                visualizerCanvas.width = visualizerCanvas.clientWidth;
+                visualizerCanvas.height = visualizerCanvas.clientHeight;
             }
-            item.innerHTML = `
-                <span class="mobile-task-item-name">${title}</span>
-                <span class="mobile-task-item-close">&times;</span>
-            `;
-            
-            item.querySelector('.mobile-task-item-name').addEventListener('click', () => {
-                bringWindowToFront(windowId);
-                closeMobileSidebar();
-            });
-            
-            item.querySelector('.mobile-task-item-close').addEventListener('click', () => {
-                closeWindow(windowId);
-            });
-            
-            taskList.appendChild(item);
         }
-    }
 
-    // EW: Buil
-    
-    function openCalculatorApp() {
-        const calcHTML = `
-            <div id="calculator">
-                <input type="text" id="calc-display" value="0" readonly>
-                <div id="calc-buttons">
-                    <button class="calc-btn func" data-key="clear">AC</button>
-                    <button class="calc-btn func" data-key="sign">+/-</button>
-                    <button class="calc-btn func" data-key="percent">%</button>
-                    <button class="calc-btn op" data-key="divide">&divide;</button>
-                    
-                    <button class="calc-btn" data-key="7">7</button>
-                    <button class="calc-btn" data-key="8">8</button>
-                    <button class="calc-btn" data-key="9">9</button>
-                    <button class="calc-btn op" data-key="multiply">&times;</button>
-                    
-                    <button class="calc-btn" data-key="4">4</button>
-                    <button class="calc-btn" data-key="5">5</button>
-                    <button class="calc-btn" data-key="6">6</button>
-                    <button class="calc-btn op" data-key="subtract">&minus;</button>
-                    
-                    <button class="calc-btn" data-key="1">1</button>
-                    <button class="calc-btn" data-key="2">2</button>
-                    <button class="calc-btn" data-key="3">3</button>
-                    <button class="calc-btn op" data-key="add">+</button>
-                    
-                    <button class="calc-btn zero" data-key="0">0</button>
-                    <button class="calc-btn" data-key="decimal">.</button>
-                    <button class="calc-btn op" data-key="equals">=</button>
-                </div>
-            </div>
-        `;
-        const win = openWindow('Calculator', calcHTML, {width: '300px', height: '450px', minWidth: '250px', minHeight: '350px'});
-        const contentArea = win.querySelector('.window-content, .mobile-app-content');
-        if (contentArea) contentArea.style.padding = '0';
-        
-        const calculator = win.querySelector('#calculator');
-        if (!calculator) return;
-        
-        const display = calculator.querySelector('#calc-display');
-        const buttons = calculator.querySelector('#calc-buttons');
-        
-        let displayValue = '0';
-        let firstOperand = null;
-        let operator = null;
-        let waitingForSecondOperand = false;
+        /**
+         * draws the audio visualizer on the canvas.
+         */
+        function drawVisualizer() {
+            visualizerFrameId = requestAnimationFrame(drawVisualizer);
 
-        buttons.addEventListener('click', (e) => {
-            const key = e.target.dataset.key;
-            if (!key || e.target.tagName !== 'BUTTON') return;
+            if (!analyserNode || !isWebAudioGraphReady) return;
 
-            if (/\d/.test(key)) {
-                if (waitingForSecondOperand) {
-                    displayValue = key;
-                    waitingForSecondOperand = false;
+            analyserNode.getByteFrequencyData(visualizerDataArray);
+
+            // use theme colors
+            const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--color-surface-light');
+            const barColor = getComputedStyle(document.documentElement).getPropertyValue('--color-primary');
+
+            canvasCtx.fillStyle = bgColor;
+            canvasCtx.fillRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
+
+            const bufferLength = analyserNode.frequencyBinCount;
+            const barWidth = (visualizerCanvas.width / bufferLength) * 1.5;
+            let barHeight;
+            let x = 0;
+
+            for (let i = 0; i < bufferLength; i++) {
+                barHeight = (visualizerDataArray[i] / 255) * visualizerCanvas.height;
+
+                canvasCtx.fillStyle = barColor;
+                canvasCtx.fillRect(x, visualizerCanvas.height - barHeight, barWidth, barHeight);
+
+                x += barWidth + 1; // 1px spacing
+            }
+        }
+
+        /**
+         * loads audio data into an audiobuffer for web audio api playback.
+         * this is the "pre-load" method.
+         */
+        async function loadAudioForWebAudio(src, isLocalFile = false, file = null) {
+            getAudioContextForDecoding(); // ensures audioContext exists for decoding
+            
+            // only proceed if in 'preload' mode
+            if (currentLoadingMode !== 'preload') {
+                audioBuffer = null;
+                if (currentSpeedMode === 'frequencyLevel') {
+                     // if user is in freq level mode and re-loads, force back to timestretch
+                    speedModeToggle.checked = false;
+                    await handleSpeedModeChange(false); 
+                }
+                return; // don't preload if in stream mode
+            }
+
+            currentAudioSource = { url: src, isLocal: isLocalFile, file: file };
+            audioBuffer = null; 
+
+            // this function now throws on error, to be caught by the caller
+            let arrayBuffer;
+            if (isLocalFile && file) {
+                arrayBuffer = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = () => reject(new Error("failed to read local file."));
+                        reader.readAsArrayBuffer(file);
+                    });
                 } else {
-                    displayValue = displayValue === '0' ? key : displayValue + key;
-                }
-            } else if (key === 'decimal') {
-                if (waitingForSecondOperand) {
-                    displayValue = '0.';
-                    waitingForSecondOperand = false;
-                } else if (!displayValue.includes('.')) {
-                    displayValue += '.';
-                }
-            } else if (key === 'clear') {
-                displayValue = '0';
-                firstOperand = null;
-                operator = null;
-                waitingForSecondOperand = false;
-            } else if (key === 'sign') {
-                displayValue = (parseFloat(displayValue) * -1).toString();
-            } else if (key === 'percent') {
-                displayValue = (parseFloat(displayValue) / 100).toString();
-            } else if (key === 'equals') {
-                if (operator && firstOperand !== null) {
-                    const result = performCalculation(firstOperand, parseFloat(displayValue), operator);
-                    displayValue = String(result);
-                    firstOperand = null;
-                    operator = null;
-                    waitingForSecondOperand = true;
-                }
-            } else if (['add', 'subtract', 'multiply', 'divide'].includes(key)) {
-                if (operator && !waitingForSecondOperand) {
-                    const result = performCalculation(firstOperand, parseFloat(displayValue), operator);
-                    displayValue = String(result);
-                    firstOperand = result;
-                } else {
-                    firstOperand = parseFloat(displayValue);
-                }
-                operator = key;
-                waitingForSecondOperand = true;
+                    const response = await fetch(src);
+                    if (!response.ok) {
+                        throw new Error(`http error! status: ${response.status}`);
+                    }
+                    arrayBuffer = await response.arrayBuffer();
             }
-            
-            display.value = displayValue.length > 14 ? parseFloat(displayValue).toExponential(9) : displayValue;
-        });
 
-        function performCalculation(a, b, op) {
-            let result;
-            if (op === 'add') result = a + b;
-            if (op === 'subtract') result = a - b;
-            if (op === 'multiply') result = a * b;
-            if (op === 'divide') result = a / b;
-            return result;
+            audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+            if (currentSpeedMode === 'frequencyLevel') {
+                durationDisplay.textContent = formatTime(audioBuffer.duration);
+            }
+            console.log("audio pre-loaded successfully for freq level mode.");
         }
-    }
-    
-    function openClockApp() {
-        const clockHTML = `
-            <div id="clock-app">
-                <div id="clock-time"></div>
-                <div id="clock-date"></div>
-            </div>
-        `;
-        const win = openWindow('Clock', clockHTML, {width: '400px', height: '250px', minWidth: '300px', minHeight: '200px'});
-        const contentArea = win.querySelector('.window-content, .mobile-app-content');
-        if (contentArea) contentArea.style.padding = '0';
-        
-        const timeEl = win.querySelector('#clock-time');
-        const dateEl = win.querySelector('#clock-date');
-        let clockInterval;
-        
-        function updateAppClock() {
-            if (!document.body.contains(win)) {
-                clearInterval(clockInterval);
+
+        /**
+         * plays audio using the web audio api.
+         */
+        function playWebAudio() {
+            if (!audioBuffer) {
+                showMessage("no audio pre-loaded for freq level mode.", "error");
+                playPauseIcon.classList.remove('fa-pause');
+                playPauseIcon.classList.add('fa-play');
                 return;
             }
-            const now = new Date();
-            timeEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            dateEl.textContent = now.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            if (sourceNode) {
+                sourceNode.stop();
+                sourceNode.disconnect();
+            }
+
+            // disconnect <audio> element source to avoid double sound
+            if (mediaElementSource && isWebAudioGraphReady) mediaElementSource.disconnect();
+
+            // if we're at the end, reset to beginning
+            if (currentOffset >= audioBuffer.duration) {
+                currentOffset = 0;
+            }
+            
+            sourceNode = audioContext.createBufferSource();
+            sourceNode.buffer = audioBuffer;
+            
+            // connect: sourcenode -> gainnode (-> analyser -> destination)
+            sourceNode.connect(gainNode); 
+            
+            sourceNode.playbackRate.value = parseFloat(speedSlider.value);
+            
+            startTime = audioContext.currentTime;
+            sourceNode.start(0, currentOffset); // start from the "parked" offset
+
+            playPauseIcon.classList.remove('fa-play');
+            playPauseIcon.classList.add('fa-pause');
+
+            sourceNode.onended = () => {
+                if (sourceNode && currentSpeedMode === 'frequencyLevel') {
+                    playPauseIcon.classList.remove('fa-pause');
+                    playPauseIcon.classList.add('fa-play');
+                    
+                    currentOffset = audioBuffer.duration;
+                    
+                    progressBar.style.width = '100%';
+                    currentTimeDisplay.textContent = formatTime(currentOffset);
+                    
+                    if (audioPlayer.loop) {
+                        currentOffset = 0; // reset offset for loop
+                        playWebAudio();
+                    } else {
+                        sourceNode = null; // clear source node
+                        // reconnect <audio> element source
+                        if (mediaElementSource && isWebAudioGraphReady) mediaElementSource.connect(gainNode);
+                    }
+                }
+            };
         }
-        updateAppClock();
-        clockInterval = setInterval(updateAppClock, 1000);
-    }
-    
-    function openNotepadApp() {
-        const notepadHTML = `
-            <div id="notepad-app">
-                <textarea id="notepad-textarea" placeholder="Start typing..."></textarea>
-            </div>
-        `;
-        const win = openWindow('Notepad', notepadHTML, {width: '500px', height: '400px'});
-        const contentArea = win.querySelector('.window-content, .mobile-app-content');
-        if (contentArea) contentArea.style.padding = '0';
-    }
-    
-    function openSettingsApp() {
-        const settingsHTML = `
-            <div id="settings-app">
-                <div class="setting-group">
-                    <label for="wallpaper-select">Wallpaper</label>
-                    <select id="wallpaper-select">
-                        <option value="default">Wacky Green (Default)</option>
-                        <option value="ocean">Ocean Blue</option>
-                        <option value="solid">Solid Gray</option>
-                    </select>
-                </div>
+
+        /**
+         * pauses audio playing via web audio api.
+         */
+        function pauseWebAudio() {
+            if (sourceNode && audioContext) {
+                const elapsedSinceStart = (audioContext.currentTime - startTime) * sourceNode.playbackRate.value;
+                currentOffset = Math.min(currentOffset + elapsedSinceStart, audioBuffer ? audioBuffer.duration : 0);
+
+                sourceNode.stop();
+                sourceNode.disconnect();
+                sourceNode = null; // mark as paused
+                playPauseIcon.classList.remove('fa-pause');
+                playPauseIcon.classList.add('fa-play');
                 
-                <div class="setting-group">
-                    <label>Taskbar Position</label>
-                    <select id="taskbar-select" disabled>
-                        <option value="bottom">Bottom</option>
-                    </select>
-                    <small>More options coming soon!</small>
-                </div>
+                // reconnect <audio> element source
+                if (mediaElementSource && isWebAudioGraphReady) mediaElementSource.connect(gainNode);
+            }
+        }
 
-                <div class="setting-group">
-                    <label>Icon Size</label>
-                    <select id="icon-size-select" disabled>
-                        <option value="medium">Medium</option>
-                    </select>
-                    <small>More options coming soon!</small>
-                </div>
-            </div>
-        `;
-        const win = openWindow('Settings', settingsHTML, {width: '400px', height: '450px'});
+        /**
+         * stops all audio playback and resets ui.
+         */
+        function stopAllAudio() {
+            audioPlayer.pause();
+            if (sourceNode) {
+                pauseWebAudio(); // this will stop the node and clear it
+            }
+            playPauseIcon.classList.remove('fa-pause');
+            playPauseIcon.classList.add('fa-play');
+            progressBar.style.width = '0%';
+            currentTimeDisplay.textContent = '0:00';
+            currentOffset = 0;
+            startTime = 0;
+        }
+
+        /**
+         * helper function to start playback based on the current mode.
+         */
+        function playBasedOnMode() {
+            if (currentSpeedMode === 'timeStretch') {
+                audioPlayer.play().catch(e => {
+                    console.warn("autoplay prevented:", e);
+                    showMessage("autoplay blocked. click play.", "info");
+                });
+            } else { // frequencyLevel
+                playWebAudio();
+            }
+        }
+
+        /**
+         * central function to load audio from a string (url or shortname).
+         */
+        async function loadAudioByString(urlInput) {
+            urlInput = urlInput.trim();
+            if (!urlInput) {
+                showMessage("please enter an audio url.", "error");
+                return;
+            }
+
+            // highlight in playlist if it exists
+            document.querySelectorAll('#playlist li').forEach(li => {
+                li.classList.toggle('active', li.textContent === urlInput);
+            });
+
+            const hasProtocol = urlInput.startsWith('http://') || urlInput.startsWith('https://');
+            const hasSlash = urlInput.includes('/');
+
+            let primaryAttemptUrl = '';
+            let fallbackAttemptUrl = '';
+            let isShortFilename = false;
+
+            if (hasProtocol) {
+                primaryAttemptUrl = urlInput;
+            } else if (hasSlash) {
+                primaryAttemptUrl = `https://${urlInput.replace(/ /g, '%20')}`;
+            } else {
+                isShortFilename = true;
+                let filenameForUrl = urlInput;
+                if (!urlInput.includes('%')) {
+                    filenameForUrl = encodeURIComponent(urlInput);
+                }
+                primaryAttemptUrl = `https://wackybox.org/${filenameForUrl}`;
+                fallbackAttemptUrl = `https://file.garden/ZwtoaziYoEL_MBCc/${filenameForUrl}`;
+            }
+
+            primaryUrlToTry = primaryAttemptUrl; // store in global
+            fallbackUrlToTry = fallbackAttemptUrl; // store in global
+            isTryingFallback = false;
+
+            const audioExtensions = ['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a', '.opus'];
+            const finalUrlToCheckExtension = isShortFilename ? urlInput : primaryAttemptUrl;
+            const isAudioUrl = audioExtensions.some(ext => finalUrlToCheckExtension.toLowerCase().endsWith(ext));
+
+            if (!isAudioUrl) {
+                showMessage("invalid url. must be a direct audio file link.", "error");
+                return;
+            }
+
+            stopAllAudio();
+            currentOffset = 0;
+            audioUrlInput.value = urlInput; // show the name in the input box
+
+            // remove the big try...catch
+            showMessage(`loading: ${primaryUrlToTry}`, "info");
+            audioPlayer.src = primaryUrlToTry;
+            audioPlayer.load();
+            
+            // the success/error is now handled by the event listeners
+            // `handleAudioLoadSuccess` will call `loadAudioForWebAudio`
+        }
+
+        /**
+         * populates the playlist from the global array.
+         */
+        function populatePlaylist() {
+            playlistElement.innerHTML = ''; // clear existing
+            
+            wackyboxDemoPlaylist.forEach(itemName => {
+                const li = document.createElement('li');
+                li.textContent = itemName;
+                li.addEventListener('click', () => {
+                    loadAudioByString(itemName);
+                });
+                playlistElement.appendChild(li);
+            });
+
+            const infoLi = document.createElement('li');
+            infoLi.className = 'playlist-info';
+            infoLi.textContent = "yes";
+            playlistElement.appendChild(infoLi);
+        }
         
-        // Load current settings into controls
-        const wallpaperSelect = win.querySelector('#wallpaper-select');
-        wallpaperSelect.value = appSettings.wallpaper;
+        // --- Settings Functions ---
         
-        // Add event listener
-        wallpaperSelect.addEventListener('change', (e) => {
-            appSettings.wallpaper = e.target.value;
-            applySettings();
-            saveSettings();
+        /**
+         * loads all settings from localstorage on startup.
+         */
+        function loadSettings() {
+            // load theme
+            const savedTheme = localStorage.getItem('wb-player-theme') || 'theme-default';
+            applyTheme(savedTheme);
+
+            // load loading mode
+            const savedLoadingMode = localStorage.getItem('wb-player-loading-mode') || 'preload';
+            currentLoadingMode = savedLoadingMode;
+            loadingModeToggle.checked = (currentLoadingMode === 'stream');
+
+            // load loop state
+            const savedLoop = localStorage.getItem('wb-player-loop') === 'true';
+            audioPlayer.loop = savedLoop;
+            loopButton.classList.toggle('active', savedLoop);
+
+            // load volume
+            const savedVolume = localStorage.getItem('wb-player-volume') || '1';
+            // audioPlayer.volume = savedVolume; // this was the bug, we only control gain node
+            volumeSlider.value = savedVolume;
+            if (gainNode) gainNode.gain.value = savedVolume;
+            updateVolumeIcon();
+        }
+        
+        /**
+         * applies a theme to the document.
+         */
+        function applyTheme(themeName) {
+            document.body.className = themeName; // removes all other classes
+            currentTheme = themeName;
+            localStorage.setItem('wb-player-theme', themeName);
+            
+            // update active state in settings modal
+            document.querySelectorAll('#themeSelector .theme-option').forEach(opt => {
+                opt.classList.toggle('active', opt.dataset.theme === themeName);
+            });
+        }
+
+        // --- Event Listeners ---
+
+        // load from url button
+        loadUrlButton.addEventListener('click', () => {
+            loadAudioByString(audioUrlInput.value);
         });
-    }
+        // allow 'enter' key in url input
+        audioUrlInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                loadAudioByString(audioUrlInput.value);
+            }
+        });
 
+        // load from file input
+        audioFileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                if (file.type.startsWith('audio/')) {
+                    stopAllAudio();
+                    currentOffset = 0;
+                    // clear playlist highlight
+                    document.querySelectorAll('#playlist li').forEach(li => li.classList.remove('active'));
 
-    // lem--
-    function dragElement(elmnt) { 
-        if (isMobile()) return; // No dragging on mobile
+                    const fileURL = URL.createObjectURL(file);
+                    
+                    primaryUrlToTry = fileURL;
+                    fallbackUrlToTry = '';
+                    isTryingFallback = false;
 
-        let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0; 
-        let header = elmnt.classList.contains('window') ? elmnt.querySelector('.window-header') : elmnt; 
+                    audioPlayer.src = fileURL;
+                    audioPlayer.load();
+                    updateAudioDisplay(fileURL, true);
+                    showMessage("loaded", "info");
+
+                    // try to preload
+                    try {
+                        await loadAudioForWebAudio(fileURL, true, file);
+                    } catch (error) {
+                        console.warn("couldn't preload:", error);
+                        showMessage("settings loaded", "info");
+                    }
+                } else {
+                    showMessage("incompatible file", "error");
+                    audioFileInput.value = '';
+                }
+            }
+        });
+
+        // info page toggle
+        infoButton.addEventListener('click', () => infoPage.classList.add('active'));
+        closeInfoButton.addEventListener('click', () => infoPage.classList.remove('active'));
+
+        // settings page toggle
+        settingsButton.addEventListener('click', () => settingsPage.classList.add('active'));
+        closeSettingsButton.addEventListener('click', () => settingsPage.classList.remove('active'));
         
-        if (header) { header.onmousedown = dragMouseDown; } 
+        // close modals with escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                infoPage.classList.remove('active');
+                settingsPage.classList.remove('active');
+            }
+        });
+
+        // playlist toggle
+        togglePlaylistButton.addEventListener('click', () => {
+            playlistElement.classList.toggle('hidden');
+            togglePlaylistButton.classList.toggle('active');
+            if (playlistElement.classList.contains('hidden')) {
+                togglePlaylistButton.innerHTML = 'open demo list <i class="fas fa-chevron-down ml-2"></i>';
+            } else {
+                togglePlaylistButton.innerHTML = 'close demo list <i class="fas fa-chevron-up ml-2"></i>';
+            }
+        });
         
-        function dragMouseDown(e) { 
-            if (e.button !== 0 || (e.target.tagName === 'BUTTON')) return; 
-            e.preventDefault(); 
-            if (elmnt.classList.contains('window')) bringWindowToFront(elmnt.id); 
+        // --- Settings Event Listeners ---
+        
+        // theme selector
+        themeSelector.addEventListener('click', (e) => {
+            const themeOption = e.target.closest('.theme-option');
+            if (themeOption) {
+                applyTheme(themeOption.dataset.theme);
+            }
+        });
+
+        // loading mode
+        loadingModeToggle.addEventListener('change', () => {
+            currentLoadingMode = loadingModeToggle.checked ? 'stream' : 'preload';
+            localStorage.setItem('wb-player-loading-mode', currentLoadingMode);
             
-            pos3 = e.clientX; 
-            pos4 = e.clientY; 
-            document.onmouseup = closeDragElement; 
-            document.onmousemove = elementDrag; 
-            elmnt.classList.add('dragging'); 
+            if (currentLoadingMode === 'stream' && currentSpeedMode === 'frequencyLevel') {
+                // if we switch then doit 
+                speedModeToggle.checked = false;
+                handleSpeedModeChange(false); // force switch to timestretch
+                showMessage("switched to 'stream' mode. freq level disabled.", "info");
+            } else if (currentLoadingMode === 'preload') {
+                showMessage("switched to 'pre-load' mode. freq level enabled.", "info");
+                // pre-load audio if it's not alreay loaded
+                if (!audioBuffer && (currentAudioSource.url || currentAudioSource.file)) {
+                    loadAudioForWebAudio(currentAudioSource.url, currentAudioSource.isLocal, currentAudioSource.file);
+                }
+            }
+        });
 
-            elmnt.querySelectorAll('iframe, canvas').forEach(el => el.style.pointerEvents = 'none');
-        } 
-        
-        function elementDrag(e) { 
-            e.preventDefault(); 
-            if (elmnt.classList.contains('maximized')) return; 
-            pos1 = pos3 - e.clientX; 
-            pos2 = pos4 - e.clientY; 
-            pos3 = e.clientX; 
-            pos4 = e.clientY; 
-            elmnt.style.top = `${elmnt.offsetTop - pos2}px`; 
-            elmnt.style.left = `${elmnt.offsetLeft - pos1}px`; 
-        } 
-        
-        function closeDragElement() { 
-            document.onmouseup = null; 
-            document.onmousemove = null; 
-            elmnt.classList.remove('dragging'); 
+        // lode and reze. 
+        window.onload = () => {
+            loadSettings(); // load theme, mode, volume, etc.
+            populatePlaylist(); // build the playlist ui
             
-            elmnt.querySelectorAll('iframe, canvas').forEach(el => el.style.pointerEvents = 'auto');
-        } 
-    }
+            // add audio event listeners
+            audioPlayer.addEventListener('error', handleAudioLoadError);
+            audioPlayer.addEventListener('canplay', handleAudioLoadSuccess);
 
-    // -ihfthfy
-    window.onload = initializeDesktop;
-    // Nes than window.onresize
-    const resizeObserver = new ResizeObserver(() => {
-        renderUI();
-    });
-    resizeObserver.observe(document.body);
+            const preloadUrl = getPreloadUrl();
 
-</script>
+            if (preloadUrl) {
+                loadAudioByString(preloadUrl);
+            } else {
+                // load default source
+                const initialSourceElement = audioPlayer.querySelector('source');
+                if (initialSourceElement) {
+                    const initialSrc = initialSourceElement.src;
+                    audioUrlInput.value = initialSrc; // set input box to default
+                    updateAudioDisplay(initialSrc);
+                    // pre-load for web audio api (if mode is 'preload')
+                    loadAudioForWebAudio(initialSrc, false, null).catch(e => console.error("initial web audio load failed:", e));
+                }
+            }
 
+            // set controls to match loaded settings
+            speedSlider.value = audioPlayer.playbackRate;
+            speedValueDisplay.textContent = `${audioPlayer.playbackRate.toFixed(2)}x`;
+            speedModeToggle.checked = false; 
+            
+            resizeVisualizer();
+
+            // start the ui update loop
+            animationFrameId = requestAnimationFrame(updateProgress);
+        };
+        
+        window.addEventListener('resize', resizeVisualizer);
+        
+        // load? ew
+        function handleAudioLoadSuccess() {
+            // fired when the <audio> element is happy and can play
+            let urlLoaded;
+            if (isTryingFallback) {
+                showMessage("fallback loaded.", "info");
+                urlLoaded = fallbackUrlToTry;
+                updateAudioDisplay(urlLoaded);
+            } else {
+                showMessage("loaded.", "info");
+                urlLoaded = primaryUrlToTry;
+                updateAudioDisplay(urlLoaded);
+            }
+            
+            // now, try to preload (if in preload mode)
+            // this can fail silently without stopping playback
+            loadAudioForWebAudio(urlLoaded, false, null).catch(err => {
+                console.warn("web audio preload failed:", err);
+                if (currentLoadingMode === 'preload') {
+                    // pretend there wasn't an error because otherwise when you adjust the play cursor it just errors out lmao
+                    showMessage("ok", "info");
+                }
+            });
+
+            // reset flags
+            isTryingFallback = false;
+        }
+
+        function handleAudioLoadError() {
+            console.error("audio element error:", audioPlayer.error);
+
+            if (isTryingFallback) {
+                // the fallback also failed
+                showMessage("failed to load!", "error");
+                isTryingFallback = false;
+            } else if (fallbackUrlToTry) {
+                // primary failed, try fallback
+                showMessage("loading2", "info");
+                isTryingFallback = true;
+                audioPlayer.src = fallbackUrlToTry;
+                audioPlayer.load();
+            } else {
+                // primary failed, no fallback
+                showMessage("failed to load! 2", "error");
+            }
+        }
+
+        // the controls 
+
+        // play/pause button
+        playPauseButton.addEventListener('click', () => {
+            if (!isWebAudioGraphReady) {
+                setupWebAudioGraph(); // this is the user gesture!
+            }
+
+            if (currentSpeedMode === 'timeStretch') {
+                if (audioPlayer.paused) {
+                    audioPlayer.play().catch(e => {
+                        console.error("error playing html audio:", e);
+                        showMessage("could not play html audio.", "error");
+                    });
+                } else {
+                    audioPlayer.pause();
+                }
+            } else { // frequencyLevel
+                if (!sourceNode) { // if paused or stopped
+                    playWebAudio();
+                } else { // if playing
+                    pauseWebAudio();
+                }
+            }
+        });
+        
+        // loop button
+        loopButton.addEventListener('click', () => {
+            const isLooping = !audioPlayer.loop;
+            audioPlayer.loop = isLooping;
+            loopButton.classList.toggle('active', isLooping);
+            localStorage.setItem('wb-player-loop', isLooping);
+            showMessage(`loop ${isLooping ? 'on' : 'off'}`, 'info');
+        });
+
+        // html audio event listeners to update play/pause icon
+        audioPlayer.addEventListener('play', () => {
+            if (currentSpeedMode === 'timeStretch') {
+                playPauseIcon.classList.remove('fa-play');
+                playPauseIcon.classList.add('fa-pause');
+            }
+        });
+        audioPlayer.addEventListener('pause', () => {
+            if (currentSpeedMode === 'timeStretch') {
+                playPauseIcon.classList.remove('fa-pause');
+                playPauseIcon.classList.add('fa-play');
+            }
+        });
+        audioPlayer.addEventListener('ended', () => {
+            if (currentSpeedMode === 'timeStretch') {
+                playPauseIcon.classList.remove('fa-pause');
+                playPauseIcon.classList.add('fa-play');
+                progressBar.style.width = '0%';
+                currentTimeDisplay.textContent = '0:00';
+            }
+        });
+
+        // update progress bar and time display (loop)
+        function updateProgress() {
+            if (!isDraggingProgressBar) {
+                let currentProgress = 0;
+                let currentDuration = 0;
+                let displayTime = 0;
+
+                if (currentSpeedMode === 'timeStretch') {
+                    displayTime = audioPlayer.currentTime;
+                    currentDuration = audioPlayer.duration;
+                } else { // frequencyLevel
+                    currentDuration = audioBuffer ? audioBuffer.duration : 0;
+                    if (audioContext && sourceNode && audioBuffer) {
+                        const elapsedSinceStart = (audioContext.currentTime - startTime) * sourceNode.playbackRate.value;
+                        displayTime = Math.min(currentOffset + elapsedSinceStart, currentDuration);
+                    } else {
+                        displayTime = currentOffset;
+                    }
+                }
+                
+                currentProgress = (displayTime / currentDuration) * 100;
+                progressBar.style.width = `${isNaN(currentProgress) ? 0 : currentProgress}%`;
+                currentTimeDisplay.textContent = formatTime(displayTime);
+                
+                // only update duration if it's not nan
+                if (isFinite(currentDuration) && currentDuration > 0) {
+                    durationDisplay.textContent = formatTime(currentDuration);
+                }
+            }
+            animationFrameId = requestAnimationFrame(updateProgress);
+        }
+
+        // set duration on metadata load for html audio
+        audioPlayer.addEventListener('loadedmetadata', () => {
+            if (currentSpeedMode === 'timeStretch') {
+                durationDisplay.textContent = formatTime(audioPlayer.duration);
+            }
+        });
+
+        // progress bar seeking
+        progressContainer.addEventListener('mousedown', (e) => {
+            if (!isWebAudioGraphReady) {
+                setupWebAudioGraph(); // this is also a user gesture!
+            }
+            isDraggingProgressBar = true;
+            updateProgressBarPosition(e);
+        });
+        document.addEventListener('mousemove', (e) => {
+            if (isDraggingProgressBar) {
+                updateProgressBarPosition(e);
+            }
+        });
+        document.addEventListener('mouseup', () => {
+            isDraggingProgressBar = false;
+        });
+
+        function updateProgressBarPosition(e) {
+            const rect = progressContainer.getBoundingClientRect();
+            let clickX = e.clientX - rect.left;
+            if (clickX < 0) clickX = 0;
+            if (clickX > rect.width) clickX = rect.width;
+
+            let newTime = 0;
+            let duration = 0;
+
+            if (currentSpeedMode === 'timeStretch') {
+                duration = audioPlayer.duration;
+                newTime = (clickX / rect.width) * duration;
+                if (isFinite(newTime)) {
+                    audioPlayer.currentTime = newTime;
+                }
+            } else { // frequencyLevel
+                if (!audioBuffer) return;
+                duration = audioBuffer.duration;
+                newTime = (clickX / rect.width) * duration;
+                if (isFinite(newTime)) {
+                    currentOffset = newTime; // set the new "parked" offset
+                    
+                    if (sourceNode && audioContext && audioContext.state === 'running') {
+                        sourceNode.stop();
+                        sourceNode.disconnect();
+                        sourceNode = null;
+                        playWebAudio(); // will play from the new currentoffset
+                    }
+                }
+            }
+
+            if (isFinite(newTime) && isFinite(duration) && duration > 0) {
+                progressBar.style.width = `${(newTime / duration) * 100}%`;
+                currentTimeDisplay.textContent = formatTime(newTime);
+            }
+        }
+
+        // volume control
+        volumeSlider.addEventListener('input', () => {
+            const newVolume = volumeSlider.value;
+            // audioPlayer.volume = newVolume; // we only control the gain node
+            if (gainNode) {
+                gainNode.gain.value = newVolume;
+            }
+            localStorage.setItem('wb-player-volume', newVolume);
+            updateVolumeIcon();
+        });
+
+        // mute button
+        volumeIcon.addEventListener('click', () => {
+            let currentVolume = volumeSlider.value;
+            let newVolume = 0;
+            
+            // unmute to 50% or a saved 'pre-mute' volume
+            if (currentVolume == 0) {
+                newVolume = parseFloat(localStorage.getItem('wb-player-pre-mute-volume') || 0.5);
+            } else {
+                localStorage.setItem('wb-player-pre-mute-volume', currentVolume);
+                newVolume = 0;
+            }
+
+            // audioPlayer.volume = newVolume; // we only control the gain node
+            if (gainNode) {
+                gainNode.gain.value = newVolume;
+            }
+            volumeSlider.value = newVolume;
+            localStorage.setItem('wb-player-volume', newVolume);
+            updateVolumeIcon();
+        });
+
+        function updateVolumeIcon() {
+            let currentVolume = volumeSlider.value;
+            if (currentVolume == 0) {
+                volumeIcon.classList.remove('fa-volume-up', 'fa-volume-down');
+                volumeIcon.classList.add('fa-volume-mute');
+            } else if (currentVolume < 0.5) {
+                volumeIcon.classList.remove('fa-volume-up', 'fa-volume-mute');
+                volumeIcon.classList.add('fa-volume-down');
+            } else {
+                volumeIcon.classList.remove('fa-volume-down', 'fa-volume-mute');
+                volumeIcon.classList.add('fa-volume-up');
+            }
+        }
+
+        // speed control
+        speedSlider.addEventListener('input', () => {
+            const newSpeed = parseFloat(speedSlider.value);
+            if (currentSpeedMode === 'timeStretch') {
+                audioPlayer.playbackRate = newSpeed;
+            } else if (sourceNode) {
+                sourceNode.playbackRate.value = newSpeed;
+            }
+            speedValueDisplay.textContent = `${newSpeed.toFixed(2)}x`;
+        });
+
+        // reset speed
+        speedIcon.addEventListener('click', () => {
+            const defaultSpeed = 1.00;
+            if (currentSpeedMode === 'timeStretch') {
+                audioPlayer.playbackRate = defaultSpeed;
+            } else if (sourceNode) {
+                sourceNode.playbackRate.value = defaultSpeed;
+            }
+            speedSlider.value = defaultSpeed;
+            speedValueDisplay.textContent = `${defaultSpeed.toFixed(2)}x`;
+            showMessage("speed reset to 1.00x", "info");
+        });
+
+        // speed mode toggle
+        speedModeToggle.addEventListener('change', () => {
+            handleSpeedModeChange(speedModeToggle.checked);
+        });
+        
+        async function handleSpeedModeChange(isFreqLevel) {
+            // check for loading mode constraint
+            if (isFreqLevel && currentLoadingMode === 'stream') {
+                showMessage("frequency level mode requires 'pre-load' mode. check settings.", "error");
+                speedModeToggle.checked = false; // revert the toggle
+                return;
+            }
+            // check that graph is ready
+            if (isFreqLevel && !isWebAudioGraphReady) {
+                 showMessage("please press play or seek first to initialize audio.", "info");
+                 speedModeToggle.checked = false;
+                 return;
+            }
+        
+            const wasPlaying = (currentSpeedMode === 'timeStretch' && !audioPlayer.paused) || 
+                               (currentSpeedMode === 'frequencyLevel' && sourceNode);
+            let currentPlaybackTime = 0;
+
+            // pause and get current time
+            if (currentSpeedMode === 'timeStretch') {
+                currentPlaybackTime = audioPlayer.currentTime;
+                audioPlayer.pause();
+            } else { // frequencyLevel
+                if (sourceNode) {
+                    const elapsedSinceStart = (audioContext.currentTime - startTime) * sourceNode.playbackRate.value;
+                    currentPlaybackTime = Math.min(currentOffset + elapsedSinceStart, audioBuffer ? audioBuffer.duration : 0);
+                    pauseWebAudio(); // stops node, sets sourcenode to null, reconnects mediaelementsource
+                } else {
+                    currentPlaybackTime = currentOffset; // already paused
+                }
+            }
+
+            // switch mode
+            currentSpeedMode = isFreqLevel ? 'frequencyLevel' : 'timeStretch';
+            showMessage(`switched to ${currentSpeedMode === 'timeStretch' ? 'time stretch' : 'freq level'} mode.`, "info");
+
+            // sync controls - only playbackrate needs syncing
+            if (currentSpeedMode === 'timeStretch') {
+                audioPlayer.playbackRate = speedSlider.value;
+            }
+            // volume is always controlled by gainnode, no sync needed
+
+            // resume playback in new mode
+            if (currentSpeedMode === 'timeStretch') {
+                // re-connect media element source just in case
+                if(mediaElementSource && isWebAudioGraphReady) mediaElementSource.connect(gainNode);
+                
+                audioPlayer.currentTime = currentPlaybackTime;
+                if (wasPlaying) {
+                    audioPlayer.play().catch(e => {
+                        console.error("error resuming html audio:", e);
+                        showMessage("autoplay blocked. click play.", "info");
+                    });
+                }
+            } else { // frequencyLevel
+                currentOffset = currentPlaybackTime;
+                if (!audioBuffer) {
+                    try {
+                        // re-load buffer if it's missing
+                        showMessage("pre-loading audio for freq level mode...", "info");
+                        await loadAudioForWebAudio(currentAudioSource.url, currentAudioSource.isLocal, currentAudioSource.file);
+                    } catch (error) {
+                        showMessage("failed to load audio for freq level mode.", "error");
+                        return;
+                    }
+                }
+                if (wasPlaying) {
+                    playWebAudio(); // this will disconnect mediaelementsource
+                }
+            }
+        }
+        
+        // keystrokes
+        document.addEventListener('keydown', (e) => {
+            // don't interfere with typing in inputs
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                return;
+            }
+            
+            // don't interfere with modal tabbing
+            if (infoPage.classList.contains('active') || settingsPage.classList.contains('active')) {
+                return;
+            }
+
+            switch(e.code) {
+                case 'Space':
+                    e.preventDefault();
+                    playPauseButton.click();
+                    break;
+                case 'KeyM':
+                    e.preventDefault();
+                    volumeIcon.click();
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    seek(-5);
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    seek(5);
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    changeVolume(0.1);
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    changeVolume(-0.1);
+                    break;
+            }
+        });
+        
+        function seek(seconds) {
+            // seeking is a user gesture, so init audio
+            if (!isWebAudioGraphReady) {
+                setupWebAudioGraph();
+            }
+
+            if (currentSpeedMode === 'timeStretch') {
+                const newTime = Math.max(0, audioPlayer.currentTime + seconds);
+                audioPlayer.currentTime = newTime;
+                if (isFinite(newTime) && isFinite(audioPlayer.duration)) {
+                    progressBar.style.width = `${(newTime / audioPlayer.duration) * 100}%`;
+                }
+            } else { // frequencyLevel
+                if (!audioBuffer) return;
+                const newTime = Math.max(0, currentOffset + seconds);
+                currentOffset = Math.min(newTime, audioBuffer.duration);
+                if (sourceNode) { // if playing, restart from new offset
+                    playWebAudio();
+                }
+                if (isFinite(newTime) && isFinite(audioBuffer.duration)) {
+                    progressBar.style.width = `${(newTime / audioBuffer.duration) * 100}%`;
+                }
+            }
+            // update display immediately
+            currentTimeDisplay.textContent = formatTime(currentSpeedMode === 'timeStretch' ? audioPlayer.currentTime : currentOffset);
+        }
+
+        function changeVolume(delta) {
+            let newVolume = parseFloat(volumeSlider.value) + delta;
+            newVolume = Math.max(0, Math.min(1, newVolume)); // clamp between 0 and 1
+            
+            // audioPlayer.volume = newVolume; // we only control the gain node
+            if (gainNode) {
+                gainNode.gain.value = newVolume;
+            }
+            volumeSlider.value = newVolume;
+            localStorage.setItem('wb-player-volume', newVolume);
+            updateVolumeIcon();
+        }
+
+    </script>
 </body>
 </html>
