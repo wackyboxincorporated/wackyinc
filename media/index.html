@@ -8,6 +8,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
+        html {
+            /* Dynamically scale root font size */
+            font-size: clamp(14px, 1.5vw + 0.5rem, 18px);
+        }
         body {
             font-family: 'Roboto Mono', monospace;
             background-color: #000000;
@@ -20,26 +24,26 @@
             padding: 1rem;
             box-sizing: border-box;
             position: relative;
-            overflow: hidden; /* Prevent scrollbars from appearing due to animations */
+            overflow-x: hidden; /* Allow vertical scroll if needed, but not horizontal */
         }
         .container {
             background-color: #282828;
-            padding: 2.5rem;
-            border-radius: 1.5rem;
+            /* Responsive padding and width */
+            padding: clamp(1.5rem, 5vw, 2.5rem);
+            border-radius: 0.5rem; /* Sharpened */
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
-            max-width: 90%;
-            width: 500px;
+            max-width: 500px;
+            width: 90%;
             text-align: center;
             position: relative;
-            animation: fadeIn 1s ease-out; /* Fade in animation for the container */
+            animation: fadeIn 1s ease-out;
         }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-20px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        /* Hide the default audio controls */
         audio {
-            display: none; /* Hide the native audio player */
+            display: none;
         }
         h1 {
             color: #ffffff;
@@ -70,7 +74,7 @@
             border: 1px solid #4a5568;
             background-color: #2d3748;
             color: #f0f0f0;
-            border-radius: 0.5rem;
+            border-radius: 0.25rem; /* Sharpened */
             font-size: 1rem;
             width: 100%;
             box-sizing: border-box;
@@ -88,7 +92,7 @@
             background-color: #880808;
             color: white;
             padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
+            border-radius: 0.25rem; /* Sharpened */
             font-weight: 600;
             cursor: pointer;
             transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
@@ -122,42 +126,32 @@
             width: 100%;
             height: 100%;
         }
-        /* Message Box Styling - Changed for pop-up behavior */
         .message-box {
-            padding: 0.75rem 1.5rem; /* Slightly more horizontal padding for pop-up feel */
-            border-radius: 0.75rem; /* More rounded corners */
-            position: fixed; /* Fixed positioning relative to viewport */
-            bottom: 2rem; /* Distance from the bottom of the viewport */
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.375rem; /* Sharpened */
+            position: fixed;
+            bottom: 2rem;
             left: 50%;
-            transform: translateX(-50%); /* Center horizontally */
-            max-width: 400px; /* Max width for the pop-up */
-            width: 90%; /* Responsive width */
-            box-sizing: border-box; /* Include padding in width */
+            transform: translateX(-50%);
+            max-width: 400px;
+            width: 90%;
+            box-sizing: border-box;
             text-align: center;
-            font-size: 1rem; /* Slightly larger font */
+            font-size: 1rem;
             font-weight: 500;
-            z-index: 1001; /* High z-index to be on top of everything */
-            opacity: 0; /* Start hidden for fade-in */
-            visibility: hidden; /* Hide until activated */
-            transition: opacity 0.4s ease-out, visibility 0.4s; /* Smoother transition */
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4); /* Add subtle shadow */
+            z-index: 1001;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease-out, visibility 0.4s;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
         }
-        .message-box.active { /* New class to show the message box */
+        .message-box.active {
             opacity: 1;
             visibility: visible;
         }
-        .message-box.bg-red-200 {
-            background-color: #fed7d7;
-            color: #c53030;
-        }
-        .message-box.bg-green-200 {
-            background-color: #c6f6d5;
-            color: #2f855a;
-        }
-        .message-box.bg-blue-200 { /* For info messages */
-            background-color: #bee3f8;
-            color: #2b6cb0;
-        }
+        .message-box.bg-red-200 { background-color: #fed7d7; color: #c53030; }
+        .message-box.bg-green-200 { background-color: #c6f6d5; color: #2f855a; }
+        .message-box.bg-blue-200 { background-color: #bee3f8; color: #2b6cb0; }
 
         #infoButton {
             position: fixed;
@@ -165,7 +159,7 @@
             right: 1rem;
             background-color: #4a5568;
             color: white;
-            border-radius: 9999px;
+            border-radius: 0.25rem; /* Sharpened */
             padding: 0.75rem 1rem;
             font-size: 1.25rem;
             font-weight: 700;
@@ -207,7 +201,7 @@
         #infoPageContent {
             background-color: #282828;
             padding: 2.5rem;
-            border-radius: 1.5rem;
+            border-radius: 0.5rem; /* Sharpened */
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
             max-width: 600px;
             width: 90%;
@@ -238,7 +232,7 @@
             right: 1rem;
             background-color: #880808;
             color: white;
-            border-radius: 9999px;
+            border-radius: 0.25rem; /* Sharpened */
             padding: 0.5rem 0.8rem;
             font-size: 1rem;
             cursor: pointer;
@@ -253,16 +247,72 @@
             transform: scale(1);
         }
 
+        /* Playlist Styling */
+        .playlist-toggle-button {
+            background-color: #4a5568;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem; /* Sharpened */
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+            border: none;
+            width: 100%;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .playlist-toggle-button:hover {
+            background-color: #2d3748;
+        }
+        .playlist-list {
+            background-color: #3a3a3a;
+            border-radius: 0.25rem; /* Sharpened */
+            margin-top: 0.5rem;
+            max-height: 150px;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }
+        .playlist-list.hidden {
+            display: none;
+        }
+        .playlist-list li {
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            border-radius: 0.25rem; /* Sharpened */
+            transition: background-color 0.2s;
+            color: #f0f0f0;
+            text-align: left;
+        }
+        .playlist-list li:hover {
+            background-color: #555;
+        }
+        .playlist-list li.playlist-info {
+            font-size: 0.75rem;
+            color: #b0b0b0;
+            cursor: default;
+        }
+        .playlist-list li.playlist-info:hover {
+            background-color: transparent;
+        }
+        .playlist-toggle-button i {
+            transition: transform 0.3s ease;
+        }
+        .playlist-toggle-button.active i {
+            transform: rotate(180deg);
+        }
+
         /* Custom Player Controls Styling */
         .custom-controls {
             display: flex;
             align-items: center;
-            flex-wrap: wrap; /* Allow controls to wrap on smaller screens */
+            flex-wrap: wrap;
             gap: 1rem;
             margin-top: 1.5rem;
             background-color: #3a3a3a;
             padding: 1rem 1.5rem;
-            border-radius: 1rem;
+            border-radius: 0.375rem; /* Sharpened */
             box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3);
         }
         .play-pause-button {
@@ -270,7 +320,7 @@
             color: white;
             width: 3rem;
             height: 3rem;
-            border-radius: 50%;
+            border-radius: 0.375rem; /* Sharpened */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -291,7 +341,7 @@
             flex-grow: 1;
             height: 0.75rem;
             background-color: #555;
-            border-radius: 0.375rem;
+            border-radius: 0.125rem; /* Sharpened */
             cursor: pointer;
             position: relative;
             overflow: hidden;
@@ -301,22 +351,22 @@
             height: 100%;
             width: 0%;
             background-color: #880808;
-            border-radius: 0.375rem;
-            transition: width 0.1s linear; /* Smooth progress update */
+            border-radius: 0.125rem; /* Sharpened */
+            transition: width 0.1s linear;
             position: relative;
         }
         .progress-bar::after {
             content: '';
             position: absolute;
-            right: -0.5rem; /* Position the handle slightly outside */
+            right: -0.5rem;
             top: 50%;
             transform: translateY(-50%);
             width: 1rem;
             height: 1rem;
             background-color: #fff;
-            border-radius: 50%;
+            border-radius: 0.125rem; /* Sharpened */
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
-            display: none; /* Hidden by default, shown on hover/drag */
+            display: none;
         }
         .progress-container:hover .progress-bar::after {
             display: block;
@@ -342,7 +392,7 @@
             width: 6rem;
             height: 0.5rem;
             background: #555;
-            border-radius: 0.25rem;
+            border-radius: 0.125rem; /* Sharpened */
             outline: none;
             transition: background 0.2s ease-in-out;
         }
@@ -352,7 +402,7 @@
             width: 1rem;
             height: 1rem;
             background: #880808;
-            border-radius: 50%;
+            border-radius: 0.125rem; /* Sharpened */
             cursor: pointer;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
             transition: background 0.2s ease-in-out;
@@ -361,7 +411,7 @@
             width: 1rem;
             height: 1rem;
             background: #880808;
-            border-radius: 50%;
+            border-radius: 0.125rem; /* Sharpened */
             cursor: pointer;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
             transition: background 0.2s ease-in-out;
@@ -375,11 +425,10 @@
         .speed-value {
             font-size: 0.75rem;
             color: #d0d0d0;
-            width: 2.5rem; /* Fixed width for consistent display */
+            width: 2.5rem;
             text-align: right;
         }
 
-        /* Toggle Switch Styling */
         .speed-mode-toggle {
             display: flex;
             align-items: center;
@@ -412,7 +461,7 @@
             bottom: 0;
             background-color: #555;
             transition: .4s;
-            border-radius: 20px;
+            border-radius: 0.125rem; /* Sharpened */
         }
 
         .slider:before {
@@ -424,7 +473,7 @@
             bottom: 2px;
             background-color: white;
             transition: .4s;
-            border-radius: 50%;
+            border-radius: 0.125rem; /* Sharpened */
         }
 
         input:checked + .slider {
@@ -446,8 +495,8 @@
         <p>enter a url or select a local file...</p>
 
         <div class="input-group">
-            <input type="text" id="audioUrlInput" placeholder="Enter audio URL (e.g., .mp3, .flac)">
-            <button id="loadUrlButton">Load from URL</button>
+            <input type="text" id="audioUrlInput" placeholder="enter audio url (e.g., .mp3, .flac)">
+            <button id="loadUrlButton">load from url</button>
         </div>
 
         <div class="input-group">
@@ -459,11 +508,20 @@
 
         <audio id="audioPlayer" loop>
             <source src="https://wackybox.org/19-4.flac" type="audio/flac">
-            Your browser does not support flac files... what the hell are you loading this on?
+            your browser does not support flac files... what the hell are you loading this on?
         </audio>
 
         <div id="audioSourceDisplay" class="audio-source">
-            Source: <a href="https://wackybox.org/19-4.flac" target="_blank" class="text-red-700 hover:underline">https://wackybox.org/19-4.flac</a>
+            source: <a href="https://wackybox.org/19-4.flac" target="_blank" class="text-red-700 hover:underline">https://wackybox.org/19-4.flac</a>
+        </div>
+
+        <div id="playlistContainer" class="w-full mt-4">
+            <button id="togglePlaylistButton" class="playlist-toggle-button">
+                wackybox demo list (click to show)
+                <i class="fas fa-chevron-down ml-2"></i>
+            </button>
+            <ul id="playlist" class="playlist-list hidden">
+                </ul>
         </div>
 
         <div class="custom-controls">
@@ -486,12 +544,12 @@
                 <input type="range" id="speedSlider" class="speed-slider" min="0.1" max="10" step="0.05" value="1">
                 <span id="speedValue" class="speed-value">1.00x</span>
                 <div class="speed-mode-toggle">
-                    <span>Time Stretch</span>
+                    <span>time stretch</span>
                     <label class="switch">
                         <input type="checkbox" id="speedModeToggle">
                         <span class="slider"></span>
                     </label>
-                    <span>Freq Level</span>
+                    <span>freq level</span>
                 </div>
             </div>
         </div>
@@ -503,19 +561,37 @@
 
     <div id="infoPage">
         <div id="infoPageContent">
-            <button id="closeInfoButton">X</button>
-            <h2>About wb-player</h2>
-            <p>wb-player 2. this application allows you to play audio files directly from a URL or by selecting them from your local storage !</p>
-            <p>it supports common audio formats like MP3, WAV, OGG, FLAC, AAC, M4A, and OPUS. just paste a direct link to an audio file or upload one.</p>
-            <p>the modern web sucks 8@115. features for ease of use - Sanitise inputs with spaces so 1 trial.opus doesn't need %20. - </p>
-            <p>Automatically tries to fetch files from two repositories if no domain is given, so 1 trial.opus will load from my file.garden.</p>
-            <p>Assumes HTTPS if not specified before domain so that "wackybox.org/minecraft.ogg" is valid too.</p>
+            <button id="closeInfoButton">x</button>
+            <h2>about wb-player</h2>
+            <p>wb-player 2. this application allows you to play audio files directly from a url or by selecting them from your local storage !</p>
+            <p>it supports common audio formats like mp3, wav, ogg, flac, aac, m4a, and opus. just paste a direct link to an audio file or upload one.</p>
+            <p>the modern web sucks 8@115. features for ease of use - sanitise inputs with spaces so 1 trial.opus doesn't need %20. - </p>
+            <p>automatically tries to fetch files from two repositories if no domain is given, so 1 trial.opus will load from my file.garden.</p>
+            <p>assumes https if not specified before domain so that "wackybox.org/minecraft.ogg" is valid too.</p>
         </div>
     </div>
 
     <script>
-        // DOM Elements
-        const audioPlayer = document.getElementById('audioPlayer'); // HTML Audio Element for Time Stretch mode
+        // --- Playlist Configuration ---
+        // to add files, just add the short name or full url to this list.
+        const wackyboxDemoPlaylist = [
+            "laptop.mp3",
+		"not an ordinary explanation.mp3",
+		"yes.mp3",
+		"decrunching 2022.mp3",
+		"Toyota Corolling.mp3",
+		"t get get t.mp3",
+		"You're even.mp3",
+		"2 times over I said.mp3",
+		"what're you on.mp3",
+		"back in the water.flac",
+		"1 trial.opus",
+		"https://wackybox.org/19-4.flac",
+		"wackybox.org/minecraft.ogg"
+        ];
+        
+        // --- DOM Elements ---
+        const audioPlayer = document.getElementById('audioPlayer');
         const audioUrlInput = document.getElementById('audioUrlInput');
         const loadUrlButton = document.getElementById('loadUrlButton');
         const audioFileInput = document.getElementById('audioFileInput');
@@ -537,34 +613,36 @@
         const speedSlider = document.getElementById('speedSlider');
         const speedValueDisplay = document.getElementById('speedValue');
         const speedModeToggle = document.getElementById('speedModeToggle');
-        const speedIcon = document.getElementById('speedIcon'); // Get the speed icon element
+        const speedIcon = document.getElementById('speedIcon');
 
-        // Web Audio API variables
+        // Playlist UI
+        const togglePlaylistButton = document.getElementById('togglePlaylistButton');
+        const playlistElement = document.getElementById('playlist');
+
+        // --- Web Audio API variables ---
         let audioContext = null;
         let audioBuffer = null;
         let sourceNode = null; // AudioBufferSourceNode
-        let gainNode = null;   // GainNode for volume control in Web Audio
-        let currentOffset = 0; // Current playback position in seconds for Web Audio API
+        let gainNode = null;   // GainNode for volume control
+        let currentOffset = 0; // Current playback position in seconds (where playback is "parked")
         let startTime = 0;     // Time when sourceNode started playing (audioContext.currentTime)
         let currentSpeedMode = 'timeStretch'; // 'timeStretch' (HTML Audio) or 'frequencyLevel' (Web Audio)
         let isAudioContextReady = false;
-        let currentAudioSource = { url: '', isLocal: false, file: null }; // To track the loaded audio source
+        let currentAudioSource = { url: '', isLocal: false, file: null };
 
-        let isDraggingProgressBar = false; // Flag to indicate if the user is dragging the progress bar
+        let isDraggingProgressBar = false;
+        let animationFrameId;
+
+        // --- Core Functions ---
 
         /**
-         * Parses the query parameter from the URL, specifically looking for `?={url}`.
-         * The standard URLSearchParams doesn't easily handle a single nameless parameter like `?={url}`.
-         * We look for the first occurrence of '?' followed immediately by '='.
-         * @returns {string | null} The decoded URL string from the query, or null if not found.
+         * Parses the query parameter `?={url}`.
          */
         function getPreloadUrl() {
-            const url = window.location.search; // Gets the query string, e.g., "?=https://..."
+            const url = window.location.search;
             if (url.startsWith('?=')) {
-                // Decode the URL part after "?=" and trim any quotes
                 const encodedUrl = url.substring(2);
                 let decodedUrl = decodeURIComponent(encodedUrl);
-                // The user example uses quotes: ?="https://...". We strip them.
                 if (decodedUrl.startsWith('"') && decodedUrl.endsWith('"')) {
                     decodedUrl = decodedUrl.substring(1, decodedUrl.length - 1);
                 }
@@ -575,12 +653,9 @@
 
         /**
          * Displays a message to the user.
-         * @param {string} message - The message to display.
-         * @param {'error'|'info'|'success'} type - The type of message (determines styling).
          */
         function showMessage(message, type = 'error') {
             messageBox.textContent = message;
-            // Remove previous type classes
             messageBox.classList.remove('bg-red-200', 'text-red-700', 'bg-green-200', 'text-green-700', 'bg-blue-200', 'text-blue-700');
 
             if (type === 'error') {
@@ -591,17 +666,14 @@
                 messageBox.classList.add('bg-green-200', 'text-green-700');
             }
             
-            messageBox.classList.add('active'); // Show the message box
-
+            messageBox.classList.add('active');
             setTimeout(() => {
-                messageBox.classList.remove('active'); // Hide the message box after timeout
+                messageBox.classList.remove('active');
             }, 5000);
         }
 
         /**
          * Formats time in seconds to MM:SS string.
-         * @param {number} seconds - The time in seconds.
-         * @returns {string} Formatted time string.
          */
         function formatTime(seconds) {
             if (isNaN(seconds) || seconds < 0) return '0:00';
@@ -612,21 +684,18 @@
 
         /**
          * Updates the displayed audio source link.
-         * @param {string} src - The URL or Object URL of the audio.
-         * @param {boolean} isLocalFile - True if the source is a local file.
          */
         function updateAudioDisplay(src, isLocalFile = false) {
             if (isLocalFile) {
-                audioSourceDisplay.innerHTML = 'Source: Local File';
+                audioSourceDisplay.innerHTML = 'source: local file';
             } else {
-                audioSourceDisplay.innerHTML = `Source: <a href="${src}" target="_blank" class="text-red-700 hover:underline">${src}</a>`;
+                audioSourceDisplay.innerHTML = `source: <a href="${src}" target="_blank" class="text-red-700 hover:underline">${src}</a>`;
             }
             messageBox.style.display = 'none';
         }
 
         /**
-         * Initializes the Web Audio API context and gain node.
-         * This is called on the first user interaction to bypass autoplay policies.
+         * Initializes the Web Audio API context.
          */
         function initWebAudio() {
             if (!audioContext) {
@@ -634,23 +703,17 @@
                 gainNode = audioContext.createGain();
                 gainNode.connect(audioContext.destination);
                 isAudioContextReady = true;
-                // Set initial volume for Web Audio API
                 gainNode.gain.value = volumeSlider.value;
             }
         }
 
         /**
          * Loads audio data into an AudioBuffer for Web Audio API playback.
-         * @param {string} src - The URL of the audio file.
-         * @param {boolean} isLocalFile - True if the source is a local file.
-         * @param {File | null} file - The File object if it's a local file.
-         * @returns {Promise<void>} Resolves when audio is decoded, rejects on error.
          */
         async function loadAudioForWebAudio(src, isLocalFile = false, file = null) {
-            initWebAudio(); // Ensure audio context is ready
-            
-            // Store the current audio source details
+            initWebAudio();
             currentAudioSource = { url: src, isLocal: isLocalFile, file: file };
+            audioBuffer = null; // Clear previous buffer
 
             try {
                 let arrayBuffer;
@@ -658,25 +721,27 @@
                     arrayBuffer = await new Promise((resolve, reject) => {
                         const reader = new FileReader();
                         reader.onload = () => resolve(reader.result);
-                        reader.onerror = () => reject(new Error("Failed to read local file."));
+                        reader.onerror = () => reject(new Error("failed to read local file."));
                         reader.readAsArrayBuffer(file);
                     });
                 } else {
                     const response = await fetch(src);
                     if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
+                        throw new Error(`http error! status: ${response.status}`);
                     }
                     arrayBuffer = await response.arrayBuffer();
                 }
 
                 audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                durationDisplay.textContent = formatTime(audioBuffer.duration);
-                showMessage("Audio loaded successfully for Frequency Level mode.", "success");
+                if (currentSpeedMode === 'frequencyLevel') {
+                    durationDisplay.textContent = formatTime(audioBuffer.duration);
+                }
+                showMessage("audio loaded successfully for freq level mode.", "success");
             } catch (error) {
-                console.error("Error loading audio for Web Audio API:", error);
-                showMessage(`Failed to load audio for Frequency Level mode: ${error.message}`, "error");
-                audioBuffer = null; // Clear buffer on error
-                throw error; // Re-throw to propagate error
+                console.error("error loading audio for web audio api:", error);
+                showMessage(`failed to load audio for freq level mode: ${error.message}`, "error");
+                audioBuffer = null;
+                throw error;
             }
         }
 
@@ -685,7 +750,7 @@
          */
         function playWebAudio() {
             if (!audioBuffer) {
-                showMessage("No audio loaded for Frequency Level mode.", "error");
+                showMessage("no audio loaded for freq level mode.", "error");
                 playPauseIcon.classList.remove('fa-pause');
                 playPauseIcon.classList.add('fa-play');
                 return;
@@ -694,30 +759,42 @@
                 sourceNode.stop();
                 sourceNode.disconnect();
             }
+
+            // If we're at the end, reset to beginning
+            if (currentOffset >= audioBuffer.duration) {
+                currentOffset = 0;
+            }
             
             sourceNode = audioContext.createBufferSource();
             sourceNode.buffer = audioBuffer;
             sourceNode.connect(gainNode);
             sourceNode.playbackRate.value = parseFloat(speedSlider.value);
             
-            // Start from currentOffset
             startTime = audioContext.currentTime;
-            sourceNode.start(0, currentOffset);
+            sourceNode.start(0, currentOffset); // Start from the "parked" offset
 
             playPauseIcon.classList.remove('fa-play');
             playPauseIcon.classList.add('fa-pause');
 
-            // Handle audio ending for Web Audio API
             sourceNode.onended = () => {
-                if (currentSpeedMode === 'frequencyLevel') { // Only reset if still in this mode
+                // This 'onended' fires for stop() and natural end.
+                // We only want to act if sourceNode still exists (i.e., not manually stopped by pauseWebAudio)
+                if (sourceNode && currentSpeedMode === 'frequencyLevel') {
                     playPauseIcon.classList.remove('fa-pause');
                     playPauseIcon.classList.add('fa-play');
-                    progressBar.style.width = '0%';
-                    currentTimeDisplay.textContent = '0:00';
-                    currentOffset = 0; // Reset offset for loop
-                    // If looping is desired, create and start a new sourceNode here
-                    if (audioPlayer.loop) { // Using HTML audio loop property as reference
+                    
+                    // Update offset to the very end
+                    currentOffset = audioBuffer.duration;
+                    
+                    // Update display
+                    progressBar.style.width = '100%';
+                    currentTimeDisplay.textContent = formatTime(currentOffset);
+                    
+                    if (audioPlayer.loop) {
+                        currentOffset = 0; // Reset offset for loop
                         playWebAudio();
+                    } else {
+                        sourceNode = null; // Clear source node as it has finished
                     }
                 }
             };
@@ -728,23 +805,25 @@
          */
         function pauseWebAudio() {
             if (sourceNode && audioContext) {
-                // Calculate current offset before stopping
-                currentOffset = audioContext.currentTime - startTime + currentOffset;
+                // Calculate and store the new "parked" offset
+                const elapsedSinceStart = (audioContext.currentTime - startTime) * sourceNode.playbackRate.value;
+                currentOffset = Math.min(currentOffset + elapsedSinceStart, audioBuffer ? audioBuffer.duration : 0);
+
                 sourceNode.stop();
                 sourceNode.disconnect();
-                sourceNode = null;
+                sourceNode = null; // Mark as paused
                 playPauseIcon.classList.remove('fa-pause');
                 playPauseIcon.classList.add('fa-play');
             }
         }
 
         /**
-         * Stops all audio playback (both HTML and Web Audio API).
+         * Stops all audio playback and resets UI.
          */
         function stopAllAudio() {
             audioPlayer.pause();
             if (sourceNode) {
-                pauseWebAudio();
+                pauseWebAudio(); // This will stop the node and clear it
             }
             playPauseIcon.classList.remove('fa-pause');
             playPauseIcon.classList.add('fa-play');
@@ -754,326 +833,292 @@
             startTime = 0;
         }
 
-        // Function to handle loading an audio from a URL
-        async function loadAudioFromUrl(url) {
-            stopAllAudio(); // Stop any current playback
-            currentOffset = 0; // Reset offset for new load
-            audioUrlInput.value = url; // Update the input box with the full URL
-
-            // Check if the URL has a valid audio extension
-            const audioExtensions = ['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a', '.opus'];
-            const isAudioUrl = audioExtensions.some(ext => url.toLowerCase().endsWith(ext));
-
-            if (!isAudioUrl) {
-                showMessage("Invalid URL format. Please provide a direct link to an audio file (e.g., .mp3, .flac).", "error");
-                return;
-            }
-
-            try {
-                showMessage(`Attempting to load: ${url}`, "info");
-                // Load for HTML Audio element
-                audioPlayer.src = url;
-                audioPlayer.load();
-
-                // Load for Web Audio API
-                await loadAudioForWebAudio(url, false, null);
-                
-                updateAudioDisplay(url);
-
-                // Autoplay is likely to be prevented by browsers, so just load and update display
-                showMessage("Audio pre-loaded. Click play to start.", "success");
-
-            } catch (error) {
-                console.error("URL load failed:", error);
-                showMessage("Failed to load audio. Please check the URL or try a different file.", "error");
+        /**
+         * Helper function to start playback based on the current mode.
+         */
+        function playBasedOnMode() {
+            if (currentSpeedMode === 'timeStretch') {
+                audioPlayer.play().catch(e => {
+                    console.warn("autoplay prevented:", e);
+                    showMessage("autoplay blocked. click play.", "info");
+                });
+            } else { // frequencyLevel
+                playWebAudio();
             }
         }
 
-        // Event listener for the "Load from URL" button
-        loadUrlButton.addEventListener('click', async () => {
-            let urlInput = audioUrlInput.value.trim();
+        /**
+         * Central function to load audio from a string (URL or shortname).
+         */
+        async function loadAudioByString(urlInput) {
+            urlInput = urlInput.trim();
             if (!urlInput) {
-                showMessage("Please enter an audio URL.");
+                showMessage("please enter an audio url.");
                 return;
             }
 
-            // Determine if the input is a full URL, a path with slashes, or just a filename.
             const hasProtocol = urlInput.startsWith('http://') || urlInput.startsWith('https://');
             const hasSlash = urlInput.includes('/');
 
             let primaryAttemptUrl = '';
             let fallbackAttemptUrl = '';
-            let isShortFilename = false; // Flag to indicate if it's just a filename (no protocol, no slashes)
+            let isShortFilename = false;
 
             if (hasProtocol) {
-                // User provided a full URL (e.g., "https://example.com/audio.mp3")
                 primaryAttemptUrl = urlInput;
             } else if (hasSlash) {
-                // User provided a path with slashes but no protocol (e.g., "my folder/audio.mp3" or "example.com/audio.mp3")
-                // Prepend https and encode spaces in the entire path.
                 primaryAttemptUrl = `https://${urlInput.replace(/ /g, '%20')}`;
             } else {
-                // User provided a short filename (e.g., "back in the water.flac")
                 isShortFilename = true;
                 let filenameForUrl = urlInput;
-                // If the input already contains a '%' character, assume it's already URL-encoded
-                // and use it as is to avoid double encoding.
                 if (!urlInput.includes('%')) {
                     filenameForUrl = encodeURIComponent(urlInput);
                 }
-                
                 primaryAttemptUrl = `https://wackybox.org/${filenameForUrl}`;
-                fallbackAttemptUrl = `https://file.garden/ZMbUnW5nmTe-x54m/${filenameForUrl}`;
+                fallbackAttemptUrl = `https://file.garden/ZwtoaziYoEL_MBCc/${filenameForUrl}`;
             }
 
-            // Check if the URL (or its derived filename) has a valid audio extension
-            // Added .opus to the list of supported extensions
             const audioExtensions = ['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a', '.opus'];
-            const finalUrlToCheckExtension = isShortFilename ? urlInput : primaryAttemptUrl; // Check original input for short filenames, or the constructed URL
+            const finalUrlToCheckExtension = isShortFilename ? urlInput : primaryAttemptUrl;
             const isAudioUrl = audioExtensions.some(ext => finalUrlToCheckExtension.toLowerCase().endsWith(ext));
 
             if (!isAudioUrl) {
-                showMessage("Invalid URL format. Please provide a direct link to an audio file (e.g., .mp3, .flac).", "error");
+                showMessage("invalid url format. must be a direct audio file link.", "error");
                 return;
             }
 
-            stopAllAudio(); // Stop any current playback
-            currentOffset = 0; // Reset offset for new load
+            stopAllAudio();
+            currentOffset = 0;
+            audioUrlInput.value = urlInput; // Show the name in the input box
 
             try {
-                showMessage(`Attempting to load: ${primaryAttemptUrl}`, "info");
-                // Load for HTML Audio element
+                showMessage(`loading: ${primaryAttemptUrl}`, "info");
                 audioPlayer.src = primaryAttemptUrl;
                 audioPlayer.load();
-
-                // Load for Web Audio API
                 await loadAudioForWebAudio(primaryAttemptUrl, false, null);
-                
                 updateAudioDisplay(primaryAttemptUrl);
-
-                // Play based on current speed mode
-                if (currentSpeedMode === 'timeStretch') {
-                    audioPlayer.play().catch(e => {
-                        console.warn("Autoplay prevented for HTML Audio:", e);
-                        showMessage("Autoplay prevented. Please click play.", "info");
-                    });
-                } else { // frequencyLevel
-                    playWebAudio();
-                }
+                playBasedOnMode();
 
             } catch (error) {
-                console.error("Primary URL load failed:", error);
+                console.error("primary url load failed:", error);
                 if (isShortFilename && fallbackAttemptUrl) {
-                    showMessage("Failed to load from primary source, trying fallback...", "info");
+                    showMessage("failed. trying fallback...", "info");
                     try {
-                        // Load for HTML Audio element
                         audioPlayer.src = fallbackAttemptUrl;
                         audioPlayer.load();
-
-                        // Load for Web Audio API
                         await loadAudioForWebAudio(fallbackAttemptUrl, false, null);
-
                         updateAudioDisplay(fallbackAttemptUrl);
-
-                        // Play based on current speed mode
-                        if (currentSpeedMode === 'timeStretch') {
-                            audioPlayer.play().catch(e => {
-                                console.warn("Autoplay prevented for HTML Audio:", e);
-                                showMessage("Autoplay prevented. Please click play.", "info");
-                            });
-                        } else { // frequencyLevel
-                            playWebAudio();
-                        }
+                        playBasedOnMode();
                     } catch (fallbackError) {
-                        console.error("Fallback URL load failed:", fallbackError);
-                        showMessage("Failed to load audio from all attempted sources.", "error");
+                        console.error("fallback url load failed:", fallbackError);
+                        showMessage("failed to load from all sources.", "error");
                     }
                 } else {
-                    showMessage("Failed to load audio. Please check the URL or try a different file.", "error");
+                    showMessage("failed to load audio. check url or file.", "error");
                 }
             }
+        }
+
+        /**
+         * Populates the playlist from the global array.
+         */
+        function populatePlaylist() {
+            playlistElement.innerHTML = ''; // Clear existing
+            
+            wackyboxDemoPlaylist.forEach(itemName => {
+                const li = document.createElement('li');
+                li.textContent = itemName;
+                li.addEventListener('click', () => {
+                    loadAudioByString(itemName);
+                });
+                playlistElement.appendChild(li);
+            });
+
+            const infoLi = document.createElement('li');
+            infoLi.className = 'playlist-info';
+            infoLi.textContent = "yes";
+            playlistElement.appendChild(infoLi);
+        }
+
+        // --- Event Listeners ---
+
+        // Load from URL button
+        loadUrlButton.addEventListener('click', () => {
+            loadAudioByString(audioUrlInput.value);
         });
 
-        // Event listener for the file input change
+        // Load from file input
         audioFileInput.addEventListener('change', async (event) => {
             const file = event.target.files[0];
             if (file) {
                 if (file.type.startsWith('audio/')) {
-                    stopAllAudio(); // Stop any current playback
-                    currentOffset = 0; // Reset offset for new load
+                    stopAllAudio();
+                    currentOffset = 0;
 
                     const fileURL = URL.createObjectURL(file);
                     
-                    // Load for HTML Audio element
                     audioPlayer.src = fileURL;
                     audioPlayer.load();
 
-                    // Load for Web Audio API
                     try {
                         await loadAudioForWebAudio(fileURL, true, file);
                         updateAudioDisplay(fileURL, true);
-
-                        // Play based on current speed mode
-                        if (currentSpeedMode === 'timeStretch') {
-                            audioPlayer.play().catch(e => {
-                                console.error("Error playing local HTML audio:", e);
-                                showMessage("Autoplay prevented. Please click play.", "info");
-                            });
-                        } else { // frequencyLevel
-                            playWebAudio();
-                        }
+                        playBasedOnMode();
                     } catch (error) {
-                        console.error("Error loading local audio for Web Audio API:", error);
-                        showMessage("Failed to load local audio.", "error");
-                        audioFileInput.value = ''; // Clear file input
+                        console.error("error loading local audio for web audio api:", error);
+                        showMessage("failed to load local audio.", "error");
+                        audioFileInput.value = '';
                     }
                 } else {
-                    showMessage("Please select a valid audio file.");
+                    showMessage("please select a valid audio file.");
                     audioFileInput.value = '';
                 }
             }
         });
 
-        // Event listeners for info page toggle with animation
+        // Info page toggle
         infoButton.addEventListener('click', () => {
             infoPage.classList.add('active');
         });
-
         closeInfoButton.addEventListener('click', () => {
             infoPage.classList.remove('active');
         });
 
-        // Set initial audio source display and pre-load if URL parameter is present
+        // Playlist toggle
+        togglePlaylistButton.addEventListener('click', () => {
+            playlistElement.classList.toggle('hidden');
+            togglePlaylistButton.classList.toggle('active');
+            if (playlistElement.classList.contains('hidden')) {
+                togglePlaylistButton.innerHTML = 'wackybox demo list (click to show) <i class="fas fa-chevron-down ml-2"></i>';
+            } else {
+                togglePlaylistButton.innerHTML = 'wackybox demo list (click to hide) <i class="fas fa-chevron-up ml-2"></i>';
+            }
+        });
+
+        // --- Window Load ---
         window.onload = () => {
+            populatePlaylist(); // Build the playlist UI
+            
             const preloadUrl = getPreloadUrl();
 
             if (preloadUrl) {
-                // If a preload URL is provided, load it instead of the default source
-                loadAudioFromUrl(preloadUrl);
+                loadAudioByString(preloadUrl);
             } else {
-                // Otherwise, proceed with the default source setup
+                // Load default source
                 const initialSourceElement = audioPlayer.querySelector('source');
                 if (initialSourceElement) {
                     const initialSrc = initialSourceElement.src;
+                    audioUrlInput.value = initialSrc; // Set input box to default
                     updateAudioDisplay(initialSrc);
-                    // Also load this into Web Audio API buffer initially
-                    loadAudioForWebAudio(initialSrc, false, null).catch(e => console.error("Initial Web Audio load failed:", e));
+                    // Pre-load for Web Audio API but don't play
+                    loadAudioForWebAudio(initialSrc, false, null).catch(e => console.error("initial web audio load failed:", e));
                 }
             }
 
-            // Initialize volume slider
             volumeSlider.value = audioPlayer.volume;
-            // Initialize speed slider and display
             speedSlider.value = audioPlayer.playbackRate;
             speedValueDisplay.textContent = `${audioPlayer.playbackRate.toFixed(2)}x`;
-            // Initialize toggle state (default is Time Stretch, so checkbox is unchecked)
             speedModeToggle.checked = false; 
-            
-            // Initial volume icon update
             updateVolumeIcon();
+
+            // Start the UI update loop
+            animationFrameId = requestAnimationFrame(updateProgress);
         };
 
-        // --- Custom Player Controls Logic ---
+        // controls
 
         // Play/Pause Button
         playPauseButton.addEventListener('click', () => {
-            initWebAudio(); // Ensure context is running on first play
+            initWebAudio(); // Ensure context is running
 
             if (currentSpeedMode === 'timeStretch') {
                 if (audioPlayer.paused) {
-                    audioPlayer.play().then(() => {
-                        playPauseIcon.classList.remove('fa-play');
-                        playPauseIcon.classList.add('fa-pause');
-                    }).catch(e => {
-                        console.error("Error playing HTML audio:", e);
-                        showMessage("Could not play HTML audio. Please ensure a file is loaded.", "error");
+                    audioPlayer.play().catch(e => {
+                        console.error("error playing html audio:", e);
+                        showMessage("could not play html audio. please ensure a file is loaded.", "error");
                     });
                 } else {
                     audioPlayer.pause();
-                    playPauseIcon.classList.remove('fa-pause');
-                    playPauseIcon.classList.add('fa-play');
                 }
-            } else { // frequencyLevel
-                if (sourceNode && audioContext && audioContext.state === 'running' && !sourceNode.buffer) {
-                    // This case handles if sourceNode exists but buffer is somehow cleared (e.g., error)
-                    showMessage("No audio buffer available for playback.", "error");
-                    playPauseIcon.classList.remove('fa-pause');
-                    playPauseIcon.classList.add('fa-play');
-                    return;
-                }
-                
-                // If sourceNode is null, or it was stopped and needs a new one
-                if (!sourceNode || audioContext.currentTime - startTime + currentOffset >= (audioBuffer ? audioBuffer.duration : 0)) {
+            } else { // i'm horrible
+                if (!sourceNode) { // If paused or stopped
                     playWebAudio();
-                } else {
+                } else { // If playing
                     pauseWebAudio();
                 }
             }
         });
 
-        // Update progress bar and time display
-        // Using requestAnimationFrame for smoother updates for Web Audio API
-        let animationFrameId;
-        function updateProgress() {
-            if (!isDraggingProgressBar) {
-                let currentProgress = 0;
-                let currentDuration = 0;
-
-                if (currentSpeedMode === 'timeStretch') {
-                    currentProgress = (audioPlayer.currentTime / audioPlayer.duration) * 100;
-                    currentDuration = audioPlayer.duration;
-                    currentTimeDisplay.textContent = formatTime(audioPlayer.currentTime);
-                } else { // frequencyLevel
-                    if (audioContext && sourceNode && audioBuffer) {
-                        const elapsed = audioContext.currentTime - startTime;
-                        currentOffset = Math.min(currentOffset + elapsed * sourceNode.playbackRate.value, audioBuffer.duration);
-                        startTime = audioContext.currentTime; // Reset startTime for next frame
-                        
-                        currentProgress = (currentOffset / audioBuffer.duration) * 100;
-                        currentDuration = audioBuffer.duration;
-                        currentTimeDisplay.textContent = formatTime(currentOffset);
-                    } else {
-                        currentProgress = 0;
-                        currentDuration = 0;
-                        currentTimeDisplay.textContent = '0:00';
-                    }
-                }
-                progressBar.style.width = `${currentProgress}%`;
-                durationDisplay.textContent = formatTime(currentDuration);
-            }
-            animationFrameId = requestAnimationFrame(updateProgress);
-        }
-        
-        // Start the animation loop
-        animationFrameId = requestAnimationFrame(updateProgress);
-
-        // Set duration when metadata is loaded for HTML Audio
-        audioPlayer.addEventListener('loadedmetadata', () => {
+        // HTML Audio event listeners to update play/pause icon
+        audioPlayer.addEventListener('play', () => {
             if (currentSpeedMode === 'timeStretch') {
-                durationDisplay.textContent = formatTime(audioPlayer.duration);
-            }
-            // Ensure play/pause icon is correct if audio loads and is ready to play
-            if (audioPlayer.paused) {
-                playPauseIcon.classList.remove('fa-pause');
-                playPauseIcon.classList.add('fa-play');
-            } else {
                 playPauseIcon.classList.remove('fa-play');
                 playPauseIcon.classList.add('fa-pause');
             }
         });
+        audioPlayer.addEventListener('pause', () => {
+            if (currentSpeedMode === 'timeStretch') {
+                playPauseIcon.classList.remove('fa-pause');
+                playPauseIcon.classList.add('fa-play');
+            }
+        });
+        audioPlayer.addEventListener('ended', () => {
+            if (currentSpeedMode === 'timeStretch') {
+                playPauseIcon.classList.remove('fa-pause');
+                playPauseIcon.classList.add('fa-play');
+                progressBar.style.width = '0%';
+                currentTimeDisplay.textContent = '0:00';
+            }
+        });
 
-        // Handle progress bar clicks and drags
+        // Update progress bar and time display (Loop)
+        function updateProgress() {
+            if (!isDraggingProgressBar) {
+                let currentProgress = 0;
+                let currentDuration = 0;
+                let displayTime = 0;
+
+                if (currentSpeedMode === 'timeStretch') {
+                    displayTime = audioPlayer.currentTime;
+                    currentDuration = audioPlayer.duration;
+                } else { // everything I do just makes her upset
+                    currentDuration = audioBuffer ? audioBuffer.duration : 0;
+                    if (audioContext && sourceNode && audioBuffer) {
+                        // Calculate elapsed time since playback started, adjusted for speed
+                        const elapsedSinceStart = (audioContext.currentTime - startTime) * sourceNode.playbackRate.value;
+                        // Display time is the offset where we started + elapsed time
+                        displayTime = Math.min(currentOffset + elapsedSinceStart, currentDuration);
+                    } else {
+                        // Not playing, just show the last parked offset
+                        displayTime = currentOffset;
+                    }
+                }
+                
+                currentProgress = (displayTime / currentDuration) * 100;
+                progressBar.style.width = `${isNaN(currentProgress) ? 0 : currentProgress}%`;
+                currentTimeDisplay.textContent = formatTime(displayTime);
+                durationDisplay.textContent = formatTime(currentDuration);
+            }
+            animationFrameId = requestAnimationFrame(updateProgress);
+        }
+
+        // Set duration on metadata load for HTML Audio
+        audioPlayer.addEventListener('loadedmetadata', () => {
+            if (currentSpeedMode === 'timeStretch') {
+                durationDisplay.textContent = formatTime(audioPlayer.duration);
+            }
+        });
+
+        // i can't do anything right
         progressContainer.addEventListener('mousedown', (e) => {
             isDraggingProgressBar = true;
             updateProgressBarPosition(e);
         });
-
         document.addEventListener('mousemove', (e) => {
             if (isDraggingProgressBar) {
                 updateProgressBarPosition(e);
             }
         });
-
         document.addEventListener('mouseup', () => {
             isDraggingProgressBar = false;
         });
@@ -1081,12 +1126,11 @@
         function updateProgressBarPosition(e) {
             const rect = progressContainer.getBoundingClientRect();
             let clickX = e.clientX - rect.left;
-            // Clamp clickX to be within the bounds of the progress container
             if (clickX < 0) clickX = 0;
             if (clickX > rect.width) clickX = rect.width;
 
-            let newTime;
-            let duration;
+            let newTime = 0;
+            let duration = 0;
 
             if (currentSpeedMode === 'timeStretch') {
                 duration = audioPlayer.duration;
@@ -1099,72 +1143,58 @@
                 duration = audioBuffer.duration;
                 newTime = (clickX / rect.width) * duration;
                 if (isFinite(newTime)) {
-                    // Stop current Web Audio playback and restart from new position
-                    if (sourceNode) {
+                    currentOffset = newTime; // Set the new "parked" offset
+                    
+                    // If playing, stop old node and start new one
+                    if (sourceNode && audioContext && audioContext.state === 'running') {
                         sourceNode.stop();
                         sourceNode.disconnect();
                         sourceNode = null;
+                        playWebAudio(); // Will play from the new currentOffset
                     }
-                    currentOffset = newTime;
-                    playWebAudio();
                 }
             }
-            // Update progress bar immediately during drag
-            progressBar.style.width = `${(newTime / duration) * 100}%`;
-            currentTimeDisplay.textContent = formatTime(newTime);
+
+            if (isFinite(newTime) && isFinite(duration) && duration > 0) {
+                progressBar.style.width = `${(newTime / duration) * 100}%`;
+                currentTimeDisplay.textContent = formatTime(newTime);
+            }
         }
 
         // Volume control
         volumeSlider.addEventListener('input', () => {
+            const newVolume = volumeSlider.value;
             if (currentSpeedMode === 'timeStretch') {
-                audioPlayer.volume = volumeSlider.value;
-            } else { // frequencyLevel
-                if (gainNode) {
-                    gainNode.gain.value = volumeSlider.value;
-                }
+                audioPlayer.volume = newVolume;
+            } else if (gainNode) {
+                gainNode.gain.value = newVolume;
             }
             updateVolumeIcon();
         });
 
-        // Mute/Unmute functionality
+        // mute 
         volumeIcon.addEventListener('click', () => {
-            let currentVolume;
-            if (currentSpeedMode === 'timeStretch') {
-                currentVolume = audioPlayer.volume;
-            } else {
-                currentVolume = gainNode ? gainNode.gain.value : 0;
-            }
+            let currentVolume = volumeSlider.value;
+            let newVolume = 0;
 
             if (currentVolume > 0) {
-                if (currentSpeedMode === 'timeStretch') {
-                    audioPlayer.volume = 0;
-                } else {
-                    if (gainNode) gainNode.gain.value = 0;
-                }
-                volumeSlider.value = 0;
+                newVolume = 0;
             } else {
-                // Restore to a default volume if muted, or previous volume if available
-                const defaultVolume = 0.5; // Or store last non-zero volume
-                if (currentSpeedMode === 'timeStretch') {
-                    audioPlayer.volume = defaultVolume;
-                } else {
-                    if (gainNode) gainNode.gain.value = defaultVolume;
-                }
-                volumeSlider.value = defaultVolume;
+                newVolume = 0.5; // Restore to default
             }
+
+            if (currentSpeedMode === 'timeStretch') {
+                audioPlayer.volume = newVolume;
+            } else if (gainNode) {
+                gainNode.gain.value = newVolume;
+            }
+            volumeSlider.value = newVolume;
             updateVolumeIcon();
         });
 
-        // Update volume icon based on volume level
         function updateVolumeIcon() {
-            let currentVolume;
-            if (currentSpeedMode === 'timeStretch') {
-                currentVolume = audioPlayer.volume;
-            } else {
-                currentVolume = gainNode ? gainNode.gain.value : 0;
-            }
-
-            if (currentVolume === 0) {
+            let currentVolume = volumeSlider.value;
+            if (currentVolume == 0) {
                 volumeIcon.classList.remove('fa-volume-up', 'fa-volume-down');
                 volumeIcon.classList.add('fa-volume-mute');
             } else if (currentVolume < 0.5) {
@@ -1181,116 +1211,84 @@
             const newSpeed = parseFloat(speedSlider.value);
             if (currentSpeedMode === 'timeStretch') {
                 audioPlayer.playbackRate = newSpeed;
-            } else { // frequencyLevel
-                if (sourceNode) {
-                    sourceNode.playbackRate.value = newSpeed;
-                }
+            } else if (sourceNode) {
+                sourceNode.playbackRate.value = newSpeed;
             }
             speedValueDisplay.textContent = `${newSpeed.toFixed(2)}x`;
         });
 
-        // Handle audio ending for HTML Audio
-        audioPlayer.addEventListener('ended', () => {
-            if (currentSpeedMode === 'timeStretch') { // Only reset if still in this mode
-                playPauseIcon.classList.remove('fa-pause');
-                playPauseIcon.classList.add('fa-play');
-                progressBar.style.width = '0%'; // Reset progress bar
-                currentTimeDisplay.textContent = '0:00'; // Reset current time
+        // Reset speed
+        speedIcon.addEventListener('click', () => {
+            const defaultSpeed = 1.00;
+            if (currentSpeedMode === 'timeStretch') {
+                audioPlayer.playbackRate = defaultSpeed;
+            } else if (sourceNode) {
+                sourceNode.playbackRate.value = defaultSpeed;
             }
+            speedSlider.value = defaultSpeed;
+            speedValueDisplay.textContent = `${defaultSpeed.toFixed(2)}x`;
+            showMessage("speed reset to 1.00x", "info");
         });
 
-        // Speed Mode Toggle functionality
+        // i just spent half an hour crying
         speedModeToggle.addEventListener('change', async () => {
             const wasPlaying = (currentSpeedMode === 'timeStretch' && !audioPlayer.paused) || 
-                               (currentSpeedMode === 'frequencyLevel' && sourceNode && audioContext.state === 'running');
+                               (currentSpeedMode === 'frequencyLevel' && sourceNode);
             let currentPlaybackTime = 0;
 
-            // Pause current playback and get current time
+            // Pause and get current time
             if (currentSpeedMode === 'timeStretch') {
                 currentPlaybackTime = audioPlayer.currentTime;
                 audioPlayer.pause();
             } else { // frequencyLevel
                 if (sourceNode) {
-                    currentPlaybackTime = audioContext.currentTime - startTime + currentOffset;
-                    pauseWebAudio(); // This also sets sourceNode to null
+                    // Calculate and store current offset before pausing
+                    const elapsedSinceStart = (audioContext.currentTime - startTime) * sourceNode.playbackRate.value;
+                    currentPlaybackTime = Math.min(currentOffset + elapsedSinceStart, audioBuffer ? audioBuffer.duration : 0);
+                    pauseWebAudio(); // This stops the node and sets sourceNode to null
                 } else {
-                    currentPlaybackTime = currentOffset; // If paused, use the last offset
+                    currentPlaybackTime = currentOffset; // Already paused
                 }
             }
 
             // Switch mode
             currentSpeedMode = speedModeToggle.checked ? 'frequencyLevel' : 'timeStretch';
-            showMessage(`Switched to ${currentSpeedMode === 'timeStretch' ? 'Time Stretch' : 'Frequency Level'} mode.`, "info");
+            showMessage(`switched to ${currentSpeedMode === 'timeStretch' ? 'time stretch' : 'freq level'} mode.`, "info");
 
-            // Resume playback in new mode from saved time
-            if (wasPlaying) {
-                if (currentSpeedMode === 'timeStretch') {
-                    audioPlayer.currentTime = currentPlaybackTime;
+            // Sync controls
+            if (currentSpeedMode === 'timeStretch') {
+                audioPlayer.volume = volumeSlider.value;
+                audioPlayer.playbackRate = speedSlider.value;
+            } else {
+                if (gainNode) gainNode.gain.value = volumeSlider.value;
+            }
+
+            // Resume playback in new mode
+            if (currentSpeedMode === 'timeStretch') {
+                audioPlayer.currentTime = currentPlaybackTime;
+                if (wasPlaying) {
                     audioPlayer.play().catch(e => {
-                        console.error("Error resuming HTML audio after mode switch:", e);
-                        showMessage("Autoplay prevented after mode switch. Please click play.", "info");
+                        console.error("error resuming html audio:", e);
+                        showMessage("autoplay blocked. click play.", "info");
                     });
-                } else { // frequencyLevel
-                    // Ensure audio buffer is loaded for Web Audio API
-                    if (!audioBuffer) {
-                        try {
-                            if (currentAudioSource.isLocal) {
-                                await loadAudioForWebAudio(currentAudioSource.url, true, currentAudioSource.file);
-                            } else {
-                                await loadAudioForWebAudio(currentAudioSource.url, false, null);
-                            }
-                        } catch (error) {
-                            showMessage("Failed to load audio for Frequency Level mode after switch.", "error");
-                            playPauseIcon.classList.remove('fa-pause');
-                            playPauseIcon.classList.add('fa-play');
-                            return;
-                        }
+                }
+            } else { // frequencyLevel
+                currentOffset = currentPlaybackTime;
+                if (!audioBuffer) {
+                    try {
+                        // Re-load buffer if it's missing (e.g., first switch)
+                        await loadAudioForWebAudio(currentAudioSource.url, currentAudioSource.isLocal, currentAudioSource.file);
+                    } catch (error) {
+                        showMessage("failed to load audio for freq level mode.", "error");
+                        return;
                     }
-                    currentOffset = currentPlaybackTime;
+                }
+                if (wasPlaying) {
                     playWebAudio();
                 }
-            } else {
-                // If not playing, just update the current time display
-                let duration = 1;
-                if (currentSpeedMode === 'timeStretch') {
-                    audioPlayer.currentTime = currentPlaybackTime;
-                    duration = audioPlayer.duration;
-                } else {
-                    currentOffset = currentPlaybackTime;
-                    duration = audioBuffer ? audioBuffer.duration : 1;
-                }
-                
-                currentTimeDisplay.textContent = formatTime(currentPlaybackTime);
-                progressBar.style.width = `${(currentPlaybackTime / duration) * 100}%`;
             }
-
-            // Update volume and speed controls to reflect current mode's values
-            if (currentSpeedMode === 'timeStretch') {
-                volumeSlider.value = audioPlayer.volume;
-                speedSlider.value = audioPlayer.playbackRate;
-            } else {
-                volumeSlider.value = gainNode ? gainNode.gain.value : 1;
-                // Note: The sourceNode is recreated on playWebAudio(), so we use the slider value as the source
-                speedSlider.value = parseFloat(speedSlider.value); 
-            }
-            speedValueDisplay.textContent = `${parseFloat(speedSlider.value).toFixed(2)}x`;
-            updateVolumeIcon();
         });
 
-        // Speed Icon Click to Reset Speed
-        speedIcon.addEventListener('click', () => {
-            const defaultSpeed = 1.00;
-            if (currentSpeedMode === 'timeStretch') {
-                audioPlayer.playbackRate = defaultSpeed;
-            } else { // frequencyLevel
-                if (sourceNode) {
-                    sourceNode.playbackRate.value = defaultSpeed;
-                }
-            }
-            speedSlider.value = defaultSpeed;
-            speedValueDisplay.textContent = `${defaultSpeed.toFixed(2)}x`;
-            showMessage("Speed reset to 1.00x", "info");
-        });
     </script>
 </body>
 </html>
