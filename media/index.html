@@ -8,14 +8,123 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
+        /* * === THEME & COLOR SYSTEM ===
+         * all colors are controlled by css variables.
+         * themes are applied by adding a class to the <body>.
+        */
+        :root {
+            /* default (original) theme */
+            --color-primary: #880808;
+            --color-primary-hover: #660000;
+            --color-secondary: #4a5568;
+            --color-background: #000000;
+            --color-surface: #282828;
+            --color-surface-light: #3a3a3a;
+            --color-text: #f0f0f0;
+            --color-text-dim: #b0b0b0;
+            --color-text-bright: #ffffff;
+            --color-border: #4a5568;
+            --color-shadow-light: rgba(255, 255, 255, 0.1);
+            --color-shadow-dark: rgba(0, 0, 0, 0.7);
+            --color-gradient-start: var(--color-primary);
+            --color-gradient-end: var(--color-primary-hover);
+        }
+
+        body.theme-ocean-blue {
+            --color-primary: #007bff;
+            --color-primary-hover: #0056b3;
+            --color-secondary: #17a2b8;
+            --color-background: #0a192f;
+            --color-surface: #172a45;
+            --color-surface-light: #233f6a;
+            --color-text: #ccd6f6;
+            --color-text-dim: #8892b0;
+            --color-text-bright: #e6f1ff;
+            --color-border: #007bff;
+        }
+
+        body.theme-solid-gray {
+            --color-primary: #6c757d;
+            --color-primary-hover: #5a6268;
+            --color-secondary: #495057;
+            --color-background: #212529;
+            --color-surface: #343a40;
+            --color-surface-light: #495057;
+            --color-text: #f8f9fa;
+            --color-text-dim: #adb5bd;
+            --color-text-bright: #ffffff;
+            --color-border: #6c757d;
+        }
+
+        body.theme-wacky-green {
+            /* based on the provided green gradient image */
+            --color-primary: #4CAF50;
+            --color-primary-hover: #45a049;
+            --color-secondary: #2E8B57;
+            --color-background: #1b2f1b;
+            --color-surface: #2a402a;
+            --color-surface-light: #385538;
+            --color-text: #e0f0e0;
+            --color-text-dim: #a0c0a0;
+            --color-text-bright: #ffffff;
+            --color-border: #4CAF50;
+            --color-gradient-start: #4CAF50;
+            --color-gradient-end: #2E8B57;
+        }
+
+        body.theme-synthwave {
+            --color-primary: #f9208e;
+            --color-primary-hover: #c71a74;
+            --color-secondary: #00f0ff;
+            --color-background: #10001f;
+            --color-surface: #250a3d;
+            --color-surface-light: #3a1a5c;
+            --color-text: #e5cfff;
+            --color-text-dim: #a595b1;
+            --color-text-bright: #ffffff;
+            --color-border: #f9208e;
+            --color-gradient-start: #f9208e;
+            --color-gradient-end: #00f0ff;
+        }
+        
+        body.theme-sunlight {
+            --color-primary: #f39c12;
+            --color-primary-hover: #e67e22;
+            --color-secondary: #d35400;
+            --color-background: #fdfaf6;
+            --color-surface: #ffffff;
+            --color-surface-light: #f8f9fa;
+            --color-text: #34495e;
+            --color-text-dim: #7f8c8d;
+            --color-text-bright: #2c3e50;
+            --color-border: #f39c12;
+            --color-shadow-light: rgba(0, 0, 0, 0.1);
+            --color-shadow-dark: rgba(0, 0, 0, 0.2);
+        }
+
+        body.theme-ember {
+            --color-primary: #e74c3c;
+            --color-primary-hover: #c0392b;
+            --color-secondary: #f39c12;
+            --color-background: #1a1a1a;
+            --color-surface: #2c2c2c;
+            --color-surface-light: #3e3e3e;
+            --color-text: #ecf0f1;
+            --color-text-dim: #bdc3c7;
+            --color-text-bright: #ffffff;
+            --color-border: #e74c3c;
+            --color-gradient-start: #e74c3c;
+            --color-gradient-end: #f39c12;
+        }
+        
+        /* === BASE STYLES === */
         html {
-            /* Dynamically scale root font size */
-            font-size: clamp(14px, 1.5vw + 0.5rem, 18px);
+            font-size: 16px; /* base font size */
         }
         body {
             font-family: 'Roboto Mono', monospace;
-            background-color: #000000;
-            color: #f0f0f0;
+            background-color: var(--color-background);
+            color: var(--color-text);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -24,19 +133,23 @@
             padding: 1rem;
             box-sizing: border-box;
             position: relative;
-            overflow-x: hidden; /* Allow vertical scroll if needed, but not horizontal */
+            overflow-x: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
         .container {
-            background-color: #282828;
-            /* Responsive padding and width */
+            background-color: var(--color-surface);
             padding: clamp(1.5rem, 5vw, 2.5rem);
-            border-radius: 0.5rem; /* Sharpened */
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 25px var(--color-shadow-dark);
             max-width: 500px;
             width: 90%;
             text-align: center;
             position: relative;
             animation: fadeIn 1s ease-out;
+            transition: background-color 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
         }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-20px); }
@@ -46,53 +159,63 @@
             display: none;
         }
         h1 {
-            color: #ffffff;
-            font-size: 1.875rem;
+            color: var(--color-text-bright);
+            font-size: 1.8rem;
             font-weight: 700;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
+            transition: color 0.3s ease;
         }
         p {
-            color: #e0e0e0;
-            font-size: 1.125rem;
-            margin-bottom: 1.5rem;
+            color: var(--color-text);
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            transition: color 0.3s ease;
         }
         .audio-source {
             font-size: 0.875rem;
-            color: #d0d0d0;
+            color: var(--color-text-dim);
             word-break: break-all;
-            margin-top: 1rem;
+            margin-top: 0;
             min-height: 1.25rem;
+            transition: color 0.3s ease;
+        }
+        .audio-source a {
+            color: var(--color-primary);
+            transition: color 0.3s ease;
+        }
+        .audio-source a:hover {
+            text-decoration: underline;
         }
         .input-group {
             display: flex;
             flex-direction: column;
             gap: 0.75rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 0.5rem;
         }
         .input-group input[type="text"] {
             padding: 0.75rem 1rem;
-            border: 1px solid #4a5568;
-            background-color: #2d3748;
-            color: #f0f0f0;
-            border-radius: 0.25rem; /* Sharpened */
+            border: 1px solid var(--color-border);
+            background-color: var(--color-surface-light);
+            color: var(--color-text);
+            border-radius: 0.25rem;
             font-size: 1rem;
             width: 100%;
             box-sizing: border-box;
-            transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease, color 0.3s ease;
         }
         .input-group input[type="text"]:focus {
-            border-color: #880808;
-            box-shadow: 0 0 0 3px rgba(136, 8, 8, 0.5);
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px var(--color-primary-hover);
             outline: none;
         }
         .input-group input[type="text"]::placeholder {
-            color: #b0b0b0;
+            color: var(--color-text-dim);
         }
         .input-group button, .file-upload-label {
-            background-color: #880808;
+            background-color: var(--color-primary);
             color: white;
             padding: 0.75rem 1.5rem;
-            border-radius: 0.25rem; /* Sharpened */
+            border-radius: 0.25rem;
             font-weight: 600;
             cursor: pointer;
             transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
@@ -101,15 +224,15 @@
             align-items: center;
             justify-content: center;
             width: 100%;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 6px var(--color-shadow-dark);
         }
         .input-group button:hover, .file-upload-label:hover {
-            background-color: #660000;
+            background-color: var(--color-primary-hover);
             transform: translateY(-2px);
         }
         .input-group button:active, .file-upload-label:active {
             transform: translateY(0);
-            box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 2px 3px var(--color-shadow-dark);
         }
         .file-input-wrapper {
             position: relative;
@@ -126,9 +249,11 @@
             width: 100%;
             height: 100%;
         }
+
+        /* === MESSAGE BOX === */
         .message-box {
             padding: 0.75rem 1.5rem;
-            border-radius: 0.375rem; /* Sharpened */
+            border-radius: 0.375rem;
             position: fixed;
             bottom: 2rem;
             left: 50%;
@@ -143,39 +268,47 @@
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.4s ease-out, visibility 0.4s;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 4px 15px var(--color-shadow-dark);
         }
         .message-box.active {
             opacity: 1;
             visibility: visible;
         }
-        .message-box.bg-red-200 { background-color: #fed7d7; color: #c53030; }
-        .message-box.bg-green-200 { background-color: #c6f6d5; color: #2f855a; }
-        .message-box.bg-blue-200 { background-color: #bee3f8; color: #2b6cb0; }
+        .message-box.type-error { background-color: #fed7d7; color: #c53030; }
+        .message-box.type-success { background-color: #c6f6d5; color: #2f855a; }
+        .message-box.type-info { background-color: #bee3f8; color: #2b6cb0; }
 
-        #infoButton {
+        /* === CORNER BUTTONS (INFO & SETTINGS) === */
+        .corner-button {
             position: fixed;
             top: 1rem;
-            right: 1rem;
-            background-color: #4a5568;
+            background-color: var(--color-secondary);
             color: white;
-            border-radius: 0.25rem; /* Sharpened */
+            border-radius: 0.25rem;
             padding: 0.75rem 1rem;
             font-size: 1.25rem;
             font-weight: 700;
             cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 4px 10px var(--color-shadow-dark);
             transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
             z-index: 1000;
         }
-        #infoButton:hover {
-            background-color: #2d3748;
+        .corner-button:hover {
+            background-color: var(--color-surface-light);
             transform: scale(1.05);
         }
-        #infoButton:active {
+        .corner-button:active {
             transform: scale(1);
         }
-        #infoPage {
+        #infoButton {
+            right: 1rem;
+        }
+        #settingsButton {
+            left: 1rem;
+        }
+
+        /* === MODAL PAGES (INFO & SETTINGS) === */
+        .modal-page {
             position: fixed;
             top: 0;
             left: 0;
@@ -194,65 +327,90 @@
             visibility: hidden;
             transition: opacity 0.3s ease-in-out, visibility 0.3s;
         }
-        #infoPage.active {
+        .modal-page.active {
             opacity: 1;
             visibility: visible;
         }
-        #infoPageContent {
-            background-color: #282828;
+        .modal-content {
+            background-color: var(--color-surface);
             padding: 2.5rem;
-            border-radius: 0.5rem; /* Sharpened */
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 25px var(--color-shadow-dark);
             max-width: 600px;
             width: 90%;
-            text-align: center;
-            color: #f0f0f0;
+            max-height: 90vh;
+            overflow-y: auto;
+            text-align: left;
+            color: var(--color-text);
             position: relative;
             animation: slideInFromBottom 0.5s ease-out;
+            transition: background-color 0.3s ease;
         }
         @keyframes slideInFromBottom {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        #infoPageContent h2 {
+        .modal-content h2 {
             font-size: 2rem;
             font-weight: 700;
-            margin-bottom: 1rem;
-            color: #ffffff;
+            margin-bottom: 1.5rem;
+            color: var(--color-text-bright);
+            text-align: center;
         }
-        #infoPageContent p {
+        .modal-content h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--color-text-bright);
+            border-bottom: 1px solid var(--color-border);
+            padding-bottom: 0.5rem;
+        }
+        .modal-content p {
             font-size: 1rem;
             line-height: 1.5;
             margin-bottom: 1rem;
-            color: #e0e0e0;
+            color: var(--color-text);
         }
-        #closeInfoButton {
+        .modal-content ul {
+            font-size: 1rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+            color: var(--color-text);
+            list-style: disc;
+            padding-left: 1.5rem;
+        }
+        .modal-close-button {
             position: absolute;
             top: 1rem;
             right: 1rem;
-            background-color: #880808;
+            background-color: var(--color-primary);
             color: white;
-            border-radius: 0.25rem; /* Sharpened */
+            border-radius: 0.25rem;
             padding: 0.5rem 0.8rem;
             font-size: 1rem;
             cursor: pointer;
             transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
             border: none;
+            line-height: 1;
         }
-        #closeInfoButton:hover {
-            background-color: #660000;
+        .modal-close-button:hover {
+            background-color: var(--color-primary-hover);
             transform: scale(1.1);
         }
-        #closeInfoButton:active {
+        .modal-close-button:active {
             transform: scale(1);
         }
 
-        /* Playlist Styling */
+        /* === PLAYLIST STYLING === */
+        #playlistContainer {
+            width: 100%;
+        }
         .playlist-toggle-button {
-            background-color: #4a5568;
+            background-color: var(--color-secondary);
             color: white;
             padding: 0.5rem 1rem;
-            border-radius: 0.25rem; /* Sharpened */
+            border-radius: 0.25rem;
             font-weight: 600;
             cursor: pointer;
             transition: background-color 0.2s ease-in-out;
@@ -264,15 +422,16 @@
             align-items: center;
         }
         .playlist-toggle-button:hover {
-            background-color: #2d3748;
+            background-color: var(--color-surface-light);
         }
         .playlist-list {
-            background-color: #3a3a3a;
-            border-radius: 0.25rem; /* Sharpened */
+            background-color: var(--color-surface-light);
+            border-radius: 0.25rem;
             margin-top: 0.5rem;
             max-height: 150px;
             overflow-y: auto;
             padding: 0.5rem;
+            transition: background-color 0.3s ease;
         }
         .playlist-list.hidden {
             display: none;
@@ -280,21 +439,28 @@
         .playlist-list li {
             padding: 0.5rem 0.75rem;
             cursor: pointer;
-            border-radius: 0.25rem; /* Sharpened */
-            transition: background-color 0.2s;
-            color: #f0f0f0;
+            border-radius: 0.25rem;
+            transition: background-color 0.2s, color 0.2s;
+            color: var(--color-text);
             text-align: left;
         }
         .playlist-list li:hover {
-            background-color: #555;
+            background-color: var(--color-secondary);
+            color: white;
+        }
+        .playlist-list li.active {
+            background-color: var(--color-primary);
+            color: white;
+            font-weight: 700;
         }
         .playlist-list li.playlist-info {
             font-size: 0.75rem;
-            color: #b0b0b0;
+            color: var(--color-text-dim);
             cursor: default;
         }
         .playlist-list li.playlist-info:hover {
             background-color: transparent;
+            color: var(--color-text-dim);
         }
         .playlist-toggle-button i {
             transition: transform 0.3s ease;
@@ -303,55 +469,77 @@
             transform: rotate(180deg);
         }
 
-        /* Custom Player Controls Styling */
+        /* === CUSTOM PLAYER CONTROLS === */
         .custom-controls {
             display: flex;
             align-items: center;
-            flex-wrap: wrap;
+            flex-wrap: wrap; /* allow wrapping on desktop */
             gap: 1rem;
-            margin-top: 1.5rem;
-            background-color: #3a3a3a;
-            padding: 1rem 1.5rem;
-            border-radius: 0.375rem; /* Sharpened */
-            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3);
+            margin-top: 0.5rem;
+            background-color: var(--color-surface-light);
+            padding: 1rem;
+            border-radius: 0.375rem;
+            box-shadow: inset 0 2px 5px var(--color-shadow-dark);
+            transition: background-color 0.3s ease;
         }
-        .play-pause-button {
-            background-color: #880808;
+        .control-button {
+            background-color: var(--color-primary);
             color: white;
             width: 3rem;
             height: 3rem;
-            border-radius: 0.375rem; /* Sharpened */
+            border-radius: 0.375rem;
             display: flex;
             justify-content: center;
             align-items: center;
             font-size: 1.5rem;
             cursor: pointer;
             transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 4px 8px var(--color-shadow-dark);
+            flex-shrink: 0;
         }
-        .play-pause-button:hover {
-            background-color: #660000;
+        .control-button:hover {
+            background-color: var(--color-primary-hover);
             transform: scale(1.05);
         }
-        .play-pause-button:active {
+        .control-button:active {
             transform: scale(0.95);
         }
-
+        .control-button.small {
+            width: 2.5rem;
+            height: 2.5rem;
+            font-size: 1rem;
+            background-color: var(--color-secondary);
+        }
+        .control-button.small:hover {
+            background-color: var(--color-primary-hover);
+        }
+        .control-button.small.active {
+            background-color: var(--color-primary);
+            box-shadow: inset 0 2px 4px var(--color-shadow-dark);
+        }
+        
+        /* progress bar row */
+        .progress-row {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
         .progress-container {
             flex-grow: 1;
             height: 0.75rem;
-            background-color: #555;
-            border-radius: 0.125rem; /* Sharpened */
+            background-color: var(--color-surface);
+            border-radius: 0.125rem;
             cursor: pointer;
             position: relative;
             overflow: hidden;
-            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+            box-shadow: inset 0 1px 3px var(--color-shadow-dark);
         }
         .progress-bar {
             height: 100%;
             width: 0%;
-            background-color: #880808;
-            border-radius: 0.125rem; /* Sharpened */
+            background: linear-gradient(to right, var(--color-gradient-start), var(--color-gradient-end));
+            border-radius: 0.125rem;
             transition: width 0.1s linear;
             position: relative;
         }
@@ -364,8 +552,8 @@
             width: 1rem;
             height: 1rem;
             background-color: #fff;
-            border-radius: 0.125rem; /* Sharpened */
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+            border-radius: 0.125rem;
+            box-shadow: 0 2px 5px var(--color-shadow-dark);
             display: none;
         }
         .progress-container:hover .progress-bar::after {
@@ -373,7 +561,7 @@
         }
         .progress-time {
             font-size: 0.75rem;
-            color: #d0d0d0;
+            color: var(--color-text-dim);
             white-space: nowrap;
         }
 
@@ -384,47 +572,47 @@
         }
         .volume-icon, .speed-icon {
             font-size: 1.2rem;
-            color: #f0f0f0;
+            color: var(--color-text);
             cursor: pointer;
         }
-        .volume-slider, .speed-slider {
+        
+        /* === CUSTOM SLIDERS === */
+        .styled-slider {
             -webkit-appearance: none;
             width: 6rem;
             height: 0.5rem;
-            background: #555;
-            border-radius: 0.125rem; /* Sharpened */
+            background: var(--color-surface);
+            border-radius: 0.125rem;
             outline: none;
             transition: background 0.2s ease-in-out;
         }
-        .volume-slider::-webkit-slider-thumb, .speed-slider::-webkit-slider-thumb {
+        .styled-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
             width: 1rem;
             height: 1rem;
-            background: #880808;
-            border-radius: 0.125rem; /* Sharpened */
+            background: var(--color-primary);
+            border-radius: 0.125rem;
             cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 2px 5px var(--color-shadow-dark);
             transition: background 0.2s ease-in-out;
         }
-        .volume-slider::-moz-range-thumb, .speed-slider::-moz-range-thumb {
+        .styled-slider::-moz-range-thumb {
             width: 1rem;
             height: 1rem;
-            background: #880808;
-            border-radius: 0.125rem; /* Sharpened */
+            background: var(--color-primary);
+            border-radius: 0.125rem;
             cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 2px 5px var(--color-shadow-dark);
             transition: background 0.2s ease-in-out;
         }
-        .volume-slider:hover::-webkit-slider-thumb,
-        .volume-slider:hover::-moz-range-thumb,
-        .speed-slider:hover::-webkit-slider-thumb,
-        .speed-slider:hover::-moz-range-thumb {
-            background: #660000;
+        .styled-slider:hover::-webkit-slider-thumb,
+        .styled-slider:hover::-moz-range-thumb {
+            background: var(--color-primary-hover);
         }
         .speed-value {
             font-size: 0.75rem;
-            color: #d0d0d0;
+            color: var(--color-text-dim);
             width: 2.5rem;
             text-align: right;
         }
@@ -435,23 +623,23 @@
             gap: 0.5rem;
             margin-left: 0.5rem;
             font-size: 0.8rem;
-            color: #b0b0b0;
+            color: var(--color-text-dim);
             white-space: nowrap;
         }
 
+        /* === CUSTOM SWITCH (TOGGLE) === */
         .switch {
             position: relative;
             display: inline-block;
             width: 38px;
             height: 20px;
+            flex-shrink: 0;
         }
-
         .switch input {
             opacity: 0;
             width: 0;
             height: 0;
         }
-
         .slider {
             position: absolute;
             cursor: pointer;
@@ -459,11 +647,10 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: #555;
+            background-color: var(--color-surface);
             transition: .4s;
-            border-radius: 0.125rem; /* Sharpened */
+            border-radius: 0.125rem;
         }
-
         .slider:before {
             position: absolute;
             content: "";
@@ -473,20 +660,167 @@
             bottom: 2px;
             background-color: white;
             transition: .4s;
-            border-radius: 0.125rem; /* Sharpened */
+            border-radius: 0.125rem;
         }
-
         input:checked + .slider {
-            background-color: #880808;
+            background-color: var(--color-primary);
         }
-
         input:focus + .slider {
-            box-shadow: 0 0 1px #880808;
+            box-shadow: 0 0 1px var(--color-primary);
         }
-
         input:checked + .slider:before {
             transform: translateX(18px);
         }
+
+        /* === VISUALIZER === */
+        #audioVisualizer {
+            width: 100%;
+            height: 60px;
+            background-color: var(--color-surface-light);
+            border-radius: 0.375rem;
+            box-shadow: inset 0 2px 5px var(--color-shadow-dark);
+            transition: background-color 0.3s ease;
+        }
+
+        /* === SETTINGS PAGE === */
+        .settings-group {
+            margin-bottom: 1.5rem;
+        }
+        .settings-label {
+            display: block;
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--color-text);
+        }
+        .settings-description {
+            font-size: 0.875rem;
+            color: var(--color-text-dim);
+            margin-bottom: 1rem;
+        }
+        .setting-control {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        /* theme selector */
+        .theme-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 1rem;
+        }
+        .theme-option {
+            padding: 1rem 0.5rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            text-align: center;
+            font-weight: 600;
+            border: 2px solid var(--color-border);
+            background-color: var(--color-surface-light);
+            color: var(--color-text);
+            transition: all 0.2s ease;
+        }
+        .theme-option:hover {
+            transform: translateY(-2px);
+            border-color: var(--color-primary);
+        }
+        .theme-option.active {
+            background-color: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary-hover);
+            box-shadow: 0 4px 10px var(--color-shadow-dark);
+        }
+
+        /* === RESPONSIVE LAYOUT (MOBILE) === */
+        @media (max-width: 600px) {
+            body {
+                padding: 0;
+            }
+            .container {
+                width: 100%;
+                max-width: 100%;
+                height: 100vh;
+                min-height: -webkit-fill-available; /* safari fix */
+                border-radius: 0;
+                padding: 1rem;
+                box-shadow: none;
+                justify-content: flex-start;
+                overflow-y: auto; /* allow scrolling on small screens */
+            }
+
+            h1 { font-size: 1.5rem; }
+            p { font-size: 0.875rem; }
+            
+            .input-group {
+                margin-bottom: 0.5rem;
+            }
+            
+            #playlistContainer {
+                margin-top: 0;
+            }
+            
+            #audioVisualizer {
+                height: 50px;
+                order: 1; /* move visualizer before controls */
+            }
+
+            .custom-controls {
+                flex-direction: column; /* stack all controls */
+                align-items: stretch; /* stretch items */
+                padding: 1rem;
+                margin-top: 0;
+                order: 2; /* move controls after visualizer */
+            }
+            
+            /* main play/loop buttons row */
+            .controls-row-1 {
+                display: flex;
+                justify-content: center;
+                gap: 1.5rem;
+                width: 100%;
+            }
+
+            .progress-row {
+                order: -1; /* move progress bar to top */
+            }
+            
+            /* full-width sliders */
+            .volume-container, .speed-container {
+                width: 100%;
+                justify-content: space-between;
+                gap: 0.75rem;
+            }
+            .styled-slider {
+                width: auto;
+                flex-grow: 1;
+            }
+            .speed-mode-toggle {
+                margin-left: 0;
+                gap: 0.5rem;
+            }
+            .speed-container {
+                flex-wrap: wrap; /* allow speed toggle to wrap */
+            }
+            .speed-mode-toggle {
+                flex-basis: 100%; /* make toggle take full width if it wraps */
+                justify-content: center;
+                margin-top: 0.5rem;
+            }
+            
+            .corner-button {
+                padding: 0.5rem 0.75rem;
+                font-size: 1rem;
+            }
+            
+            .modal-content {
+                width: 100%;
+                height: 100%;
+                max-height: 100%;
+                border-radius: 0;
+            }
+        }
+        
     </style>
 </head>
 <body>
@@ -506,16 +840,16 @@
             </div>
         </div>
 
-        <audio id="audioPlayer" loop>
+        <audio id="audioPlayer" loop crossorigin="anonymous">
             <source src="https://wackybox.org/19-4.flac" type="audio/flac">
             your browser does not support flac files... what the hell are you loading this on?
         </audio>
 
         <div id="audioSourceDisplay" class="audio-source">
-            source: <a href="https://wackybox.org/19-4.flac" target="_blank" class="text-red-700 hover:underline">https://wackybox.org/19-4.flac</a>
+            source: <a href="https://wackybox.org/19-4.flac" target="_blank">https://wackybox.org/19-4.flac</a>
         </div>
 
-        <div id="playlistContainer" class="w-full mt-4">
+        <div id="playlistContainer">
             <button id="togglePlaylistButton" class="playlist-toggle-button">
                 wackybox demo list (click to show)
                 <i class="fas fa-chevron-down ml-2"></i>
@@ -524,24 +858,34 @@
                 </ul>
         </div>
 
+        <canvas id="audioVisualizer" width="450" height="60"></canvas>
+
         <div class="custom-controls">
-            <div id="playPauseButton" class="play-pause-button">
-                <i class="fas fa-play"></i>
+            <div class="progress-row">
+                <div class="progress-time" id="currentTimeDisplay">0:00</div>
+                <div id="progressContainer" class="progress-container">
+                    <div id="progressBar" class="progress-bar"></div>
+                </div>
+                <div class="progress-time" id="durationDisplay">0:00</div>
             </div>
-            <div class="progress-time" id="currentTimeDisplay">0:00</div>
-            <div id="progressContainer" class="progress-container">
-                <div id="progressBar" class="progress-bar"></div>
+
+            <div class="controls-row-1">
+                <div id="playPauseButton" class="control-button">
+                    <i class="fas fa-play"></i>
+                </div>
+                <div id="loopButton" class="control-button small active">
+                    <i class="fas fa-repeat"></i>
+                </div>
             </div>
-            <div class="progress-time" id="durationDisplay">0:00</div>
             
             <div class="volume-container">
                 <i id="volumeIcon" class="fas fa-volume-up volume-icon"></i>
-                <input type="range" id="volumeSlider" class="volume-slider" min="0" max="1" step="0.01" value="1">
+                <input type="range" id="volumeSlider" class="styled-slider volume-slider" min="0" max="1" step="0.01" value="1">
             </div>
 
             <div class="speed-container">
                 <i id="speedIcon" class="fas fa-tachometer-alt speed-icon"></i>
-                <input type="range" id="speedSlider" class="speed-slider" min="0.1" max="10" step="0.05" value="1">
+                <input type="range" id="speedSlider" class="styled-slider speed-slider" min="0.1" max="10" step="0.05" value="1">
                 <span id="speedValue" class="speed-value">1.00x</span>
                 <div class="speed-mode-toggle">
                     <span>time stretch</span>
@@ -557,37 +901,92 @@
         <div id="messageBox" class="message-box"></div>
     </div>
 
-    <button id="infoButton">i</button>
+    <!-- info button -->
+    <button id="infoButton" class="corner-button">i</button>
+    
+    <!-- settings button (new) -->
+    <button id="settingsButton" class="corner-button">
+        <i class="fas fa-cog"></i>
+    </button>
 
-    <div id="infoPage">
-        <div id="infoPageContent">
-            <button id="closeInfoButton">x</button>
+    <!-- info page modal -->
+    <div id="infoPage" class="modal-page">
+        <div id="infoPageContent" class="modal-content">
+            <button id="closeInfoButton" class="modal-close-button">x</button>
             <h2>about wb-player</h2>
             <p>wb-player 2. this application allows you to play audio files directly from a url or by selecting them from your local storage !</p>
             <p>it supports common audio formats like mp3, wav, ogg, flac, aac, m4a, and opus. just paste a direct link to an audio file or upload one.</p>
             <p>the modern web sucks 8@115. features for ease of use - sanitise inputs with spaces so 1 trial.opus doesn't need %20. - </p>
             <p>automatically tries to fetch files from two repositories if no domain is given, so 1 trial.opus will load from my file.garden.</p>
             <p>assumes https if not specified before domain so that "wackybox.org/minecraft.ogg" is valid too.</p>
+
+            <h3>keyboard shortcuts</h3>
+            <ul>
+                <li><strong>spacebar:</strong> play / pause</li>
+                <li><strong>m:</strong> mute / unmute</li>
+                <li><strong>arrow left / right:</strong> seek 5s backward / forward</li>
+                <li><strong>arrow up / down:</strong> volume up / down</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- settings page modal (new) -->
+    <div id="settingsPage" class="modal-page">
+        <div id="settingsPageContent" class="modal-content">
+            <button id="closeSettingsButton" class="modal-close-button">x</button>
+            <h2>settings</h2>
+            
+            <!-- loading mode setting -->
+            <div class="settings-group">
+                <h3>loading mode</h3>
+                <div class="setting-control">
+                    <span>pre-load</span>
+                    <label class="switch">
+                        <input type="checkbox" id="loadingModeToggle">
+                        <span class="slider"></span>
+                    </label>
+                    <span>stream</span>
+                </div>
+                <p class="settings-description">
+                    <strong>pre-load:</strong> loads the entire audio file into memory. required for 'frequency level' speed mode.
+                    <br>
+                    <strong>stream:</strong> streams the audio. disables 'frequency level' mode but starts playback faster on large files.
+                </p>
+            </div>
+
+            <!-- theme selector setting -->
+            <div class="settings-group">
+                <h3>theme</h3>
+                <div id="themeSelector" class="theme-selector">
+                    <div class="theme-option" data-theme="theme-default">default !</div>
+                    <div class="theme-option" data-theme="theme-ocean-blue">ocean blue !</div>
+                    <div class="theme-option" data-theme="theme-solid-gray">solid gray !</div>
+                    <div class="theme-option" data-theme="theme-wacky-green">wacky green !</div>
+                    <div class="theme-option" data-theme="theme-synthwave">synthwave !</div>
+                    <div class="theme-option" data-theme="theme-sunlight">sunlight !</div>
+                    <div class="theme-option" data-theme="theme-ember">ember !</div>
+                </div>
+            </div>
+
         </div>
     </div>
 
     <script>
         // --- Playlist Configuration ---
-        // to add files, just add the short name or full url to this list.
         const wackyboxDemoPlaylist = [
             "laptop.mp3",
-		"not an ordinary explanation.mp3",
-		"yes.mp3",
-		"decrunching 2022.mp3",
-		"Toyota Corolling.mp3",
-		"t get get t.mp3",
-		"You're even.mp3",
-		"2 times over I said.mp3",
-		"what're you on.mp3",
-		"back in the water.flac",
-		"1 trial.opus",
-		"https://wackybox.org/19-4.flac",
-		"wackybox.org/minecraft.ogg"
+            "not an ordinary explanation.mp3",
+            "yes.mp3",
+            "decrunching 2022.mp3",
+            "Toyota Corolling.mp3",
+            "t get get t.mp3",
+            "You're even.mp3",
+            "2 times over I said.mp3",
+            "what're you on.mp3",
+            "back in the water.flac",
+            "1 trial.opus",
+            "https://wackybox.org/19-4.flac",
+            "wackybox.org/minecraft.ogg"
         ];
         
         // --- DOM Elements ---
@@ -597,11 +996,16 @@
         const audioFileInput = document.getElementById('audioFileInput');
         const audioSourceDisplay = document.getElementById('audioSourceDisplay');
         const messageBox = document.getElementById('messageBox');
+        
+        // modals
         const infoButton = document.getElementById('infoButton');
         const infoPage = document.getElementById('infoPage');
         const closeInfoButton = document.getElementById('closeInfoButton');
+        const settingsButton = document.getElementById('settingsButton');
+        const settingsPage = document.getElementById('settingsPage');
+        const closeSettingsButton = document.getElementById('closeSettingsButton');
 
-        // Custom UI elements
+        // custom ui elements
         const playPauseButton = document.getElementById('playPauseButton');
         const playPauseIcon = playPauseButton.querySelector('i');
         const progressBar = document.getElementById('progressBar');
@@ -614,29 +1018,111 @@
         const speedValueDisplay = document.getElementById('speedValue');
         const speedModeToggle = document.getElementById('speedModeToggle');
         const speedIcon = document.getElementById('speedIcon');
+        const loopButton = document.getElementById('loopButton');
 
-        // Playlist UI
+        // playlist ui
         const togglePlaylistButton = document.getElementById('togglePlaylistButton');
         const playlistElement = document.getElementById('playlist');
 
+        // settings ui
+        const loadingModeToggle = document.getElementById('loadingModeToggle');
+        const themeSelector = document.getElementById('themeSelector');
+
+        // visualizer
+        const visualizerCanvas = document.getElementById('audioVisualizer');
+        const canvasCtx = visualizerCanvas.getContext('2d');
+        
         // --- Web Audio API variables ---
-        let audioContext = null;
+        let audioContext = null; // the single audio context
         let audioBuffer = null;
-        let sourceNode = null; // AudioBufferSourceNode
-        let gainNode = null;   // GainNode for volume control
-        let currentOffset = 0; // Current playback position in seconds (where playback is "parked")
-        let startTime = 0;     // Time when sourceNode started playing (audioContext.currentTime)
-        let currentSpeedMode = 'timeStretch'; // 'timeStretch' (HTML Audio) or 'frequencyLevel' (Web Audio)
-        let isAudioContextReady = false;
+        let sourceNode = null; // audiobuffersourcenode
+        let gainNode = null;   // gainnode for volume control
+        let analyserNode = null; // analysernode for visualizer
+        let mediaElementSource = null; // mediaelementaudiosourcenode
+        let visualizerDataArray = null;
+        let visualizerFrameId = null;
+        
+        let currentOffset = 0; // current playback position in seconds
+        let startTime = 0;     // time when sourcenode started playing
+        let currentSpeedMode = 'timeStretch'; // 'timeStretch' (html audio) or 'frequencyLevel' (web audio)
+        let isWebAudioGraphReady = false; // tracks if visualizer graph is built
         let currentAudioSource = { url: '', isLocal: false, file: null };
 
         let isDraggingProgressBar = false;
         let animationFrameId;
 
+        // --- App Settings State ---
+        let currentLoadingMode = 'preload'; // 'preload' or 'stream'
+        let currentTheme = 'theme-default';
+
+        // --- audio loading state ---
+        let primaryUrlToTry = '';
+        let fallbackUrlToTry = '';
+        let isTryingFallback = false;
+
         // --- Core Functions ---
+        
+/**
+         * ensures an audiocontext exists, for decoding.
+         * does not set up the graph or resume the context.
+         */
+        function getAudioContextForDecoding() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
 
         /**
-         * Parses the query parameter `?={url}`.
+         * sets up the full web audio graph (visualizer, gain)
+         * must be called by a user gesture (play, seek)
+         */
+        function setupWebAudioGraph() {
+            if (isWebAudioGraphReady) return; // already done
+
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            // resume context on gesture
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+
+            // create nodes if they don't exist
+            if (!gainNode) {
+                gainNode = audioContext.createGain();
+                gainNode.gain.value = volumeSlider.value;
+            }
+            if (!analyserNode) {
+                analyserNode = audioContext.createAnalyser();
+                analyserNode.fftSize = 256;
+                const bufferLength = analyserNode.frequencyBinCount;
+                visualizerDataArray = new Uint8Array(bufferLength);
+            }
+
+            // create and connect the <audio> element source
+            if (!mediaElementSource) {
+                try {
+                    mediaElementSource = audioContext.createMediaElementSource(audioPlayer);
+                    mediaElementSource.connect(gainNode);
+                } catch(e) {
+                    console.error("error creating media element source:", e);
+                    showMessage("error linking audio visualizer.", "error");
+                    return;
+                }
+            }
+            
+            // connect gain to analyser and destination
+            gainNode.connect(analyserNode);
+            analyserNode.connect(audioContext.destination);
+
+            isWebAudioGraphReady = true;
+            resizeVisualizer();
+            drawVisualizer(); // start the visualizer loop
+        }
+
+        /**
+         * parses the query parameter `?={url}`.
          */
         function getPreloadUrl() {
             const url = window.location.search;
@@ -652,19 +1138,12 @@
         }
 
         /**
-         * Displays a message to the user.
+         * displays a message to the user.
          */
         function showMessage(message, type = 'error') {
             messageBox.textContent = message;
-            messageBox.classList.remove('bg-red-200', 'text-red-700', 'bg-green-200', 'text-green-700', 'bg-blue-200', 'text-blue-700');
-
-            if (type === 'error') {
-                messageBox.classList.add('bg-red-200', 'text-red-700');
-            } else if (type === 'info') {
-                messageBox.classList.add('bg-blue-200', 'text-blue-700');
-            } else { // success
-                messageBox.classList.add('bg-green-200', 'text-green-700');
-            }
+            messageBox.className = 'message-box'; // reset classes
+            messageBox.classList.add(`type-${type}`);
             
             messageBox.classList.add('active');
             setTimeout(() => {
@@ -673,7 +1152,7 @@
         }
 
         /**
-         * Formats time in seconds to MM:SS string.
+         * formats time in seconds to mm:ss string.
          */
         function formatTime(seconds) {
             if (isNaN(seconds) || seconds < 0) return '0:00';
@@ -683,42 +1162,83 @@
         }
 
         /**
-         * Updates the displayed audio source link.
+         * updates the displayed audio source link.
          */
         function updateAudioDisplay(src, isLocalFile = false) {
             if (isLocalFile) {
                 audioSourceDisplay.innerHTML = 'source: local file';
             } else {
-                audioSourceDisplay.innerHTML = `source: <a href="${src}" target="_blank" class="text-red-700 hover:underline">${src}</a>`;
+                audioSourceDisplay.innerHTML = `source: <a href="${src}" target="_blank">${src}</a>`;
             }
-            messageBox.style.display = 'none';
         }
-
+        
         /**
-         * Initializes the Web Audio API context.
+         * handles resizing of the visualizer canvas.
          */
-        function initWebAudio() {
-            if (!audioContext) {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                gainNode = audioContext.createGain();
-                gainNode.connect(audioContext.destination);
-                isAudioContextReady = true;
-                gainNode.gain.value = volumeSlider.value;
+        function resizeVisualizer() {
+            if (visualizerCanvas.clientWidth > 0) {
+                visualizerCanvas.width = visualizerCanvas.clientWidth;
+                visualizerCanvas.height = visualizerCanvas.clientHeight;
             }
         }
 
         /**
-         * Loads audio data into an AudioBuffer for Web Audio API playback.
+         * draws the audio visualizer on the canvas.
+         */
+        function drawVisualizer() {
+            visualizerFrameId = requestAnimationFrame(drawVisualizer);
+
+            if (!analyserNode || !isWebAudioGraphReady) return;
+
+            analyserNode.getByteFrequencyData(visualizerDataArray);
+
+            // use theme colors
+            const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--color-surface-light');
+            const barColor = getComputedStyle(document.documentElement).getPropertyValue('--color-primary');
+
+            canvasCtx.fillStyle = bgColor;
+            canvasCtx.fillRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
+
+            const bufferLength = analyserNode.frequencyBinCount;
+            const barWidth = (visualizerCanvas.width / bufferLength) * 1.5;
+            let barHeight;
+            let x = 0;
+
+            for (let i = 0; i < bufferLength; i++) {
+                barHeight = (visualizerDataArray[i] / 255) * visualizerCanvas.height;
+
+                canvasCtx.fillStyle = barColor;
+                canvasCtx.fillRect(x, visualizerCanvas.height - barHeight, barWidth, barHeight);
+
+                x += barWidth + 1; // 1px spacing
+            }
+        }
+
+        /**
+         * loads audio data into an audiobuffer for web audio api playback.
+         * this is the "pre-load" method.
          */
         async function loadAudioForWebAudio(src, isLocalFile = false, file = null) {
-            initWebAudio();
-            currentAudioSource = { url: src, isLocal: isLocalFile, file: file };
-            audioBuffer = null; // Clear previous buffer
+            getAudioContextForDecoding(); // ensures audioContext exists for decoding
+            
+            // only proceed if in 'preload' mode
+            if (currentLoadingMode !== 'preload') {
+                audioBuffer = null;
+                if (currentSpeedMode === 'frequencyLevel') {
+                     // if user is in freq level mode and re-loads, force back to timestretch
+                    speedModeToggle.checked = false;
+                    await handleSpeedModeChange(false); 
+                }
+                return; // don't preload if in stream mode
+            }
 
-            try {
-                let arrayBuffer;
-                if (isLocalFile && file) {
-                    arrayBuffer = await new Promise((resolve, reject) => {
+            currentAudioSource = { url: src, isLocal: isLocalFile, file: file };
+            audioBuffer = null; 
+
+            // this function now throws on error, to be caught by the caller
+            let arrayBuffer;
+            if (isLocalFile && file) {
+                arrayBuffer = await new Promise((resolve, reject) => {
                         const reader = new FileReader();
                         reader.onload = () => resolve(reader.result);
                         reader.onerror = () => reject(new Error("failed to read local file."));
@@ -730,27 +1250,21 @@
                         throw new Error(`http error! status: ${response.status}`);
                     }
                     arrayBuffer = await response.arrayBuffer();
-                }
-
-                audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                if (currentSpeedMode === 'frequencyLevel') {
-                    durationDisplay.textContent = formatTime(audioBuffer.duration);
-                }
-                showMessage("audio loaded successfully for freq level mode.", "success");
-            } catch (error) {
-                console.error("error loading audio for web audio api:", error);
-                showMessage(`failed to load audio for freq level mode: ${error.message}`, "error");
-                audioBuffer = null;
-                throw error;
             }
+
+            audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+            if (currentSpeedMode === 'frequencyLevel') {
+                durationDisplay.textContent = formatTime(audioBuffer.duration);
+            }
+            console.log("audio pre-loaded successfully for freq level mode.");
         }
 
         /**
-         * Plays audio using the Web Audio API.
+         * plays audio using the web audio api.
          */
         function playWebAudio() {
             if (!audioBuffer) {
-                showMessage("no audio loaded for freq level mode.", "error");
+                showMessage("no audio pre-loaded for freq level mode.", "error");
                 playPauseIcon.classList.remove('fa-pause');
                 playPauseIcon.classList.add('fa-play');
                 return;
@@ -760,70 +1274,76 @@
                 sourceNode.disconnect();
             }
 
-            // If we're at the end, reset to beginning
+            // disconnect <audio> element source to avoid double sound
+            if (mediaElementSource && isWebAudioGraphReady) mediaElementSource.disconnect();
+
+            // if we're at the end, reset to beginning
             if (currentOffset >= audioBuffer.duration) {
                 currentOffset = 0;
             }
             
             sourceNode = audioContext.createBufferSource();
             sourceNode.buffer = audioBuffer;
-            sourceNode.connect(gainNode);
+            
+            // connect: sourcenode -> gainnode (-> analyser -> destination)
+            sourceNode.connect(gainNode); 
+            
             sourceNode.playbackRate.value = parseFloat(speedSlider.value);
             
             startTime = audioContext.currentTime;
-            sourceNode.start(0, currentOffset); // Start from the "parked" offset
+            sourceNode.start(0, currentOffset); // start from the "parked" offset
 
             playPauseIcon.classList.remove('fa-play');
             playPauseIcon.classList.add('fa-pause');
 
             sourceNode.onended = () => {
-                // This 'onended' fires for stop() and natural end.
-                // We only want to act if sourceNode still exists (i.e., not manually stopped by pauseWebAudio)
                 if (sourceNode && currentSpeedMode === 'frequencyLevel') {
                     playPauseIcon.classList.remove('fa-pause');
                     playPauseIcon.classList.add('fa-play');
                     
-                    // Update offset to the very end
                     currentOffset = audioBuffer.duration;
                     
-                    // Update display
                     progressBar.style.width = '100%';
                     currentTimeDisplay.textContent = formatTime(currentOffset);
                     
                     if (audioPlayer.loop) {
-                        currentOffset = 0; // Reset offset for loop
+                        currentOffset = 0; // reset offset for loop
                         playWebAudio();
                     } else {
-                        sourceNode = null; // Clear source node as it has finished
+                        sourceNode = null; // clear source node
+                        // reconnect <audio> element source
+                        if (mediaElementSource && isWebAudioGraphReady) mediaElementSource.connect(gainNode);
                     }
                 }
             };
         }
 
         /**
-         * Pauses audio playing via Web Audio API.
+         * pauses audio playing via web audio api.
          */
         function pauseWebAudio() {
             if (sourceNode && audioContext) {
-                // Calculate and store the new "parked" offset
                 const elapsedSinceStart = (audioContext.currentTime - startTime) * sourceNode.playbackRate.value;
                 currentOffset = Math.min(currentOffset + elapsedSinceStart, audioBuffer ? audioBuffer.duration : 0);
 
                 sourceNode.stop();
                 sourceNode.disconnect();
-                sourceNode = null; // Mark as paused
+                sourceNode = null; // mark as paused
                 playPauseIcon.classList.remove('fa-pause');
                 playPauseIcon.classList.add('fa-play');
+                
+                // reconnect <audio> element source
+                if (mediaElementSource && isWebAudioGraphReady) mediaElementSource.connect(gainNode);
             }
         }
 
         /**
-         * Stops all audio playback and resets UI.
+         * stops all audio playback and resets ui.
          */
         function stopAllAudio() {
             audioPlayer.pause();
             if (sourceNode) {
-                pauseWebAudio(); // This will stop the node and clear it
+                pauseWebAudio(); // this will stop the node and clear it
             }
             playPauseIcon.classList.remove('fa-pause');
             playPauseIcon.classList.add('fa-play');
@@ -834,7 +1354,7 @@
         }
 
         /**
-         * Helper function to start playback based on the current mode.
+         * helper function to start playback based on the current mode.
          */
         function playBasedOnMode() {
             if (currentSpeedMode === 'timeStretch') {
@@ -848,14 +1368,19 @@
         }
 
         /**
-         * Central function to load audio from a string (URL or shortname).
+         * central function to load audio from a string (url or shortname).
          */
         async function loadAudioByString(urlInput) {
             urlInput = urlInput.trim();
             if (!urlInput) {
-                showMessage("please enter an audio url.");
+                showMessage("please enter an audio url.", "error");
                 return;
             }
+
+            // highlight in playlist if it exists
+            document.querySelectorAll('#playlist li').forEach(li => {
+                li.classList.toggle('active', li.textContent === urlInput);
+            });
 
             const hasProtocol = urlInput.startsWith('http://') || urlInput.startsWith('https://');
             const hasSlash = urlInput.includes('/');
@@ -878,52 +1403,37 @@
                 fallbackAttemptUrl = `https://file.garden/ZwtoaziYoEL_MBCc/${filenameForUrl}`;
             }
 
+            primaryUrlToTry = primaryAttemptUrl; // store in global
+            fallbackUrlToTry = fallbackAttemptUrl; // store in global
+            isTryingFallback = false;
+
             const audioExtensions = ['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a', '.opus'];
             const finalUrlToCheckExtension = isShortFilename ? urlInput : primaryAttemptUrl;
             const isAudioUrl = audioExtensions.some(ext => finalUrlToCheckExtension.toLowerCase().endsWith(ext));
 
             if (!isAudioUrl) {
-                showMessage("invalid url format. must be a direct audio file link.", "error");
+                showMessage("invalid url. must be a direct audio file link.", "error");
                 return;
             }
 
             stopAllAudio();
             currentOffset = 0;
-            audioUrlInput.value = urlInput; // Show the name in the input box
+            audioUrlInput.value = urlInput; // show the name in the input box
 
-            try {
-                showMessage(`loading: ${primaryAttemptUrl}`, "info");
-                audioPlayer.src = primaryAttemptUrl;
-                audioPlayer.load();
-                await loadAudioForWebAudio(primaryAttemptUrl, false, null);
-                updateAudioDisplay(primaryAttemptUrl);
-                playBasedOnMode();
-
-            } catch (error) {
-                console.error("primary url load failed:", error);
-                if (isShortFilename && fallbackAttemptUrl) {
-                    showMessage("failed. trying fallback...", "info");
-                    try {
-                        audioPlayer.src = fallbackAttemptUrl;
-                        audioPlayer.load();
-                        await loadAudioForWebAudio(fallbackAttemptUrl, false, null);
-                        updateAudioDisplay(fallbackAttemptUrl);
-                        playBasedOnMode();
-                    } catch (fallbackError) {
-                        console.error("fallback url load failed:", fallbackError);
-                        showMessage("failed to load from all sources.", "error");
-                    }
-                } else {
-                    showMessage("failed to load audio. check url or file.", "error");
-                }
-            }
+            // remove the big try...catch
+            showMessage(`loading: ${primaryUrlToTry}`, "info");
+            audioPlayer.src = primaryUrlToTry;
+            audioPlayer.load();
+            
+            // the success/error is now handled by the event listeners
+            // `handleAudioLoadSuccess` will call `loadAudioForWebAudio`
         }
 
         /**
-         * Populates the playlist from the global array.
+         * populates the playlist from the global array.
          */
         function populatePlaylist() {
-            playlistElement.innerHTML = ''; // Clear existing
+            playlistElement.innerHTML = ''; // clear existing
             
             wackyboxDemoPlaylist.forEach(itemName => {
                 const li = document.createElement('li');
@@ -939,117 +1449,274 @@
             infoLi.textContent = "yes";
             playlistElement.appendChild(infoLi);
         }
+        
+        // --- Settings Functions ---
+        
+        /**
+         * loads all settings from localstorage on startup.
+         */
+        function loadSettings() {
+            // load theme
+            const savedTheme = localStorage.getItem('wb-player-theme') || 'theme-default';
+            applyTheme(savedTheme);
+
+            // load loading mode
+            const savedLoadingMode = localStorage.getItem('wb-player-loading-mode') || 'preload';
+            currentLoadingMode = savedLoadingMode;
+            loadingModeToggle.checked = (currentLoadingMode === 'stream');
+
+            // load loop state
+            const savedLoop = localStorage.getItem('wb-player-loop') === 'true';
+            audioPlayer.loop = savedLoop;
+            loopButton.classList.toggle('active', savedLoop);
+
+            // load volume
+            const savedVolume = localStorage.getItem('wb-player-volume') || '1';
+            // audioPlayer.volume = savedVolume; // this was the bug, we only control gain node
+            volumeSlider.value = savedVolume;
+            if (gainNode) gainNode.gain.value = savedVolume;
+            updateVolumeIcon();
+        }
+        
+        /**
+         * applies a theme to the document.
+         */
+        function applyTheme(themeName) {
+            document.body.className = themeName; // removes all other classes
+            currentTheme = themeName;
+            localStorage.setItem('wb-player-theme', themeName);
+            
+            // update active state in settings modal
+            document.querySelectorAll('#themeSelector .theme-option').forEach(opt => {
+                opt.classList.toggle('active', opt.dataset.theme === themeName);
+            });
+        }
 
         // --- Event Listeners ---
 
-        // Load from URL button
+        // load from url button
         loadUrlButton.addEventListener('click', () => {
             loadAudioByString(audioUrlInput.value);
         });
+        // allow 'enter' key in url input
+        audioUrlInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                loadAudioByString(audioUrlInput.value);
+            }
+        });
 
-        // Load from file input
+        // load from file input
         audioFileInput.addEventListener('change', async (event) => {
             const file = event.target.files[0];
             if (file) {
                 if (file.type.startsWith('audio/')) {
                     stopAllAudio();
                     currentOffset = 0;
+                    // clear playlist highlight
+                    document.querySelectorAll('#playlist li').forEach(li => li.classList.remove('active'));
 
                     const fileURL = URL.createObjectURL(file);
                     
+                    primaryUrlToTry = fileURL;
+                    fallbackUrlToTry = '';
+                    isTryingFallback = false;
+
                     audioPlayer.src = fileURL;
                     audioPlayer.load();
+                    updateAudioDisplay(fileURL, true);
+                    showMessage("loaded", "info");
 
+                    // try to preload
                     try {
                         await loadAudioForWebAudio(fileURL, true, file);
-                        updateAudioDisplay(fileURL, true);
-                        playBasedOnMode();
                     } catch (error) {
-                        console.error("error loading local audio for web audio api:", error);
-                        showMessage("failed to load local audio.", "error");
-                        audioFileInput.value = '';
+                        console.warn("couldn't preload:", error);
+                        showMessage("settings loaded", "info");
                     }
                 } else {
-                    showMessage("please select a valid audio file.");
+                    showMessage("incompatible file", "error");
                     audioFileInput.value = '';
                 }
             }
         });
 
-        // Info page toggle
-        infoButton.addEventListener('click', () => {
-            infoPage.classList.add('active');
-        });
-        closeInfoButton.addEventListener('click', () => {
-            infoPage.classList.remove('active');
+        // info page toggle
+        infoButton.addEventListener('click', () => infoPage.classList.add('active'));
+        closeInfoButton.addEventListener('click', () => infoPage.classList.remove('active'));
+
+        // settings page toggle
+        settingsButton.addEventListener('click', () => settingsPage.classList.add('active'));
+        closeSettingsButton.addEventListener('click', () => settingsPage.classList.remove('active'));
+        
+        // close modals with escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                infoPage.classList.remove('active');
+                settingsPage.classList.remove('active');
+            }
         });
 
-        // Playlist toggle
+        // playlist toggle
         togglePlaylistButton.addEventListener('click', () => {
             playlistElement.classList.toggle('hidden');
             togglePlaylistButton.classList.toggle('active');
             if (playlistElement.classList.contains('hidden')) {
-                togglePlaylistButton.innerHTML = 'wackybox demo list (click to show) <i class="fas fa-chevron-down ml-2"></i>';
+                togglePlaylistButton.innerHTML = 'open demo list <i class="fas fa-chevron-down ml-2"></i>';
             } else {
-                togglePlaylistButton.innerHTML = 'wackybox demo list (click to hide) <i class="fas fa-chevron-up ml-2"></i>';
+                togglePlaylistButton.innerHTML = 'close demo list <i class="fas fa-chevron-up ml-2"></i>';
+            }
+        });
+        
+        // --- Settings Event Listeners ---
+        
+        // theme selector
+        themeSelector.addEventListener('click', (e) => {
+            const themeOption = e.target.closest('.theme-option');
+            if (themeOption) {
+                applyTheme(themeOption.dataset.theme);
             }
         });
 
-        // --- Window Load ---
-        window.onload = () => {
-            populatePlaylist(); // Build the playlist UI
+        // loading mode
+        loadingModeToggle.addEventListener('change', () => {
+            currentLoadingMode = loadingModeToggle.checked ? 'stream' : 'preload';
+            localStorage.setItem('wb-player-loading-mode', currentLoadingMode);
             
+            if (currentLoadingMode === 'stream' && currentSpeedMode === 'frequencyLevel') {
+                // if we switch then doit 
+                speedModeToggle.checked = false;
+                handleSpeedModeChange(false); // force switch to timestretch
+                showMessage("switched to 'stream' mode. freq level disabled.", "info");
+            } else if (currentLoadingMode === 'preload') {
+                showMessage("switched to 'pre-load' mode. freq level enabled.", "info");
+                // pre-load audio if it's not alreay loaded
+                if (!audioBuffer && (currentAudioSource.url || currentAudioSource.file)) {
+                    loadAudioForWebAudio(currentAudioSource.url, currentAudioSource.isLocal, currentAudioSource.file);
+                }
+            }
+        });
+
+        // lode and reze. 
+        window.onload = () => {
+            loadSettings(); // load theme, mode, volume, etc.
+            populatePlaylist(); // build the playlist ui
+            
+            // add audio event listeners
+            audioPlayer.addEventListener('error', handleAudioLoadError);
+            audioPlayer.addEventListener('canplay', handleAudioLoadSuccess);
+
             const preloadUrl = getPreloadUrl();
 
             if (preloadUrl) {
                 loadAudioByString(preloadUrl);
             } else {
-                // Load default source
+                // load default source
                 const initialSourceElement = audioPlayer.querySelector('source');
                 if (initialSourceElement) {
                     const initialSrc = initialSourceElement.src;
-                    audioUrlInput.value = initialSrc; // Set input box to default
+                    audioUrlInput.value = initialSrc; // set input box to default
                     updateAudioDisplay(initialSrc);
-                    // Pre-load for Web Audio API but don't play
+                    // pre-load for web audio api (if mode is 'preload')
                     loadAudioForWebAudio(initialSrc, false, null).catch(e => console.error("initial web audio load failed:", e));
                 }
             }
 
-            volumeSlider.value = audioPlayer.volume;
+            // set controls to match loaded settings
             speedSlider.value = audioPlayer.playbackRate;
             speedValueDisplay.textContent = `${audioPlayer.playbackRate.toFixed(2)}x`;
             speedModeToggle.checked = false; 
-            updateVolumeIcon();
+            
+            resizeVisualizer();
 
-            // Start the UI update loop
+            // start the ui update loop
             animationFrameId = requestAnimationFrame(updateProgress);
         };
+        
+        window.addEventListener('resize', resizeVisualizer);
+        
+        // load? ew
+        function handleAudioLoadSuccess() {
+            // fired when the <audio> element is happy and can play
+            let urlLoaded;
+            if (isTryingFallback) {
+                showMessage("fallback loaded.", "info");
+                urlLoaded = fallbackUrlToTry;
+                updateAudioDisplay(urlLoaded);
+            } else {
+                showMessage("loaded.", "info");
+                urlLoaded = primaryUrlToTry;
+                updateAudioDisplay(urlLoaded);
+            }
+            
+            // now, try to preload (if in preload mode)
+            // this can fail silently without stopping playback
+            loadAudioForWebAudio(urlLoaded, false, null).catch(err => {
+                console.warn("web audio preload failed:", err);
+                if (currentLoadingMode === 'preload') {
+                    // only tell the user if they're in preload mode
+                    showMessage("preload failed.", "info");
+                }
+            });
 
-        // controls
+            // reset flags
+            isTryingFallback = false;
+        }
 
-        // Play/Pause Button
+        function handleAudioLoadError() {
+            console.error("audio element error:", audioPlayer.error);
+
+            if (isTryingFallback) {
+                // the fallback also failed
+                showMessage("failed to load!", "error");
+                isTryingFallback = false;
+            } else if (fallbackUrlToTry) {
+                // primary failed, try fallback
+                showMessage("loading2", "info");
+                isTryingFallback = true;
+                audioPlayer.src = fallbackUrlToTry;
+                audioPlayer.load();
+            } else {
+                // primary failed, no fallback
+                showMessage("failed to load! 2", "error");
+            }
+        }
+
+        // the controls 
+
+        // play/pause button
         playPauseButton.addEventListener('click', () => {
-            initWebAudio(); // Ensure context is running
+            if (!isWebAudioGraphReady) {
+                setupWebAudioGraph(); // this is the user gesture!
+            }
 
             if (currentSpeedMode === 'timeStretch') {
                 if (audioPlayer.paused) {
                     audioPlayer.play().catch(e => {
                         console.error("error playing html audio:", e);
-                        showMessage("could not play html audio. please ensure a file is loaded.", "error");
+                        showMessage("could not play html audio.", "error");
                     });
                 } else {
                     audioPlayer.pause();
                 }
-            } else { // i'm horrible
-                if (!sourceNode) { // If paused or stopped
+            } else { // frequencyLevel
+                if (!sourceNode) { // if paused or stopped
                     playWebAudio();
-                } else { // If playing
+                } else { // if playing
                     pauseWebAudio();
                 }
             }
         });
+        
+        // loop button
+        loopButton.addEventListener('click', () => {
+            const isLooping = !audioPlayer.loop;
+            audioPlayer.loop = isLooping;
+            loopButton.classList.toggle('active', isLooping);
+            localStorage.setItem('wb-player-loop', isLooping);
+            showMessage(`loop ${isLooping ? 'on' : 'off'}`, 'info');
+        });
 
-        // HTML Audio event listeners to update play/pause icon
+        // html audio event listeners to update play/pause icon
         audioPlayer.addEventListener('play', () => {
             if (currentSpeedMode === 'timeStretch') {
                 playPauseIcon.classList.remove('fa-play');
@@ -1071,7 +1738,7 @@
             }
         });
 
-        // Update progress bar and time display (Loop)
+        // update progress bar and time display (loop)
         function updateProgress() {
             if (!isDraggingProgressBar) {
                 let currentProgress = 0;
@@ -1081,15 +1748,12 @@
                 if (currentSpeedMode === 'timeStretch') {
                     displayTime = audioPlayer.currentTime;
                     currentDuration = audioPlayer.duration;
-                } else { // everything I do just makes her upset
+                } else { // frequencyLevel
                     currentDuration = audioBuffer ? audioBuffer.duration : 0;
                     if (audioContext && sourceNode && audioBuffer) {
-                        // Calculate elapsed time since playback started, adjusted for speed
                         const elapsedSinceStart = (audioContext.currentTime - startTime) * sourceNode.playbackRate.value;
-                        // Display time is the offset where we started + elapsed time
                         displayTime = Math.min(currentOffset + elapsedSinceStart, currentDuration);
                     } else {
-                        // Not playing, just show the last parked offset
                         displayTime = currentOffset;
                     }
                 }
@@ -1097,20 +1761,27 @@
                 currentProgress = (displayTime / currentDuration) * 100;
                 progressBar.style.width = `${isNaN(currentProgress) ? 0 : currentProgress}%`;
                 currentTimeDisplay.textContent = formatTime(displayTime);
-                durationDisplay.textContent = formatTime(currentDuration);
+                
+                // only update duration if it's not nan
+                if (isFinite(currentDuration) && currentDuration > 0) {
+                    durationDisplay.textContent = formatTime(currentDuration);
+                }
             }
             animationFrameId = requestAnimationFrame(updateProgress);
         }
 
-        // Set duration on metadata load for HTML Audio
+        // set duration on metadata load for html audio
         audioPlayer.addEventListener('loadedmetadata', () => {
             if (currentSpeedMode === 'timeStretch') {
                 durationDisplay.textContent = formatTime(audioPlayer.duration);
             }
         });
 
-        // i can't do anything right
+        // progress bar seeking
         progressContainer.addEventListener('mousedown', (e) => {
+            if (!isWebAudioGraphReady) {
+                setupWebAudioGraph(); // this is also a user gesture!
+            }
             isDraggingProgressBar = true;
             updateProgressBarPosition(e);
         });
@@ -1143,14 +1814,13 @@
                 duration = audioBuffer.duration;
                 newTime = (clickX / rect.width) * duration;
                 if (isFinite(newTime)) {
-                    currentOffset = newTime; // Set the new "parked" offset
+                    currentOffset = newTime; // set the new "parked" offset
                     
-                    // If playing, stop old node and start new one
                     if (sourceNode && audioContext && audioContext.state === 'running') {
                         sourceNode.stop();
                         sourceNode.disconnect();
                         sourceNode = null;
-                        playWebAudio(); // Will play from the new currentOffset
+                        playWebAudio(); // will play from the new currentoffset
                     }
                 }
             }
@@ -1161,34 +1831,36 @@
             }
         }
 
-        // Volume control
+        // volume control
         volumeSlider.addEventListener('input', () => {
             const newVolume = volumeSlider.value;
-            if (currentSpeedMode === 'timeStretch') {
-                audioPlayer.volume = newVolume;
-            } else if (gainNode) {
+            // audioPlayer.volume = newVolume; // we only control the gain node
+            if (gainNode) {
                 gainNode.gain.value = newVolume;
             }
+            localStorage.setItem('wb-player-volume', newVolume);
             updateVolumeIcon();
         });
 
-        // mute 
+        // mute button
         volumeIcon.addEventListener('click', () => {
             let currentVolume = volumeSlider.value;
             let newVolume = 0;
-
-            if (currentVolume > 0) {
-                newVolume = 0;
+            
+            // unmute to 50% or a saved 'pre-mute' volume
+            if (currentVolume == 0) {
+                newVolume = parseFloat(localStorage.getItem('wb-player-pre-mute-volume') || 0.5);
             } else {
-                newVolume = 0.5; // Restore to default
+                localStorage.setItem('wb-player-pre-mute-volume', currentVolume);
+                newVolume = 0;
             }
 
-            if (currentSpeedMode === 'timeStretch') {
-                audioPlayer.volume = newVolume;
-            } else if (gainNode) {
+            // audioPlayer.volume = newVolume; // we only control the gain node
+            if (gainNode) {
                 gainNode.gain.value = newVolume;
             }
             volumeSlider.value = newVolume;
+            localStorage.setItem('wb-player-volume', newVolume);
             updateVolumeIcon();
         });
 
@@ -1206,7 +1878,7 @@
             }
         }
 
-        // Speed control
+        // speed control
         speedSlider.addEventListener('input', () => {
             const newSpeed = parseFloat(speedSlider.value);
             if (currentSpeedMode === 'timeStretch') {
@@ -1217,7 +1889,7 @@
             speedValueDisplay.textContent = `${newSpeed.toFixed(2)}x`;
         });
 
-        // Reset speed
+        // reset speed
         speedIcon.addEventListener('click', () => {
             const defaultSpeed = 1.00;
             if (currentSpeedMode === 'timeStretch') {
@@ -1230,41 +1902,58 @@
             showMessage("speed reset to 1.00x", "info");
         });
 
-        // i just spent half an hour crying
-        speedModeToggle.addEventListener('change', async () => {
+        // speed mode toggle
+        speedModeToggle.addEventListener('change', () => {
+            handleSpeedModeChange(speedModeToggle.checked);
+        });
+        
+        async function handleSpeedModeChange(isFreqLevel) {
+            // check for loading mode constraint
+            if (isFreqLevel && currentLoadingMode === 'stream') {
+                showMessage("frequency level mode requires 'pre-load' mode. check settings.", "error");
+                speedModeToggle.checked = false; // revert the toggle
+                return;
+            }
+            // check that graph is ready
+            if (isFreqLevel && !isWebAudioGraphReady) {
+                 showMessage("please press play or seek first to initialize audio.", "info");
+                 speedModeToggle.checked = false;
+                 return;
+            }
+        
             const wasPlaying = (currentSpeedMode === 'timeStretch' && !audioPlayer.paused) || 
                                (currentSpeedMode === 'frequencyLevel' && sourceNode);
             let currentPlaybackTime = 0;
 
-            // Pause and get current time
+            // pause and get current time
             if (currentSpeedMode === 'timeStretch') {
                 currentPlaybackTime = audioPlayer.currentTime;
                 audioPlayer.pause();
             } else { // frequencyLevel
                 if (sourceNode) {
-                    // Calculate and store current offset before pausing
                     const elapsedSinceStart = (audioContext.currentTime - startTime) * sourceNode.playbackRate.value;
                     currentPlaybackTime = Math.min(currentOffset + elapsedSinceStart, audioBuffer ? audioBuffer.duration : 0);
-                    pauseWebAudio(); // This stops the node and sets sourceNode to null
+                    pauseWebAudio(); // stops node, sets sourcenode to null, reconnects mediaelementsource
                 } else {
-                    currentPlaybackTime = currentOffset; // Already paused
+                    currentPlaybackTime = currentOffset; // already paused
                 }
             }
 
-            // Switch mode
-            currentSpeedMode = speedModeToggle.checked ? 'frequencyLevel' : 'timeStretch';
+            // switch mode
+            currentSpeedMode = isFreqLevel ? 'frequencyLevel' : 'timeStretch';
             showMessage(`switched to ${currentSpeedMode === 'timeStretch' ? 'time stretch' : 'freq level'} mode.`, "info");
 
-            // Sync controls
+            // sync controls - only playbackrate needs syncing
             if (currentSpeedMode === 'timeStretch') {
-                audioPlayer.volume = volumeSlider.value;
                 audioPlayer.playbackRate = speedSlider.value;
-            } else {
-                if (gainNode) gainNode.gain.value = volumeSlider.value;
             }
+            // volume is always controlled by gainnode, no sync needed
 
-            // Resume playback in new mode
+            // resume playback in new mode
             if (currentSpeedMode === 'timeStretch') {
+                // re-connect media element source just in case
+                if(mediaElementSource && isWebAudioGraphReady) mediaElementSource.connect(gainNode);
+                
                 audioPlayer.currentTime = currentPlaybackTime;
                 if (wasPlaying) {
                     audioPlayer.play().catch(e => {
@@ -1276,7 +1965,8 @@
                 currentOffset = currentPlaybackTime;
                 if (!audioBuffer) {
                     try {
-                        // Re-load buffer if it's missing (e.g., first switch)
+                        // re-load buffer if it's missing
+                        showMessage("pre-loading audio for freq level mode...", "info");
                         await loadAudioForWebAudio(currentAudioSource.url, currentAudioSource.isLocal, currentAudioSource.file);
                     } catch (error) {
                         showMessage("failed to load audio for freq level mode.", "error");
@@ -1284,10 +1974,90 @@
                     }
                 }
                 if (wasPlaying) {
-                    playWebAudio();
+                    playWebAudio(); // this will disconnect mediaelementsource
                 }
             }
+        }
+        
+        // keystrokes
+        document.addEventListener('keydown', (e) => {
+            // don't interfere with typing in inputs
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                return;
+            }
+            
+            // don't interfere with modal tabbing
+            if (infoPage.classList.contains('active') || settingsPage.classList.contains('active')) {
+                return;
+            }
+
+            switch(e.code) {
+                case 'Space':
+                    e.preventDefault();
+                    playPauseButton.click();
+                    break;
+                case 'KeyM':
+                    e.preventDefault();
+                    volumeIcon.click();
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    seek(-5);
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    seek(5);
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    changeVolume(0.1);
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    changeVolume(-0.1);
+                    break;
+            }
         });
+        
+        function seek(seconds) {
+            // seeking is a user gesture, so init audio
+            if (!isWebAudioGraphReady) {
+                setupWebAudioGraph();
+            }
+
+            if (currentSpeedMode === 'timeStretch') {
+                const newTime = Math.max(0, audioPlayer.currentTime + seconds);
+                audioPlayer.currentTime = newTime;
+                if (isFinite(newTime) && isFinite(audioPlayer.duration)) {
+                    progressBar.style.width = `${(newTime / audioPlayer.duration) * 100}%`;
+                }
+            } else { // frequencyLevel
+                if (!audioBuffer) return;
+                const newTime = Math.max(0, currentOffset + seconds);
+                currentOffset = Math.min(newTime, audioBuffer.duration);
+                if (sourceNode) { // if playing, restart from new offset
+                    playWebAudio();
+                }
+                if (isFinite(newTime) && isFinite(audioBuffer.duration)) {
+                    progressBar.style.width = `${(newTime / audioBuffer.duration) * 100}%`;
+                }
+            }
+            // update display immediately
+            currentTimeDisplay.textContent = formatTime(currentSpeedMode === 'timeStretch' ? audioPlayer.currentTime : currentOffset);
+        }
+
+        function changeVolume(delta) {
+            let newVolume = parseFloat(volumeSlider.value) + delta;
+            newVolume = Math.max(0, Math.min(1, newVolume)); // clamp between 0 and 1
+            
+            // audioPlayer.volume = newVolume; // we only control the gain node
+            if (gainNode) {
+                gainNode.gain.value = newVolume;
+            }
+            volumeSlider.value = newVolume;
+            localStorage.setItem('wb-player-volume', newVolume);
+            updateVolumeIcon();
+        }
 
     </script>
 </body>
