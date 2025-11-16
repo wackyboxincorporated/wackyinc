@@ -1,46 +1,56 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Wackybox Incorporated Desktop</title>
+    
     <script src="https://cdn.jsdelivr.net/npm/three@0.138.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.138.0/examples/js/loaders/RGBELoader.js"></script>
-    <!-- ADDED OrbitControls for interactive HDR viewing -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.138.0/examples/js/controls/OrbitControls.js"></script>
+    
     <style>
-        /* --- General Setup --- */
+       /* fucking app */
         html, body {
             margin: 0;
             padding: 0;
-            height: 100%;
+            /* NEW: 100dvh (dynamic viewport height) is better for mobile browsers with toolbars */
+            height: 100vh; /* Fallback */
+            height: 100dvh;
             width: 100%;
             overflow: hidden;
-            font-family: 'Tahoma', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Tahoma', sans-serif;
             -webkit-font-smoothing: antialiased;
             user-select: none;
-            background: #2e7141; /* Fallback green */
+            background: #2e7141;
+            position: fixed; /* Prevents bouncing on mobile */
         }
 
         .desktop {
-            height: 100vh;
-            width: 100vw;
-            background: radial-gradient(circle at 10% 90%, #6ec25d 0%, #3a8542 50%, #2e7141 100%);
+            height: 100%;
+            width: 100%;
             background-size: cover;
             background-position: center;
             position: relative;
+            transition: background 0.5s ease; /* NEW: Animate wallpaper changes */
         }
 
-        /* --- Desktop Icons --- */
-        .icon-container {
-            position: relative;
-            height: calc(100% - 30px); /* Leave space for taskbar */
+        /* massive ugrade*/
+        #desktop-icon-container {
+            display: flex;
+            flex-direction: column;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            /* NEW: Respect safe area on top and taskbar on bottom */
+            height: calc(100% - 30px - env(safe-area-inset-top, 0));
             width: 100%;
+            padding: 10px;
+            padding-top: calc(10px + env(safe-area-inset-top, 0));
+            box-sizing: border-box;
+            gap: 10px;
         }
 
         .icon {
-            position: absolute;
             width: clamp(75px, 6vw, 90px);
             height: clamp(85px, 7vw, 100px);
             text-align: center;
@@ -48,16 +58,18 @@
             border: 1px solid transparent;
             padding: 5px 0;
             box-sizing: border-box;
-            transition: all 0.05s ease-out;
+            transition: all 0.1s ease-out;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: flex-start;
+            border-radius: 6px;
         }
 
         .icon:hover, .icon.dragging, .icon.selected {
-            background-color: rgba(0, 85, 255, 0.3);
+            background-color: rgba(255, 255, 255, 0.3);
             border: 1px dotted #ffffff;
+            transform: scale(1.03);
         }
 
         .icon-img {
@@ -84,31 +96,285 @@
             text-align: center;
         }
 
-        /* --- Mobile-Specific UI --- */
-        #mobile-ui { display: none; } /* Hidden by default */
+        /* how to do it */
+        .window {
+            position: absolute;
+            width: 600px;
+            height: 400px;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            resize: both;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            border-radius: 8px;
+            min-width: 250px;
+            min-height: 150px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            
+            /* NEW: Window open/close animation */
+            transform: scale(1);
+            opacity: 1;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.15s ease-out;
+        }
+        .window.opening {
+            transform: scale(0.9);
+            opacity: 0;
+        }
+        .window.closing {
+            transform: scale(0.9);
+            opacity: 0;
+            transition: transform 0.15s ease-in, opacity 0.15s ease-in;
+        }
+
+
+        .window.minimized { display: none; }
+        .window.maximized { 
+            /* NEW: Respect taskbar and safe area when maximized */
+            top: env(safe-area-inset-top, 0) !important; 
+            left: env(safe-area-inset-left, 0) !important; 
+            width: calc(100vw - env(safe-area-inset-left, 0) - env(safe-area-inset-right, 0)) !important; 
+            height: calc(100vh - 30px - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0)) !important; 
+            resize: none; border-radius: 0; 
+        }
+        .window.maximized .window-header { border-radius: 0; }
+
+        .window-header {
+            cursor: move;
+            background: rgba(240, 240, 240, 0.7);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            color: #333;
+            padding: 6px 8px;
+            font-size: 13px; font-weight: bold;
+            display: flex; justify-content: space-between; align-items: center;
+            user-select: none; 
+            border-top-left-radius: 8px; 
+            border-top-right-radius: 8px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .window-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 3px; }
+        .window-controls { display: flex; }
+        
+        .window-controls button {
+            background: transparent;
+            border: none;
+            color: #333;
+            width: 28px; height: 28px;
+            line-height: 28px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: normal;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 16px;
+            margin-left: 2px;
+            border-radius: 4px;
+        }
+        .window-controls button:hover { background: rgba(0, 0, 0, 0.1); }
+        .window-controls .close-btn { font-weight: bold; font-size: 18px; line-height: 26px; }
+        .window-controls .close-btn:hover { background: #e81123; color: white; }
+
+        .window-content {
+            flex-grow: 1; padding: 2px; background-color: #fff;
+            overflow: auto; font-size: 12px; color: #333;
+            border: none;
+        }
+
+        /* absolutely useless comments i cant be bothered to write good ones*/
+        .taskbar {
+            position: absolute; bottom: 0; left: 0; 
+            width: 100%; height: 30px;
+            /* NEW: Respect safe area */
+            padding-left: env(safe-area-inset-left, 0);
+            padding-right: env(safe-area-inset-right, 0);
+            padding-bottom: env(safe-area-inset-bottom, 0);
+            height: calc(30px + env(safe-area-inset-bottom, 0));
+
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+            z-index: 9000; display: flex;
+            align-items: center; padding: 0 5px;
+            box-sizing: border-box;
+        }
+        .start-button {
+            background: #479e2c;
+            color: white; font-weight: bold; padding: 2px 12px; border-radius: 4px;
+            border: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            cursor: pointer; font-size: 14px; font-style: italic;
+            transition: background 0.1s;
+        }
+        .start-button:hover { background: #5ac03a; }
+        .start-button:active { background: #3f8a26; }
+
+        .task-items { flex-grow: 1; height: 100%; display: flex; align-items: center; margin-left: 10px; gap: 4px; }
+        .task-item {
+            background: rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            color: #333; padding: 2px 8px;
+            height: 22px; max-width: 150px; overflow: hidden; text-overflow: ellipsis;
+            white-space: nowrap; font-size: 12px; cursor: pointer;
+            border-radius: 4px;
+        }
+        .task-item.active { 
+            background: rgba(255, 255, 255, 0.7);
+            font-weight: bold;
+            border-color: rgba(0, 0, 0, 0.2);
+        }
+
+        #start-menu {
+            position: absolute; 
+            /* NEW: Respect safe area */
+            bottom: calc(30px + env(safe-area-inset-bottom, 0)); 
+            left: env(safe-area-inset-left, 0); 
+            width: 250px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            border-bottom: none;
+            border-top-right-radius: 6px;
+            z-index: 8999;
+            color: #333;
+            
+            /* NEW: Animation */
+            display: block;
+            visibility: hidden;
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+            transition: transform 0.2s ease-out, opacity 0.2s ease-out, visibility 0s 0.2s;
+        }
+        #start-menu.open {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+        }
+
+        #start-menu-content { padding: 5px; }
+        .menu-section { border-top: 1px solid rgba(0, 0, 0, 0.1); margin-top: 5px; padding-top: 5px; }
+        .menu-item { 
+            padding: 5px 10px; cursor: pointer; display: flex; 
+            align-items: center; gap: 8px; border-radius: 4px; 
+        }
+        .menu-item:hover { background: rgba(0, 120, 215, 0.8); color: white; }
+        .menu-icon { width: 24px; height: 24px; }
+
+        /* ykw ill write them but they wont be very helpful and they'll just be generic */
+        .password-modal, .app-launch-prompt {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+            text-align: center;
+            height: 100%;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+        .password-modal input[type="password"] {
+            padding: 8px;
+            border: 1px solid #999;
+            border-radius: 4px;
+            width: 90%;
+            text-align: center;
+        }
+        .password-modal button, .app-launch-prompt-buttons button {
+            padding: 8px 16px;
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+        }
+        .password-modal button:active, .app-launch-prompt-buttons button:active {
+            background: #e0e0e0;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .error-message {
+            color: red;
+            font-weight: bold;
+            height: 15px;
+            font-size: 11px;
+        }
+        .app-launch-prompt p { margin: 0 0 15px 0; font-size: 13px; }
+        .app-launch-prompt-buttons { display: flex; justify-content: center; gap: 15px; }
+        .app-launch-prompt-buttons button { min-width: 100px; }
+
+        /* Locked Folder Styles  */
+        .folder-grid { display: flex; flex-wrap: wrap; padding: 5px; gap: 5px; }
+        .folder-grid .icon { position: static; padding: 2px; }
+        .folder-grid .icon:hover { background-color: rgba(0, 85, 255, 0.3); border: 1px dotted #ffffff; }
+        
+        /* Fucking Icons SVG --- */
+        .icon-img.folder { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23FFD700' d='M10 4H4c-1.11 0-2 .89-2 2v12a2 2 0 002 2h16c1.11 0 2-.89 2-2V8a2 2 0 00-2-2h-8l-2-2z'/%3E%3C/svg%3E"); }
+        .icon-img.locked-folder { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000000' d='M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z'/%3E%3C/svg%3E"); }
+        .icon-img.document { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23FFFFFF' stroke='%233B76CC' stroke-width='1.5' d='M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm4 18H6V4h7v4h4v12z'/%3E%3C/svg%3E"); }
+        .icon-img.code { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%236C757D' d='M14.6 16.6l-1.2-1.2 3.4-3.4-3.4-3.4 1.2-1.2 4.6 4.6zm-5.2 0l-4.6-4.6 4.6-4.6 1.2 1.2-3.4 3.4 3.4 3.4-1.2 1.2z'/%3E%3C/svg%3E"); }
+        .icon-img.audio { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%234CAF50' d='M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z'/%3E%3C/svg%3E"); }
+        .icon-img.video { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23F44336' d='M18 10l4-4v12l-4-4H4a2 2 0 01-2-2v-4a2 2 0 012-2h14z'/%3E%3C/svg%3E"); }
+        .icon-img.image { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%232196F3' d='M19 5v14H5V5h14m0-2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zM8.5 10.5l2.5 3.01L14.5 9L19 16.5V19H5v-2.5l3.5-4.5z'/%3E%3C/svg%3E"); }
+        .icon-img.zip { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000000' d='M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2M18 20H6V4H13V9H18V20M11 19H13V18H11V19M11 17H13V16H11V17M11 15H13V14H11V15M11 13H13V12H11V13M15 13V12H13V11H15V10H13V9H15V8H13C11.9 8 11 8.9 11 10V11H9V10H7V11H9V12H7V13H9V14H7V15H9V16H7V17H9V18H7V19H9V20H11C11 21.1 11.9 22 13 22H15V21H13V20H15V19H13V18H15V17H13V16H15V15H13V14H15V13Z'/%3E%3C/svg%3E");
+} }
+        .icon-img.unknown { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23AAAAAA' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z'/%3E%3C/svg%3E"); }
+        .icon-img.webapp-chat { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%2342A5F5' d='M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z'/%3E%3C/svg%3E"); }
+        .icon-img.webapp-draw { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23FF7043' d='M20.71 5.63l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z'/%3E%3C/svg%3E"); }
+        .icon-img.webapp-globe { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%2326C6DA' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z'/%3E%3C/svg%3E"); }
+        .icon-img.webapp-present { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23FFA726' d='M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12zM5 15h2v-2H5v2zm0-4h2V9H5v2zm0-4h2V5H5v2zm4 8h10V5H9v10z'/%3E%3C/svg%3E"); }
+        .icon-img.webapp-computer { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%238BC34A' d='M20 18c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z'/%3E%3C/svg%3E"); }
+        .icon-img.webapp-space { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%237E57C2' d='M12 2c-3.97 0-7.65 1.58-10.33 4.21.34.05.68.08 1.03.08 3.4 0 6.34-2.02 7.8-5.02.43-.88 1.3-1.42 2.27-1.42.4 0 .78.1.13.29C15.89 2.1 19.53 4.22 22 7.55c-1.39-2.04-3.5-3.53-5.83-4.44-.31-.11-.5-.41-.5-.75 0-.55-.45-1-1-1-1.34 0-2.61.34-3.77.95zM4.26 8.33C4.09 9.17 4 10.07 4 11c0 4.41 3.59 8 8 8s8-3.59 8-8c0-1.99-.74-3.8-1.97-5.26C16.92 6.53 14.59 7 12 7c-2.05 0-4.14-.3-5.85-.92-.61-.22-1.28.26-1.28.92.01.2.06.39.14.57zM12 9c2.76 0 5 2.24 5 5s-2.24 5-5 5-5-2.24-5-5 2.24-5 5-5z'/%3E%3C/svg%3E"); }
+        /* NEW: System App Icons */
+        .icon-img.webapp-notepad { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23FFFFFF' stroke='%23333' stroke-width='1.5' d='M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z'/%3E%3Cpath fill='%23B0BEC5' d='M13 3.5V9h5.5L13 3.5z'/%3E%3Cpath fill='%23546E7A' d='M6 14h12v1H6zM6 16h12v1H6zM6 12h12v1H6zM6 10h8v1H6z'/%3E%3C/svg%3E"); }
+        .icon-img.webapp-settings { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23607D8B' d='M19.4 12.9c.1-.3.1-.6.1-.9s0-.6-.1-.9l2.1-1.6c.2-.1.2-.4.1-.6l-2-3.5c-.1-.2-.4-.2-.6-.1l-2.5 1c-.5-.4-1-.7-1.5-.9l-.4-2.7c0-.2-.2-.4-.4-.4h-4c-.2 0-.4.2-.4.4l-.4 2.7c-.5.2-1 .5-1.5.9l-2.5-1c-.2-.1-.5 0-.6.1l-2 3.5c-.1.2-.1.5.1.6l2.1 1.6c-.1.3-.1.6-.1.9s0 .6.1.9l-2.1 1.6c-.2.1-.2.4-.1.6l2 3.5c.1.2.4.2.6.1l2.5-1c.5.4 1 .7 1.5.9l.4 2.7c0 .2.2.4.4.4h4c.2 0 .4-.2.4.4l.4-2.7c.5-.2 1-.5 1.5-.9l2.5 1c.2.1.5 0 .6-.1l2-3.5c.1-.2.1-.5-.1-.6l-2.1-1.6zM12 15.5c-1.9 0-3.5-1.6-3.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5z'/%3E%3C/svg%3E"); }
+
+
+        /* New mobile new Fone */
+        #mobile-homescreen {
+            display: none; /* Hidden by default */
+            height: 100%;
+            width: 100%;
+        }
         #mobile-icon-pages {
             width: 100%;
             height: calc(100% - 20px); /* Space for dots */
             display: flex;
             overflow-x: auto;
             scroll-snap-type: x mandatory;
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            /* NEW: Respect safe area on top */
+            padding-top: env(safe-area-inset-top, 0);
+            box-sizing: border-box;
         }
-        #mobile-icon-pages::-webkit-scrollbar { display: none; } /* Chrome, Safari, Opera */
+        #mobile-icon-pages::-webkit-scrollbar { display: none; }
 
         .mobile-page {
             width: 100%;
             height: 100%;
             flex-shrink: 0;
             scroll-snap-align: start;
-            display: flex;
-            flex-wrap: wrap;
-            align-content: flex-start;
-            padding: 10px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            grid-auto-rows: 95px;
+            gap: 10px;
+            padding: 15px;
             box-sizing: border-box;
+            align-content: flex-start;
         }
-        .mobile-page .icon { position: static; } /* Override absolute positioning */
+        .mobile-page .icon { 
+            position: static;
+            width: auto;
+            height: 95px;
+        }
+        .mobile-page .icon:hover, .mobile-page .icon:active {
+            background-color: rgba(255, 255, 255, 0.3);
+            border: 1px dotted #ffffff;
+            transform: scale(1.03);
+        }
 
         #mobile-page-dots {
             position: absolute;
@@ -119,6 +385,9 @@
             justify-content: center;
             align-items: center;
             gap: 8px;
+            /* be so kind to the navigation bar */
+            padding-bottom: calc(env(safe-area-inset-bottom, 0) + 5px);
+            box-sizing: border-box;
         }
         .dot {
             width: 8px; height: 8px;
@@ -128,209 +397,353 @@
         }
         .dot.active { background: white; }
 
-        /* When mobile is active, hide desktop elements */
-        body.mobile-mode .icon-container { display: none; }
-        body.mobile-mode .taskbar { display: none; }
-        body.mobile-mode #mobile-ui { display: block; height: 100%; }
-
-
-        /* Icon Definitions (SVG Data URIs) */
-        .icon-img.folder { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23FFD700' d='M10 4H4c-1.11 0-2 .89-2 2v12a2 2 0 002 2h16c1.11 0 2-.89 2-2V8a2 2 0 00-2-2h-8l-2-2z'/%3E%3C/svg%3E"); }
-        .icon-img.locked-folder { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23FFD700' d='M10 4H4c-1.11 0-2 .89-2 2v12a2 2 0 002 2h16c1.11 0 2-.89 2-2V8a2 2 0 00-2-2h-8l-2-2z'/%3E%3Cpath fill='%23B22222' d='M16 11h-1v-2c0-1.1-.9-2-2-2s-2 .9-2 2v2H9c-.55 0-1 .45-1 1v5c0 .55.45 1 1 1h7c.55 0 1-.45 1-1v-5c0-.55-.45-1-1-1zm-4-4c.55 0 1 .45 1 1v2h-2V8c0-.55.45-1 1-1z'/%3E%3C/svg%3E"); }
-        .icon-img.document { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23FFFFFF' stroke='%233B76CC' stroke-width='1.5' d='M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm4 18H6V4h7v4h4v12z'/%3E%3C/svg%3E"); }
-        .icon-img.code { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%236C757D' d='M14.6 16.6l-1.2-1.2 3.4-3.4-3.4-3.4 1.2-1.2 4.6 4.6zm-5.2 0l-4.6-4.6 4.6-4.6 1.2 1.2-3.4 3.4 3.4 3.4-1.2 1.2z'/%3E%3C/svg%3E"); }
-        .icon-img.audio { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%234CAF50' d='M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z'/%3E%3C/svg%3E"); }
-        .icon-img.video { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23F44336' d='M18 10l4-4v12l-4-4H4a2 2 0 01-2-2v-4a2 2 0 012-2h14z'/%3E%3C/svg%3E"); }
-        .icon-img.image { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%232196F3' d='M19 5v14H5V5h14m0-2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zM8.5 10.5l2.5 3.01L14.5 9L19 16.5V19H5v-2.5l3.5-4.5z'/%3E%3C/svg%3E"); }
-        .icon-img.zip { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23FF9800' d='M11 13H9c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h2v-2H9v-2h2v-2H9v-2h2v-2zm8 0h-2v2h2v2h-2v2h2v2h-2v2h4c1.1 0 2-.9 2-2v-4c0-1.1-.9-2-2-2zm-6-8V3c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h9c1.1 0 2-.9 2-2V7h7V5h-7z'/%3E%3C/svg%3E"); }
-        .icon-img.unknown { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23AAAAAA' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z'/%3E%3C/svg%3E"); }
-        
-        /* --- NEW: Web App Icons --- */
-        .icon-img.webapp-chat { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%2342A5F5' d='M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z'/%3E%3C/svg%3E"); }
-        .icon-img.webapp-draw { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23FF7043' d='M20.71 5.63l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z'/%3E%3C/svg%3E"); }
-        .icon-img.webapp-globe { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%2326C6DA' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z'/%3E%3C/svg%3E"); }
-        .icon-img.webapp-present { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23FFA726' d='M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12zM5 15h2v-2H5v2zm0-4h2V9H5v2zm0-4h2V5H5v2zm4 8h10V5H9v10z'/%3E%3C/svg%3E"); }
-        .icon-img.webapp-computer { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%238BC34A' d='M20 18c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z'/%3E%3C/svg%3E"); }
-        .icon-img.webapp-space { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%237E57C2' d='M12 2c-3.97 0-7.65 1.58-10.33 4.21.34.05.68.08 1.03.08 3.4 0 6.34-2.02 7.8-5.02.43-.88 1.3-1.42 2.27-1.42.4 0 .78.1.13.29C15.89 2.1 19.53 4.22 22 7.55c-1.39-2.04-3.5-3.53-5.83-4.44-.31-.11-.5-.41-.5-.75 0-.55-.45-1-1-1-1.34 0-2.61.34-3.77.95zM4.26 8.33C4.09 9.17 4 10.07 4 11c0 4.41 3.59 8 8 8s8-3.59 8-8c0-1.99-.74-3.8-1.97-5.26C16.92 6.53 14.59 7 12 7c-2.05 0-4.14-.3-5.85-.92-.61-.22-1.28.26-1.28.92.01.2.06.39.14.57zM12 9c2.76 0 5 2.24 5 5s-2.24 5-5 5-5-2.24-5-5 2.24-5 5-5z'/%3E%3C/svg%3E"); }
-
-        /* Styles for the Password Modal */
-        .password-modal {
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+        /* NEW: Mobile App Management */
+        #mobile-top-bar {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%;
+            height: calc(30px + env(safe-area-inset-top, 0));
+            padding-top: env(safe-area-inset-top, 0);
+            padding-left: env(safe-area-inset-left, 0);
+            padding-right: env(safe-area-inset-right, 0);
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 10000;
+            display: none;
+            color: white;
             align-items: center;
+            justify-content: space-between;
+            padding: 0 10px;
+            box-sizing: border-box;
         }
-        .password-modal input[type="password"] {
-            padding: 8px;
-            border: 1px solid #aca899;
-            border-radius: 3px;
-            width: 80%;
-            text-align: center;
-        }
-        .password-modal button {
-            padding: 5px 15px;
-            background: linear-gradient(to bottom, #f2f2f2, #dcdcdc);
-            border: 1px solid #aca899;
-            border-radius: 3px;
+        #mobile-menu-btn {
+            font-size: 20px;
             cursor: pointer;
-            box-shadow: 1px 1px 0 rgba(255, 255, 255, 0.5) inset;
+            padding: 5px;
         }
-        .password-modal button:active {
-            box-shadow: inset 1px 1px 3px #aca899;
+        #mobile-clock {
+            font-weight: 500;
         }
-        .error-message {
-            color: red;
-            font-weight: bold;
-            height: 15px;
-            font-size: 11px;
+        
+        #mobile-app-container {
+            position: absolute;
+            /* an the top br */
+            top: calc(30px + env(safe-area-inset-top, 0));
+            left: env(safe-area-inset-left, 0);
+            width: calc(100% - env(safe-area-inset-left, 0) - env(safe-area-inset-right, 0));
+            height: calc(100% - 30px - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0));
+            background: #fff;
+            z-index: 9998;
+            display: none;
+            overflow: hidden; /* NEW: This will contain the sliding pages */
         }
 
-        /* --- NEW: Styles for the App Launch Prompt --- */
-        .app-launch-prompt {
-            padding: 20px;
-            text-align: center;
+        .mobile-app-page {
+            width: 100%;
+            height: 100%;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            position: absolute;
+            background: #fff;
+            color: #333;
+            /* NEW: Animation */
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: transform;
+        }
+        .mobile-app-page.active {
+            transform: translateX(0);
+            z-index: 1001; /* Active page is on top */
+        }
+        .mobile-app-page.closing {
+            transform: translateX(100%);
+            z-index: 1001; /* Keep on top while closing */
+        }
+
+        .mobile-app-header {
+            width: 100%;
+            height: 40px;
+            background: #f0f0f0;
+            border-bottom: 1px solid #ccc;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            box-sizing: border-box;
+            flex-shrink: 0;
+        }
+        .mobile-app-title {
+            font-weight: bold;
+            font-size: 14px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex-grow: 1;
+            text-align: center;
+        }
+        .mobile-app-minimize-btn,
+        .mobile-app-close-btn {
+            font-size: 24px;
+            font-weight: bold;
+            color: #555;
+            cursor: pointer;
+            padding: 0 8px;
+        }
+        .mobile-app-minimize-btn {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .mobile-app-content {
+            flex-grow: 1;
+            overflow: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .mobile-app-content > * {
+            flex-grow: 1;
+        }
+        .mobile-app-content .window-content {
+            padding: 0;
             height: 100%;
         }
-        .app-launch-prompt p {
-            margin: 0 0 20px 0;
+
+        #mobile-sidebar {
+            position: absolute;
+            top: 0; left: 0;
+            width: 250px;
+            height: 100%;
+            background: rgba(50, 50, 50, 0.95);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            z-index: 10001;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease-out;
+            color: white;
+            display: none;
+            flex-direction: column;
+            /* NEW: Respect safe areas */
+            padding-top: env(safe-area-inset-top, 0);
+            padding-bottom: env(safe-area-inset-bottom, 0);
+            box-sizing: border-box;
+        }
+        #mobile-sidebar.open {
+            transform: translateX(0);
+        }
+        .sidebar-header {
+            padding: 10px;
+            padding-left: calc(10px + env(safe-area-inset-left, 0));
+            font-size: 18px;
+            font-weight: bold;
+            border-bottom: 1px solid #555;
+        }
+        .sidebar-button {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            padding-left: calc(15px + env(safe-area-inset-left, 0));
+            gap: 10px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .sidebar-button:hover, .sidebar-button:active {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        #mobile-task-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+        .mobile-task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            padding-left: calc(15px + env(safe-area-inset-left, 0));
+            border-bottom: 1px solid #444;
             font-size: 13px;
         }
-        .app-launch-prompt-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
+        .mobile-task-item:hover {
+            background: rgba(255, 255, 255, 0.1);
         }
-        .app-launch-prompt-buttons button {
-            padding: 8px 16px;
-            background: linear-gradient(to bottom, #f2f2f2, #dcdcdc);
-            border: 1px solid #aca899;
-            border-radius: 3px;
-            cursor: pointer;
-            box-shadow: 1px 1px 0 rgba(255, 255, 255, 0.5) inset;
-            min-width: 100px;
+        .mobile-task-item.active {
+            background: rgba(0, 120, 215, 0.8);
+            font-weight: bold;
         }
-        .app-launch-prompt-buttons button:active {
-            box-shadow: inset 1px 1px 3px #aca899;
-        }
-
-
-        /* Styles for Locked Folder Contents */
-        .folder-grid {
-            display: flex;
-            flex-wrap: wrap;
-            padding: 5px;
-            gap: 5px;
-        }
-        .folder-grid .icon {
-            position: static;
-            padding: 2px;
-        }
-        .folder-grid .icon:hover {
-            background-color: rgba(0, 85, 255, 0.3);
-            border: 1px dotted #ffffff;
-        }
-        /* --- Window Styles --- */
-        .window {
-            position: absolute;
-            width: 600px;
-            height: 400px;
-            background: #ece9d8;
-            box-shadow: 2px 2px 8px rgba(0,0,0,0.4);
-            resize: both;
+        .mobile-task-item-name {
+            flex-grow: 1;
+            padding-right: 10px;
             overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+        .mobile-task-item-close {
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        .mobile-task-item-close:hover {
+            background: rgba(255, 0, 0, 0.7);
+        }
+
+        #mobile-sidebar-overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 10000;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease-out;
+        }
+        #mobile-sidebar-overlay.open {
+            display: block;
+            opacity: 1;
+        }
+
+        /* yes stles */
+        #calculator {
+            width: 100%;
+            height: 100%;
             display: flex;
             flex-direction: column;
-            z-index: 1000;
-            border-top-left-radius: 6px;
-            border-top-right-radius: 6px;
-            min-width: 250px;
-            min-height: 150px;
-            border: 1px solid #aca899;
-            border-top: none;
+            background: #333;
+            color: white;
+            font-family: 'Segoe UI', 'Tahoma', sans-serif;
+        }
+        #calc-display {
+            background: #333;
+            color: white;
+            text-align: right;
+            padding: 20px;
+            /* NEW: Scalable font size */
+            font-size: clamp(2em, 10vw, 3em);
+            font-weight: 300;
+            box-sizing: border-box;
+            border: none;
+            width: 100%;
+            flex-shrink: 0;
+        }
+        #calc-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            flex-grow: 1;
+        }
+        .calc-btn {
+            background: #555;
+            border: 1px solid #333;
+            color: white;
+            /* NEW: Scalable font size */
+            font-size: clamp(1.2em, 5vw, 1.8em);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .calc-btn:active {
+            background: #666;
+        }
+        .calc-btn.op { background: #ff9500; }
+        .calc-btn.op:active { background: #e08400; }
+        .calc-btn.func { background: #444; }
+        .calc-btn.func:active { background: #555; }
+        .calc-btn.zero { grid-column: span 2; }
+
+        #clock-app {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            background: #111;
+            color: #0f0;
+            font-family: 'DS-Digital', 'Lucida Console', monospace;
+            padding: 10px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        #clock-time {
+            /* font should scale but probably wont */
+            font-size: clamp(3em, 20vw, 8em);
+            letter-spacing: 2px;
+        }
+        #clock-date {
+            /* NEW: Scalable font size */
+            font-size: clamp(1em, 5vw, 2em);
         }
 
-        .window.minimized { display: none; }
-        .window.maximized { top: 0 !important; left: 0 !important; width: 100vw !important; height: calc(100vh - 30px) !important; resize: none; border-radius: 0; }
-        .window.maximized .window-header { border-radius: 0; }
-
-        .window-header {
-            cursor: move;
-            background: linear-gradient(to right, #0053ee, #a6c9ff);
-            color: white; padding: 3px 5px; font-size: 13px; font-weight: bold;
-            display: flex; justify-content: space-between; align-items: center;
-            user-select: none; border-top-left-radius: 5px; border-top-right-radius: 5px;
-            border: 1px solid #0a246a; border-bottom: none; text-shadow: 1px 1px 1px #0a246a;
+        #notepad-app {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+        #notepad-textarea {
+            flex-grow: 1;
+            border: none;
+            padding: 10px;
+            font-family: 'Lucida Console', monospace;
+            font-size: 14px;
+            resize: none;
+            box-sizing: border-box;
+        }
+        #notepad-textarea:focus {
+            outline: none;
         }
 
-        .window-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 3px; }
-        .window-controls { display: flex; }
-        .window-controls button {
-            background: #ece9d8; border: 1px solid #aca899; color: #000; width: 22px; height: 20px;
-            line-height: 16px; text-align: center; cursor: pointer; font-weight: bold;
-            font-family: 'Marlett', 'Arial Black', sans-serif; font-size: 14px; margin-left: 2px;
-            box-shadow: inset 1px 1px #fff;
+        #settings-app {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
         }
-        .window-controls button:hover { background: #dcd9c8; }
-        .window-controls .close-btn { background: #e81123; color: white; border-color: #ad0c1a; }
-        .window-controls .close-btn:hover { background: #f1707a; }
+        .setting-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .setting-group label {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .setting-group select, .setting-group button {
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .setting-group small {
+            font-size: 12px;
+            color: #777;
+        }
 
-        .window-content {
-            flex-grow: 1; padding: 2px; background-color: #fff;
-            overflow: auto; font-size: 12px; color: #333;
-            border: 1px solid #aca899; border-top: none;
-        }
 
-        /* --- Taskbar & Start Menu --- */
-        .taskbar {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 30px;
-            background: linear-gradient(to bottom, #397ef7, #2463e2);
-            border-top: 1px solid #4a8df8; z-index: 9000; display: flex;
-            align-items: center; padding: 0 5px;
-        }
-        .start-button {
-            background: linear-gradient(to bottom, #71cd42, #479e2c);
-            color: white; font-weight: bold; padding: 2px 12px; border-radius: 3px;
-            border: 1px outset #333; box-shadow: 1px 1px 0 rgba(255, 255, 255, 0.5) inset;
-            cursor: pointer; font-size: 14px; font-style: italic;
-        }
-        .start-button:active { border-style: inset; }
-        .task-items { flex-grow: 1; height: 100%; display: flex; align-items: center; margin-left: 10px; }
-        .task-item {
-            background: linear-gradient(to bottom, #6b9cf5, #3f7de8);
-            border: 1px outset #2a6ae6; color: white; padding: 2px 8px; margin: 0 2px;
-            height: 22px; max-width: 150px; overflow: hidden; text-overflow: ellipsis;
-            white-space: nowrap; font-size: 12px; cursor: pointer;
-        }
-        .task-item.active { background: linear-gradient(to top, #6b9cf5, #3f7de8); border-style: inset; }
+        /* media query 4mobel */
+        @media (max-width: 768px), (max-height: 500px) and (orientation: landscape) {
+            /* Hide Desktop UI */
+            #desktop-icon-container { display: none; }
+            .taskbar, #start-menu { display: none !important; }
+            .window { display: none !important; } /* Hide all desktop-style windows */
 
-        #start-menu {
-            position: absolute; bottom: 30px; left: 0; width: 250px;
-            background: #2a6ae6; border: 2px outset #fff; z-index: 8999;
-            display: none; color: white;
+            /* fone */
+            #mobile-homescreen { display: block; }
+            #mobile-top-bar { display: flex; }
+            #mobile-sidebar { display: flex; }
         }
-        #start-menu-content { padding: 5px; }
-        .menu-section { border-top: 1px solid #6b9cf5; margin-top: 5px; padding-top: 5px; }
-        .menu-item { padding: 5px 10px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-        .menu-item:hover { background: #397ef7; }
-        .menu-icon { width: 24px; height: 24px; }
+        
     </style>
 </head>
 <body>
 
-<div class="desktop">
-    <div id="icon-container" class="icon-container"></div>
-
-    <div id="mobile-ui">
-        <div id="mobile-icon-pages"></div>
-        <div id="mobile-page-dots"></div>
-    </div>
-
+<div class="desktop" id="desktop-root">
+    
+    <div id="desktop-icon-container" class="icon-container"></div>
     <div id="window-area"></div>
-
     <div id="start-menu">
         <div id="start-menu-content">
             <h4>Programs</h4>
@@ -341,148 +754,171 @@
             </div>
         </div>
     </div>
-
     <div class="taskbar">
         <div id="start-button" class="start-button">Start</div>
         <div id="task-items" class="task-items"></div>
     </div>
+    
+    <div id="mobile-top-bar">
+        <span id="mobile-menu-btn">&#9776;</span>
+        <span id="mobile-clock"></span>
+    </div>
+    
+    <div id="mobile-homescreen">
+        <div id="mobile-icon-pages"></div>
+        <div id="mobile-page-dots"></div>
+    </div>
+    
+    <div id="mobile-app-container">
+        </div>
+    
+    <div id="mobile-sidebar">
+        <div class="sidebar-header">wbOS!</div>
+        <div class="sidebar-button" id="mobile-home-btn">
+            <span style="font-size: 20px;">&#8962;</span> <span>home!</span>
+        </div>
+        <div class="sidebar-header" style="font-size: 14px; padding-top: 15px;">current apps!</div>
+        <ul id="mobile-task-list">
+            </ul>
+    </div>
+    <div id="mobile-sidebar-overlay"></div>
+
 </div>
 
 <script>
     const BASE_URL = 'https://wackybox.org/';
     const MEDIA_PLAYER_APP_URL = `${BASE_URL}media?=`;
 
-    // --- Original Item List ---
-    const rawDesktopItems = [
-        // --- FOLDERS (45) ---
-        { name: '7', type: 'folder' }, { name: 'BPLAY', type: 'folder' }, { name: 'CHRIS', type: 'folder' },
-        { name: 'COLDSOREPRESENTATION', type: 'folder' }, { name: 'D', type: 'folder' }, { name: 'E', type: 'folder' },
-        { name: 'EEinfo', type: 'folder' }, { name: 'HP', type: 'folder' }, { name: 'Spillunkle', type: 'folder' },
-        { name: 'assets', type: 'folder' }, { name: 'auduino', type: 'folder' }, { name: 'chat', type: 'folder' },
-        { name: 'chat2', type: 'folder' }, { name: 'computer', type: 'folder' }, { name: 'dictate', type: 'folder' },
-        { name: 'draw', type: 'folder' }, { name: 'encrumbt', type: 'folder' }, { name: 'ffish', type: 'folder' },
-        { name: 'gert100', type: 'folder' }, { name: 'luigi', type: 'folder' }, { name: 'mario', type: 'folder' },
-        { name: 'media', type: 'folder' }, { name: 'merlin', type: 'folder' }, { name: 'mod', type: 'folder' },
-        { name: 'mod0', type: 'folder' }, { name: 'msst', type: 'folder' }, { name: 'ourworld', type: 'folder' },
-        { name: 'pc', type: 'folder' }, { name: 'placeholder', type: 'folder' }, { name: 'present', type: 'folder' },
-        { name: 'present3D', type: 'folder' }, { name: 'quarb', type: 'folder' }, { name: 'quarb2', type: 'folder' },
-        { name: 'raster', type: 'folder' }, { name: 'real', type: 'folder' }, { name: 'sacremento', type: 'folder' },
-        { name: 'samp', type: 'folder' }, { name: 'space', type: 'folder' }, { name: 'space2', type: 'folder' },
-        { name: 'starfall', type: 'folder' }, { name: 'tabletop', type: 'folder' }, { name: 'testgarbage', type: 'folder' },
-        { name: 'w3d', type: 'folder' }, { name: 'xm', type: 'folder' }, { name: 'xm2', type: 'folder' },
-		{ name: 'tdb', type: 'folder' }, { name: 'bloons', type: 'folder' },
-        // --- FILES (33) ---
-        { name: '19-4.flac', type: 'file', class: 'audio' },
-        { name: 'Bliss_(Windows_XP).png', type: 'file', class: 'image' },
-        { name: 'CNAME', type: 'file', class: 'document' },
-        { name: 'Caligula.webm', type: 'file', class: 'video' },
-        { name: 'Confusion.mp3', type: 'file', class: 'audio' },
-        { name: 'Grain (1).mp3', type: 'file', class: 'audio' },
-        { name: 'MAIN.pmp', type: 'file', class: 'code' },
-        { name: 'Projecdfgvb.zip', type: 'file', class: 'zip' },
-        { name: 'README.md', type: 'file', class: 'document' },
-        { name: 'VIET.html', type: 'file', class: 'code', action: 'newTab' },
-        { name: 'WSPAGE-v0.2.html', type: 'file', class: 'code', action: 'newTab' },
-        { name: 'WSPAGE1(3).html', type: 'file', class: 'code', action: 'newTab' },
-        { name: 'craft.mp4', type: 'file', class: 'video' },
-        { name: 'diamond in your soul.ogg', type: 'file', class: 'audio' },
-        { name: 'headlock.ogg', type: 'file', class: 'audio' },
-        { name: 'horn.wav', type: 'file', class: 'audio' },
-        { name: 'index.html', type: 'file', class: 'code', action: 'newTab' },
-        { name: 'index2.html', type: 'file', class: 'code', action: 'newTab' },
-        { name: 'me when i\'m an orange.flac', type: 'file', class: 'audio' },
-        { name: 'minecraft.ogg', type: 'file', class: 'audio' },
-        { name: 'p2', type: 'file', class: 'unknown' },
-        { name: 'p2.html', type: 'file', class: 'code', action: 'newTab' },
-        { name: 'p3', type: 'file', class: 'unknown' },
-        { name: 'p3.html', type: 'file', class: 'code', action: 'newTab' },
-        { name: 'pennies.html', type: 'file', class: 'code', action: 'newTab' },
-        { name: 'restore-point.html', type: 'file', class: 'code', action: 'newTab' },
-        { name: 'restore-point.pmp', type: 'file', class: 'code' },
-        { name: 'smile sower.ogg', type: 'file', class: 'audio' },
-        { name: 'spitting images.ogg', type: 'file', class: 'audio' },
-        { name: 'sunflowers_puresky_4k.hdr', type: 'file', class: 'image' },
-        { name: 'the brown lane.ogg', type: 'file', class: 'audio' },
-        { name: 'wii all feel the same.ogg', type: 'file', class: 'audio' },
-        { name: 'xamn.html', type: 'file', class: 'code', action: 'newTab' },
-    ];
-
-    // --- MODIFIED: Process items to convert folders to web apps ---
-    const appIconMapping = {
-        'chat': 'webapp-chat', 'chat2': 'webapp-chat', 'draw': 'webapp-draw', 'ourworld': 'webapp-globe',
-        'present': 'webapp-present', 'present3D': 'webapp-present', 'computer': 'webapp-computer',
-        'pc': 'webapp-computer', 'space': 'webapp-space', 'space2': 'webapp-space', 'starfall': 'webapp-space'
-    };
-
-    const processedItems = rawDesktopItems.map(item => {
-        if (item.type === 'folder') {
-            return {
-                ...item,
-                type: 'webapp',
-                class: appIconMapping[item.name] || 'folder', // Assign new icon class or default folder
-                url: `${BASE_URL}${item.name}/`
-            };
-        }
-        return item;
-    });
-
-    // --- Filter and Assemble new List ---
-    const mediaFiles = processedItems.filter(item => item.class === 'audio' || item.class === 'video');
-    const filteredDesktopItems = processedItems.filter(item => item.class !== 'audio' && item.class !== 'video');
-
-    const LOCKED_FOLDER = {
-        name: 'Wackycom Media Vault',
-        type: 'locked_folder',
-        class: 'locked-folder',
-        password: 'wackycom600',
-        contents: mediaFiles
-    };
-
-    const desktopItems = [...filteredDesktopItems, LOCKED_FOLDER];
-    // --- End List Assembly ---
-
+    // I'll do better comments
+    let desktopItems = [];
+    let LOCKED_FOLDER = {};
     let highestZIndex = 1000;
-    let openWindows = {};
+    let openWindows = {}; // handles Both desktop windows and mobile apps
+    let openMobileAppOrder = []; // Stack for mobile app history
+    
+    // media query matching
+    const isMobile = () => window.matchMedia("(max-width: 768px), (max-height: 500px) and (orientation: landscape)").matches;
+    
+    settings
+    let appSettings = {
+        wallpaper: 'default', // 'default', 'ocean', 'solid'
+    };
+    const SETTINGS_KEY = 'wackybox_settings';
 
-    const isMobile = () => window.innerWidth <= 768;
-
-    function renderUI() {
-        if (isMobile()) {
-            document.body.classList.add('mobile-mode');
-            renderMobileIcons();
-        } else {
-            document.body.classList.remove('mobile-mode');
-            renderDesktopIcons();
+    // settings
+    function saveSettings() {
+        try {
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify(appSettings));
+        } catch (e) {
+            console.error("Failed to save settings:", e);
         }
     }
 
+    function loadSettings() {
+        try {
+            const savedSettings = localStorage.getItem(SETTINGS_KEY);
+            if (savedSettings) {
+                appSettings = JSON.parse(savedSettings);
+            }
+        } catch (e) {
+            console.error("Failed to load settings:", e);
+            appSettings = { wallpaper: 'default' }; // Reset to default on error
+        }
+        applySettings();
+    }
+    
+    function applySettings() {
+        const desktop = document.getElementById('desktop-root');
+        switch(appSettings.wallpaper) {
+            case 'ocean':
+                desktop.style.background = 'radial-gradient(circle at 80% 80%, #a2d2ff 0%, #3a86ff 50%, #003566 100%)';
+                break;
+            case 'solid':
+                desktop.style.background = '#4a5759';
+                break;
+            case 'default':
+            default:
+                desktop.style.background = 'radial-gradient(circle at 10% 90%, #6ec25d 0%, #3a8542 50%, #2e7141 100%)';
+                break;
+        }
+    }
+
+    //gigo power 5abgers
+    async function initializeDesktop() {
+        loadSettings(); // load thee aeeings
+        
+        let rawDesktopItems = [];
+        try {
+            const response = await fetch('desktop-items.json');
+            if (!response.ok) throw new Error('Network response was not ok');
+            rawDesktopItems = await response.json();
+        } catch (error) {
+            console.error('Failed to load desktop items:', error);
+            document.body.innerHTML = `<h2 style="color:white; font-family: sans-serif; text-align: center; padding-top: 50px;">Error: Could not load desktop items.</h2><p style="color:white; font-family: sans-serif; text-align: center;">copy whatever's in the console and send it in wChat at wackybox.org/chat2</p>`;
+            return;
+        }
+
+        const appIconMapping = {
+            'chat': 'webapp-chat', 'chat2': 'webapp-chat', 'draw': 'webapp-draw', 'ourworld': 'webapp-globe',
+            'present': 'webapp-present', 'present3D': 'webapp-present', 'computer': 'webapp-computer',
+            'pc': 'webapp-computer', 'space': 'webapp-space', 'space2': 'webapp-space', 'starfall': 'webapp-space'
+        };
+
+        const processedItems = rawDesktopItems.map(item => {
+            if (item.type === 'folder') {
+                return {
+                    ...item,
+                    type: 'webapp',
+                    class: appIconMapping[item.name] || 'folder',
+                    url: `${BASE_URL}${item.name}/`
+                };
+            }
+            return item;
+        });
+
+        const mediaFiles = processedItems.filter(item => item.class === 'audio' || item.class === 'video');
+        const filteredDesktopItems = processedItems.filter(item => item.class !== 'audio' && item.class !== 'video');
+
+        LOCKED_FOLDER = {
+            name: 'Wackycom Media Vault',
+            type: 'locked_folder',
+            class: 'locked-folder',
+            password: 'wackycom600',
+            contents: mediaFiles
+        };
+
+        // NEW: Add more built-in system apps
+        const systemApps = [
+            { name: 'Calculator', type: 'system_app', class: 'webapp-computer', action: 'openCalculator' },
+            { name: 'Clock', type: 'system_app', class: 'webapp-globe', action: 'openClock' },
+            { name: 'Notepad', type: 'system_app', class: 'webapp-notepad', action: 'openNotepad' },
+            { name: 'Settings', type: 'system_app', class: 'webapp-settings', action: 'openSettings' }
+        ];
+
+        desktopItems = [...filteredDesktopItems, LOCKED_FOLDER, ...systemApps];
+
+        renderUI();
+        if (!isMobile()) {
+            setupStartMenu();
+        } else {
+            setupMobileControls();
+        }
+    }
+
+
+    // ui render
+    function renderUI() {
+        renderDesktopIcons();
+        renderMobileIcons();
+    }
+
     function renderDesktopIcons() {
-        const container = document.getElementById('icon-container');
+        const container = document.getElementById('desktop-icon-container');
         if (!container) return;
         container.innerHTML = '';
 
-        const tempIcon = document.createElement('div');
-        tempIcon.className = 'icon';
-        tempIcon.style.visibility = 'hidden';
-        container.appendChild(tempIcon);
-        const iconWidth = tempIcon.offsetWidth + 10;
-        const iconHeight = tempIcon.offsetHeight + 10;
-        container.removeChild(tempIcon);
-
-        if (iconHeight === 0 || iconWidth === 0) return;
-
-        const maxIconsPerColumn = Math.floor(container.clientHeight / iconHeight);
-        
-        desktopItems.forEach((item, index) => {
-            const column = Math.floor(index / maxIconsPerColumn);
-            const row = index % maxIconsPerColumn;
-            const x = 10 + (column * iconWidth);
-            const y = 10 + (row * iconHeight);
-
+        desktopItems.forEach(item => {
             const iconDiv = createIconElement(item);
-            iconDiv.style.left = `${x}px`;
-            iconDiv.style.top = `${y}px`;
-            
             iconDiv.addEventListener('dblclick', () => launchItem(item));
             dragElement(iconDiv);
             container.appendChild(iconDiv);
@@ -497,18 +933,19 @@
         pagesContainer.innerHTML = '';
         dotsContainer.innerHTML = '';
 
-        const tempIcon = document.createElement('div');
-        tempIcon.className = 'icon';
-        pagesContainer.appendChild(tempIcon);
-        const iconWidth = tempIcon.offsetWidth;
-        const iconHeight = tempIcon.offsetHeight;
-        pagesContainer.removeChild(tempIcon);
+        const pageHeight = pagesContainer.clientHeight - 30;
+        const pageWidth = pagesContainer.clientWidth - 30;
+        
+        const iconGridHeight = 95 + 10;
+        const iconGridWidth = 80 + 10; 
+        
+        if (pageHeight <= 0 || pageWidth <= 0 || iconGridHeight <= 0 || iconGridWidth <= 0) {
+            return;
+        }
 
-        if (iconHeight === 0 || iconWidth === 0) return;
-
-        const iconsPerCol = Math.floor(pagesContainer.clientHeight / iconHeight);
-        const iconsPerRow = Math.floor(pagesContainer.clientWidth / iconWidth);
-        const iconsPerPage = iconsPerCol * iconsPerRow;
+        const iconsPerCol = Math.floor(pageHeight / iconGridHeight);
+        const iconsPerRow = Math.floor(pageWidth / iconGridWidth);
+        const iconsPerPage = Math.max(1, iconsPerCol * iconsPerRow);
         const numPages = Math.ceil(desktopItems.length / iconsPerPage);
 
         for (let i = 0; i < numPages; i++) {
@@ -521,14 +958,16 @@
             dotsContainer.appendChild(dot);
         }
         
-        dotsContainer.firstChild?.classList.add('active');
+        if (dotsContainer.firstChild) {
+            dotsContainer.firstChild.classList.add('active');
+        }
 
-        pagesContainer.addEventListener('scroll', () => {
+        pagesContainer.onscroll = () => {
             const pageIndex = Math.round(pagesContainer.scrollLeft / pagesContainer.clientWidth);
             document.querySelectorAll('.dot').forEach((dot, index) => {
                 dot.classList.toggle('active', index === pageIndex);
             });
-        });
+        };
 
         desktopItems.forEach((item, index) => {
             const pageIndex = Math.floor(index / iconsPerPage);
@@ -548,9 +987,9 @@
         return iconDiv;
     }
 
-    // --- MODIFIED: Launch logic for web apps ---
+    // laynchar
     function launchItem(item) {
-        if (isMobile() && Object.keys(openWindows).length > 0) return;
+        if (isMobile()) closeMobileSidebar();
 
         if (item.type === 'webapp') {
             openWebAppPrompt(item);
@@ -561,6 +1000,14 @@
             openPasswordModal(item.name, item.password, () => {
                 openLockedFolderWindow(item.name, item.contents);
             });
+            return;
+        }
+
+        if (item.type === 'system_app') {
+            if (item.action === 'openCalculator') openCalculatorApp();
+            if (item.action === 'openClock') openClockApp();
+            if (item.action === 'openNotepad') openNotepadApp();
+            if (item.action === 'openSettings') openSettingsApp();
             return;
         }
 
@@ -575,11 +1022,22 @@
         }
     }
 
+    // windows mobile 
     function openWindow(title, contentHTML, options = {}) {
-        highestZIndex++;
         const windowId = `win-${Date.now()}`;
+        
+        if (isMobile()) {
+            return openMobileWindow(windowId, title, contentHTML, options);
+        } else {
+            return openDesktopWindow(windowId, title, contentHTML, options);
+        }
+    }
+
+    function openDesktopWindow(windowId, title, contentHTML, options = {}) {
+        highestZIndex++;
         const windowDiv = document.createElement('div');
-        windowDiv.className = 'window';
+        // gay
+        windowDiv.className = 'window opening';
         windowDiv.style.zIndex = highestZIndex;
         windowDiv.id = windowId;
 
@@ -593,24 +1051,27 @@
                 <span class="window-title">${title}</span>
                 <div class="window-controls">
                     ${options.hideMinimize ? '' : '<button class="minimize-btn" title="Minimize">_</button>'}
-                    ${options.hideMaximize ? '' : '<button class="maximize-btn" title="Maximize">□</button>'}
-                    <button class="close-btn" title="Close">X</button>
+                    ${options.hideMaximize ? '' : '<button class="maximize-btn" title="Maximize">&#9633;</button>'}
+                    <button class="close-btn" title="Close">&#10006;</button>
                 </div>
             </div>
             <div class="window-content">${contentHTML}</div>
         `;
         
-        windowDiv.style.visibility = 'hidden';
         document.getElementById('window-area').appendChild(windowDiv);
         
         const winWidth = windowDiv.offsetWidth;
         const winHeight = windowDiv.offsetHeight;
         const viewWidth = window.innerWidth;
-        const viewHeight = window.innerHeight - 30;
+        const viewHeight = window.innerHeight - 30; // 30px taskbar
 
         windowDiv.style.left = `${Math.max(5, (viewWidth - winWidth) / 2)}px`;
         windowDiv.style.top = `${Math.max(5, (viewHeight - winHeight) / 2)}px`;
-        windowDiv.style.visibility = 'visible';
+        
+        // ok
+        requestAnimationFrame(() => {
+            windowDiv.classList.remove('opening');
+        });
         
         const header = windowDiv.querySelector('.window-header');
         windowDiv.addEventListener('mousedown', () => bringWindowToFront(windowId));
@@ -624,16 +1085,136 @@
         }
 
         dragElement(windowDiv);
-        if(!isMobile()) add_taskbar_item(windowId, title);
+        add_taskbar_item(windowId, title);
         openWindows[windowId] = windowDiv;
+        
+        bringWindowToFront(windowId);
+        
         return windowDiv;
     }
+    
+    function openMobileWindow(windowId, title, contentHTML, options = {}) {
+        const appPage = document.createElement('div');
+        appPage.className = 'mobile-app-page';
+        appPage.id = windowId;
+        
+        appPage.innerHTML = `
+            <div class="mobile-app-header">
+                <span class="mobile-app-minimize-btn">&#9472;</span>
+                <span class="mobile-app-title">${title}</span>
+                <span class="mobile-app-close-btn">&times;</span>
+            </div>
+            <div class="mobile-app-content">${contentHTML}</div>
+        `;
+        
+        document.getElementById('mobile-app-container').appendChild(appPage);
+        appPage.querySelector('.mobile-app-close-btn').addEventListener('click', () => closeWindow(windowId));
+        // e
+        appPage.querySelector('.mobile-app-minimize-btn').addEventListener('click', () => showMobileHome(true));
+        
+        openWindows[windowId] = appPage;
+        
+        bringWindowToFront(windowId);
 
-    // --- NEW: Functions to handle web app launching ---
+        return appPage;
+    }
+
+    function closeWindow(windowId) {
+        const win = openWindows[windowId];
+        if (!win) return;
+        
+        delete openWindows[windowId];
+
+        if (isMobile()) {
+            removeMobileTask(windowId);
+            
+            // Remove from stack
+            openMobileAppOrder = openMobileAppOrder.filter(id => id !== windowId);
+            
+            //amatin
+            win.classList.add('closing');
+            win.addEventListener('transitionend', () => {
+                win.remove();
+            }, { once: true });
+            
+            // show the next app or home sceen
+            const nextAppId = openMobileAppOrder[openMobileAppOrder.length - 1];
+            if (nextAppId) {
+                bringWindowToFront(nextAppId);
+            } else {
+                showMobileHome(false); // Go (it's already empty)
+            }
+        } else {
+            // j
+            win.classList.add('closing');
+            win.addEventListener('transitionend', () => {
+                win.remove();
+            }, { once: true });
+            remove_taskbar_item(windowId);
+        }
+    }
+    
+    function minimizeWindow(windowId) {
+        if (isMobile()) {
+            // ion
+            showMobileHome(true);
+        } else {
+            // Deskation
+            const win = document.getElementById(windowId);
+            if (win) {
+                win.classList.add('minimized');
+                document.querySelector(`.task-item[data-window-id="${windowId}"]`).classList.remove('active');
+            }
+        }
+    }
+    
+    function maximizeWindow(windowId) {
+        if (isMobile()) return;
+        const win = document.getElementById(windowId);
+        win?.classList.toggle('maximized');
+    }
+    
+    function bringWindowToFront(windowId) {
+        const win = openWindows[windowId];
+        if (!win) return;
+        
+        if (isMobile()) {
+            document.getElementById('mobile-homescreen').style.display = 'none';
+            document.getElementById('mobile-app-container').style.display = 'block';
+            
+            // Update app stack
+            openMobileAppOrder = openMobileAppOrder.filter(id => id !== windowId);
+            openMobileAppOrder.push(windowId);
+            
+            // NEW: Animation
+            // De-activate all
+            Object.values(openWindows).forEach(appPage => {
+                appPage.classList.remove('active');
+            });
+            // Activate target
+            win.classList.add('active');
+            
+            updateMobileTaskList();
+
+        } else {
+            // Desktop logic
+            highestZIndex++;
+            win.style.zIndex = highestZIndex;
+            win.classList.remove('minimized');
+            
+            document.querySelectorAll('.task-item').forEach(item => item.classList.remove('active'));
+            const taskItem = document.querySelector(`.task-item[data-window-id="${windowId}"]`);
+            if (taskItem) taskItem.classList.add('active');
+        }
+    }
+
+    // --- Wers ---
     function openIframeWindow(title, url) {
         const content = `<iframe src="${url}" style="width:100%; height:100%; border:none;" title="${title}" sandbox="allow-scripts allow-same-origin"></iframe>`;
         const win = openWindow(title, content, { width: '80vw', height: '75vh' });
-        win.querySelector('.window-content').style.padding = '0';
+        
+        const contentArea = win.querySelector('.window-content, .mobile-app-content');
+        if (contentArea) contentArea.style.padding = '0';
     }
 
     function openWebAppPrompt(item) {
@@ -642,7 +1223,7 @@
                 <p>How would you like to open <strong>${item.name}</strong>?</p>
                 <div class="app-launch-prompt-buttons">
                     <button id="open-in-tab">New Tab</button>
-                    <button id="open-in-window">In Window</button>
+                    <button id="open-in-window">In App</button>
                 </div>
             </div>
         `;
@@ -676,7 +1257,7 @@
             </div>
         `;
 
-        const modalWin = openWindow('Security Prompt', modalContent, {
+        const modalWin = openWindow('security', modalContent, {
             width: '300px',
             height: '180px',
             minWidth: '250px',
@@ -694,7 +1275,7 @@
                 closeWindow(modalWin.id);
                 onSuccessCallback();
             } else {
-                errorDiv.textContent = 'Access Denied. Incorrect password.';
+                errorDiv.textContent = 'Incorrect password.';
                 input.value = '';
                 input.focus();
             }
@@ -702,9 +1283,7 @@
 
         submitBtn.addEventListener('click', checkPassword);
         input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                checkPassword();
-            }
+            if (e.key === 'Enter') checkPassword();
         });
         
         setTimeout(() => input.focus(), 100);
@@ -716,32 +1295,37 @@
         
         contents.forEach(item => {
             const iconDiv = createIconElement(item);
-            iconDiv.addEventListener('dblclick', (e) => {
+            const eventType = isMobile() ? 'click' : 'dblclick';
+            iconDiv.addEventListener(eventType, (e) => {
                 e.stopPropagation();
                 launchItem(item);
             });
             folderGridDiv.appendChild(iconDiv);
         });
+        
         const win = openWindow(`${folderName} - Explorer`, '', {width: '400px', height: '300px'});
-        const contentArea = win.querySelector('.window-content');
+        const contentArea = win.querySelector('.window-content, .mobile-app-content');
         contentArea.style.padding = '5px';
         contentArea.appendChild(folderGridDiv);
     }
 
-
-    function closeWindow(windowId) { const win = document.getElementById(windowId); if (win) win.remove(); delete openWindows[windowId]; if(!isMobile()) remove_taskbar_item(windowId); }
-    function minimizeWindow(windowId) { const win = document.getElementById(windowId); if (win) { win.classList.add('minimized'); document.querySelector(`.task-item[data-window-id="${windowId}"]`).classList.remove('active'); } }
-    function maximizeWindow(windowId) { const win = document.getElementById(windowId); win?.classList.toggle('maximized'); }
-    function bringWindowToFront(windowId) { const win = document.getElementById(windowId); if (win) { highestZIndex++; win.style.zIndex = highestZIndex; win.classList.remove('minimized'); if (!isMobile()) { document.querySelectorAll('.task-item').forEach(item => item.classList.remove('active')); const taskItem = document.querySelector(`.task-item[data-window-id="${windowId}"]`); if (taskItem) taskItem.classList.add('active'); } } }
-
-    function openVideoPlayerWindow(fileName) { const videoUrl = `${BASE_URL}${encodeURIComponent(fileName)}`; const content = `<video src="${videoUrl}" controls autoplay style="width:100%; height:100%; background:#000;"></video>`; const win = openWindow(`Video Player - ${fileName}`, content); win.querySelector('.window-content').style.padding = '0'; }
+    // you can literlly find the vault password because its exposed in plaintext in this file lol
+    
+    function openVideoPlayerWindow(fileName) { 
+        const videoUrl = `${BASE_URL}${encodeURIComponent(fileName)}`; 
+        const content = `<video src="${videoUrl}" controls autoplay style="width:100%; height:100%; background:#000;"></video>`; 
+        const win = openWindow(`Video Player - ${fileName}`, content); 
+        const contentArea = win.querySelector('.window-content, .mobile-app-content');
+        if (contentArea) contentArea.style.padding = '0'; 
+    }
     
     function openMediaPlayerWindow(fileName) {
         const mediaFileUrl = `${BASE_URL}${encodeURIComponent(fileName)}`;
         const playerLink = `${MEDIA_PLAYER_APP_URL}%22${mediaFileUrl}%22`;
         const content = `<iframe src="${playerLink}" style="width:100%; height:100%; border:none;" title="Media Player"></iframe>`;
         const win = openWindow(`Media Player - ${fileName}`, content, {width: '350px', height: '200px'});
-        win.querySelector('.window-content').style.padding = '0';
+        const contentArea = win.querySelector('.window-content, .mobile-app-content');
+        if (contentArea) contentArea.style.padding = '0';
     }
 
     function openImageViewWindow(fileName) { 
@@ -749,10 +1333,11 @@
         const isHdr = fileName.toLowerCase().endsWith('.hdr'); 
         const content = isHdr 
             ? `<div id="hdr-container-${Date.now()}" style="width:100%; height:100%; background:#000;"></div>` 
-            : `<img src="${imageUrl}" style="max-width:100%; max-height:100%; object-fit:contain; display:block; margin:auto;" alt="${fileName}">`; 
+            : `<img src="${imageUrl}" style="width:100%; height:100%; object-fit:contain; display:block; margin:auto; background:#000;" alt="${fileName}">`; 
         
         const win = openWindow(`Image Viewer - ${fileName}`, content, {width: '70vw', height: '70vh'}); 
-        win.querySelector('.window-content').style.padding = '0'; 
+        const contentArea = win.querySelector('.window-content, .mobile-app-content');
+        if (contentArea) contentArea.style.padding = '0';
         
         if (isHdr) { 
             setTimeout(() => {
@@ -807,27 +1392,420 @@
         };
         new ResizeObserver(resizeHandler).observe(container);
         function animate() {
+            if(!document.getElementById(containerId)) return; // Stop animation if window is closed
             requestAnimationFrame(animate);
             controls.update(); 
             renderer.render(scene, camera);
         }
     }
 
-    async function openTextViewWindow(fileName) { const content = `<textarea style="width: 100%; height: 100%; box-sizing: border-box; border: none; padding: 5px; font-family: 'Lucida Console', monospace; resize: none;" readonly>Loading content for ${fileName}...</textarea>`; const win = openWindow(`Notepad - ${fileName}`, content); const textarea = win.querySelector('textarea'); win.querySelector('.window-content').style.padding = '0'; try { const response = await fetch(`${BASE_URL}${encodeURIComponent(fileName)}`); if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`); const text = await response.text(); textarea.value = text; } catch (error) { textarea.value = `--- ERROR ---\n\nCould not fetch file content for "${fileName}".\n\nReason: ${error.message}`; } }
+    async function openTextViewWindow(fileName) { 
+        const content = `<textarea style="width: 100%; height: 100%; box-sizing: border-box; border: none; padding: 5px; font-family: 'Lucida Console', monospace; resize: none;" readonly>Loading content for ${fileName}...</textarea>`; 
+        const win = openWindow(`Viewer - ${fileName}`, content); 
+        const textarea = win.querySelector('textarea'); 
+        const contentArea = win.querySelector('.window-content, .mobile-app-content');
+        if (contentArea) contentArea.style.padding = '0';
+        try { 
+            const response = await fetch(`${BASE_URL}${encodeURIComponent(fileName)}`); 
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`); 
+            const text = await response.text(); 
+            textarea.value = text; 
+        } catch (error) { 
+            textarea.value = `--- ERROR ---\n\nCould not fetch file content for "${fileName}".\n\nReason: ${error.message}`; 
+        } 
+    }
+    
     function openFileInNewTab(fileName) { window.open(`${BASE_URL}${fileName}`, '_blank'); }
-    function openErrorWindow(fileName, message) { const content = `<div style="padding:10px;"><h3 style="color: red;">Error</h3><p><strong>File:</strong> ${fileName}</p><p><strong>Reason:</strong> ${message}</p></div>`; openWindow('System Error', content); }
+    
+    function openErrorWindow(fileName, message) { 
+        const content = `<div style="padding:10px;"><h3 style="color: red;">Error</h3><p><strong>File:</strong> ${fileName}</p><p><strong>Reason:</strong> ${message}</p></div>`; 
+        openWindow('System Error', content); 
+    }
 
-    function add_taskbar_item(windowId, title) { const item = document.createElement('div'); item.className = 'task-item'; item.textContent = title; item.setAttribute('data-window-id', windowId); item.onclick = () => bringWindowToFront(windowId); document.getElementById('task-items').appendChild(item); bringWindowToFront(windowId); }
-    function remove_taskbar_item(windowId) { const item = document.querySelector(`.task-item[data-window-id="${windowId}"]`); if (item) item.remove(); }
-    function setupStartMenu() { const startBtn = document.getElementById('start-button'); const startMenu = document.getElementById('start-menu'); const programsContainer = document.getElementById('start-programs'); const docsContainer = document.getElementById('start-docs'); const apps = [ { name: 'Notepad', class: 'document', action: () => openTextViewWindow('README.md') }, { name: 'Image Viewer', class: 'image', action: () => openImageViewWindow('Bliss_(Windows_XP).png') }, { name: 'Video Player', class: 'video', action: () => openVideoPlayerWindow(LOCKED_FOLDER.contents.find(i => i.class === 'video')?.name || 'craft.mp4') }, { name: 'Media Player', class: 'audio', action: () => openMediaPlayerWindow(LOCKED_FOLDER.contents.find(i => i.class === 'audio')?.name || 'Confusion.mp3') } ]; apps.forEach(app => { const item = document.createElement('div'); item.className = 'menu-item'; item.innerHTML = `<div class="icon-img ${app.class}" style="width:24px; height:24px;"></div> <span>${app.name}</span>`; item.onclick = () => { app.action(); startMenu.style.display = 'none'; }; programsContainer.appendChild(item); }); desktopItems.filter(i => i.type === 'file' && ['document', 'image', 'code'].includes(i.class)).slice(0, 5).forEach(doc => { const item = document.createElement('div'); item.className = 'menu-item'; item.innerHTML = `<div class="icon-img ${doc.class}" style="width:24px; height:24px;"></div> <span>${doc.name}</span>`; item.onclick = () => { launchItem(doc); startMenu.style.display = 'none'; }; docsContainer.appendChild(item); }); startBtn.addEventListener('click', (e) => { e.stopPropagation(); startMenu.style.display = startMenu.style.display === 'block' ? 'none' : 'block'; }); document.addEventListener('click', () => startMenu.style.display = 'none'); startMenu.addEventListener('click', e => e.stopPropagation()); }
+    // .....bakffyuf
+    function add_taskbar_item(windowId, title) { 
+        if (isMobile()) return;
+        const item = document.createElement('div'); 
+        item.className = 'task-item'; 
+        item.textContent = title; 
+        item.setAttribute('data-window-id', windowId); 
+        item.onclick = () => bringWindowToFront(windowId); 
+        document.getElementById('task-items').appendChild(item); 
+    }
+    
+    function remove_taskbar_item(windowId) { 
+        if (isMobile()) return;
+        const item = document.querySelector(`.task-item[data-window-id="${windowId}"]`); 
+        if (item) item.remove(); 
+    }
+    
+    function setupStartMenu() { 
+        const startBtn = document.getElementById('start-button'); 
+        const startMenu = document.getElementById('start-menu'); 
+        const programsContainer = document.getElementById('start-programs'); 
+        const docsContainer = document.getElementById('start-docs'); 
+        
+        // NEem apps
+        const apps = [ 
+            { name: 'Settings', class: 'webapp-settings', action: () => openSettingsApp() },
+            { name: 'Notepad', class: 'webapp-notepad', action: () => openNotepadApp() },
+            { name: 'Calculator', class: 'webapp-computer', action: () => openCalculatorApp() },
+            { name: 'Clock', class: 'webapp-globe', action: () => openClockApp() },
+            { name: 'Image Viewer', class: 'image', action: () => openImageViewWindow('Bliss_(Windows_XP).png') }, 
+            { name: 'Video Player', class: 'video', action: () => openVideoPlayerWindow(LOCKED_FOLDER.contents?.find(i => i.class === 'video')?.name || 'craft.mp4') }, 
+            { name: 'Media Player', class: 'audio', action: () => openMediaPlayerWindow(LOCKED_FOLDER.contents?.find(i => i.class === 'audio')?.name || 'Confusion.mp3') } 
+        ]; 
+        apps.forEach(app => { 
+            const item = document.createElement('div'); 
+            item.className = 'menu-item'; 
+            item.innerHTML = `<div class="icon-img ${app.class}" style="width:24px; height:24px;"></div> <span>${app.name}</span>`; 
+            item.onclick = () => { app.action(); startMenu.classList.remove('open'); }; 
+            programsContainer.appendChild(item); 
+        }); 
+        
+        desktopItems.filter(i => i.type === 'file' && ['document', 'image', 'code'].includes(i.class)).slice(0, 5).forEach(doc => { 
+            const item = document.createElement('div'); 
+            item.className = 'menu-item'; 
+            item.innerHTML = `<div class="icon-img ${doc.class}" style="width:24px; height:24px;"></div> <span>${doc.name}</span>`; 
+            item.onclick = () => { launchItem(doc); startMenu.classList.remove('open'); }; 
+            docsContainer.appendChild(item); 
+        }); 
+        
+        // ass
+        startBtn.addEventListener('click', (e) => { e.stopPropagation(); startMenu.classList.toggle('open'); }); 
+        document.addEventListener('click', () => startMenu.classList.remove('open')); 
+        startMenu.addEventListener('click', e => e.stopPropagation()); 
+    }
 
-    function dragElement(elmnt) { let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0; let header = elmnt.classList.contains('window') ? elmnt.querySelector('.window-header') : elmnt; if (header) { header.onmousedown = dragMouseDown; } function dragMouseDown(e) { if (e.button !== 0 || (e.target.tagName === 'BUTTON')) return; e.preventDefault(); if (elmnt.classList.contains('window')) bringWindowToFront(elmnt.id); pos3 = e.clientX; pos4 = e.clientY; document.onmouseup = closeDragElement; document.onmousemove = elementDrag; elmnt.classList.add('dragging'); } function elementDrag(e) { e.preventDefault(); if (elmnt.classList.contains('maximized')) return; pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY; pos3 = e.clientX; pos4 = e.clientY; elmnt.style.top = `${elmnt.offsetTop - pos2}px`; elmnt.style.left = `${elmnt.offsetLeft - pos1}px`; } function closeDragElement() { document.onmouseup = null; document.onmousemove = null; elmnt.classList.remove('dragging'); } }
+    // --obile--
+    function setupMobileControls() {
+        const clockEl = document.getElementById('mobile-clock');
+        function updateClock() {
+            const now = new Date();
+            clockEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+        updateClock();
+        setInterval(updateClock, 1000);
+        
+        const menuBtn = document.getElementById('mobile-menu-btn');
+        const homeBtn = document.getElementById('mobile-home-btn');
+        const sidebar = document.getElementById('mobile-sidebar');
+        const overlay = document.getElementById('mobile-sidebar-overlay');
+        
+        menuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            sidebar.classList.add('open');
+            overlay.classList.add('open');
+        });
+        
+        homeBtn.addEventListener('click', () => {
+            showMobileHome(true);
+            closeMobileSidebar();
+        });
+        
+        overlay.addEventListener('click', closeMobileSidebar);
+    }
+    
+    function closeMobileSidebar() {
+        document.getElementById('mobile-sidebar').classList.remove('open');
+        document.getElementById('mobile-sidebar-overlay').classList.remove('open');
+    }
+    
+    function showMobileHome(clearActiveApp) {
+        document.getElementById('mobile-homescreen').style.display = 'block';
+        document.getElementById('mobile-app-container').style.display = 'none';
+        
+        // Nack is already empty.
+        if (clearActiveApp) {
+            openMobileAppOrder.pop(); 
+        }
+        updateMobileTaskList();
+    }
+    
+    function addMobileTask(windowId, title) {
+        updateMobileTaskList();
+    }
+    
+    function removeMobileTask(windowId) {
+        updateMobileTaskList();
+    }
 
-    window.onload = () => {
+    function updateMobileTaskList() {
+        const taskList = document.getElementById('mobile-task-list');
+        if (!taskList) return;
+        taskList.innerHTML = '';
+        
+        const activeAppId = openMobileAppOrder[openMobileAppOrder.length - 1];
+
+        for (const windowId in openWindows) {
+            const win = openWindows[windowId];
+            const title = win.querySelector('.mobile-app-title, .window-title')?.textContent || 'Untitled';
+            
+            const item = document.createElement('li');
+            item.className = 'mobile-task-item';
+            if (windowId === activeAppId) {
+                item.classList.add('active');
+            }
+            item.innerHTML = `
+                <span class="mobile-task-item-name">${title}</span>
+                <span class="mobile-task-item-close">&times;</span>
+            `;
+            
+            item.querySelector('.mobile-task-item-name').addEventListener('click', () => {
+                bringWindowToFront(windowId);
+                closeMobileSidebar();
+            });
+            
+            item.querySelector('.mobile-task-item-close').addEventListener('click', () => {
+                closeWindow(windowId);
+            });
+            
+            taskList.appendChild(item);
+        }
+    }
+
+    // EW: Buil
+    
+    function openCalculatorApp() {
+        const calcHTML = `
+            <div id="calculator">
+                <input type="text" id="calc-display" value="0" readonly>
+                <div id="calc-buttons">
+                    <button class="calc-btn func" data-key="clear">AC</button>
+                    <button class="calc-btn func" data-key="sign">+/-</button>
+                    <button class="calc-btn func" data-key="percent">%</button>
+                    <button class="calc-btn op" data-key="divide">&divide;</button>
+                    
+                    <button class="calc-btn" data-key="7">7</button>
+                    <button class="calc-btn" data-key="8">8</button>
+                    <button class="calc-btn" data-key="9">9</button>
+                    <button class="calc-btn op" data-key="multiply">&times;</button>
+                    
+                    <button class="calc-btn" data-key="4">4</button>
+                    <button class="calc-btn" data-key="5">5</button>
+                    <button class="calc-btn" data-key="6">6</button>
+                    <button class="calc-btn op" data-key="subtract">&minus;</button>
+                    
+                    <button class="calc-btn" data-key="1">1</button>
+                    <button class="calc-btn" data-key="2">2</button>
+                    <button class="calc-btn" data-key="3">3</button>
+                    <button class="calc-btn op" data-key="add">+</button>
+                    
+                    <button class="calc-btn zero" data-key="0">0</button>
+                    <button class="calc-btn" data-key="decimal">.</button>
+                    <button class="calc-btn op" data-key="equals">=</button>
+                </div>
+            </div>
+        `;
+        const win = openWindow('Calculator', calcHTML, {width: '300px', height: '450px', minWidth: '250px', minHeight: '350px'});
+        const contentArea = win.querySelector('.window-content, .mobile-app-content');
+        if (contentArea) contentArea.style.padding = '0';
+        
+        const calculator = win.querySelector('#calculator');
+        if (!calculator) return;
+        
+        const display = calculator.querySelector('#calc-display');
+        const buttons = calculator.querySelector('#calc-buttons');
+        
+        let displayValue = '0';
+        let firstOperand = null;
+        let operator = null;
+        let waitingForSecondOperand = false;
+
+        buttons.addEventListener('click', (e) => {
+            const key = e.target.dataset.key;
+            if (!key || e.target.tagName !== 'BUTTON') return;
+
+            if (/\d/.test(key)) {
+                if (waitingForSecondOperand) {
+                    displayValue = key;
+                    waitingForSecondOperand = false;
+                } else {
+                    displayValue = displayValue === '0' ? key : displayValue + key;
+                }
+            } else if (key === 'decimal') {
+                if (waitingForSecondOperand) {
+                    displayValue = '0.';
+                    waitingForSecondOperand = false;
+                } else if (!displayValue.includes('.')) {
+                    displayValue += '.';
+                }
+            } else if (key === 'clear') {
+                displayValue = '0';
+                firstOperand = null;
+                operator = null;
+                waitingForSecondOperand = false;
+            } else if (key === 'sign') {
+                displayValue = (parseFloat(displayValue) * -1).toString();
+            } else if (key === 'percent') {
+                displayValue = (parseFloat(displayValue) / 100).toString();
+            } else if (key === 'equals') {
+                if (operator && firstOperand !== null) {
+                    const result = performCalculation(firstOperand, parseFloat(displayValue), operator);
+                    displayValue = String(result);
+                    firstOperand = null;
+                    operator = null;
+                    waitingForSecondOperand = true;
+                }
+            } else if (['add', 'subtract', 'multiply', 'divide'].includes(key)) {
+                if (operator && !waitingForSecondOperand) {
+                    const result = performCalculation(firstOperand, parseFloat(displayValue), operator);
+                    displayValue = String(result);
+                    firstOperand = result;
+                } else {
+                    firstOperand = parseFloat(displayValue);
+                }
+                operator = key;
+                waitingForSecondOperand = true;
+            }
+            
+            display.value = displayValue.length > 14 ? parseFloat(displayValue).toExponential(9) : displayValue;
+        });
+
+        function performCalculation(a, b, op) {
+            let result;
+            if (op === 'add') result = a + b;
+            if (op === 'subtract') result = a - b;
+            if (op === 'multiply') result = a * b;
+            if (op === 'divide') result = a / b;
+            return result;
+        }
+    }
+    
+    function openClockApp() {
+        const clockHTML = `
+            <div id="clock-app">
+                <div id="clock-time"></div>
+                <div id="clock-date"></div>
+            </div>
+        `;
+        const win = openWindow('Clock', clockHTML, {width: '400px', height: '250px', minWidth: '300px', minHeight: '200px'});
+        const contentArea = win.querySelector('.window-content, .mobile-app-content');
+        if (contentArea) contentArea.style.padding = '0';
+        
+        const timeEl = win.querySelector('#clock-time');
+        const dateEl = win.querySelector('#clock-date');
+        let clockInterval;
+        
+        function updateAppClock() {
+            if (!document.body.contains(win)) {
+                clearInterval(clockInterval);
+                return;
+            }
+            const now = new Date();
+            timeEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            dateEl.textContent = now.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        }
+        updateAppClock();
+        clockInterval = setInterval(updateAppClock, 1000);
+    }
+    
+    function openNotepadApp() {
+        const notepadHTML = `
+            <div id="notepad-app">
+                <textarea id="notepad-textarea" placeholder="Start typing..."></textarea>
+            </div>
+        `;
+        const win = openWindow('Notepad', notepadHTML, {width: '500px', height: '400px'});
+        const contentArea = win.querySelector('.window-content, .mobile-app-content');
+        if (contentArea) contentArea.style.padding = '0';
+    }
+    
+    function openSettingsApp() {
+        const settingsHTML = `
+            <div id="settings-app">
+                <div class="setting-group">
+                    <label for="wallpaper-select">Wallpaper</label>
+                    <select id="wallpaper-select">
+                        <option value="default">Wacky Green (Default)</option>
+                        <option value="ocean">Ocean Blue</option>
+                        <option value="solid">Solid Gray</option>
+                    </select>
+                </div>
+                
+                <div class="setting-group">
+                    <label>Taskbar Position</label>
+                    <select id="taskbar-select" disabled>
+                        <option value="bottom">Bottom</option>
+                    </select>
+                    <small>More options coming soon!</small>
+                </div>
+
+                <div class="setting-group">
+                    <label>Icon Size</label>
+                    <select id="icon-size-select" disabled>
+                        <option value="medium">Medium</option>
+                    </select>
+                    <small>More options coming soon!</small>
+                </div>
+            </div>
+        `;
+        const win = openWindow('Settings', settingsHTML, {width: '400px', height: '450px'});
+        
+        // Load current settings into controls
+        const wallpaperSelect = win.querySelector('#wallpaper-select');
+        wallpaperSelect.value = appSettings.wallpaper;
+        
+        // Add event listener
+        wallpaperSelect.addEventListener('change', (e) => {
+            appSettings.wallpaper = e.target.value;
+            applySettings();
+            saveSettings();
+        });
+    }
+
+
+    // lem--
+    function dragElement(elmnt) { 
+        if (isMobile()) return; // No dragging on mobile
+
+        let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0; 
+        let header = elmnt.classList.contains('window') ? elmnt.querySelector('.window-header') : elmnt; 
+        
+        if (header) { header.onmousedown = dragMouseDown; } 
+        
+        function dragMouseDown(e) { 
+            if (e.button !== 0 || (e.target.tagName === 'BUTTON')) return; 
+            e.preventDefault(); 
+            if (elmnt.classList.contains('window')) bringWindowToFront(elmnt.id); 
+            
+            pos3 = e.clientX; 
+            pos4 = e.clientY; 
+            document.onmouseup = closeDragElement; 
+            document.onmousemove = elementDrag; 
+            elmnt.classList.add('dragging'); 
+
+            elmnt.querySelectorAll('iframe, canvas').forEach(el => el.style.pointerEvents = 'none');
+        } 
+        
+        function elementDrag(e) { 
+            e.preventDefault(); 
+            if (elmnt.classList.contains('maximized')) return; 
+            pos1 = pos3 - e.clientX; 
+            pos2 = pos4 - e.clientY; 
+            pos3 = e.clientX; 
+            pos4 = e.clientY; 
+            elmnt.style.top = `${elmnt.offsetTop - pos2}px`; 
+            elmnt.style.left = `${elmnt.offsetLeft - pos1}px`; 
+        } 
+        
+        function closeDragElement() { 
+            document.onmouseup = null; 
+            document.onmousemove = null; 
+            elmnt.classList.remove('dragging'); 
+            
+            elmnt.querySelectorAll('iframe, canvas').forEach(el => el.style.pointerEvents = 'auto');
+        } 
+    }
+
+    // -ihfthfy
+    window.onload = initializeDesktop;
+    // Nes than window.onresize
+    const resizeObserver = new ResizeObserver(() => {
         renderUI();
-        setupStartMenu();
-    };
-    window.onresize = renderUI;
+    });
+    resizeObserver.observe(document.body);
+
 </script>
 
 </body>
