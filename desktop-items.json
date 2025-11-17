@@ -74,4 +74,5 @@
     { "name": "the brown lane.ogg", "type": "file", "class": "audio" },
     { "name": "wii all feel the same.ogg", "type": "file", "class": "audio" },
     { "name": "xamn.html", "type": "file", "class": "code", "action": "newTab" }
+	{ "name": "dawn comes ever closer.mp3", "type": "file", "class": "audio" }
 ]
