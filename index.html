@@ -1843,10 +1843,11 @@
 
         switch (item.class) {
             case 'audio': openMediaPlayerWindow(item.name); break;
+			case 'webapp-browser': openIframeWindow(item.name, item.url); break;
             case 'video': openVideoPlayerWindow(item.name); break;
             case 'image': openImageViewWindow(item.name); break;
             case 'document': case 'code': case 'unknown': openTextViewWindow(item.name); break;
-            case 'zip': default: openErrorWindow(item.name, 'No program is associated with this file type.'); break;
+            case 'zip': default: openErrorWindow(item.name, 'Zip processing support will be added in the near future.'); break;
         }
     }
 
