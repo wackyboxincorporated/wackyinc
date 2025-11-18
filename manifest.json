@@ -1,0 +1,17 @@
+{
+    "name": "Wackybox OS",
+    "short_name": "wbOS",
+    "description": "Wackybox Incorporated Desktop Environment",
+    "start_url": "./desktop.html",
+    "display": "standalone",
+    "background_color": "#2e7141",
+    "theme_color": "#f0f0f0",
+    "icons": [
+        {
+            "src": "https://wackybox.org/favicon.ico",
+            "sizes": "64x64 32x32 24x24 16x16",
+            "type": "image/x-icon"
+        }
+    ],
+    "orientation": "any"
+}
