@@ -1487,7 +1487,7 @@
         if (!fancyWallpaper.container) return;
         
         fancyWallpaper.container.classList.add('visible');
-        
+        fancyWallpaper.container.style.zIndex = '0';
         fancyWallpaper.scene = new THREE.Scene();
         fancyWallpaper.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         fancyWallpaper.renderer = new THREE.WebGLRenderer({ canvas: fancyWallpaper.container, alpha: true });
