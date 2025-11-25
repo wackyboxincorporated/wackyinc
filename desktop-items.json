@@ -41,6 +41,7 @@
     { "name": "tdb", "type": "folder", "url": "https://wackybox.org/tdb" },
     { "name": "w3d", "type": "folder", "url": "https://wackybox.org/w3d" },
     { "name": "xm", "type": "folder", "url": "https://wackybox.org/xm" },
+    { "name": "minecraft", "type": "folder", "url": "https://wackybox.org/minecraft" },
     { "name": "MAIN.pmp", "type": "file", "class": "code" },
     { "name": "VIET.html", "type": "file", "class": "code", "action": "newTab" },
     { "name": "WSPAGE-v0.2.html", "type": "file", "class": "code", "action": "newTab" },
@@ -62,4 +63,5 @@
     { "name": "Caligula.webm", "type": "file", "class": "video" },
     { "name": "craft.mp4", "type": "file", "class": "video" },
     { "name": "Projecdfgvb.zip", "type": "file", "class": "zip" }
+
 ]
