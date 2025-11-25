@@ -11,21 +11,34 @@ const player = {
     dragSource: null, lastSprintTime: 0, isSprinting: false, isCrouching: false,
     
     addItem: function(id, count) {
+        // 1. Stack in Hotbar
         for(let slot of this.hotbar) { if(slot.id === id) { slot.count += count; updateInventoryUI(); return true; } }
+        // 2. Stack in Inventory
         for(let slot of this.inventory) { if(slot.id === id) { slot.count += count; updateInventoryUI(); return true; } }
+        // 3. Empty Hotbar Slot
         for(let slot of this.hotbar) { if(slot.id === 0) { slot.id = id; slot.count = count; updateInventoryUI(); return true; } }
-        return false;
+        // 4. Empty Inventory Slot (New Feature)
+        for(let slot of this.inventory) { if(slot.id === 0) { slot.id = id; slot.count = count; updateInventoryUI(); return true; } }
+        
+        return false; // Inventory full
     },
     handleSlotClick: function(listType, index) {
         const list = listType === 'hotbar' ? this.hotbar : this.inventory;
         if(this.dragSource) {
+            // Swap Logic
             const sourceList = this.dragSource.list === 'hotbar' ? this.hotbar : this.inventory;
-            const sItem = sourceList[this.dragSource.index]; const tItem = list[index];
+            const sItem = sourceList[this.dragSource.index];
+            const tItem = list[index];
+            
             const temp = { id: sItem.id, count: sItem.count, dur: sItem.dur };
             sItem.id = tItem.id; sItem.count = tItem.count; sItem.dur = tItem.dur;
             tItem.id = temp.id; tItem.count = temp.count; tItem.dur = temp.dur;
+            
             this.dragSource = null;
-        } else { this.dragSource = { list: listType, index: index }; }
+        } else { 
+            // Select Logic
+            this.dragSource = { list: listType, index: index }; 
+        }
         updateInventoryUI();
     },
     hasItems: function(reqs) {
@@ -194,7 +207,30 @@ function onKeyDown(e) {
         if(isInvOpen) document.exitPointerLock(); else document.body.requestPointerLock();
         return;
     }
+
+    // --- HOTBAR SWAP SHORTCUT ---
+    // If inventory is open, item is selected (dragSource), and number key pressed
+    if(isInvOpen && player.dragSource && e.code.startsWith('Digit')) {
+        const num = parseInt(e.code.replace('Digit',''));
+        if(num >=1 && num <= 8) {
+            const targetIndex = num - 1;
+            const sourceList = player.dragSource.list === 'hotbar' ? player.hotbar : player.inventory;
+            const sItem = sourceList[player.dragSource.index];
+            const tItem = player.hotbar[targetIndex];
+
+            // Swap Logic
+            const temp = { id: sItem.id, count: sItem.count, dur: sItem.dur };
+            sItem.id = tItem.id; sItem.count = tItem.count; sItem.dur = tItem.dur;
+            tItem.id = temp.id; tItem.count = temp.count; tItem.dur = temp.dur;
+
+            player.dragSource = null; // Deselect after swap
+            updateInventoryUI();
+            return; // Stop processing
+        }
+    }
+
     if(isInvOpen) return;
+
     if(e.code.startsWith('Digit') && e.code !== 'Digit9' && e.code !== 'Digit0') {
         const num = parseInt(e.code.replace('Digit','')); if(num >=1 && num <=8) { player.selectedSlot = num-1; updateInventoryUI(); }
     }
@@ -372,7 +408,15 @@ function animate() {
         box.set(new THREE.Vector3(player.pos.x-0.3, player.pos.y, player.pos.z-0.3), new THREE.Vector3(player.pos.x+0.3, player.pos.y+1.8, player.pos.z+0.3));
         if(getCollidingBlocks(box).length > 0) {
             player.pos.y -= player.vel.y * dt;
-            if(player.vel.y < -16 && !inWater) { player.health -= (Math.abs(player.vel.y) - 13); document.getElementById('vignette').style.background = 'radial-gradient(circle, transparent 20%, rgba(255,0,0,0.5) 100%)'; setTimeout(()=>document.getElementById('vignette').style.background='radial-gradient(circle, transparent 50%, rgba(255,0,0,0) 100%)', 200); }
+            
+            // --- FALL DAMAGE FIX ---
+            // Threshold raised to -16 (approx 4 blocks) for safety
+            if(player.vel.y < -16 && !inWater) { 
+                player.health -= (Math.abs(player.vel.y) - 13); // Smoother damage curve
+                document.getElementById('vignette').style.background = 'radial-gradient(circle, transparent 20%, rgba(255,0,0,0.5) 100%)'; 
+                setTimeout(()=>document.getElementById('vignette').style.background='radial-gradient(circle, transparent 50%, rgba(255,0,0,0) 100%)', 200); 
+            }
+            
             if(player.vel.y < 0) player.onGround = true; 
             player.vel.y = 0;
         } else { player.onGround = false; }
