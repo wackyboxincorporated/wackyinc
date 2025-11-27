@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voxel Engine Alpha v0.5 - Multiplayer</title>
+    <title>mine craft game</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', monospace; user-select: none; }
         
@@ -72,6 +72,12 @@
             transition: background 0.2s;
         }
 
+        /* SETTINGS */
+        .settings-row { margin-bottom: 15px; }
+        .settings-row label { display: inline-block; width: 150px; }
+        .settings-row span { font-size: 0.8em; color: #aaa; margin-left: 10px; }
+        input[type="range"] { width: 150px; }
+
         /* LOGIN SCREEN */
         #login-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -111,17 +117,17 @@
 
     <div id="login-screen">
         <div id="login-box">
-            <h1>VOXEL ONLINE</h1>
-            <p id="login-status">Enter Username to Join</p>
+            <h1>minecraft game</h1>
+            <p id="login-status">enter name</p>
             <input type="text" id="username-input" placeholder="Username">
             <br>
-            <button onclick="attemptLogin()">PLAY</button>
+            <button onclick="attemptLogin()">Put and go</button>
         </div>
     </div>
 
     <div id="vignette"></div>
     <div id="crosshair"></div>
-    <div id="debug">Loading...</div>
+    <div id="debug">loading,</div>
     
     <div id="status-area">
         <div class="bar-container"><div id="health-bar" class="bar-fill"></div></div>
@@ -132,7 +138,7 @@
     <div id="hotbar"></div>
 
     <div id="inventory-screen">
-        <h2>INVENTORY (E: Close | Click to Move)</h2>
+        <h2>inventoyr (e: Close | click item , then hit number ekey to move it to hotbar)</h2>
         <div class="inv-container">
             <div class="inv-section">
                 <h3>Backpack</h3>
@@ -142,6 +148,28 @@
                 <h3>Crafting</h3>
                 <div id="crafting-list"></div>
             </div>
+            <div class="inv-section" style="width: 300px;">
+                <h3>Graphics Settings</h3>
+                <div class="settings-row">
+                    <label>Render Distance</label>
+                    <input type="range" min="1" max="12" step="0.25" value="5" oninput="updateSetting('distance', this.value); this.nextElementSibling.innerText=this.value">
+                    <span>5</span>
+                </div>
+                <div class="settings-row">
+                    <label>FOV</label>
+                    <input type="range" min="30" max="120" value="70" oninput="updateSetting('fov', this.value); this.nextElementSibling.innerText=this.value">
+                    <span>70</span>
+                </div>
+                <div class="settings-row">
+                    <label>Resolution</label>
+                    <input type="range" min="0.1" max="1.5" step="0.1" value="1.0" oninput="updateSetting('resolution', this.value); this.nextElementSibling.innerText=this.value">
+                    <span>1.0</span>
+                </div>
+                <div class="settings-row">
+                    <label>Shadows</label>
+                    <input type="checkbox" checked onchange="updateSetting('shadows', this.checked)">
+                </div>
+            </div>
         </div>
     </div>
 
@@ -149,5 +177,12 @@
     <script src="network.js"></script>
     <script src="engine.js"></script>
     <script src="game.js"></script>
+    <script>
+        function updateSetting(key, val) {
+            if(window.applyGraphicsSettings) {
+                window.applyGraphicsSettings({ [key]: val });
+            }
+        }
+    </script>
 </body>
 </html>

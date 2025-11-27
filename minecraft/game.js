@@ -11,21 +11,15 @@ const player = {
     dragSource: null, lastSprintTime: 0, isSprinting: false, isCrouching: false,
     
     addItem: function(id, count) {
-        // 1. Stack in Hotbar
         for(let slot of this.hotbar) { if(slot.id === id) { slot.count += count; updateInventoryUI(); return true; } }
-        // 2. Stack in Inventory
         for(let slot of this.inventory) { if(slot.id === id) { slot.count += count; updateInventoryUI(); return true; } }
-        // 3. Empty Hotbar Slot
         for(let slot of this.hotbar) { if(slot.id === 0) { slot.id = id; slot.count = count; updateInventoryUI(); return true; } }
-        // 4. Empty Inventory Slot (New Feature)
         for(let slot of this.inventory) { if(slot.id === 0) { slot.id = id; slot.count = count; updateInventoryUI(); return true; } }
-        
-        return false; // Inventory full
+        return false; 
     },
     handleSlotClick: function(listType, index) {
         const list = listType === 'hotbar' ? this.hotbar : this.inventory;
         if(this.dragSource) {
-            // Swap Logic
             const sourceList = this.dragSource.list === 'hotbar' ? this.hotbar : this.inventory;
             const sItem = sourceList[this.dragSource.index];
             const tItem = list[index];
@@ -36,7 +30,6 @@ const player = {
             
             this.dragSource = null;
         } else { 
-            // Select Logic
             this.dragSource = { list: listType, index: index }; 
         }
         updateInventoryUI();
@@ -146,18 +139,119 @@ const particles = [];
 let frameCount = 0;
 let lastFpsTime = 0;
 let currentFps = 60;
+let lastChunkUpdate = 0;
+
+// --- GRAPHICS SETTINGS ---
+const graphicsSettings = {
+    fov: 70,
+    shadows: true,
+    resolution: 1.0,
+    distance: RENDER_DISTANCE
+};
+
+window.applyGraphicsSettings = function(newSettings) {
+    if(newSettings.fov) graphicsSettings.fov = parseInt(newSettings.fov);
+    if(newSettings.resolution) graphicsSettings.resolution = parseFloat(newSettings.resolution);
+    if(newSettings.distance) {
+        graphicsSettings.distance = parseInt(newSettings.distance);
+        window.RENDER_DISTANCE = graphicsSettings.distance;
+    }
+    if(typeof newSettings.shadows !== 'undefined') graphicsSettings.shadows = newSettings.shadows;
+
+    if(camera) {
+        camera.fov = graphicsSettings.fov;
+        camera.updateProjectionMatrix();
+    }
+    if(renderer) {
+        renderer.setPixelRatio(window.devicePixelRatio * graphicsSettings.resolution);
+    }
+    if(dirLight) {
+        dirLight.castShadow = graphicsSettings.shadows;
+    }
+    if(scene && scene.fog) {
+        scene.fog.far = RENDER_DISTANCE * CHUNK_SIZE - 2;
+    }
+    // Force refresh chunks if distance reduced
+    updateChunks();
+}
+
+// --- BIOME LOGIC ---
+function getBiome(x, z, y) {
+    if (y < 8) return 'Ocean';
+    if (y > 40) return 'Mountain';
+    // Use the same math as Engine.js generation
+    const temp = Math.sin((x + WORLD_SEED)*0.01) + Math.cos((z + WORLD_SEED)*0.01); 
+    if (temp > 1.0) return 'Desert';
+    if (temp < -1.0) return 'Tundra';
+    return 'Forest';
+}
+
+// --- SPAWNER ---
+function spawnWorldMobs() {
+    // Clear existing local mobs (optional, if restarting)
+    // mobs.length = 0; 
+
+    const MOB_COUNT = 600;
+    const SPAWN_RANGE = 500; // -80 to 80
+
+    for(let i=0; i<MOB_COUNT; i++) {
+        // Random position
+        const x = (Math.random() - 0.5) * SPAWN_RANGE * 2;
+        const z = (Math.random() - 0.5) * SPAWN_RANGE * 2;
+        
+        // Find surface Y
+        let y = 64;
+        let foundGround = false;
+        // Scan down from sky to find ground
+        for(let scanY = 64; scanY > 0; scanY--) {
+            const block = getBlockGlobal(Math.floor(x), scanY, Math.floor(z));
+            if(block !== ITEMS.AIR && block !== ITEMS.WATER) {
+                y = scanY + 1;
+                foundGround = true;
+                break;
+            }
+        }
+
+        if (!foundGround) continue; // Don't spawn in void
+
+        const biome = getBiome(x, z, y);
+        let type = 'wisp'; // Default fallback
+
+        if (biome === 'Desert') {
+            type = Math.random() > 0.6 ? 'crawler' : 'boulder'; // Crawlers common in desert
+        } 
+        else if (biome === 'Tundra') {
+            type = 'yeti'; // Yetis in snow
+        } 
+        else if (biome === 'Mountain') {
+            type = Math.random() > 0.5 ? 'phantom' : 'sentinel'; // Dangerous high altitude
+        } 
+        else if (biome === 'Forest' || biome === 'Plains') {
+            const r = Math.random();
+            if (r < 0.4) type = 'gloom';
+            else if (r < 0.7) type = 'imp';
+            else type = 'wisp';
+        }
+        else if (biome === 'Ocean') {
+            continue; // Skip ocean for now
+        }
+
+        // Add to global mobs array
+        mobs.push(new Mob(type, x, y, z));
+    }
+}
 
 // --- INITIALIZATION CALLED BY NETWORK ---
 function startGame() {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87CEEB);
     scene.fog = new THREE.Fog(0x87CEEB, 10, RENDER_DISTANCE * CHUNK_SIZE - 2); 
-    camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 1000);
+    camera = new THREE.PerspectiveCamera(graphicsSettings.fov, window.innerWidth/window.innerHeight, 0.1, 1000);
     
     hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.8);
     scene.add(hemiLight);
     dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    dirLight.castShadow = true; 
+    dirLight.castShadow = graphicsSettings.shadows; 
     dirLight.shadow.mapSize.width = 4096;
     dirLight.shadow.mapSize.height = 4096;
     dirLight.shadow.camera.left = -60; dirLight.shadow.camera.right = 60; 
@@ -166,7 +260,7 @@ function startGame() {
 
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setPixelRatio(window.devicePixelRatio * graphicsSettings.resolution);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.body.appendChild(renderer.domElement);
@@ -197,6 +291,9 @@ function startGame() {
         player.pos.set(0, spawnY, 0);
     }
 
+    // --- TRIGGER SPAWN ---
+    spawnWorldMobs();
+
     animate();
 }
 
@@ -208,8 +305,6 @@ function onKeyDown(e) {
         return;
     }
 
-    // --- HOTBAR SWAP SHORTCUT ---
-    // If inventory is open, item is selected (dragSource), and number key pressed
     if(isInvOpen && player.dragSource && e.code.startsWith('Digit')) {
         const num = parseInt(e.code.replace('Digit',''));
         if(num >=1 && num <= 8) {
@@ -218,14 +313,13 @@ function onKeyDown(e) {
             const sItem = sourceList[player.dragSource.index];
             const tItem = player.hotbar[targetIndex];
 
-            // Swap Logic
             const temp = { id: sItem.id, count: sItem.count, dur: sItem.dur };
             sItem.id = tItem.id; sItem.count = tItem.count; sItem.dur = tItem.dur;
             tItem.id = temp.id; tItem.count = temp.count; tItem.dur = temp.dur;
 
-            player.dragSource = null; // Deselect after swap
+            player.dragSource = null; 
             updateInventoryUI();
-            return; // Stop processing
+            return; 
         }
     }
 
@@ -300,10 +394,23 @@ function spawnParticles(x, y, z, color) {
 
 function updateChunks() {
     const pcx = Math.floor(player.pos.x / CHUNK_SIZE), pcz = Math.floor(player.pos.z / CHUNK_SIZE);
+    
+    // Add New
     for(let x=-RENDER_DISTANCE; x<=RENDER_DISTANCE; x++)
     for(let z=-RENDER_DISTANCE; z<=RENDER_DISTANCE; z++) {
         const k = `${pcx+x},${pcz+z}`;
         if(!chunks[k]) { chunks[k] = new Chunk(pcx+x, pcz+z); chunks[k].buildMesh(scene); }
+    }
+
+    // Unload Old (Using Manhattan distance/Box check for speed instead of sqrt)
+    for(let k in chunks) {
+        const c = chunks[k];
+        if (Math.abs(c.cx - pcx) > RENDER_DISTANCE || Math.abs(c.cz - pcz) > RENDER_DISTANCE) {
+            if(c.mesh) { scene.remove(c.mesh); c.mesh.geometry.dispose(); c.mesh=null; }
+            if(c.transMesh) { scene.remove(c.transMesh); c.transMesh.geometry.dispose(); c.transMesh=null; }
+            if(c.torchMesh) { scene.remove(c.torchMesh); c.torchMesh.geometry.dispose(); c.torchMesh=null; }
+            delete chunks[k];
+        }
     }
 }
 
@@ -321,16 +428,27 @@ function animate() {
     const noon = new THREE.Color(0x87CEEB); const sunset = new THREE.Color(0xfd5e53); const night = new THREE.Color(0x000022);
     const cosTime = Math.cos(sunAngle);
     if(cosTime > 0.5) skyColor.copy(noon); else if(cosTime > 0) skyColor.lerpColors(sunset, noon, cosTime*2); else if(cosTime > -0.5) skyColor.lerpColors(night, sunset, (cosTime+0.5)*2); else skyColor.copy(night);
-    scene.background = skyColor; scene.fog.color = skyColor; dirLight.intensity = Math.max(0, cosTime);
+    scene.background = skyColor; 
+    scene.fog.color = skyColor;
+    // Dynamic Fog Distance
+    scene.fog.far = THREE.MathUtils.lerp(scene.fog.far, RENDER_DISTANCE * CHUNK_SIZE - 2, 0.1); 
+    
+    dirLight.intensity = Math.max(0, cosTime);
 
     // Network: Sync Other Players
     for(let pid in Network.otherPlayers) {
         const p = Network.otherPlayers[pid];
         if(p.targetPos) p.mesh.position.lerp(p.targetPos, 0.2);
-        // if(p.targetRot) p.mesh.rotation.y = p.targetRot; // Rotation sync is a bit jittery without proper interpolation logic, so skipping visualization for now
     }
 
     if(!isInvOpen) {
+        // --- PERFORMANCE FIX: THROTTLED CHUNK UPDATES ---
+        // Only run chunk logic every 500ms, not every frame
+        if (time - lastChunkUpdate > 500) {
+            updateChunks();
+            lastChunkUpdate = time;
+        }
+
         // Network: Send My Position
         Network.updatePosition(player.pos, camera.rotation.y);
 
@@ -408,15 +526,12 @@ function animate() {
         box.set(new THREE.Vector3(player.pos.x-0.3, player.pos.y, player.pos.z-0.3), new THREE.Vector3(player.pos.x+0.3, player.pos.y+1.8, player.pos.z+0.3));
         if(getCollidingBlocks(box).length > 0) {
             player.pos.y -= player.vel.y * dt;
-            
-            // --- FALL DAMAGE FIX ---
-            // Threshold raised to -16 (approx 4 blocks) for safety
+            // Fall Damage
             if(player.vel.y < -16 && !inWater) { 
-                player.health -= (Math.abs(player.vel.y) - 13); // Smoother damage curve
+                player.health -= (Math.abs(player.vel.y) - 13); 
                 document.getElementById('vignette').style.background = 'radial-gradient(circle, transparent 20%, rgba(255,0,0,0.5) 100%)'; 
                 setTimeout(()=>document.getElementById('vignette').style.background='radial-gradient(circle, transparent 50%, rgba(255,0,0,0) 100%)', 200); 
             }
-            
             if(player.vel.y < 0) player.onGround = true; 
             player.vel.y = 0;
         } else { player.onGround = false; }
@@ -432,8 +547,8 @@ function animate() {
             camera.rotation.z = Math.sin(time*0.01) * 0.002;
         } else { camera.rotation.z = 0; }
 
-        // Dynamic FOV
-        const targetFov = player.isSprinting ? 85 : 70;
+        // Dynamic FOV (Respects Base FOV)
+        const targetFov = player.isSprinting ? graphicsSettings.fov + 15 : graphicsSettings.fov;
         camera.fov = THREE.MathUtils.lerp(camera.fov, targetFov, 0.1);
         camera.updateProjectionMatrix();
 
@@ -450,7 +565,7 @@ function animate() {
             if(mob.type === 'wisp') mob.mesh.position.y += Math.sin(worldTime * 5) * 0.2;
         });
     }
-    updateChunks();
+    // REMOVED updateChunks() from here. It is now inside the throttled block above.
     
     // Particles
     for(let i=particles.length-1; i>=0; i--) {
@@ -501,16 +616,7 @@ function updateHud() {
         lastFpsTime = now;
     }
 
-    const y = player.pos.y;
-    let biome = 'Plains';
-    if (y < 8) biome = 'Ocean';
-    else if (y > 40) biome = 'Mountain';
-    else {
-        const temp = Math.sin(player.pos.x*0.01) + Math.cos(player.pos.z*0.01);
-        if (temp > 1.0) biome = 'Desert';
-        else if (temp < -1.0) biome = 'Tundra';
-        else biome = 'Forest';
-    }
+    const biome = getBiome(player.pos.x, player.pos.z, player.pos.y); // Unified logic
 
     document.getElementById('debug').innerHTML = `Pos: ${Math.round(player.pos.x)},${Math.round(player.pos.y)},${Math.round(player.pos.z)} | Biome: ${biome} | FPS: ${currentFps}`;
 }

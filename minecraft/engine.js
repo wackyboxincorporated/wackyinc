@@ -1,7 +1,6 @@
-// --- CONFIGURATION ---
 const CHUNK_SIZE = 16;
 const CHUNK_HEIGHT = 64;
-const RENDER_DISTANCE = 5;
+window.RENDER_DISTANCE = 5; 
 const GRAVITY = 32.0;
 const JUMP_FORCE = 11.0;
 const MOVE_SPEED = 6.0;
@@ -15,7 +14,7 @@ window.drops = [];
 window.mobs = []; 
 window.WORLD_SEED = 1234;
 
-// --- ITEMS & BLOCKS (Attached to Window for Safety) ---
+// --- ITEMS & BLOCKS ---
 window.ITEMS = {
     AIR: 0,
     GRASS: 1, DIRT: 2, STONE: 3, WOOD: 4, LEAVES: 5, BEDROCK: 6, COBBLESTONE: 7,
@@ -79,6 +78,11 @@ class Mob {
         if (type === 'gloom') { this.color = 0x111111; this.scale = {x:0.6, y:1.9, z:0.6}; this.speed = 6.0; } 
         else if (type === 'wisp') { this.color = 0xaaffff; this.scale = {x:0.4, y:0.4, z:0.4}; this.speed = 2.0; this.flying = true; } 
         else if (type === 'boulder') { this.color = 0x554433; this.scale = {x:0.9, y:0.9, z:0.9}; this.speed = 1.5; }
+        else if (type === 'crawler') { this.color = 0x00aa00; this.scale = {x:0.9, y:0.4, z:0.9}; this.speed = 7.0; } 
+        else if (type === 'yeti') { this.color = 0xeeeeff; this.scale = {x:1.4, y:2.6, z:1.4}; this.speed = 1.5; } 
+        else if (type === 'phantom') { this.color = 0x440088; this.scale = {x:1.5, y:0.3, z:1.5}; this.speed = 5.0; this.flying = true; } 
+        else if (type === 'imp') { this.color = 0xff4400; this.scale = {x:0.5, y:0.8, z:0.5}; this.speed = 6.0; } 
+        else if (type === 'sentinel') { this.color = 0x555555; this.scale = {x:0.8, y:3.0, z:0.8}; this.speed = 10.0; } 
     }
 
     update(dt, playerPos, playerCamera) {
@@ -104,6 +108,35 @@ class Mob {
              if (this.timer % 50 < 1) this.targetDir = new THREE.Vector3((Math.random()-0.5), 0, (Math.random()-0.5)).normalize();
             if (this.targetDir) { this.vel.x += (this.targetDir.x * this.speed - this.vel.x) * 0.1; this.vel.z += (this.targetDir.z * this.speed - this.vel.z) * 0.1; }
             if(this.onGround && Math.random() < 0.01) this.vel.y = 5;
+        }
+        else if (this.type === 'crawler') {
+            if (Math.random() < 0.1) this.targetDir = new THREE.Vector3(Math.random()-0.5, 0, Math.random()-0.5).normalize();
+            if (this.targetDir) {
+                this.vel.x += (this.targetDir.x * this.speed - this.vel.x) * 0.2;
+                this.vel.z += (this.targetDir.z * this.speed - this.vel.z) * 0.2;
+            }
+            if (getBlockGlobal(Math.floor(this.pos.x + this.vel.x*dt), Math.floor(this.pos.y), Math.floor(this.pos.z + this.vel.z*dt)) !== ITEMS.AIR) this.vel.y = 6; 
+        }
+        else if (this.type === 'yeti') {
+            if (dist < 20) {
+                this.vel.x += (dir.x * this.speed - this.vel.x) * 0.05;
+                this.vel.z += (dir.z * this.speed - this.vel.z) * 0.05;
+                if (this.onGround && getBlockGlobal(Math.floor(this.pos.x + dir.x), Math.floor(this.pos.y), Math.floor(this.pos.z + dir.z)) !== ITEMS.AIR) this.vel.y = 6;
+            } else { this.vel.x *= 0.9; this.vel.z *= 0.9; }
+        }
+        else if (this.type === 'phantom') {
+            const targetX = playerPos.x + Math.sin(this.timer * 0.5) * 10;
+            const targetZ = playerPos.z + Math.cos(this.timer * 0.5) * 10;
+            const targetY = playerPos.y + 10 + Math.sin(this.timer) * 2;
+            const toTarget = new THREE.Vector3(targetX - this.pos.x, targetY - this.pos.y, targetZ - this.pos.z).normalize();
+            this.vel.add(toTarget.multiplyScalar(dt * 10));
+            if(this.vel.length() > this.speed) this.vel.normalize().multiplyScalar(this.speed);
+        }
+        else if (this.type === 'imp') {
+            if (this.onGround) { this.vel.y = 12; this.vel.x = (Math.random()-0.5) * 10; this.vel.z = (Math.random()-0.5) * 10; }
+        }
+        else if (this.type === 'sentinel') {
+            if (dist < 8) { this.vel.x = dir.x * this.speed; this.vel.z = dir.z * this.speed; } else { this.vel.x = 0; this.vel.z = 0; }
         }
 
         if (!this.flying) this.vel.y -= GRAVITY * dt;
@@ -166,13 +199,13 @@ const solidMaterial = new THREE.MeshLambertMaterial({ map: atlasTexture, side: T
 const transMaterial = new THREE.MeshLambertMaterial({ map: atlasTexture, side: THREE.FrontSide, transparent: true, alphaTest: 0.1, vertexColors: true });
 const torchMaterial = new THREE.MeshBasicMaterial({ map: atlasTexture, side: THREE.FrontSide, vertexColors: true }); 
 
-const crackTextures = [];
+window.crackTextures = [];
 for(let i=0; i<10; i++) {
     const c = document.createElement('canvas'); c.width=64; c.height=64; const ctx=c.getContext('2d');
     ctx.strokeStyle = `rgba(0,0,0,${0.5+i*0.05})`; ctx.lineWidth=3; ctx.beginPath();
     for(let j=0; j<i*3; j++) { ctx.moveTo(32,32); ctx.lineTo(Math.random()*64, Math.random()*64); }
     ctx.stroke();
-    const t = new THREE.CanvasTexture(c); t.magFilter=THREE.NearestFilter; crackTextures.push(t);
+    const t = new THREE.CanvasTexture(c); t.magFilter=THREE.NearestFilter; window.crackTextures.push(t);
 }
 
 const itemIcons = {};
@@ -205,11 +238,7 @@ class Chunk {
         if(x>=0&&x<CHUNK_SIZE&&y>=0&&y<CHUNK_HEIGHT&&z>=0&&z<CHUNK_SIZE) {
             const idx = this.getIndex(x,y,z);
             const oldId = this.data[idx];
-            
-            // OPTIMIZATION: If the block is already this ID, do nothing
-            // This prevents infinite loops/lag when receiving network updates
             if (oldId === id) return;
-
             this.data[idx] = id;
             if(BLOCK_PROPS[oldId]?.light) this.removeLight(x,y,z);
             if(BLOCK_PROPS[id]?.light) this.addLight(x,y,z, BLOCK_PROPS[id].light);

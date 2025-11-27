@@ -135,7 +135,7 @@ const Network = {
     // Send My Position (Throttled to save writes)
     updatePosition: function(pos, rotY) {
         const now = Date.now();
-        if (now - this.lastPosUpdate > 100) { 
+        if (now - this.lastPosUpdate > 25) { 
             db.collection('players').doc(this.id).update({
                 x: pos.x, y: pos.y, z: pos.z, ry: rotY,
                 lastSeen: firebase.firestore.FieldValue.serverTimestamp()
