@@ -6,14 +6,14 @@
     <title>msst2.3</title>
     <style>
         :root {
-            --bg-main: #0a0a0a;
-            --bg-panel: #151515;
-            --text-color: #bbbbbb;
-            --accent-yt: #cc0000;
-            --accent-url: #008800;
-            --accent-chat: #880088;
-            --accent-notes: #aa5500;
-            --border-style: 1px solid #333;
+            --bg-main: #050505;
+            --bg-panel: #0f0f0f;
+            --text-color: #aaaaaa;
+            --accent-yt: #aa0000;
+            --accent-url: #007700;
+            --accent-chat: #770077;
+            --accent-notes: #994400;
+            --border-style: 1px solid #222;
         }
 
         body {
@@ -21,142 +21,152 @@
             color: var(--text-color);
             font-family: monospace;
             margin: 0;
-            padding: 10px;
+            padding: 8px;
             display: flex;
             flex-direction: column;
             align-items: center;
             overflow-x: hidden;
+            height: 100vh;
         }
 
-        h1 { color: #fff; letter-spacing: -2px; margin: 10px 0; text-transform: lowercase; }
+        h1 { color: #555; letter-spacing: -1px; margin: 5px 0; text-transform: lowercase; font-size: 1.2rem; }
 
-        .container { width: 98vw; max-width: 1400px; }
+        .container { width: 100%; max-width: 1600px; display: flex; flex-direction: column; height: 95vh; }
 
-        .tab-bar { display: flex; gap: 2px; background: #222; padding: 2px; margin-bottom: 10px; }
+        .tab-bar { display: flex; gap: 1px; background: #1a1a1a; padding: 1px; margin-bottom: 5px; }
 
         .tab-button {
-            background: #111; color: #777; border: none; padding: 10px 15px;
-            cursor: pointer; text-transform: lowercase; font-weight: bold; font-family: monospace;
+            background: #0a0a0a; color: #444; border: none; padding: 8px 12px;
+            cursor: pointer; text-transform: lowercase; font-family: monospace; font-size: 12px;
         }
         
-        .tab-button[data-target="yt"].active { background: var(--accent-yt); color: white; }
-        .tab-button[data-target="web"].active { background: var(--accent-url); color: white; }
-        .tab-button[data-target="chat"].active { background: var(--accent-chat); color: white; }
-        .tab-button[data-target="notes"].active { background: var(--accent-notes); color: white; }
+        .tab-button.active { color: #fff; }
+        .tab-button[data-target="yt"].active { background: var(--accent-yt); }
+        .tab-button[data-target="web"].active { background: var(--accent-url); }
+        .tab-button[data-target="chat"].active { background: var(--accent-chat); }
+        .tab-button[data-target="notes"].active { background: var(--accent-notes); }
 
-        .section { display: none; background: var(--bg-panel); border: var(--border-style); padding: 15px; flex-direction: column; }
+        .section { display: none; background: var(--bg-panel); border: var(--border-style); padding: 10px; flex-direction: column; flex-grow: 1; position: relative; }
         .section.active { display: flex; }
 
-        .control-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+        .control-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
 
         input[type="text"], input[type="url"], textarea {
-            background: #000; border: 1px solid #444; color: #0f0; padding: 8px; font-family: monospace; flex-grow: 1;
+            background: #000; border: 1px solid #222; color: #0f0; padding: 6px; font-family: monospace; flex-grow: 1; outline: none;
         }
 
         button.action-btn {
-            background: #333; color: #fff; border: 1px solid #555; padding: 8px 15px;
-            cursor: pointer; text-transform: lowercase;
+            background: #1a1a1a; color: #888; border: 1px solid #333; padding: 6px 12px;
+            cursor: pointer; text-transform: lowercase; font-size: 11px;
         }
 
-        /* rendering engine wrapper */
+        button.action-btn:hover { background: #222; color: #fff; }
+
+        /* advanced scaling engine */
         .viewer-container {
             position: relative;
             width: 100%;
-            height: 600px; /* base height */
+            flex-grow: 1;
             background: #000;
-            overflow: hidden;
-            border: 1px solid #222;
+            overflow: hidden; /* container never scrolls */
+            border: 1px solid #111;
         }
 
         iframe {
             position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
             border: none;
             background: #000;
-            transform-origin: top left;
-            image-rendering: pixelated; /* demoscene feel + perf */
+            transform-origin: 0 0;
+            image-rendering: pixelated;
         }
 
-        .status-bar { font-size: 10px; color: #555; margin-top: 5px; text-transform: lowercase; }
+        /* scrollbar suppressor class */
+        .no-scroll { overflow: hidden !important; }
 
         .perf-slider-wrap {
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-size: 11px;
-            color: #0f0;
+            gap: 8px;
+            font-size: 10px;
+            color: #666;
             background: #000;
-            padding: 5px 10px;
+            padding: 4px 8px;
             border: 1px solid #222;
         }
 
-        #noteArea { width: 100%; height: 60vh; resize: vertical; }
+        #noteArea { width: 100%; height: 100%; resize: none; border: none; }
+
+        .status-bar { font-size: 9px; color: #333; margin-top: 4px; text-transform: lowercase; width: 100%; display: flex; justify-content: space-between; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>msst2.3 // hardware_accel</h1>
+        <h1>msst2.3 // hw_accelerated</h1>
 
         <div class="tab-bar">
-            <button class="tab-button active" data-target="yt">[v] youtube</button>
-            <button class="tab-button" data-target="web">[u] web_viewer</button>
-            <button class="tab-button" data-target="chat">[c] w_chat</button>
-            <button class="tab-button" data-target="notes">[n] scratchpad</button>
+            <button class="tab-button active" data-target="yt">yt</button>
+            <button class="tab-button" data-target="web">web</button>
+            <button class="tab-button" data-target="chat">chat</button>
+            <button class="tab-button" data-target="notes">notes</button>
         </div>
 
         <div id="yt" class="section active">
             <div class="control-row">
-                <input type="text" id="ytInput" placeholder="video_id">
+                <input type="text" id="ytInput" placeholder="video_id_or_url">
                 <button class="action-btn" onclick="loadYT()">load</button>
+                <button class="action-btn" onclick="toggleFS('ytIframe')">[fullscreen]</button>
             </div>
             <div class="viewer-container">
-                <iframe id="ytIframe" src="https://www.youtube.com/embed/dQw4w9WgXcQ" allowfullscreen></iframe>
+                <iframe id="ytIframe" width="100%" height="100%" src="https://www.youtube.com/embed/dQw4w9WgXcQ" allowfullscreen></iframe>
             </div>
         </div>
 
         <div id="web" class="section">
             <div class="control-row">
-                <input type="url" id="webInput" placeholder="https://game_url.io">
-                <button class="action-btn" onclick="loadWeb()">load</button>
+                <input type="url" id="webInput" placeholder="https://target.io">
+                <button class="action-btn" onclick="loadWeb()">request</button>
                 
                 <div class="perf-slider-wrap">
-                    <span>render_scale:</span>
-                    <input type="range" min="0.25" max="1" step="0.05" value="1" id="resSlider" oninput="updateRes(this.value)">
+                    <span>scale:</span>
+                    <input type="range" min="0.3" max="1" step="0.1" value="1" id="resSlider" oninput="updateScaling(this.value)">
                     <span id="resVal">100%</span>
                 </div>
-                
-                <button class="action-btn" onclick="toggleFS('webIframe')">[fs]</button>
+
+                <button class="action-btn" id="scrollToggle" onclick="toggleScroll()">scroll: on</button>
+                <button class="action-btn" onclick="fullScreenWeb()">[fullscreen]</button>
             </div>
             <div class="viewer-container" id="webContainer">
-                <iframe id="webIframe" src="about:blank" loading="eager"></iframe>
+                <iframe id="webIframe" src="about:blank"></iframe>
             </div>
         </div>
 
         <div id="chat" class="section">
             <div class="control-row">
-                <button class="action-btn" id="initChatBtn" onclick="loadChat()">init_chat</button>
+                <button class="action-btn" id="initChatBtn" onclick="loadChat()">init_wchat</button>
+                <button class="action-btn" onclick="toggleFS('chatIframe')">[fullscreen]</button>
             </div>
             <div class="viewer-container">
-                <iframe id="chatIframe" src="about:blank"></iframe>
+                <iframe id="chatIframe" width="100%" height="100%" src="about:blank"></iframe>
             </div>
         </div>
 
         <div id="notes" class="section">
-            <textarea id="noteArea" placeholder="scratchpad..."></textarea>
+            <textarea id="noteArea" placeholder="buffer_idle..."></textarea>
         </div>
 
         <div class="status-bar">
-            cpu_opt: chromebook_low_tier // scale_engine: css_transform // time: <span id="clock"></span>
+            <div>engine: blink // mode: performance // scale: <span id="statScale">1.0</span></div>
+            <div>time: <span id="clock"></span></div>
         </div>
     </div>
 
     <script>
         const tabs = document.querySelectorAll('.tab-button');
         const sections = document.querySelectorAll('.section');
+        let scrollingEnabled = true;
 
         tabs.forEach(t => {
             t.addEventListener('click', () => {
@@ -164,33 +174,63 @@
                 sections.forEach(sec => sec.classList.remove('active'));
                 t.classList.add('active');
                 document.getElementById(t.dataset.target).classList.add('active');
+                if(t.dataset.target === 'web') updateScaling(document.getElementById('resSlider').value);
             });
         });
 
-        function updateRes(scale) {
+        function updateScaling(scale) {
             const frame = document.getElementById('webIframe');
             const container = document.getElementById('webContainer');
-            const pct = Math.round(scale * 100);
+            const valLabel = document.getElementById('resVal');
+            const statLabel = document.getElementById('statScale');
             
-            document.getElementById('resVal').textContent = pct + '%';
+            valLabel.textContent = Math.round(scale * 100) + '%';
+            statLabel.textContent = scale;
 
-            // the trick: make the iframe physically larger, then scale it down
-            // or make it smaller and scale it up. for io games, we make the 
-            // internal "resolution" smaller and scale it UP to fill the space.
-            const invScale = 1 / scale;
-            frame.style.width = (scale * 100) + '%';
-            frame.style.height = (scale * 100) + '%';
-            frame.style.transform = `scale(${invScale})`;
+            const w = container.offsetWidth;
+            const h = container.offsetHeight;
+
+            // Logic: we make the iframe's internal resolution "smaller"
+            // then use CSS transform to stretch it back up to the container size.
+            // This is significantly faster for Chromebook GPUs.
+            frame.style.width = (w * scale) + "px";
+            frame.style.height = (h * scale) + "px";
+            frame.style.transform = `scale(${1/scale})`;
+        }
+
+        function toggleScroll() {
+            const frame = document.getElementById('webIframe');
+            const btn = document.getElementById('scrollToggle');
+            scrollingEnabled = !scrollingEnabled;
             
-            // fix dimensions to prevent overflow
-            frame.style.width = (100 * scale) + '%';
-            frame.style.height = (100 * scale) + '%';
+            if (scrollingEnabled) {
+                frame.scrolling = "yes";
+                btn.textContent = "scroll: on";
+                frame.style.overflow = "auto";
+            } else {
+                frame.scrolling = "no";
+                btn.textContent = "scroll: off";
+                frame.style.overflow = "hidden";
+            }
+            
+            // Reload iframe to apply the 'scrolling' attribute change (required by some browsers)
+            const currentSrc = frame.src;
+            frame.src = currentSrc;
+        }
+
+        function fullScreenWeb() {
+            const container = document.getElementById('webContainer');
+            if (container.requestFullscreen) container.requestFullscreen();
+            else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen();
+            
+            // Auto-adjust scaling to 100% for fullscreen to avoid blurriness unless user changes it
+            setTimeout(() => updateScaling(document.getElementById('resSlider').value), 100);
         }
 
         function loadYT() {
             const input = document.getElementById('ytInput').value;
             const id = getYTID(input);
-            if(id) document.getElementById('ytIframe').src = `https://www.youtube.com/embed/${id}`;
+            if(id) document.getElementById('ytIframe').src = `https://www.youtube.com/embed/${id}?autoplay=1`;
         }
 
         function getYTID(url) {
@@ -202,12 +242,16 @@
         function loadWeb() {
             let url = document.getElementById('webInput').value;
             if(!url.startsWith('http')) url = 'https://' + url;
-            document.getElementById('webIframe').src = url;
+            const frame = document.getElementById('webIframe');
+            frame.src = url;
+            // Re-apply scaling after load
+            setTimeout(() => updateScaling(document.getElementById('resSlider').value), 500);
         }
 
         function loadChat() {
             document.getElementById('chatIframe').src = 'https://wackybox.org/chat2';
             document.getElementById('initChatBtn').disabled = true;
+            document.getElementById('initChatBtn').textContent = "active";
         }
 
         function toggleFS(id) {
@@ -216,11 +260,24 @@
             else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
         }
 
+        window.addEventListener('resize', () => {
+            if(document.querySelector('.tab-button[data-target="web"]').classList.contains('active')) {
+                updateScaling(document.getElementById('resSlider').value);
+            }
+        });
+
+        const noteArea = document.getElementById('noteArea');
+        noteArea.value = sessionStorage.getItem('msst_notes') || "";
+        noteArea.addEventListener('input', () => sessionStorage.setItem('msst_notes', noteArea.value));
+
         function updateClock() {
             document.getElementById('clock').textContent = new Date().toLocaleTimeString().toLowerCase();
         }
         setInterval(updateClock, 1000);
         updateClock();
+        
+        // Init scaling
+        updateScaling(1);
     </script>
 </body>
 </html>
