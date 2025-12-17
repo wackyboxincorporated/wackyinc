@@ -25,142 +25,81 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            overflow-x: hidden;
         }
 
-        h1 {
-            color: #fff;
-            letter-spacing: -2px;
-            margin: 10px 0;
-            text-transform: lowercase;
-        }
+        h1 { color: #fff; letter-spacing: -2px; margin: 10px 0; text-transform: lowercase; }
 
-        .container {
-            width: 98vw;
-            max-width: 1400px;
-        }
+        .container { width: 98vw; max-width: 1400px; }
 
-        .tab-bar {
-            display: flex;
-            gap: 2px;
-            background: #222;
-            padding: 2px;
-            margin-bottom: 10px;
-            flex-wrap: wrap;
-        }
+        .tab-bar { display: flex; gap: 2px; background: #222; padding: 2px; margin-bottom: 10px; }
 
         .tab-button {
-            background: #111;
-            color: #777;
-            border: none;
-            padding: 10px 15px;
-            cursor: pointer;
-            text-transform: lowercase;
-            font-weight: bold;
-            font-family: monospace;
+            background: #111; color: #777; border: none; padding: 10px 15px;
+            cursor: pointer; text-transform: lowercase; font-weight: bold; font-family: monospace;
         }
-
-        .tab-button:hover { background: #333; }
         
         .tab-button[data-target="yt"].active { background: var(--accent-yt); color: white; }
         .tab-button[data-target="web"].active { background: var(--accent-url); color: white; }
         .tab-button[data-target="chat"].active { background: var(--accent-chat); color: white; }
         .tab-button[data-target="notes"].active { background: var(--accent-notes); color: white; }
 
-        .section {
-            display: none;
-            background: var(--bg-panel);
-            border: var(--border-style);
-            padding: 15px;
-            flex-direction: column;
-        }
-
+        .section { display: none; background: var(--bg-panel); border: var(--border-style); padding: 15px; flex-direction: column; }
         .section.active { display: flex; }
 
-        .control-row {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
+        .control-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
 
         input[type="text"], input[type="url"], textarea {
-            background: #000;
-            border: 1px solid #444;
-            color: #0f0;
-            padding: 8px;
-            font-family: monospace;
-            flex-grow: 1;
+            background: #000; border: 1px solid #444; color: #0f0; padding: 8px; font-family: monospace; flex-grow: 1;
         }
 
         button.action-btn {
-            background: #333;
-            color: #fff;
-            border: 1px solid #555;
-            padding: 8px 15px;
-            cursor: pointer;
-            text-transform: lowercase;
+            background: #333; color: #fff; border: 1px solid #555; padding: 8px 15px;
+            cursor: pointer; text-transform: lowercase;
         }
 
-        button.action-btn:hover { background: #444; border-color: #fff; }
-
+        /* rendering engine wrapper */
         .viewer-container {
             position: relative;
             width: 100%;
+            height: 600px; /* base height */
             background: #000;
+            overflow: hidden;
+            border: 1px solid #222;
         }
 
         iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            height: 600px;
+            height: 100%;
             border: none;
             background: #000;
+            transform-origin: top left;
+            image-rendering: pixelated; /* demoscene feel + perf */
         }
 
-        .status-bar {
-            font-size: 10px;
-            color: #555;
-            margin-top: 5px;
-            text-transform: lowercase;
-        }
+        .status-bar { font-size: 10px; color: #555; margin-top: 5px; text-transform: lowercase; }
 
-        #noteArea {
-            width: 100%;
-            height: 60vh;
-            resize: vertical;
-        }
-
-        .quick-links {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-            font-size: 11px;
-        }
-
-        .quick-links span { color: #555; }
-        .quick-links a { color: #0088ff; text-decoration: none; }
-
-        .fullscreen-overlay {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            z-index: 10;
-            opacity: 0.3;
-        }
-        .fullscreen-overlay:hover { opacity: 1.0; }
-
-        .resizer-controls {
+        .perf-slider-wrap {
             display: flex;
             align-items: center;
             gap: 10px;
-            font-size: 12px;
-            padding: 5px;
-            border-top: 1px solid #222;
+            font-size: 11px;
+            color: #0f0;
+            background: #000;
+            padding: 5px 10px;
+            border: 1px solid #222;
         }
+
+        #noteArea { width: 100%; height: 60vh; resize: vertical; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>msst2.3</h1>
+        <h1>msst2.3 // hardware_accel</h1>
 
         <div class="tab-bar">
             <button class="tab-button active" data-target="yt">[v] youtube</button>
@@ -171,55 +110,47 @@
 
         <div id="yt" class="section active">
             <div class="control-row">
-                <input type="text" id="ytInput" placeholder="input video_id or url">
-                <button class="action-btn" onclick="loadYT()">load_stream</button>
+                <input type="text" id="ytInput" placeholder="video_id">
+                <button class="action-btn" onclick="loadYT()">load</button>
             </div>
             <div class="viewer-container">
-                <button class="action-btn fullscreen-overlay" onclick="toggleFS('ytIframe')">[fs]</button>
                 <iframe id="ytIframe" src="https://www.youtube.com/embed/dQw4w9WgXcQ" allowfullscreen></iframe>
             </div>
         </div>
 
         <div id="web" class="section">
             <div class="control-row">
-                <input type="url" id="webInput" placeholder="https://target_url.com">
-                <button class="action-btn" onclick="loadWeb()">request_url</button>
-                <button class="action-btn" onclick="toggleFS('webIframe')">[fullscreen]</button>
+                <input type="url" id="webInput" placeholder="https://game_url.io">
+                <button class="action-btn" onclick="loadWeb()">load</button>
+                
+                <div class="perf-slider-wrap">
+                    <span>render_scale:</span>
+                    <input type="range" min="0.25" max="1" step="0.05" value="1" id="resSlider" oninput="updateRes(this.value)">
+                    <span id="resVal">100%</span>
+                </div>
+                
+                <button class="action-btn" onclick="toggleFS('webIframe')">[fs]</button>
             </div>
-            <div class="viewer-container">
-                <iframe id="webIframe" src="about:blank"></iframe>
-            </div>
-            <div class="quick-links">
-                <span>quick_access:</span>
-                <a href="#" onclick="setWeb('https://google.com/search?q=arduino+reference')">arduino_ref</a> |
-                <a href="#" onclick="setWeb('https://github.com')">github</a> |
-                <a href="#" onclick="setWeb('https://stackoverflow.com')">stack_overflow</a>
+            <div class="viewer-container" id="webContainer">
+                <iframe id="webIframe" src="about:blank" loading="eager"></iframe>
             </div>
         </div>
 
         <div id="chat" class="section">
             <div class="control-row">
-                <button class="action-btn" id="initChatBtn" onclick="loadChat()">initialize_wchat_v2</button>
+                <button class="action-btn" id="initChatBtn" onclick="loadChat()">init_chat</button>
             </div>
-            <iframe id="chatIframe" src="about:blank"></iframe>
+            <div class="viewer-container">
+                <iframe id="chatIframe" src="about:blank"></iframe>
+            </div>
         </div>
 
         <div id="notes" class="section">
-            <div class="control-row">
-                <span>[system_cache] session_notes</span>
-                <button class="action-btn" onclick="clearNotes()">purge_buffer</button>
-            </div>
-            <textarea id="noteArea" placeholder="start typing..."></textarea>
-        </div>
-
-        <div class="resizer-controls">
-            <span>frame_height_override:</span>
-            <input type="range" min="200" max="1200" value="600" id="heightSlider" oninput="adjustHeight(this.value)">
-            <span id="heightVal">600px</span>
+            <textarea id="noteArea" placeholder="scratchpad..."></textarea>
         </div>
 
         <div class="status-bar">
-            system_status: ready // user: authenticated // local_time: <span id="clock"></span>
+            cpu_opt: chromebook_low_tier // scale_engine: css_transform // time: <span id="clock"></span>
         </div>
     </div>
 
@@ -236,12 +167,30 @@
             });
         });
 
+        function updateRes(scale) {
+            const frame = document.getElementById('webIframe');
+            const container = document.getElementById('webContainer');
+            const pct = Math.round(scale * 100);
+            
+            document.getElementById('resVal').textContent = pct + '%';
+
+            // the trick: make the iframe physically larger, then scale it down
+            // or make it smaller and scale it up. for io games, we make the 
+            // internal "resolution" smaller and scale it UP to fill the space.
+            const invScale = 1 / scale;
+            frame.style.width = (scale * 100) + '%';
+            frame.style.height = (scale * 100) + '%';
+            frame.style.transform = `scale(${invScale})`;
+            
+            // fix dimensions to prevent overflow
+            frame.style.width = (100 * scale) + '%';
+            frame.style.height = (100 * scale) + '%';
+        }
+
         function loadYT() {
             const input = document.getElementById('ytInput').value;
             const id = getYTID(input);
-            if(id) {
-                document.getElementById('ytIframe').src = `https://www.youtube.com/embed/${id}`;
-            }
+            if(id) document.getElementById('ytIframe').src = `https://www.youtube.com/embed/${id}`;
         }
 
         function getYTID(url) {
@@ -256,45 +205,15 @@
             document.getElementById('webIframe').src = url;
         }
 
-        function setWeb(url) {
-            document.getElementById('webInput').value = url;
-            loadWeb();
-        }
-
         function loadChat() {
-            const btn = document.getElementById('initChatBtn');
             document.getElementById('chatIframe').src = 'https://wackybox.org/chat2';
-            btn.textContent = 'connection_established';
-            btn.disabled = true;
+            document.getElementById('initChatBtn').disabled = true;
         }
 
         function toggleFS(id) {
             const el = document.getElementById(id);
-            if (el.requestFullscreen) {
-                el.requestFullscreen();
-            } else if (el.webkitRequestFullscreen) {
-                el.webkitRequestFullscreen();
-            } else if (el.msRequestFullscreen) {
-                el.msRequestFullscreen();
-            }
-        }
-
-        function adjustHeight(val) {
-            document.querySelectorAll('iframe').forEach(f => f.style.height = val + 'px');
-            document.getElementById('heightVal').textContent = val + 'px';
-        }
-
-        const noteArea = document.getElementById('noteArea');
-        noteArea.value = sessionStorage.getItem('msst_notes') || "";
-        noteArea.addEventListener('input', () => {
-            sessionStorage.setItem('msst_notes', noteArea.value);
-        });
-
-        function clearNotes() {
-            if(confirm('purge buffer?')) {
-                noteArea.value = "";
-                sessionStorage.removeItem('msst_notes');
-            }
+            if (el.requestFullscreen) el.requestFullscreen();
+            else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
         }
 
         function updateClock() {
