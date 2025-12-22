@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#ffbfd6">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -16,11 +16,11 @@
             --font-main: 'Varela Round', sans-serif;
             --ease: cubic-bezier(0.25, 1, 0.5, 1);
             --radius-bubble: 18px;
+            /* Fallback for browsers with no JS */
+            --app-height: 100vh;
         }
 
         /* THEME DEFINITIONS */
-        /* Note: --card-bg-self is usually slightly darker/different to distinguish users */
-
         /* 1. Sanrio */
         [data-theme="sanrio"] {
             --bg-color: #ffe6ee;
@@ -33,7 +33,7 @@
             --bg-image: url('https://upload.wikimedia.org/wikipedia/en/0/05/Hello_kitty_character_portrait.png'); 
         }
 
-        /* 2. chiikawa */
+        /* 2. Chiikawa */
         [data-theme="chiikawa"] {
             --bg-color: #f0f8ff;
             --text-color: #4a6fa5;
@@ -45,7 +45,7 @@
             --bg-image: url('https://talktoabutt.site/chiikawa.webp'); 
         }
 
-        /* 3. dark */
+        /* 3. Dark */
         [data-theme="dark"] {
             --bg-color: #0f0f0f;
             --text-color: #e0e0e0;
@@ -99,14 +99,20 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        body {
+        html, body {
             margin: 0;
             padding: 0;
+            width: 100%;
+            height: 100%; /* Fallback */
+            height: var(--app-height); /* JS Calculated Height */
+            overflow: hidden; /* CRITICAL: Prevents body scroll */
+            overscroll-behavior: none; /* Prevents rubber banding */
+        }
+
+        body {
             font-family: var(--font-main);
             background-color: var(--bg-color);
             color: var(--text-color);
-            height: 100vh;
-            overflow: hidden;
             transition: background 0.3s ease, color 0.3s ease;
             position: relative;
         }
@@ -129,28 +135,29 @@
             to { background-position: 100px 100px; }
         }
 
-        /* LAYOUT */
-        #app, #lock-screen, #setup-screen {
+        /* LAYOUT - THE FIX IS HERE */
+        #app {
             position: relative;
             z-index: 1;
-            height: 100%;
+            display: flex;
+            flex-direction: column; /* Stack vertically */
+            height: 100%; /* Fill the constrained body */
             max-width: 600px;
             margin: 0 auto;
-            border-left: 1px solid transparent;
-            border-right: 1px solid transparent;
+            background: transparent;
         }
-        
-        #app { display: flex; flex-direction: column; }
 
         @media (min-width: 601px) {
-            #app, #lock-screen, #setup-screen {
-                border-color: var(--border);
+            #app {
+                border-left: 1px solid var(--border);
+                border-right: 1px solid var(--border);
                 box-shadow: 0 0 50px rgba(0,0,0,0.05);
             }
         }
 
         /* HEADER */
         header {
+            flex-shrink: 0; /* Never shrink */
             padding: 15px 20px;
             display: flex;
             justify-content: space-between;
@@ -159,6 +166,7 @@
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             border-bottom: 1px solid var(--border);
+            z-index: 10;
         }
 
         h1 { margin: 0; font-size: 1.1rem; }
@@ -176,12 +184,14 @@
             font-size: 0.75rem;
         }
 
-        /* FEED & CHAT BUBBLES */
+        /* FEED AREA - SCROLLING HAPPENS HERE ONLY */
         #feed {
-            flex: 1;
-            overflow-y: auto;
+            flex-grow: 1; /* Take all available space */
+            overflow-y: auto; /* Scroll ONLY this element */
+            -webkit-overflow-scrolling: touch; /* Smooth scroll iOS */
             padding: 15px;
             scroll-behavior: smooth;
+            min-height: 0; /* CRITICAL FLEXBOX FIX */
         }
 
         .log-group { margin-bottom: 25px; }
@@ -206,7 +216,6 @@
             margin-bottom: 8px;
         }
 
-        /* Logic for self vs other alignment */
         .entry-container.self { align-items: flex-end; }
         .entry-container.other { align-items: flex-start; }
 
@@ -251,7 +260,6 @@
             gap: 10px;
         }
 
-        /* REACTIONS */
         .reactions-bar {
             display: flex;
             flex-wrap: wrap;
@@ -279,13 +287,16 @@
 
         /* INPUT AREA */
         #input-area {
+            flex-shrink: 0; /* Never shrink */
             padding: 10px 15px;
+            padding-bottom: max(10px, env(safe-area-inset-bottom)); /* iPhone X fix */
             background: var(--card-bg);
             backdrop-filter: blur(12px);
             border-top: 1px solid var(--border);
             display: flex;
             gap: 8px;
             align-items: center;
+            z-index: 20;
         }
 
         #type-select {
@@ -327,7 +338,7 @@
         }
 
         /* MODALS & OVERLAYS */
-        .modal, .overlay-screen {
+        .overlay-screen, .modal {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: var(--bg-color);
@@ -353,7 +364,6 @@
             overflow-y: auto;
         }
 
-        /* General UI Elements */
         .theme-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
         .theme-btn { padding: 10px; border: 1px solid var(--border); background: var(--card-bg); border-radius: 10px; color: var(--text-color); cursor: pointer; }
         .theme-btn.active { border: 2px solid var(--accent); }
@@ -361,7 +371,6 @@
         .full-input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-color); margin: 10px 0; font-family: inherit; }
         .action-btn { background: var(--accent); color: white; border: none; padding: 12px 20px; border-radius: 25px; cursor: pointer; font-family: inherit; font-size: 1rem; margin-top: 10px; }
 
-        /* Stats Table */
         .stats-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
         .stats-table td { padding: 8px; border-bottom: 1px solid var(--border); }
         .stats-table tr:last-child td { border-bottom: none; }
@@ -387,7 +396,7 @@
     <div id="setup-screen" class="overlay-screen">
         <h1>👋 welcome</h1>
         <p>he knows your name. you can choose it anyway!</p>
-		<p>what do you want to be called?</p>
+        <p>what do you want to be called?</p>
         <input type="text" id="setup-name" class="full-input" placeholder="e.g. 'his beautiful angel'.." style="text-align:center;">
         <button class="action-btn" onclick="finishSetup()">start logging</button>
     </div>
@@ -459,31 +468,25 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
         import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, updateDoc, doc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
-          const firebaseConfig = {
-    apiKey: "AIzaSyAnz5Nfuooy5cyv2xqAhb79m8FDXSpMsi8",
-    authDomain: "loveapp-e565a.firebaseapp.com",
-    projectId: "loveapp-e565a",
-    storageBucket: "loveapp-e565a.firebasestorage.app",
-    messagingSenderId: "942341178242",
-    appId: "1:942341178242:web:10dc0420a66d75247f459b"
-  };
-        // -------------------------------
+        const firebaseConfig = {
+            apiKey: "AIzaSyAnz5Nfuooy5cyv2xqAhb79m8FDXSpMsi8",
+            authDomain: "loveapp-e565a.firebaseapp.com",
+            projectId: "loveapp-e565a",
+            storageBucket: "loveapp-e565a.firebasestorage.app",
+            messagingSenderId: "942341178242",
+            appId: "1:942341178242:web:10dc0420a66d75247f459b"
+        };
 
         let db;
         
-        // Make Firebase functions globally available for the inline event handlers
         window.reactToPost = async (id) => {
             const emoji = prompt("pick an emoji (type it using your keyboard):", "❤️");
             if(emoji) {
                 const docRef = doc(db, "logs", id);
-                
                 const currentUser = localStorage.getItem('username');
                 const updateKey = `reactions.${currentUser}`;
-                
-                // Dynamic key update requires generic object
                 const updatePayload = {};
                 updatePayload[updateKey] = emoji;
-                
                 try {
                     await updateDoc(docRef, updatePayload);
                 } catch(e) { console.error(e); }
@@ -498,7 +501,7 @@
             console.error(e);
         }
 
-        let loadedLogs = []; // Store locally for stats calculation
+        let loadedLogs = []; 
 
         function initApp() {
             const feedEl = document.getElementById('feed');
@@ -506,7 +509,6 @@
             const typeSelect = document.getElementById('type-select');
             const logInput = document.getElementById('log-input');
 
-            // Listen for data
             const q = query(collection(db, "logs"), orderBy("timestamp", "desc"), limit(60));
             
             onSnapshot(q, (snapshot) => {
@@ -514,14 +516,13 @@
                 loadedLogs = [];
                 const currentUser = localStorage.getItem('username');
 
-                // Pre-process for grouping
                 const grouped = {};
                 
                 snapshot.forEach((doc) => {
                     const data = doc.data();
                     if(!data.timestamp) return;
                     
-                    loadedLogs.push(data); // for stats
+                    loadedLogs.push(data);
                     
                     const dateObj = data.timestamp.toDate();
                     const dateStr = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
@@ -530,11 +531,6 @@
                     grouped[dateStr].push({ id: doc.id, ...data, time: dateObj });
                 });
 
-                // Render
-                // Reverse keys to show oldest date at top? No, feed usually newest bottom? 
-                // Actually user requested log, usually newest at top is better for quick entry.
-                // Let's keep newest at top.
-                
                 Object.keys(grouped).forEach(date => {
                     const dh = document.createElement('div');
                     dh.className = 'date-header';
@@ -556,7 +552,6 @@
                         else if(item.type === 'sleep') icon = '💤';
                         else icon = '📝';
 
-                        // Render Reactions
                         let reactHtml = '';
                         if(item.reactions) {
                             reactHtml = `<div class="reactions-bar">`;
@@ -583,9 +578,11 @@
                     });
                     feedEl.appendChild(groupDiv);
                 });
+                
+                // Optional: scroll to bottom on load? The user requested "newest first" logic (descending), 
+                // so the newest is at top. No scroll needed.
             });
 
-            // Submit Data
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const content = logInput.value.trim();
@@ -595,7 +592,7 @@
                 if (!content || !author) return;
 
                 logInput.value = '';
-                logInput.blur();
+                logInput.blur(); 
 
                 try {
                     await addDoc(collection(db, "logs"), {
@@ -618,12 +615,19 @@
     </script>
 
     <script>
-        // --- LOCAL LOGIC (No Firebase needed here) ---
+        // --- VIEWPORT FIX SCRIPT ---
+        // This calculates the real viewport height including mobile URL bars
+        const appHeight = () => {
+            const doc = document.documentElement;
+            doc.style.setProperty('--app-height', `${window.innerHeight}px`);
+        }
+        window.addEventListener('resize', appHeight);
+        appHeight();
+        // ---------------------------
 
         const currentUser = localStorage.getItem('username');
         const savedPin = localStorage.getItem('app_pin');
 
-        // Initial State Router
         if (savedPin) {
             document.getElementById('lock-screen').classList.add('active');
         } else if (!currentUser) {
@@ -634,7 +638,6 @@
 
         document.getElementById('current-user-display').textContent = currentUser || 'unknown';
 
-        // Setup
         function finishSetup() {
             const name = document.getElementById('setup-name').value.trim();
             if(name) {
@@ -650,7 +653,6 @@
             }
         }
 
-        // Lock / Security
         function savePin() {
             const pin = document.getElementById('set-pin').value.trim();
             if(pin === "") {
@@ -679,19 +681,7 @@
             }
         }
 
-        // Stats Logic
         window.calculateStats = function() {
-            // Need to grab loadedLogs (exposed via module hack or just grab DOM? simpler to query logic in module, 
-            // but for single file without complex state management, let's just parse the loaded DOM or use a global)
-            
-            // Note: loadedLogs is updated in the module script. We can't access it here directly easily because of scope.
-            // Workaround: We will calculate stats based on the rendered DOM for simplicity, 
-            // OR we move this logic into the module. Let's move logic to module is cleaner, but harder to trigger via onclick.
-            // QUICK FIX: We'll dispatch a custom event or just accept we parse the DOM for visual counts.
-            
-            // Actually, best way in this "hacky" single file setup:
-            // Just count the elements in the DOM.
-            
             const entries = document.querySelectorAll('.entry-container');
             const stats = {};
             
@@ -725,7 +715,6 @@
             toggleModal('stats');
         }
 
-        // Theme
         const savedTheme = localStorage.getItem('theme') || 'sanrio';
         setTheme(savedTheme);
 
