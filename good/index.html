@@ -29,7 +29,7 @@
         html, body { margin: 0; padding: 0; width: 100%; height: var(--app-height); overflow: hidden; overscroll-behavior: none; }
         body { font-family: var(--font-main); background-color: var(--bg-color); color: var(--text-color); transition: background 0.3s ease, color 0.3s ease; position: relative; }
         
-        /* BACKGROUND ANIMATION (Optimized) */
+        /* BACKGROUND */
         .bg-stickers {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             background-image: var(--bg-image); background-size: var(--bg-pattern-size);
@@ -54,7 +54,6 @@
         #feed { flex-grow: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 15px; scroll-behavior: smooth; z-index: 5; }
         .log-group { margin-bottom: 30px; }
         
-        /* DATE HEADER FIX */
         .date-header {
             font-size: 0.75rem; opacity: 0.9; margin-bottom: 15px; text-align: center;
             position: sticky; top: -1px; z-index: 10;
@@ -153,7 +152,7 @@
     <div id="setup-screen" class="overlay-screen">
         <div class="modal-content" style="text-align: center;">
             <h1>👋 welcome</h1>
-            <p>what do you wanna be called...,</p>
+            <p>what do you wanna be called,,,?</p>
             <input type="text" id="setup-name" class="full-input" placeholder="e.g. his beautiful angel" style="text-align:center;">
             <button class="action-btn" onclick="finishSetup()">start logging</button>
         </div>
@@ -237,36 +236,31 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, updateDoc, doc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, updateDoc, doc, deleteDoc, writeBatch, arrayUnion } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
         // ============================================
         // 1. GLOBAL UI FUNCTIONS (ATTACH TO WINDOW)
         // ============================================
         
-        // Modal Toggler
         window.toggleModal = (name) => {
             const el = document.getElementById(`${name}-modal`);
             if(el) el.classList.toggle('active');
         };
 
-        // Theme Setter
         window.setTheme = (themeName) => {
             document.body.setAttribute('data-theme', themeName);
             localStorage.setItem('theme', themeName);
-            // Update meta theme-color for mobile browsers
             const meta = document.querySelector('meta[name="theme-color"]');
             if(meta) {
                 const computed = getComputedStyle(document.body).getPropertyValue('--bg-color').trim();
                 meta.setAttribute('content', computed);
             }
-            // Update UI buttons
             document.querySelectorAll('.theme-btn').forEach(btn => {
                 btn.classList.remove('active');
                 if(btn.textContent.trim() === themeName) btn.classList.add('active');
             });
         };
 
-        // User Setup Logic
         window.finishSetup = () => {
             const name = document.getElementById('setup-name').value.trim();
             if(name) { 
@@ -282,7 +276,6 @@
             }
         };
 
-        // Lock/PIN Logic
         window.savePin = () => {
             const pin = document.getElementById('set-pin').value.trim();
             if(pin === "") { 
@@ -312,14 +305,8 @@
             }
         };
 
-        // Stats Logic
         window.calculateStats = () => {
-            // Recalculate based on currently loaded logs from memory
             const stats = {};
-            
-            // loadedLogs is defined in scope below, accessible here? 
-            // No, functions on window don't close over module scope automatically unless defined inside.
-            // Since this function is defined inside the module, it captures 'loadedLogs'.
             if(!loadedLogs) return;
 
             loadedLogs.forEach(data => {
@@ -339,7 +326,7 @@
                     <tr><td colspan="2" style="background:var(--accent); color:#fff; border-radius:5px;"><strong>${name}</strong></td></tr>
                     <tr><td>total posts</td><td class="stat-num">${data.total}</td></tr>
                     <tr><td>meals 🍱</td><td class="stat-num">${data.food}</td></tr>
-                    <tr><td>activities 🎮</td><td class="stat-num">${data.activity}</td></tr>
+                    <tr><td>gaming 🎮</td><td class="stat-num">${data.activity}</td></tr>
                     <tr><td>sleep 💤</td><td class="stat-num">${data.sleep}</td></tr>
                     <tr><td>love 💖</td><td class="stat-num">${data.love}</td></tr>
                 `;
@@ -349,7 +336,6 @@
             window.toggleModal('stats');
         };
 
-        // Click outside modal to close
         window.onclick = (event) => {
             if (event.target.classList.contains('modal')) event.target.classList.remove('active');
         };
@@ -368,7 +354,7 @@
         };
 
         let db;
-        let loadedLogs = []; // State for stats and logic
+        let loadedLogs = []; 
 
         try {
             const app = initializeApp(firebaseConfig);
@@ -379,7 +365,7 @@
         }
 
         // ============================================
-        // 3. DATABASE OPERATIONS (ATTACH TO WINDOW)
+        // 3. DATABASE OPERATIONS
         // ============================================
 
         window.reactToPost = async (id) => {
@@ -402,10 +388,8 @@
         };
 
         window.openEdit = (id, content) => {
-            // Need to decode HTML entities if we want to edit raw text
             const txt = document.createElement("textarea");
             txt.innerHTML = content;
-            
             document.getElementById('edit-id').value = id;
             document.getElementById('edit-input').value = txt.value;
             window.toggleModal('edit');
@@ -423,7 +407,7 @@
         };
 
         // ============================================
-        // 4. MAIN APPLICATION LOGIC
+        // 4. MAIN APPLICATION LOGIC (FIXED)
         // ============================================
 
         function initApp() {
@@ -433,15 +417,17 @@
             const logInput = document.getElementById('log-input');
             const sendBtn = document.getElementById('send-btn');
 
-            // Listen for data (Limit 50 for Chromebook optimization)
             const q = query(collection(db, "logs"), orderBy("timestamp", "desc"), limit(50));
             
+            // Debounce variable
+            let renderRequest;
+
             onSnapshot(q, (snapshot) => {
                 const currentUser = localStorage.getItem('username');
                 const grouped = {};
                 const unreadIds = []; 
 
-                loadedLogs = []; // Reset local cache
+                loadedLogs = []; 
 
                 snapshot.forEach((docSnap) => {
                     const data = docSnap.data();
@@ -459,7 +445,9 @@
                     const readBy = data.readBy || [];
                     const isRead = readBy.includes(currentUser);
                     
-                    if (!isSelf && !isRead) {
+                    // CRITICAL FIX: Ignore pending writes for logic checks.
+                    // If we just wrote to this locally, don't trigger another write based on it.
+                    if (!isSelf && !isRead && !docSnap.metadata.hasPendingWrites) {
                         unreadIds.push(docSnap.id);
                     }
 
@@ -478,7 +466,11 @@
                     markAsReadBatch(unreadIds, currentUser);
                 }
 
-                renderFeed(grouped, feedEl);
+                // Debounce the render to prevent flashes if rapid updates come in
+                if (renderRequest) cancelAnimationFrame(renderRequest);
+                renderRequest = requestAnimationFrame(() => {
+                    renderFeed(grouped, feedEl);
+                });
             });
 
             form.addEventListener('submit', async (e) => {
@@ -516,13 +508,12 @@
         function markAsReadBatch(ids, user) {
             ids.forEach(id => {
                 const ref = doc(db, "logs", id);
-                // We just fire the update without waiting to keep UI snappy
-                // Using a safe 'merge' implicit strategy
-                // Read local data to append user
-                const currentReadBy = loadedLogs.find(l => l.id === id)?.readBy || [];
-                if(!currentReadBy.includes(user)) {
-                    updateDoc(ref, { readBy: [...currentReadBy, user] }).catch(()=>{});
-                }
+                // CRITICAL FIX: Use arrayUnion.
+                // This atomic operation ensures that if 'user' is already in the array,
+                // NO WRITE happens, and NO SNAPSHOT fires. This stops the loop.
+                updateDoc(ref, { 
+                    readBy: arrayUnion(user) 
+                }).catch(()=>{});
             });
         }
 
@@ -572,7 +563,6 @@
 
                     let actionsHtml = '';
                     if (item.isSelf) {
-                        // Pass content carefully to avoid breaking HTML
                         const safeContent = escapeHtml(item.content);
                         actionsHtml = `
                             <div class="msg-actions">
@@ -616,16 +606,13 @@
         // 5. INITIALIZATION RUN
         // ============================================
         
-        // 1. Fix viewport
         const appHeight = () => { document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`); }
         window.addEventListener('resize', appHeight);
         appHeight();
 
-        // 2. Set Theme
         const savedTheme = localStorage.getItem('theme') || 'sanrio';
         window.setTheme(savedTheme);
 
-        // 3. Handle Login/Lock State
         const currentUser = localStorage.getItem('username');
         const savedPin = localStorage.getItem('app_pin');
 
