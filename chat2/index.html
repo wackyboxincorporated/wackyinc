@@ -8,170 +8,170 @@
     <link rel="stylesheet" href="main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
-<body class="flex flex-col h-screen font-sans theme-transition">
+<body class="flex flex-col h-screen bg-gray-100 text-gray-900 font-sans transition-colors duration-300">
 
-    <header class="p-4 shadow-md rounded-b-xl flex justify-between items-center header-bg">
+    <header class="bg-gradient-to-r from-blue-600 to-indigo-700 p-4 shadow-md rounded-b-xl flex justify-between items-center flex-shrink-0 z-20">
         <h1 class="text-3xl font-extrabold text-white">wChat 2</h1>
         <div class="flex items-center space-x-4">
-            <button id="userSettingsButton" class="text-white text-2xl p-2 rounded-full hover:bg-white/20 transition-colors">
+            <button id="userSettingsButton" class="text-white text-2xl p-2 rounded-full hover:bg-white hover:bg-opacity-20 transition-colors">
                 <i class="fas fa-cog"></i>
             </button>
-            <span id="userIdDisplayHeader" class="text-sm text-white font-medium bg-black/20 py-1 px-3 rounded-full">
+            <span id="userIdDisplayHeader" class="text-sm text-white font-medium bg-blue-500 py-1 px-3 rounded-full shadow-inner">
                 Loading...
             </span>
-            <input type="text" id="nicknameInput" placeholder="Nickname" class="p-2 rounded-lg bg-white/20 text-white placeholder-gray-200 focus:outline-none w-32 md:w-48" maxlength="20" />
+            <input type="text" id="nicknameInput" placeholder="Nickname" class="p-2 rounded-lg bg-white bg-opacity-20 text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-white transition-all w-32 md:w-48" maxlength="20" />
         </div>
     </header>
 
-    <main class="flex flex-1 overflow-hidden relative bg-main">
-        <button id="sidebarToggle" class="absolute top-4 left-4 p-1 rounded-full bg-accent text-white shadow-md z-20 hover:scale-110 transition-transform">
+    <main class="flex flex-1 overflow-hidden relative">
+        <button id="sidebarToggle" class="absolute top-4 left-4 p-1 rounded-full bg-blue-500 text-white shadow-md z-10 hover:scale-110 transition-transform">
             <i class="fas fa-chevron-right" id="toggleIcon"></i>
         </button>
 
-        <aside id="sidebar" class="w-0 bg-sidebar transition-all duration-300 overflow-hidden flex-shrink-0 flex flex-col border-r border-gray-500/10">
-            <div class="p-4 pt-14 h-full overflow-y-auto">
-                <div class="bg-panel p-3 rounded-lg shadow-inner mb-4">
-                    <button id="channelToggleButton" class="w-full text-left font-semibold text-main flex justify-between items-center py-1">
-                        Channel Settings <i class="fas fa-chevron-down" id="channelToggleIcon"></i>
+        <aside id="sidebar" class="w-0 bg-gray-200 dark:bg-gray-800 transition-all duration-300 overflow-hidden flex-shrink-0 flex flex-col">
+            <div class="p-4 pt-10 h-full overflow-y-auto">
+                <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg shadow-inner mb-4">
+                    <button id="channelToggleButton" class="w-full text-left font-semibold text-gray-800 dark:text-gray-100 flex justify-between items-center py-1">
+                        Channel Settings <i class="fas fa-chevron-down transform transition-transform" id="channelToggleIcon"></i>
                     </button>
                     <div id="channelInputContent" class="overflow-hidden transition-all duration-300 max-h-0">
                         <div class="flex flex-col space-y-2 pt-2">
-                            <input type="text" id="channelInput" placeholder="Channel Name" class="p-2 border rounded-lg bg-input text-main w-full" value="general-chat" />
-                            <button id="joinChannelButton" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg w-full">Join</button>
-                            <span id="currentChannelDisplay" class="text-accent font-semibold text-sm text-center block">#general-chat</span>
-                        </div>
-                        <div class="flex items-center justify-between mt-4">
-                            <span class="text-main text-sm font-semibold">Notifications:</span>
-                            <input type="checkbox" id="channelNotificationsToggle" class="accent-blue-500 h-5 w-5" checked />
+                            <input type="text" id="channelInput" placeholder="Channel Name" class="p-2 border rounded-lg dark:bg-gray-600 dark:text-white dark:border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" value="general-chat" />
+                            <button id="joinChannelButton" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg shadow w-full">Join</button>
+                            <span id="currentChannelDisplay" class="text-blue-700 dark:text-blue-300 font-semibold text-sm text-center">#general-chat</span>
                         </div>
                     </div>
                 </div>
-
-                <h3 class="text-lg font-semibold mb-2 text-main">Public Channels</h3>
+                <h3 class="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-100">Public Channels</h3>
                 <ul id="publicChannelList" class="space-y-1"></ul>
             </div>
         </aside>
 
-        <div id="chatContentArea" class="flex-1 flex flex-col overflow-hidden relative">
-            <div id="messagesListContainer" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+        <div id="chatContentArea" class="flex-1 flex flex-col overflow-hidden relative bg-gray-50 dark:bg-gray-900">
+            <div id="messagesListContainer" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar relative">
                 <div id="noMessagesPlaceholder" class="absolute inset-0 flex items-center justify-center hidden">
-                    <p class="text-gray-500 text-lg">No messages yet.</p>
+                    <p class="text-gray-600 dark:text-gray-400 text-lg">No messages yet.</p>
                 </div>
-                <div id="loadingIndicator" class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div class="text-lg font-semibold animate-pulse text-main">Loading chat...</div>
+                <div id="loadingIndicator" class="absolute inset-0 flex items-center justify-center">
+                    <div class="text-lg font-semibold animate-pulse dark:text-gray-200">Loading chat...</div>
                 </div>
             </div>
         </div>
 
-        <button id="friendsToggleButton" class="absolute top-4 right-4 p-1 rounded-full bg-accent text-white shadow-md z-20 hover:scale-110 transition-transform">
+        <button id="friendsToggleButton" class="absolute top-4 right-4 p-1 rounded-full bg-blue-500 text-white shadow-md z-10 hover:scale-110 transition-transform">
             <i class="fas fa-chevron-left" id="friendsToggleIcon"></i>
         </button>
-        <aside id="friendsSidebar" class="w-0 bg-sidebar transition-all duration-300 overflow-hidden flex-shrink-0 border-l border-gray-500/10">
-            <div class="p-4 pt-14 h-full overflow-y-auto">
-                <h3 class="text-lg font-semibold mb-2 text-main">Friends</h3>
+
+        <aside id="friendsSidebar" class="w-0 bg-gray-200 dark:bg-gray-800 transition-all duration-300 overflow-hidden flex-shrink-0 flex flex-col">
+            <div class="p-4 pt-10 h-full overflow-y-auto">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-100">Friends</h3>
                 
-                <div class="bg-panel p-3 rounded-lg shadow-inner mb-4">
-                    <button id="addFriendToggle" class="w-full text-left font-semibold text-main flex justify-between items-center py-1">
-                        Add by Code <i class="fas fa-chevron-down"></i>
+                <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg shadow-inner mb-4">
+                    <button id="addFriendToggle" class="w-full text-left font-semibold text-gray-800 dark:text-gray-100 flex justify-between items-center py-1">
+                        Add by Code <i class="fas fa-chevron-down transform transition-transform" id="addFriendToggleIcon"></i>
                     </button>
                     <div id="addFriendContent" class="overflow-hidden transition-all duration-300 max-h-0 pt-2">
-                        <input type="text" id="friendCodeInput" placeholder="4-digit code" class="w-full p-2 border rounded-lg bg-input text-main text-center font-mono mb-2" maxlength="4" />
-                        <button id="addFriendByCodeButton" class="bg-accent hover:bg-opacity-80 text-white font-bold py-2 rounded-lg w-full">Add</button>
+                        <input type="text" id="friendCodeInput" placeholder="4-digit code" class="w-full p-2 border rounded-lg dark:bg-gray-600 dark:text-white text-center font-mono mb-2" maxlength="4" />
+                        <button id="addFriendByCodeButton" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg w-full">Add Friend</button>
                     </div>
                 </div>
                 
-                <div class="mb-2 text-main font-semibold text-sm">ID: <span id="userIdDisplayFriendsList" class="text-accent select-all">...</span></div>
+                <h3 class="text-sm font-semibold mb-2 text-gray-800 dark:text-gray-100">Your ID: <span id="userIdDisplayFriendsList" class="text-blue-500 font-mono select-all">...</span></h3>
                 <ul id="friendsList" class="space-y-2"></ul>
             </div>
         </aside>
     </main>
 
-    <form id="messageForm" class="p-4 bg-panel shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-30 flex flex-col space-y-3">
+    <form id="messageForm" class="p-4 bg-white dark:bg-gray-800 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] rounded-t-xl flex flex-col space-y-3 z-20">
         
         <div class="flex items-start space-x-2">
-            <button type="button" id="webrtcToggleButton" class="p-1 rounded-full bg-accent text-white shadow-md hover:scale-110 transition-transform">
+            <button type="button" id="webrtcToggleButton" class="p-1 rounded-full bg-blue-500 text-white shadow-md hover:scale-110 transition-transform flex-shrink-0">
                 <i class="fas fa-phone" id="webrtcToggleIcon"></i>
             </button>
-            <div id="webrtcMainPanel" class="flex-1 bg-gray-100/10 p-3 rounded-lg hidden">
-                <div class="flex flex-wrap gap-2 mb-2 items-center">
-                    <input type="text" id="targetUserIdInput" placeholder="User ID" class="flex-1 p-2 rounded bg-input text-main border text-sm" />
-                    <span class="text-main font-bold">OR</span>
-                    <input type="text" id="callCodeInput" placeholder="Code" class="w-20 p-2 rounded bg-input text-main border text-center font-mono text-sm" maxlength="4" />
-                    <button type="button" id="generateCallCodeButton" class="bg-purple-600 text-white px-3 py-1 rounded text-sm">Gen Code</button>
-                    <span id="generatedCallCodeDisplay" class="text-green-500 font-bold font-mono"></span>
+            <div id="webrtcMainPanel" class="flex-1 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg shadow-inner hidden">
+                <div class="flex flex-col md:flex-row gap-2 mb-2 items-center">
+                    <input type="text" id="targetUserIdInput" placeholder="Enter User ID" class="flex-1 p-2 border rounded-lg dark:bg-gray-600 dark:text-white text-sm w-full" />
+                    <span class="text-gray-500 font-bold text-xs">OR</span>
+                    <div class="flex w-full md:w-auto gap-2">
+                        <input type="text" id="callCodeInput" placeholder="Code" class="w-20 p-2 border rounded-lg dark:bg-gray-600 dark:text-white text-center font-mono text-sm" maxlength="4" />
+                        <button type="button" id="generateCallCodeButton" class="bg-purple-600 hover:bg-purple-700 text-white font-bold px-3 py-1 rounded-lg text-sm whitespace-nowrap">Gen Code</button>
+                    </div>
                 </div>
+                <div id="generatedCallCodeDisplay" class="text-green-600 dark:text-green-400 font-bold text-center text-sm mb-2 h-5"></div>
                 
                 <div class="flex flex-wrap gap-2 mb-2">
-                    <button type="button" id="startCallButton" class="flex-1 bg-blue-600 text-white py-1 rounded">Call</button>
-                    <button type="button" id="answerCallButton" class="flex-1 bg-green-600 text-white py-1 rounded hidden">Answer</button>
-                    <button type="button" id="endCallButton" class="flex-1 bg-red-600 text-white py-1 rounded hidden">Hang Up</button>
+                    <button type="button" id="startCallButton" class="flex-1 bg-blue-600 text-white font-bold py-1.5 px-3 rounded-lg text-sm">Call</button>
+                    <button type="button" id="answerCallButton" class="flex-1 bg-green-600 text-white font-bold py-1.5 px-3 rounded-lg text-sm hidden">Answer</button>
+                    <button type="button" id="endCallButton" class="flex-1 bg-red-600 text-white font-bold py-1.5 px-3 rounded-lg text-sm hidden">Hang Up</button>
                 </div>
                 
-                <div id="activeCallControls" class="flex flex-wrap gap-2 hidden">
+                <div id="activeCallControls" class="flex flex-wrap gap-2 mb-2 hidden">
                     <button type="button" id="toggleVideoButton" class="flex-1 bg-purple-500 text-white py-1 rounded text-xs">Video</button>
                     <button type="button" id="toggleAudioButton" class="flex-1 bg-orange-500 text-white py-1 rounded text-xs">Mute</button>
                     <button type="button" id="toggleScreenShareButton" class="flex-1 bg-yellow-500 text-white py-1 rounded text-xs">Screen</button>
                     <button type="button" id="enlargeRemoteVideoButton" class="flex-1 bg-indigo-500 text-white py-1 rounded text-xs">Full</button>
                 </div>
 
-                <div id="callStatus" class="text-sm text-main text-center mt-2">Idle</div>
-                <button type="button" id="addFriendFromCallButton" class="hidden text-accent text-sm w-full text-center mt-1">Add to Friends</button>
+                <div id="callStatus" class="text-sm text-gray-700 dark:text-gray-300 text-center">Idle</div>
+                <button type="button" id="addFriendFromCallButton" class="hidden text-blue-500 text-sm w-full text-center mt-1 hover:underline">Add Caller to Friends</button>
 
                 <div class="flex gap-2 mt-2 hidden" id="videoFeedsContainer">
-                    <video id="localVideo" class="w-1/2 h-24 bg-black rounded object-cover" autoplay muted></video>
-                    <video id="remoteVideo" class="w-1/2 h-24 bg-black rounded object-cover" autoplay></video>
+                    <video id="localVideo" class="w-1/2 h-24 bg-gray-900 rounded-lg object-cover" autoplay muted></video>
+                    <video id="remoteVideo" class="w-1/2 h-24 bg-gray-900 rounded-lg object-cover" autoplay></video>
                 </div>
                 <audio id="remoteAudio" autoplay hidden></audio>
             </div>
         </div>
 
-        <div id="mediaPreview" class="hidden flex items-center justify-between p-2 bg-gray-100/50 rounded border border-gray-300">
-            <div class="flex items-center overflow-hidden">
-                <div id="previewContent"></div> <span id="mediaFileName" class="text-sm text-main ml-2 truncate max-w-[150px]"></span>
+        <div id="mediaPreviewContainer" class="hidden flex items-center justify-between p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700">
+            <div class="flex items-center overflow-hidden w-full">
+                <div id="previewContent" class="flex-shrink-0 mr-3"></div> <span id="mediaFileName" class="text-sm text-gray-700 dark:text-gray-300 truncate"></span>
             </div>
-            <div class="flex space-x-2">
-                <button type="button" id="scaleMediaButton" class="hidden bg-yellow-500 text-white text-xs px-2 py-1 rounded">Scale</button>
-                <button type="button" id="cancelMediaButton" class="text-red-500 hover:text-red-700"><i class="fas fa-times"></i></button>
+            <div class="flex space-x-2 flex-shrink-0">
+                <button type="button" id="scaleMediaButton" class="hidden bg-yellow-500 hover:bg-yellow-600 text-white text-xs px-2 py-1 rounded shadow">Scale</button>
+                <button type="button" id="cancelMediaButton" class="text-red-500 hover:bg-red-100 dark:hover:bg-red-900 p-1 rounded-full">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
         </div>
 
-        <div id="uploadProgressBarContainer" class="hidden w-full bg-gray-200 rounded-full h-1">
-            <div id="uploadProgressBar" class="bg-blue-600 h-1 rounded-full transition-all" style="width: 0%"></div>
+        <div id="uploadProgressBarContainer" class="hidden w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+            <div id="uploadProgressBar" class="bg-blue-600 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
         </div>
 
-        <div id="statusMessage" class="hidden p-2 rounded text-sm text-center font-bold"></div>
+        <div id="statusMessage" class="hidden p-2 rounded text-sm text-center font-bold bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"></div>
 
         <div class="flex items-center space-x-2">
             <input type="file" id="fileInput" accept="image/*,audio/*,video/*" class="hidden" />
-            <button type="button" id="attachFileButton" class="p-3 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700">
+            <button type="button" id="attachFileButton" class="p-3 rounded-lg bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 transition-colors">
                 <i class="fas fa-paperclip"></i>
             </button>
-            <button type="button" id="recordButton" class="p-3 rounded-lg bg-red-500 hover:bg-red-600 text-white relative">
+            <button type="button" id="recordButton" class="p-3 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors relative">
                 <i class="fas fa-microphone"></i>
-                <span id="recordingIndicator" class="absolute top-0 right-0 h-3 w-3 bg-white rounded-full animate-ping hidden"></span>
+                <span id="recordingIndicator" class="absolute top-1 right-1 h-2 w-2 bg-white rounded-full animate-ping hidden"></span>
             </button>
-            <input type="text" id="newMessageInput" placeholder="Type a message..." class="flex-1 p-3 border rounded-lg bg-input text-main focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            <button type="submit" id="sendButton" class="bg-accent hover:bg-opacity-90 text-white font-bold py-3 px-6 rounded-lg shadow-lg">
+            <input type="text" id="newMessageInput" placeholder="Type a message..." class="flex-1 p-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all" />
+            <button type="submit" id="sendButton" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105 active:scale-95">
                 Send
             </button>
         </div>
     </form>
 
-    <div id="modalOverlay" class="fixed inset-0 bg-black/80 hidden z-50 flex items-center justify-center">
-        <div id="modalContent" class="bg-panel p-6 rounded-lg shadow-2xl max-w-sm w-full mx-4 text-main relative">
-            <button id="closeModal" class="absolute top-2 right-2 text-gray-500 hover:text-gray-700">&times;</button>
+    <div id="modalOverlay" class="fixed inset-0 bg-black bg-opacity-75 hidden z-50 flex items-center justify-center">
+        <div id="modalContent" class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-sm w-full mx-4 text-gray-900 dark:text-gray-100 relative">
+            <button id="closeModal" class="absolute top-2 right-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-xl">&times;</button>
             <div id="modalBody"></div>
         </div>
     </div>
 
     <div id="fullscreenVideoModal" class="fixed inset-0 bg-black z-[60] hidden flex items-center justify-center">
-        <button id="closeFsVideo" class="absolute top-4 right-4 text-white text-3xl">&times;</button>
+        <button id="closeFsVideo" class="absolute top-4 right-4 text-white text-3xl hover:text-gray-300">&times;</button>
         <video id="fsVideoEl" class="max-w-full max-h-full" controls autoplay></video>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, deleteDoc, updateDoc, where, getDocs, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"; 
 
         const firebaseConfig = { apiKey: "AIzaSyCbIMQv9Z44Ms2zNZh2SAmELkS8AJKsYvo", authDomain: "chat-5c6f4.firebaseapp.com", projectId: "chat-5c6f4", storageBucket: "chat-5c6f4.firebaseapp.com", messagingSenderId: "450004774412", appId: "1:450004774412:web:160c2275021b82745b4829" };
@@ -184,7 +184,7 @@
         let mediaFile = null, mediaRecorder, chunks = [];
         let state = { channel: 'general-chat', theme: 'dark', color: '#4CAF50' };
 
-        // DOM Helpers (The Magic Sauce for condensing code)
+        // Helper: DOM Selector & Creator
         const $ = (id) => document.getElementById(id);
         const dom = (tag, classes = '', text = '', attrs = {}) => {
             const el = document.createElement(tag);
@@ -193,8 +193,10 @@
             Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
             return el;
         };
-        const show = (el, yes = true) => el.classList.toggle('hidden', !yes);
-        
+        // FIXED: Show helper now checks for null
+        const show = (el, yes = true) => { if (el) el.classList.toggle('hidden', !yes); };
+        const val = (id, v) => { const el = $(id); if(el) { if(v===undefined) return el.value; el.value = v; } };
+
         // --- Initialization ---
         async function init() {
             try {
@@ -202,64 +204,86 @@
                 db = getFirestore(app);
                 auth = getAuth(app);
                 
-                // Load saved state
+                // Load State
                 state.channel = localStorage.getItem('wChatChannel') || 'general-chat';
                 state.theme = localStorage.getItem('wChatTheme') || 'dark';
                 state.color = localStorage.getItem('wChatColor') || '#4CAF50';
                 applyTheme(state.theme);
-                $('channelInput').value = state.channel;
-                $('currentChannelDisplay').textContent = '#' + state.channel;
+                val('channelInput', state.channel);
+                if($('currentChannelDisplay')) $('currentChannelDisplay').textContent = '#' + state.channel;
 
                 onAuthStateChanged(auth, async (user) => {
                     if (!user) await signInAnonymously(auth);
                     currentUser = auth.currentUser;
-                    $('userIdDisplayHeader').textContent = `ID: ${currentUser.uid.slice(0,6)}..`;
-                    $('userIdDisplayFriendsList').textContent = currentUser.uid;
+                    if($('userIdDisplayHeader')) $('userIdDisplayHeader').textContent = `ID: ${currentUser.uid.slice(0,6)}..`;
+                    if($('userIdDisplayFriendsList')) $('userIdDisplayFriendsList').textContent = currentUser.uid;
                     setupListeners();
                 });
-            } catch (e) { console.error("Init failed", e); alert("Firebase Init Failed"); }
+            } catch (e) { console.error("Init failed", e); alert("Firebase Init Failed: " + e.message); }
+            
+            // Populate public channels
+            const chans = ['general', 'tech', 'random', 'music', 'gaming'];
+            const ul = $('publicChannelList');
+            if(ul) {
+                ul.innerHTML = '';
+                chans.forEach(c => {
+                    const li = dom('li', 'cursor-pointer hover:bg-blue-100 dark:hover:bg-gray-700 p-1 rounded text-gray-700 dark:text-gray-300', '#'+c);
+                    li.onclick = () => { state.channel = c; localStorage.setItem('wChatChannel', c); val('channelInput', c); location.reload(); };
+                    ul.appendChild(li);
+                });
+            }
         }
 
         function applyTheme(t) {
-            document.body.className = `flex flex-col h-screen font-sans theme-transition ${t}`;
+            document.body.className = `flex flex-col h-screen font-sans transition-colors duration-300 ${t}`;
             localStorage.setItem('wChatTheme', t);
         }
 
-        // --- Core Chat ---
+        // --- Core Listeners ---
         function setupListeners() {
             // Messages
             const q = query(collection(db, `artifacts/${appId}/public/data/messages`), where('channelId', '==', state.channel), orderBy('timestamp'));
             onSnapshot(q, snap => {
                 const list = $('messagesListContainer');
+                if(!list) return;
                 list.innerHTML = '';
                 snap.forEach(d => renderMessage({id: d.id, ...d.data()}, list));
                 show($('noMessagesPlaceholder'), snap.empty);
+                show($('loadingIndicator'), false);
                 list.scrollTop = list.scrollHeight;
-            });
+            }, err => console.error("Msg Error", err));
 
-            // Signaling (WebRTC)
+            // Signaling
             onSnapshot(query(collection(db, `artifacts/${appId}/public/data/messages`), where('targetUserId', '==', currentUser.uid)), snap => {
                 snap.docChanges().forEach(async c => {
                     if (c.type === 'added') {
                         const m = c.doc.data();
-                        if (m.type.startsWith('webrtc-')) handleSignaling(m, c.doc.ref);
+                        if (m.type && m.type.startsWith('webrtc-')) handleSignaling(m, c.doc.ref);
                     }
                 });
             });
 
-            // Friends
+            // Friends - FIXED: Handle undefined IDs correctly
             onSnapshot(query(collection(db, `artifacts/${appId}/users/${currentUser.uid}/friends`)), snap => {
-                const ul = $('friendsList'); ul.innerHTML = '';
-                snap.forEach(d => {
-                   if(d.id === 'placeholder') return; 
-                   const f = d.data();
-                   const li = dom('li', 'bg-gray-100/10 p-2 rounded flex justify-between items-center');
-                   li.innerHTML = `<span class="truncate flex-1 text-main text-sm font-bold" title="${f.id}">${f.nickname || f.id.slice(0,8)}</span>`;
+                const ul = $('friendsList'); 
+                if(!ul) return;
+                ul.innerHTML = '';
+                snap.forEach(docSnap => {
+                   if(docSnap.id === 'placeholder') return; 
+                   const f = docSnap.data();
+                   // FIXED: Use docSnap.id explicitly
+                   const displayName = f.nickname || docSnap.id.slice(0, 8) + '...';
+                   
+                   const li = dom('li', 'bg-white dark:bg-gray-700 p-2 rounded shadow flex justify-between items-center');
+                   li.innerHTML = `<span class="truncate flex-1 text-gray-800 dark:text-gray-200 text-sm font-bold mr-2" title="${docSnap.id}">${displayName}</span>`;
+                   
                    const actions = dom('div', 'flex space-x-2');
-                   const callBtn = dom('button', 'text-blue-500 hover:text-white', '<i class="fas fa-phone"></i>');
-                   callBtn.onclick = () => { $('targetUserIdInput').value = f.id; $('webrtcMainPanel').classList.remove('hidden'); startCall(); };
-                   const delBtn = dom('button', 'text-red-500 hover:text-white', '<i class="fas fa-trash"></i>');
-                   delBtn.onclick = () => deleteDoc(doc(db, `artifacts/${appId}/users/${currentUser.uid}/friends`, f.id));
+                   const callBtn = dom('button', 'text-blue-500 hover:text-blue-700', '<i class="fas fa-phone"></i>');
+                   callBtn.onclick = () => { val('targetUserIdInput', docSnap.id); show($('webrtcMainPanel'), true); startCall(); };
+                   
+                   const delBtn = dom('button', 'text-red-500 hover:text-red-700', '<i class="fas fa-trash"></i>');
+                   delBtn.onclick = () => deleteDoc(doc(db, `artifacts/${appId}/users/${currentUser.uid}/friends`, docSnap.id));
+                   
                    actions.append(callBtn, delBtn);
                    li.append(actions);
                    ul.appendChild(li);
@@ -268,20 +292,22 @@
         }
 
         function renderMessage(msg, container) {
-            if (msg.type.startsWith('webrtc')) return;
+            if (msg.type && msg.type.startsWith('webrtc')) return;
             const isMe = msg.userId === currentUser.uid;
             const row = dom('div', `flex ${isMe ? 'justify-end' : 'justify-start'}`);
-            const bubble = dom('div', `max-w-xs md:max-w-md p-3 rounded-lg shadow break-words ${isMe ? 'bg-accent text-white' : 'bg-white text-gray-900'}`);
+            const bubble = dom('div', `max-w-xs md:max-w-md p-3 rounded-lg shadow break-words ${isMe ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-bl-none'}`);
             
             const meta = dom('div', 'text-xs font-bold mb-1 opacity-75 flex justify-between gap-2', msg.userName || 'Anon');
             if(isMe) {
-                const del = dom('button', 'hover:text-red-200', '×');
+                const del = dom('button', 'hover:text-red-200 ml-2', '×');
                 del.onclick = () => { if(confirm('Delete?')) deleteDoc(doc(db, `artifacts/${appId}/public/data/messages`, msg.id)); };
                 meta.appendChild(del);
             }
             bubble.appendChild(meta);
 
             if (msg.text) bubble.appendChild(dom('p', '', msg.text));
+            
+            // Unified Media Rendering
             if (msg.imageDataUrl) {
                 const img = dom('img', 'max-w-full rounded cursor-pointer mt-2');
                 img.src = msg.imageDataUrl;
@@ -289,12 +315,10 @@
                 bubble.appendChild(img);
             }
             if (msg.audioDataUrl) {
-                const aud = dom('audio', 'mt-2 w-full', '', {controls: true, src: msg.audioDataUrl});
-                bubble.appendChild(aud);
+                bubble.appendChild(dom('audio', 'mt-2 w-full', '', {controls: true, src: msg.audioDataUrl}));
             }
             if (msg.videoDataUrl) {
-                 const vid = dom('video', 'mt-2 max-w-full rounded', '', {controls: true, src: msg.videoDataUrl});
-                 bubble.appendChild(vid);
+                 bubble.appendChild(dom('video', 'mt-2 max-w-full rounded', '', {controls: true, src: msg.videoDataUrl}));
             }
             
             row.appendChild(bubble);
@@ -304,10 +328,10 @@
         // --- Messaging & Media ---
         $('messageForm').onsubmit = async (e) => {
             e.preventDefault();
-            const text = $('newMessageInput').value.trim();
+            const text = val('newMessageInput').trim();
             if (!text && !mediaFile) return;
             
-            $('sendButton').disabled = true;
+            const btn = $('sendButton'); btn.disabled = true; btn.textContent = '...';
             let mediaData = {};
             
             if (mediaFile) {
@@ -323,20 +347,20 @@
                     userId: currentUser.uid, userName: localStorage.getItem('wChatUserName') || 'Anon',
                     text, channelId: state.channel, timestamp: serverTimestamp(), type: 'chat', ...mediaData
                 });
-                $('newMessageInput').value = '';
+                val('newMessageInput', '');
                 resetMedia();
-            } catch(err) { alert("Msg failed (Size limit?): " + err.message); }
-            $('sendButton').disabled = false;
+            } catch(err) { alert("Message failed (File likely too big): " + err.message); }
+            btn.disabled = false; btn.textContent = 'Send';
         };
 
-        // Unified Media Handler
+        // File Handling
         $('fileInput').onchange = (e) => handleFileSelect(e.target.files[0]);
         $('attachFileButton').onclick = () => $('fileInput').click();
         
         function handleFileSelect(f) {
             if (!f) return;
+            // Size Check
             if (f.size > 1048576) {
-                // Determine if scale is possible
                 if(f.type.startsWith('video') || f.type.startsWith('image')) {
                     status(`File too big (${(f.size/1024).toFixed(0)}KB). Click Scale.`);
                     show($('scaleMediaButton'), true);
@@ -345,31 +369,32 @@
                 }
             }
             mediaFile = f;
-            show($('mediaPreview'), true);
-            $('mediaFileName').textContent = f.name;
+            show($('mediaPreviewContainer'), true);
+            if($('mediaFileName')) $('mediaFileName').textContent = f.name;
             const content = $('previewContent'); content.innerHTML = '';
             
-            if (f.type.startsWith('image')) content.appendChild(dom('img', 'h-10 w-10 object-cover', '', {src: URL.createObjectURL(f)}));
-            else if (f.type.startsWith('video')) content.appendChild(dom('video', 'h-10', '', {src: URL.createObjectURL(f)}));
-            else content.innerHTML = '<i class="fas fa-file-audio text-2xl text-main"></i>';
+            if (f.type.startsWith('image')) content.appendChild(dom('img', 'h-10 w-10 object-cover rounded', '', {src: URL.createObjectURL(f)}));
+            else if (f.type.startsWith('video')) content.appendChild(dom('video', 'h-10 rounded', '', {src: URL.createObjectURL(f)}));
+            else content.innerHTML = '<i class="fas fa-file-audio text-2xl text-blue-500"></i>';
         }
 
         $('scaleMediaButton').onclick = async () => {
             if(!mediaFile) return;
-            $('scaleMediaButton').textContent = "Scaling...";
+            const btn = $('scaleMediaButton'); btn.textContent = "Scaling..."; btn.disabled = true;
             try {
                 if(mediaFile.type.startsWith('image')) mediaFile = await scaleImage(mediaFile);
                 else if(mediaFile.type.startsWith('video')) mediaFile = await scaleVideo(mediaFile);
                 status(`Scaled to ${(mediaFile.size/1024).toFixed(0)}KB`);
-                show($('scaleMediaButton'), false);
+                show(btn, false);
             } catch(e) { alert("Scaling failed: "+e.message); }
-            $('scaleMediaButton').textContent = "Scale";
+            btn.textContent = "Scale"; btn.disabled = false;
         };
 
+        $('cancelMediaButton').onclick = resetMedia;
         function resetMedia() {
             mediaFile = null;
-            $('fileInput').value = '';
-            show($('mediaPreview'), false);
+            val('fileInput', '');
+            show($('mediaPreviewContainer'), false);
             show($('scaleMediaButton'), false);
             status('');
         }
@@ -391,7 +416,6 @@
         }
 
         async function scaleVideo(file) {
-            // Highly optimized version of the original monster function
             const vid = document.createElement('video');
             vid.muted = true; vid.src = URL.createObjectURL(file);
             await vid.play();
@@ -400,10 +424,10 @@
             const audioTrack = stream.getAudioTracks()[0];
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            const ratio = Math.min(320/vid.videoWidth, 240/vid.videoHeight, 1); // Aggressive downscale
+            const ratio = Math.min(320/vid.videoWidth, 240/vid.videoHeight, 1);
             canvas.width = vid.videoWidth * ratio; canvas.height = vid.videoHeight * ratio;
             
-            const canvasStream = canvas.captureStream(15); // 15 FPS
+            const canvasStream = canvas.captureStream(15);
             if(audioTrack) canvasStream.addTrack(audioTrack);
             
             const rec = new MediaRecorder(canvasStream, { mimeType: 'video/webm;codecs=vp8,opus', bitsPerSecond: 250000 });
@@ -413,7 +437,7 @@
             return new Promise((resolve, reject) => {
                 rec.onstop = () => {
                     const blob = new Blob(chunks, {type: 'video/webm'});
-                    blob.size < 1000000 ? resolve(blob) : reject(new Error("Video too long/complex"));
+                    blob.size < 1000000 ? resolve(blob) : reject(new Error("Video too long"));
                 };
                 rec.start();
                 const draw = () => {
@@ -422,23 +446,23 @@
                     requestAnimationFrame(draw);
                 };
                 draw();
-                setTimeout(() => { if(rec.state==='recording') rec.stop(); }, 60000); // 1 min hard cap
+                setTimeout(() => { if(rec.state==='recording') rec.stop(); }, 60000);
             });
         }
 
-        // --- WebRTC (Signaling & Calls) ---
+        // --- WebRTC ---
         async function startCall() {
-            callTarget = $('targetUserIdInput').value.trim();
+            callTarget = val('targetUserIdInput').trim();
             if (!callTarget) return alert("Enter User ID");
             createPeer();
             localStream = await navigator.mediaDevices.getUserMedia({audio: true});
             localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-            // Offer creation handled by negotiationneeded, but sometimes needs manual kick
             const off = await pc.createOffer();
             await pc.setLocalDescription(off);
             sendSig('offer', off);
             show($('activeCallControls'), true);
             $('callStatus').textContent = "Calling...";
+            show($('startCallButton'), false); show($('endCallButton'), true);
         }
 
         function createPeer() {
@@ -447,28 +471,26 @@
             pc.onicecandidate = e => { if(e.candidate) sendSig('candidate', e.candidate); };
             pc.ontrack = e => {
                 $('remoteAudio').srcObject = e.streams[0];
-                if(e.track.kind === 'video') $('remoteVideo').srcObject = e.streams[0];
+                if(e.track.kind === 'video') { $('remoteVideo').srcObject = e.streams[0]; show($('videoFeedsContainer'), true); }
             };
             pc.onconnectionstatechange = () => {
-                $('callStatus').textContent = pc.connectionState;
+                if($('callStatus')) $('callStatus').textContent = pc.connectionState;
                 if(pc.connectionState === 'connected') {
-                    show($('answerCallButton'), false);
-                    show($('startCallButton'), false);
-                    show($('endCallButton'), true);
+                     show($('answerCallButton'), false);
+                     show($('endCallButton'), true);
+                     if(callTarget !== currentUser.uid) show($('addFriendFromCallButton'), true);
                 }
             };
         }
 
         async function handleSignaling(m, ref) {
             const data = JSON.parse(m.data);
-            await deleteDoc(ref); // Clean up signaling
+            await deleteDoc(ref);
             
             if (m.type === 'webrtc-offer') {
-                if($('webrtcMainPanel').classList.contains('hidden')) {
-                    if(!confirm("Incoming call from " + m.senderUserId)) return;
-                    $('webrtcMainPanel').classList.remove('hidden');
-                }
+                show($('webrtcMainPanel'), true);
                 callTarget = m.senderUserId;
+                val('targetUserIdInput', callTarget);
                 createPeer();
                 await pc.setRemoteDescription(data);
                 localStream = await navigator.mediaDevices.getUserMedia({audio: true});
@@ -476,17 +498,11 @@
                 const ans = await pc.createAnswer();
                 await pc.setLocalDescription(ans);
                 sendSig('answer', ans);
-                show($('activeCallControls'), true);
+                show($('answerCallButton'), false); show($('endCallButton'), true);
             } 
-            else if (m.type === 'webrtc-answer') {
-                await pc.setRemoteDescription(data);
-            } 
-            else if (m.type === 'webrtc-candidate') {
-                if(pc && pc.remoteDescription) pc.addIceCandidate(data);
-            }
-            else if (m.type === 'webrtc-hangup') {
-                endCall(false);
-            }
+            else if (m.type === 'webrtc-answer') await pc.setRemoteDescription(data);
+            else if (m.type === 'webrtc-candidate') { if(pc && pc.remoteDescription) pc.addIceCandidate(data); }
+            else if (m.type === 'webrtc-hangup') endCall(false);
         }
 
         function sendSig(type, data) {
@@ -499,60 +515,75 @@
         function endCall(send = true) {
             if(pc) pc.close(); pc = null;
             if(localStream) localStream.getTracks().forEach(t => t.stop());
-            if(screenStream) screenStream.getTracks().forEach(t => t.stop());
             $('localVideo').srcObject = null; $('remoteVideo').srcObject = null;
             $('callStatus').textContent = 'Ended';
-            show($('activeCallControls'), false);
-            show($('endCallButton'), false);
-            show($('startCallButton'), true);
+            show($('activeCallControls'), false); show($('videoFeedsContainer'), false);
+            show($('endCallButton'), false); show($('startCallButton'), true);
             if(send && callTarget) sendSig('hangup', {});
         }
         
         $('endCallButton').onclick = () => endCall();
+        $('toggleVideoButton').onclick = async () => {
+            if(!localStream) return;
+            const vidTrack = localStream.getVideoTracks()[0];
+            if(vidTrack) { vidTrack.stop(); localStream.removeTrack(vidTrack); show($('localVideo'), false); }
+            else {
+                const s = await navigator.mediaDevices.getUserMedia({video: true});
+                const t = s.getVideoTracks()[0];
+                localStream.addTrack(t); pc.addTrack(t, localStream);
+                $('localVideo').srcObject = localStream; show($('localVideo'), true); show($('videoFeedsContainer'), true);
+            }
+        };
 
-        // --- UI & Toggles ---
-        $('sidebarToggle').onclick = () => {
-            const s = $('sidebar');
-            s.style.width = s.style.width === '0px' || s.style.width === '' ? '250px' : '0px';
-            $('toggleIcon').classList.toggle('fa-chevron-right'); $('toggleIcon').classList.toggle('fa-chevron-left');
+        // --- Add Friend by Code & UI Toggles ---
+        $('addFriendByCodeButton').onclick = async () => {
+            const code = val('friendCodeInput');
+            const q = query(collection(db, `artifacts/${appId}/public/data/call_codes`), where('code', '==', code));
+            const snap = await getDocs(q);
+            if(snap.empty) return alert("Code not found");
+            const uid = snap.docs[0].data().userId;
+            await setDoc(doc(db, `artifacts/${appId}/users/${currentUser.uid}/friends`, uid), { id: uid });
+            alert("Friend Added"); val('friendCodeInput', '');
         };
-        $('friendsToggleIcon').parentElement.onclick = () => {
-             const s = $('friendsSidebar');
-             s.style.width = s.style.width === '0px' || s.style.width === '' ? '250px' : '0px';
+        $('addFriendFromCallButton').onclick = async () => {
+            if(!callTarget) return;
+            await setDoc(doc(db, `artifacts/${appId}/users/${currentUser.uid}/friends`, callTarget), { id: callTarget });
+            alert("Added caller to friends!");
         };
-        $('channelToggleButton').onclick = () => {
-            const c = $('channelInputContent');
-            c.style.maxHeight = c.style.maxHeight === '0px' || c.style.maxHeight === '' ? '500px' : '0px';
+        $('generateCallCodeButton').onclick = async () => {
+            const code = Math.floor(1000 + Math.random() * 9000).toString();
+            await addDoc(collection(db, `artifacts/${appId}/public/data/call_codes`), { code, userId: currentUser.uid, timestamp: serverTimestamp() });
+            $('generatedCallCodeDisplay').textContent = code;
         };
+
+        // UI Toggles
+        const toggle = (btn, el, icon, r1, r2) => {
+             const b = $(btn); if(!b) return;
+             b.onclick = () => {
+                 const x = $(el); x.style.width = x.style.width==='0px' || !x.style.width ? '250px' : '0px';
+                 if(icon) { $(icon).classList.toggle(r1); $(icon).classList.toggle(r2); }
+             };
+        };
+        toggle('sidebarToggle', 'sidebar', 'toggleIcon', 'fa-chevron-right', 'fa-chevron-left');
+        toggle('friendsToggleButton', 'friendsSidebar', 'friendsToggleIcon', 'fa-chevron-left', 'fa-chevron-right');
+        
+        $('channelToggleButton').onclick = () => { const c = $('channelInputContent'); c.style.maxHeight = c.style.maxHeight ? null : '500px'; $('channelToggleIcon').classList.toggle('rotate-180'); };
         $('webrtcToggleButton').onclick = () => show($('webrtcMainPanel'));
-        $('addFriendToggle').onclick = () => {
-             const c = $('addFriendContent');
-             c.style.maxHeight = c.style.maxHeight === '0px' || c.style.maxHeight === '' ? '200px' : '0px';
-        };
+        $('addFriendToggle').onclick = () => { const c = $('addFriendContent'); c.style.maxHeight = c.style.maxHeight ? null : '200px'; $('addFriendToggleIcon').classList.toggle('rotate-180'); };
+        $('joinChannelButton').onclick = () => { state.channel = val('channelInput'); localStorage.setItem('wChatChannel', state.channel); location.reload(); };
 
-        // User Settings (Simplified Modal)
+        // Settings Modal
         $('userSettingsButton').onclick = () => {
-            const themes = ['light','dark','midnight','autumn','terminal','mario','windows95','windowsxp','windows7','windows10','wackybox','abyssal-blue','verdant-canopy','synthwave-glow'];
-            const opts = themes.map(t => `<option value="${t}" ${state.theme===t?'selected':''}>${t}</option>`).join('');
-            
-            const body = dom('div', 'space-y-4');
-            body.innerHTML = `
-                <h2 class="text-xl font-bold">Settings</h2>
-                <div><label>Theme</label><select id="themeSelect" class="w-full p-2 bg-input border rounded text-main">${opts}</select></div>
-                <button id="saveSettings" class="bg-blue-600 text-white p-2 rounded w-full">Save</button>
-            `;
-            $('modalBody').innerHTML = ''; $('modalBody').appendChild(body);
-            $('modalOverlay').classList.remove('hidden');
-            
-            $('saveSettings').onclick = () => {
-                applyTheme($('themeSelect').value);
-                $('modalOverlay').classList.add('hidden');
-            };
+            const opts = ['light','dark','midnight','autumn','terminal','mario'].map(t => `<option value="${t}" ${state.theme===t?'selected':''}>${t}</option>`).join('');
+            $('modalBody').innerHTML = `<h2 class="text-xl font-bold mb-4">Settings</h2><label class="block mb-2">Theme</label><select id="themeSelect" class="w-full p-2 border rounded mb-4 dark:bg-gray-700 dark:text-white">${opts}</select><button id="saveSettings" class="bg-blue-600 text-white p-2 rounded w-full font-bold">Save</button>`;
+            show($('modalOverlay'), true);
+            $('saveSettings').onclick = () => { applyTheme($('themeSelect').value); show($('modalOverlay'), false); };
         };
-        $('closeModal').onclick = () => $('modalOverlay').classList.add('hidden');
+        $('closeModal').onclick = () => show($('modalOverlay'), false);
+        $('nicknameInput').oninput = (e) => localStorage.setItem('wChatUserName', e.target.value);
+        val('nicknameInput', localStorage.getItem('wChatUserName') || '');
 
-        function status(msg) { $('statusMessage').textContent = msg; show($('statusMessage'), !!msg); }
-
+        function status(msg) { const s = $('statusMessage'); s.textContent = msg; show(s, !!msg); setTimeout(()=>show(s,false), 5000); }
         window.onload = init;
     </script>
 </body>
