@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>wChat 2 Reforged</title>
+    <title>wChat 2.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -14,39 +14,34 @@
     </style>
 </head>
 <body class="flex flex-col h-screen font-sans">
-
     <header class="p-4 shadow-md flex justify-between items-center z-20">
         <h1 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight">wChat 2</h1>
         <div class="flex items-center space-x-3">
             <button id="btn-settings" class="text-white text-xl p-2 rounded-full hover:bg-white/20 transition"><i class="fas fa-cog"></i></button>
-            <span id="header-user-id" class="hidden md:inline-block text-xs text-white font-mono bg-black/20 py-1 px-3 rounded-full">ID: Loading...</span>
+            <span id="header-user-id" class="hidden md:inline-block text-xs text-white font-mono bg-black/20 py-1 px-3 rounded-full">ID: ...</span>
             <input type="text" id="inp-nickname" placeholder="Nickname" class="p-2 rounded-lg bg-white/20 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white w-32" maxlength="20">
         </div>
     </header>
 
     <main class="flex flex-1 overflow-hidden relative">
-        <button id="btn-sidebar-toggle" class="absolute top-4 left-4 p-2 rounded-full bg-blue-500 text-white shadow-lg z-30 md:hidden transition hover:scale-110">
-            <i class="fas fa-bars"></i>
-        </button>
+        <button id="btn-sidebar-toggle" class="absolute top-4 left-4 p-2 rounded-full bg-blue-500 text-white shadow-lg z-30 md:hidden transition hover:scale-110"><i class="fas fa-bars"></i></button>
 
         <aside id="sidebar" class="w-0 md:w-64 transition-all duration-300 flex flex-col z-20 overflow-hidden absolute md:relative h-full shadow-xl">
             <div class="p-4 flex-1 overflow-y-auto custom-scrollbar">
                 <div class="bg-gray-100 p-3 rounded-lg mb-4">
                     <h3 class="font-bold mb-2 text-sm uppercase tracking-wide opacity-70">Current Channel</h3>
-                    <input type="text" id="inp-channel" value="general" class="w-full p-2 mb-2 rounded border border-gray-300 text-sm" placeholder="Channel Name">
+                    <input type="text" id="inp-channel" value="general" class="w-full p-2 mb-2 rounded border border-gray-300 text-sm">
                     <button id="btn-join" class="w-full bg-blue-600 text-white py-1 rounded text-sm hover:bg-blue-700">Join</button>
                     <div class="mt-2 flex items-center justify-between text-xs">
                         <span>Notifications</span>
                         <div class="relative inline-block w-10 align-middle select-none">
-                            <input type="checkbox" id="chk-channel-notif" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                            <input type="checkbox" id="chk-channel-notif" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" checked/>
                             <label for="chk-channel-notif" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
                         </div>
                     </div>
                 </div>
-
                 <h3 class="font-bold mb-2 text-sm uppercase tracking-wide opacity-70">Channels</h3>
                 <ul id="list-channels" class="space-y-1 mb-6 text-sm"></ul>
-
                 <h3 class="font-bold mb-2 text-sm uppercase tracking-wide opacity-70">Friends</h3>
                 <div class="flex space-x-1 mb-2">
                     <input id="inp-friend-code" type="text" placeholder="ID/Code" class="w-full p-1 text-xs rounded border">
@@ -64,36 +59,43 @@
 
             <div id="panel-webrtc" class="hidden border-t border-gray-300 bg-gray-50 p-3 shadow-inner">
                 <div class="flex justify-between items-center mb-2">
-                    <h3 class="font-bold text-sm">Active Call</h3>
+                    <h3 class="font-bold text-sm">WebRTC Call</h3>
                     <span id="status-webrtc" class="text-xs font-mono text-blue-600">Idle</span>
                 </div>
-                <div class="grid grid-cols-2 gap-2 mb-2">
-                    <video id="video-local" class="w-full h-32 bg-black rounded object-cover" muted autoplay></video>
-                    <video id="video-remote" class="w-full h-32 bg-black rounded object-cover" autoplay></video>
+                <div class="flex gap-2 mb-2">
+                    <video id="video-local" class="w-1/2 h-32 bg-black rounded object-cover hidden" muted autoplay></video>
+                    <video id="video-remote" class="w-1/2 h-32 bg-black rounded object-cover hidden" autoplay></video>
+                    <audio id="audio-remote" autoplay class="hidden"></audio>
                 </div>
                 <div class="flex flex-wrap gap-2 text-xs">
                     <input id="inp-call-target" type="text" placeholder="Target ID / Code" class="flex-1 p-1 rounded border">
-                    <button id="btn-call-start" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Call</button>
-                    <button id="btn-call-end" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 hidden">Hangup</button>
-                    <button id="btn-call-video" class="bg-blue-500 text-white px-3 py-1 rounded hidden"><i class="fas fa-video"></i></button>
-                    <button id="btn-call-audio" class="bg-blue-500 text-white px-3 py-1 rounded hidden"><i class="fas fa-microphone"></i></button>
-                    <button id="btn-call-screen" class="bg-yellow-500 text-white px-3 py-1 rounded hidden"><i class="fas fa-desktop"></i></button>
+                    <button id="btn-call-start" class="bg-green-600 text-white px-3 py-1 rounded">Call</button>
+                    <button id="btn-call-end" class="bg-red-600 text-white px-3 py-1 rounded hidden">Hangup</button>
+                    <button id="btn-call-video" class="bg-blue-500 text-white px-3 py-1 rounded hidden">Video On</button>
+                    <button id="btn-call-audio" class="bg-blue-500 text-white px-3 py-1 rounded hidden">Mute</button>
+                    <button id="btn-call-screen" class="bg-yellow-500 text-white px-3 py-1 rounded hidden">Share Screen</button>
+                    <button id="btn-call-enlarge" class="bg-indigo-500 text-white px-3 py-1 rounded hidden">Fullscreen</button>
                     <button id="btn-gen-code" class="bg-purple-500 text-white px-3 py-1 rounded">Get Code</button>
+                    <button id="btn-add-friend-call" class="bg-teal-500 text-white px-3 py-1 rounded hidden"><i class="fas fa-user-plus"></i></button>
                 </div>
                 <div id="display-code" class="text-center text-lg font-mono font-bold mt-2 text-purple-700"></div>
-                <audio id="audio-remote" autoplay class="hidden"></audio>
             </div>
 
             <div class="p-2 border-t border-gray-300 bg-white">
+                <div id="progress-container" class="hidden w-full bg-gray-200 rounded-full h-1.5 mb-2"><div id="progress-bar" class="bg-blue-600 h-1.5 rounded-full" style="width: 0%"></div></div>
                 <div id="preview-media" class="hidden flex items-center p-2 bg-gray-100 rounded mb-2">
                     <div id="preview-content" class="mr-3"></div>
                     <span id="preview-name" class="text-xs truncate flex-1"></span>
+                    <button id="btn-scale-media" class="text-xs bg-yellow-500 text-white px-2 py-1 rounded mr-2 hidden">Scale Down</button>
                     <button id="btn-clear-media" class="text-red-500"><i class="fas fa-times"></i></button>
                 </div>
-                
+                <div id="status-recording" class="hidden p-2 bg-red-100 text-red-600 text-xs rounded mb-2 flex justify-between items-center">
+                    <span><i class="fas fa-circle animate-pulse mr-2"></i>Recording...</span>
+                    <button id="btn-cancel-record" class="text-red-800 font-bold">&times;</button>
+                </div>
                 <form id="form-message" class="flex items-center space-x-2">
                     <button type="button" id="btn-toggle-webrtc" class="p-2 text-gray-500 hover:text-blue-500"><i class="fas fa-phone"></i></button>
-                    <input type="file" id="inp-file" class="hidden">
+                    <input type="file" id="inp-file" class="hidden" accept="image/*,video/*,audio/*">
                     <button type="button" id="btn-attach" class="p-2 text-gray-500 hover:text-blue-500"><i class="fas fa-paperclip"></i></button>
                     <button type="button" id="btn-record" class="p-2 text-gray-500 hover:text-red-500"><i class="fas fa-microphone"></i></button>
                     <input type="text" id="inp-message" placeholder="Type a message..." class="flex-1 p-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -103,34 +105,33 @@
         </div>
     </main>
 
-    <div id="modal-settings" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
-        <div class="bg-white p-6 rounded-lg w-80">
-            <h2 class="text-xl font-bold mb-4 text-black">Settings</h2>
-            <label class="block text-sm font-bold mb-1 text-black">Theme</label>
-            <select id="sel-theme" class="w-full p-2 border rounded mb-4 text-black">
-                <option value="dark">Dark</option><option value="light">Light</option><option value="midnight">Midnight</option>
-                <option value="autumn">Autumn</option><option value="terminal">Terminal</option><option value="windows95">Windows 95</option>
-                <option value="windowsxp">Windows XP</option><option value="wackybox">Wackybox</option><option value="abyssal-blue">Abyssal Blue</option>
-                <option value="synthwave-glow">Synthwave</option><option value="grayscale-refined">Grayscale</option><option value="mario">Mario</option>
-            </select>
-            <label class="block text-sm font-bold mb-1 text-black">My Message Color</label>
+    <div id="modal-settings" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg w-80 modal-content">
+            <h2 class="text-xl font-bold mb-4">Settings</h2>
+            <select id="sel-theme" class="w-full p-2 border rounded mb-4 text-black"><option value="dark">Dark</option><option value="light">Light</option><option value="midnight">Midnight</option><option value="autumn">Autumn</option><option value="terminal">Terminal</option><option value="windows95">Windows 95</option><option value="windowsxp">Windows XP</option><option value="wackybox">Wackybox</option><option value="abyssal-blue">Abyssal Blue</option><option value="synthwave-glow">Synthwave</option><option value="grayscale-refined">Grayscale</option><option value="mario">Mario</option></select>
             <input type="color" id="inp-color" class="w-full h-10 mb-4 cursor-pointer">
-            <button id="btn-req-notif" class="w-full bg-purple-600 text-white py-2 rounded mb-2">Enable Desktop Notifs</button>
-            <button id="btn-save-settings" class="w-full bg-green-600 text-white py-2 rounded">Save & Close</button>
+            <button id="btn-req-notif" class="w-full bg-purple-600 text-white py-2 rounded mb-2">Enable Notifications</button>
+            <button id="btn-save-settings" class="w-full bg-green-600 text-white py-2 rounded">Save</button>
         </div>
     </div>
-
-    <div id="modal-friend" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
-        <div class="bg-white p-6 rounded-lg w-80 text-black">
+    <div id="modal-friend" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg w-80 modal-content">
             <h2 class="text-xl font-bold mb-2">Edit Friend</h2>
             <p id="friend-target-id" class="text-xs text-gray-500 mb-4"></p>
-            <input id="inp-friend-nick" placeholder="Nickname" class="w-full p-2 border rounded mb-2">
-            <textarea id="inp-friend-note" placeholder="Note" class="w-full p-2 border rounded mb-4 h-20"></textarea>
-            <div class="flex space-x-2">
-                <button id="btn-save-friend" class="flex-1 bg-blue-600 text-white py-2 rounded">Save</button>
-                <button id="btn-close-friend" class="flex-1 bg-gray-400 text-white py-2 rounded">Cancel</button>
-            </div>
+            <input id="inp-friend-nick" placeholder="Nickname" class="w-full p-2 border rounded mb-2 text-black">
+            <textarea id="inp-friend-note" placeholder="Note" class="w-full p-2 border rounded mb-4 h-20 text-black"></textarea>
+            <div class="flex space-x-2"><button id="btn-save-friend" class="flex-1 bg-blue-600 text-white py-2 rounded">Save</button><button id="btn-close-friend" class="flex-1 bg-gray-400 text-white py-2 rounded">Cancel</button></div>
         </div>
+    </div>
+    <div id="modal-confirm-delete" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg w-80 modal-content text-center">
+            <p class="mb-4">Delete this message?</p>
+            <div class="flex justify-center space-x-4"><button id="btn-confirm-yes" class="bg-red-600 text-white px-4 py-2 rounded">Yes</button><button id="btn-confirm-no" class="bg-gray-400 text-white px-4 py-2 rounded">No</button></div>
+        </div>
+    </div>
+    <div id="modal-fullscreen" class="hidden fixed inset-0 bg-black z-50 flex items-center justify-center">
+        <button id="btn-close-fs" class="absolute top-4 right-4 text-white text-3xl">&times;</button>
+        <video id="video-fs" class="max-w-full max-h-full" controls autoplay></video>
     </div>
 
     <script type="module">
@@ -138,162 +139,190 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, deleteDoc, updateDoc, where, getDocs, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"; 
 
-        // --- CONSTANTS & CONFIG ---
         const firebaseConfig = { apiKey: "AIzaSyCbIMQv9Z44Ms2zNZh2SAmELkS8AJKsYvo", authDomain: "chat-5c6f4.firebaseapp.com", projectId: "chat-5c6f4", storageBucket: "chat-5c6f4.firebaseapp.com", messagingSenderId: "450004774412", appId: "1:450004774412:web:160c2275021b82745b4829", measurementId: "G-2Y6JBMK2CP" };
         const APP_ID = 'chat-5c6f4';
-        const MAX_FILE_SIZE = 1048576; // 1MB Limit
+        const MAX_DOC_SIZE = 1048576;
         const PUBLIC_CHANNELS = ['general', 'tech', 'random', 'music', 'gaming', 'coding', 'help'];
-        
-        // --- CLASSES ---
+        const $ = (id) => document.getElementById(id);
+        const sounds = { connect: new Audio('https://file.garden/ZMbUnW5nmTe-x54m/connect.mp3'), disconnect: new Audio('https://file.garden/ZPjrzSdXf2vX5mNF/disconnect.mp3') };
 
-        class WebRTCManager {
-            constructor(db, userId, uiCallbacks) {
-                this.db = db;
-                this.userId = userId;
-                this.ui = uiCallbacks; // { onStatus, onRemoteStream, onCleanup, onIncomingCall }
-                this.pc = null;
-                this.localStream = null;
-                this.remoteStream = new MediaStream();
-                this.callTargetId = null;
-                this.config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
-                this.unsubSignal = null;
-                this.iceQueue = [];
-                this.isScreenSharing = false;
-                this.setupSignalingListener();
+        class ScalingUtils {
+            static async scaleImage(file) {
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let { width, height } = img;
+                        const maxDim = 1920;
+                        if(width > maxDim || height > maxDim) {
+                            const ratio = Math.min(maxDim/width, maxDim/height);
+                            width *= ratio; height *= ratio;
+                        }
+                        canvas.width = width; canvas.height = height;
+                        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                        let q = 0.9;
+                        const tryCompress = () => {
+                            canvas.toBlob(blob => {
+                                if(blob.size <= MAX_DOC_SIZE || q <= 0.1) resolve(blob);
+                                else { q -= 0.1; tryCompress(); }
+                            }, 'image/jpeg', q);
+                        };
+                        tryCompress();
+                    };
+                    img.src = URL.createObjectURL(file);
+                });
             }
 
-            setupSignalingListener() {
+            static async scaleVideo(file) {
+                // Highly condensed version of the complex canvas+audiocontext scaling from original
+                return new Promise(async (resolve, reject) => {
+                    const video = document.createElement('video');
+                    video.muted = true;
+                    video.src = URL.createObjectURL(file);
+                    await video.play();
+                    
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const w = 320, h = 240; // Hard scale for size safety
+                    canvas.width = w; canvas.height = h;
+                    
+                    const stream = canvas.captureStream(15);
+                    let audioStream;
+                    try {
+                        const actx = new AudioContext();
+                        const source = actx.createMediaElementSource(video);
+                        const dest = actx.createMediaStreamDestination();
+                        source.connect(dest);
+                        audioStream = dest.stream;
+                        stream.addTrack(audioStream.getAudioTracks()[0]);
+                    } catch(e) { console.warn("Audio scaling fail", e); }
+
+                    const mr = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8,opus', bitsPerSecond: 250000 });
+                    const chunks = [];
+                    mr.ondataavailable = e => chunks.push(e.data);
+                    mr.onstop = () => {
+                        const blob = new Blob(chunks, { type: 'video/webm' });
+                        video.pause(); URL.revokeObjectURL(video.src);
+                        resolve(blob);
+                    };
+                    
+                    mr.start();
+                    const draw = () => {
+                        if(video.paused || video.ended) return;
+                        ctx.drawImage(video, 0, 0, w, h);
+                        requestAnimationFrame(draw);
+                    };
+                    draw();
+                    setTimeout(() => { if(mr.state === 'recording') mr.stop(); }, Math.min(video.duration*1000 + 500, 60000));
+                });
+            }
+        }
+
+        class WebRTCManager {
+            constructor(db, userId, ui) {
+                this.db = db; this.userId = userId; this.ui = ui;
+                this.pc = null; this.localStream = null; this.remoteStream = new MediaStream();
+                this.isScreen = false;
+                this.setupListener();
+            }
+            setupListener() {
                 const q = query(collection(this.db, `artifacts/${APP_ID}/public/data/messages`), where('targetUserId', '==', this.userId));
-                this.unsubSignal = onSnapshot(q, (snapshot) => {
-                    snapshot.docChanges().forEach(async change => {
-                        if (change.type === 'added') {
+                onSnapshot(q, snap => {
+                    snap.docChanges().forEach(async change => {
+                        if(change.type === 'added') {
                             const msg = change.doc.data();
-                            if (msg.type && msg.type.startsWith('webrtc-')) {
-                                await deleteDoc(change.doc.ref); // Consume message
+                            if(msg.type?.startsWith('webrtc-')) {
+                                await deleteDoc(change.doc.ref);
                                 this.handleSignal(msg);
                             }
                         }
                     });
                 });
             }
-
-            async startCall(targetId) {
-                this.callTargetId = targetId;
-                this.ui.onStatus(`Calling ${targetId}...`);
-                await this.initPeerConnection(true);
-            }
-
-            async initPeerConnection(isInitiator) {
-                this.pc = new RTCPeerConnection(this.config);
-                
-                this.pc.onicecandidate = event => {
-                    if (event.candidate) this.sendSignal('candidate', event.candidate.toJSON());
+            async initPC() {
+                this.pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+                this.pc.onicecandidate = e => e.candidate && this.sendSignal('candidate', e.candidate.toJSON());
+                this.pc.ontrack = e => { 
+                    this.remoteStream.addTrack(e.track); 
+                    if(e.track.kind === 'video') this.ui.onVideo(this.remoteStream);
+                    else this.ui.onAudio(this.remoteStream);
                 };
-                
-                this.pc.ontrack = event => {
-                    this.remoteStream.addTrack(event.track);
-                    this.ui.onRemoteStream(this.remoteStream);
-                };
-
                 this.pc.onconnectionstatechange = () => {
-                    if (['disconnected', 'failed', 'closed'].includes(this.pc.connectionState)) this.hangup();
-                    this.ui.onStatus(`State: ${this.pc.connectionState}`);
+                    this.ui.onStatus(this.pc.connectionState);
+                    if(this.pc.connectionState === 'connected') { sounds.connect.play(); this.ui.onConnect(); }
+                    if(['disconnected','failed','closed'].includes(this.pc.connectionState)) this.hangup();
                 };
-
-                try {
-                    this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false }); // Audio only start
-                    this.localStream.getTracks().forEach(t => this.pc.addTrack(t, this.localStream));
-                    if (this.ui.onLocalStream) this.ui.onLocalStream(this.localStream);
-                } catch (e) { console.error("Media Error", e); this.ui.onStatus("Mic Error"); }
-
-                if (isInitiator) {
-                    const offer = await this.pc.createOffer();
-                    await this.pc.setLocalDescription(offer);
-                    this.sendSignal('offer', offer);
-                }
             }
-
+            async startCall(target) {
+                this.target = target;
+                await this.initPC();
+                try {
+                    this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                    this.localStream.getTracks().forEach(t => this.pc.addTrack(t, this.localStream));
+                } catch(e) { console.error(e); }
+                const offer = await this.pc.createOffer();
+                await this.pc.setLocalDescription(offer);
+                this.sendSignal('offer', offer);
+            }
             async handleSignal(msg) {
                 const data = JSON.parse(msg.data);
-                switch (msg.type) {
-                    case 'webrtc-offer':
-                        if (this.pc) return; // Busy
-                        this.callTargetId = msg.senderUserId;
-                        this.ui.onIncomingCall(msg.senderUserId, () => this.acceptCall(data));
-                        break;
-                    case 'webrtc-answer':
-                        if (this.pc) await this.pc.setRemoteDescription(new RTCSessionDescription(data));
-                        break;
-                    case 'webrtc-candidate':
-                        if (this.pc && this.pc.remoteDescription) await this.pc.addIceCandidate(new RTCIceCandidate(data));
-                        else this.iceQueue.push(data);
-                        break;
-                    case 'webrtc-hangup':
-                        this.hangup();
-                        break;
+                if(msg.type === 'webrtc-offer') {
+                    if(confirm(`Call from ${msg.senderUserId}?`)) {
+                        this.target = msg.senderUserId;
+                        await this.initPC();
+                        await this.pc.setRemoteDescription(new RTCSessionDescription(data));
+                        const answer = await this.pc.createAnswer();
+                        await this.pc.setLocalDescription(answer);
+                        this.sendSignal('answer', answer);
+                        this.ui.onIncoming();
+                    }
+                } else if(this.pc) {
+                    if(msg.type === 'webrtc-answer') await this.pc.setRemoteDescription(new RTCSessionDescription(data));
+                    else if(msg.type === 'webrtc-candidate') await this.pc.addIceCandidate(new RTCIceCandidate(data));
+                    else if(msg.type === 'webrtc-hangup') this.hangup();
                 }
             }
-
-            async acceptCall(offer) {
-                await this.initPeerConnection(false);
-                await this.pc.setRemoteDescription(new RTCSessionDescription(offer));
-                this.iceQueue.forEach(c => this.pc.addIceCandidate(new RTCIceCandidate(c)));
-                this.iceQueue = [];
-                const answer = await this.pc.createAnswer();
-                await this.pc.setLocalDescription(answer);
-                this.sendSignal('answer', answer);
-            }
-
-            async sendSignal(type, data) {
-                if (!this.callTargetId) return;
-                await addDoc(collection(this.db, `artifacts/${APP_ID}/public/data/messages`), {
-                    type: `webrtc-${type}`, senderUserId: this.userId, targetUserId: this.callTargetId,
-                    data: JSON.stringify(data), timestamp: serverTimestamp(), channelId: 'signal'
+            sendSignal(type, data) {
+                addDoc(collection(this.db, `artifacts/${APP_ID}/public/data/messages`), {
+                    type: `webrtc-${type}`, senderUserId: this.userId, targetUserId: this.target,
+                    data: JSON.stringify(data), timestamp: serverTimestamp()
                 });
             }
-
             hangup() {
-                if (this.pc) { this.sendSignal('hangup', {}); this.pc.close(); }
-                if (this.localStream) this.localStream.getTracks().forEach(t => t.stop());
-                this.pc = null; this.localStream = null; this.callTargetId = null;
+                if(this.pc) { this.sendSignal('hangup', {}); this.pc.close(); }
+                if(this.localStream) this.localStream.getTracks().forEach(t => t.stop());
+                this.pc = null; this.localStream = null; this.isScreen = false;
+                sounds.disconnect.play();
                 this.ui.onCleanup();
             }
-
             async toggleVideo() {
-                if (!this.localStream) return;
-                const vidTrack = this.localStream.getVideoTracks()[0];
-                if (vidTrack && vidTrack.readyState === 'live') {
-                    vidTrack.stop();
-                    this.localStream.removeTrack(vidTrack);
-                    this.pc.getSenders().find(s => s.track.kind === 'video').replaceTrack(null);
-                } else {
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                    const track = stream.getVideoTracks()[0];
+                if(!this.localStream) return;
+                let track = this.localStream.getVideoTracks()[0];
+                if(track && track.readyState === 'live') { track.stop(); this.localStream.removeTrack(track); this.ui.onLocalVideo(false); }
+                else {
+                    const s = await navigator.mediaDevices.getUserMedia({ video: true });
+                    track = s.getVideoTracks()[0];
                     this.localStream.addTrack(track);
                     const sender = this.pc.getSenders().find(s => s.track && s.track.kind === 'video');
-                    if (sender) sender.replaceTrack(track);
-                    else this.pc.addTrack(track, this.localStream);
-                    this.ui.onLocalStream(this.localStream);
+                    if(sender) sender.replaceTrack(track); else this.pc.addTrack(track, this.localStream);
+                    this.ui.onLocalVideo(true, this.localStream);
                 }
             }
-
+            toggleAudio() { 
+                this.localStream.getAudioTracks().forEach(t => t.enabled = !t.enabled); 
+                return this.localStream.getAudioTracks()[0].enabled;
+            }
             async shareScreen() {
-                if (this.isScreenSharing) {
-                    // Revert to camera/audio
-                    this.isScreenSharing = false;
-                    this.hangup(); // Quickest reset
-                    return;
-                }
+                if(this.isScreen) { this.hangup(); return; } // Simple toggle off
                 try {
-                    const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-                    const videoTrack = stream.getVideoTracks()[0];
+                    const s = await navigator.mediaDevices.getDisplayMedia({ video: true });
+                    const t = s.getVideoTracks()[0];
                     const sender = this.pc.getSenders().find(s => s.track.kind === 'video');
-                    if(sender) sender.replaceTrack(videoTrack);
-                    else this.pc.addTrack(videoTrack, this.localStream);
-                    
-                    videoTrack.onended = () => { this.isScreenSharing = false; this.hangup(); };
-                    this.isScreenSharing = true;
-                } catch(e) { console.error("Screen share fail", e); }
+                    if(sender) sender.replaceTrack(t); else this.pc.addTrack(t, this.localStream);
+                    t.onended = () => this.hangup();
+                    this.isScreen = true;
+                    this.ui.onLocalVideo(true, s);
+                } catch(e) {}
             }
         }
 
@@ -302,270 +331,231 @@
                 this.app = initializeApp(firebaseConfig);
                 this.db = getFirestore(this.app);
                 this.auth = getAuth(this.app);
-                this.user = null;
-                this.channel = localStorage.getItem('wChatChannel') || 'general';
-                this.theme = localStorage.getItem('wChatTheme') || 'dark';
-                this.msgUnsub = null;
-                this.rtc = null;
-                this.mediaBlob = null;
-                
+                this.user = null; this.channel = localStorage.getItem('wChatChannel') || 'general';
+                this.blob = null; this.editId = null;
                 this.initUI();
-                this.initAuth();
+                onAuthStateChanged(this.auth, u => {
+                    if(u) { this.user = u; $('header-user-id').textContent = `ID: ${u.uid}`; this.initLogic(); }
+                    else signInAnonymously(this.auth);
+                });
             }
 
             initUI() {
-                document.body.className = this.theme;
-                // Elements
-                this.els = {
-                    msgContainer: document.getElementById('container-messages'),
-                    inpMsg: document.getElementById('inp-message'),
-                    inpFile: document.getElementById('inp-file'),
-                    btnSend: document.getElementById('btn-send'),
-                    previewMedia: document.getElementById('preview-media'),
-                    previewContent: document.getElementById('preview-content'),
-                    btnRecord: document.getElementById('btn-record'),
-                    videoLocal: document.getElementById('video-local'),
-                    videoRemote: document.getElementById('video-remote'),
-                    webrtcPanel: document.getElementById('panel-webrtc'),
-                    btnWebRTC: document.getElementById('btn-toggle-webrtc'),
-                    friendList: document.getElementById('list-friends'),
-                    channelList: document.getElementById('list-channels')
+                document.body.className = localStorage.getItem('wChatTheme') || 'dark';
+                $('btn-sidebar-toggle').onclick = () => $('sidebar').classList.toggle('w-0');
+                $('btn-settings').onclick = () => $('modal-settings').classList.remove('hidden');
+                $('btn-save-settings').onclick = () => this.saveSettings();
+                $('btn-req-notif').onclick = () => Notification.requestPermission();
+                $('form-message').onsubmit = e => this.send(e);
+                $('btn-attach').onclick = () => $('inp-file').click();
+                $('inp-file').onchange = e => this.handleFile(e);
+                $('btn-clear-media').onclick = () => this.clearMedia();
+                $('btn-scale-media').onclick = () => this.scaleMedia();
+                $('btn-record').onclick = () => this.toggleRec();
+                $('btn-cancel-record').onclick = () => this.cancelRec();
+                $('btn-join').onclick = () => this.join();
+                $('btn-add-friend').onclick = () => this.addFriend($('inp-friend-code').value);
+                $('btn-save-friend').onclick = () => this.saveFriend();
+                $('btn-close-friend').onclick = () => $('modal-friend').classList.add('hidden');
+                $('btn-confirm-yes').onclick = () => this.execDelete();
+                $('btn-confirm-no').onclick = () => $('modal-confirm-delete').classList.add('hidden');
+                $('btn-toggle-webrtc').onclick = () => $('panel-webrtc').classList.toggle('hidden');
+                $('btn-call-start').onclick = () => this.rtc.startCall($('inp-call-target').value);
+                $('btn-call-end').onclick = () => this.rtc.hangup();
+                $('btn-call-video').onclick = () => this.rtc.toggleVideo().then(() => $('btn-call-video').textContent = $('btn-call-video').textContent === 'Video On' ? 'Video Off' : 'Video On');
+                $('btn-call-audio').onclick = () => $('btn-call-audio').textContent = this.rtc.toggleAudio() ? 'Mute' : 'Unmute';
+                $('btn-call-screen').onclick = () => this.rtc.shareScreen();
+                $('btn-call-enlarge').onclick = () => { $('modal-fullscreen').classList.remove('hidden'); $('video-fs').srcObject = $('video-remote').srcObject; };
+                $('btn-close-fs').onclick = () => { $('modal-fullscreen').classList.add('hidden'); $('video-fs').srcObject = null; };
+                $('btn-gen-code').onclick = async () => { 
+                    const code = Math.floor(1000+Math.random()*9000); 
+                    await addDoc(collection(this.db, `artifacts/${APP_ID}/public/data/call_codes`), {code:String(code), userId:this.user.uid, timestamp:serverTimestamp()});
+                    $('display-code').textContent = code;
                 };
-
-                // Listeners
-                document.getElementById('form-message').onsubmit = (e) => this.sendMessage(e);
-                document.getElementById('btn-attach').onclick = () => this.els.inpFile.click();
-                this.els.inpFile.onchange = (e) => this.handleFileSelect(e);
-                this.els.btnRecord.onclick = () => this.toggleRecording();
-                this.els.btnWebRTC.onclick = () => this.els.webrtcPanel.classList.toggle('hidden');
-                document.getElementById('btn-join').onclick = () => this.joinChannel();
-                document.getElementById('btn-sidebar-toggle').onclick = () => document.getElementById('sidebar').classList.toggle('w-0');
-                document.getElementById('btn-save-settings').onclick = () => this.saveSettings();
-                document.getElementById('btn-settings').onclick = () => document.getElementById('modal-settings').classList.remove('hidden');
-                document.getElementById('sel-theme').value = this.theme;
-                document.getElementById('btn-call-start').onclick = () => this.rtc.startCall(document.getElementById('inp-call-target').value);
-                document.getElementById('btn-call-end').onclick = () => this.rtc.hangup();
-                document.getElementById('btn-call-video').onclick = () => this.rtc.toggleVideo();
-                document.getElementById('btn-call-screen').onclick = () => this.rtc.shareScreen();
-                document.getElementById('btn-gen-code').onclick = () => this.generateCallCode();
-                document.getElementById('btn-add-friend').onclick = () => this.addFriendByInput();
-
-                this.renderChannels();
+                $('btn-add-friend-call').onclick = () => this.addFriend(this.rtc.target);
+                PUBLIC_CHANNELS.forEach(c => $('list-channels').innerHTML += `<li><a href="#" onclick="document.getElementById('inp-channel').value='${c}'; document.getElementById('btn-join').click()" class="block p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded">#${c}</a></li>`);
             }
 
-            initAuth() {
-                onAuthStateChanged(this.auth, (user) => {
-                    if (user) {
-                        this.user = user;
-                        document.getElementById('header-user-id').textContent = `ID: ${user.uid.substring(0,6)}...`;
-                        document.getElementById('inp-nickname').value = localStorage.getItem('wChatNick') || '';
-                        this.rtc = new WebRTCManager(this.db, user.uid, {
-                            onStatus: (s) => document.getElementById('status-webrtc').textContent = s,
-                            onRemoteStream: (s) => { 
-                                this.els.videoRemote.srcObject = s; 
-                                document.getElementById('audio-remote').srcObject = s;
-                            },
-                            onLocalStream: (s) => this.els.videoLocal.srcObject = s,
-                            onCleanup: () => {
-                                this.els.videoLocal.srcObject = null;
-                                this.els.videoRemote.srcObject = null;
-                                document.getElementById('btn-call-start').classList.remove('hidden');
-                                document.getElementById('btn-call-end').classList.add('hidden');
-                                ['btn-call-video', 'btn-call-audio', 'btn-call-screen'].forEach(id => document.getElementById(id).classList.add('hidden'));
-                            },
-                            onIncomingCall: (id, accept) => {
-                                if(confirm(`Incoming call from ${id}. Accept?`)) {
-                                    document.getElementById('panel-webrtc').classList.remove('hidden');
-                                    ['btn-call-video', 'btn-call-audio', 'btn-call-screen', 'btn-call-end'].forEach(id => document.getElementById(id).classList.remove('hidden'));
-                                    document.getElementById('btn-call-start').classList.add('hidden');
-                                    accept();
-                                }
-                            }
-                        });
-                        this.loadMessages();
-                        this.loadFriends();
-                    } else {
-                        signInAnonymously(this.auth);
+            initLogic() {
+                this.rtc = new WebRTCManager(this.db, this.user.uid, {
+                    onStatus: s => $('status-webrtc').textContent = s,
+                    onConnect: () => {
+                        ['btn-call-start','btn-gen-code'].forEach(i => $(i).classList.add('hidden'));
+                        ['btn-call-end','btn-call-video','btn-call-audio','btn-call-screen','btn-call-enlarge','btn-add-friend-call'].forEach(i => $(i).classList.remove('hidden'));
+                        $('video-remote').classList.remove('hidden');
+                    },
+                    onCleanup: () => {
+                        ['btn-call-start','btn-gen-code'].forEach(i => $(i).classList.remove('hidden'));
+                        ['btn-call-end','btn-call-video','btn-call-audio','btn-call-screen','btn-call-enlarge','btn-add-friend-call','video-local','video-remote'].forEach(i => $(i).classList.add('hidden'));
+                        $('video-local').srcObject = null; $('video-remote').srcObject = null;
+                        $('btn-call-video').textContent = 'Video On';
+                    },
+                    onIncoming: () => $('panel-webrtc').classList.remove('hidden'),
+                    onVideo: s => $('video-remote').srcObject = s,
+                    onAudio: s => $('audio-remote').srcObject = s,
+                    onLocalVideo: (on, s) => { 
+                        if(on) { $('video-local').classList.remove('hidden'); $('video-local').srcObject = s; } 
+                        else $('video-local').classList.add('hidden'); 
                     }
                 });
-            }
 
-            async sendMessage(e) {
-                e.preventDefault();
-                const text = this.els.inpMsg.value.trim();
-                if (!text && !this.mediaBlob) return;
-
-                const payload = {
-                    text,
-                    userId: this.user.uid,
-                    userName: document.getElementById('inp-nickname').value || 'Anon',
-                    channelId: this.channel,
-                    timestamp: serverTimestamp(),
-                    senderColor: document.getElementById('inp-color').value || '#3b82f6',
-                    type: 'chat'
-                };
-
-                if (this.mediaBlob) {
-                    // Simple Base64 conversion for this demo. Ideally use Storage.
-                    if (this.mediaBlob.size > MAX_FILE_SIZE) return alert("File too big (Max 1MB)");
-                    const reader = new FileReader();
-                    reader.onload = async () => {
-                        payload[this.mediaType] = reader.result;
-                        await addDoc(collection(this.db, `artifacts/${APP_ID}/public/data/messages`), payload);
-                        this.resetInput();
-                    };
-                    reader.readAsDataURL(this.mediaBlob);
-                } else {
-                    await addDoc(collection(this.db, `artifacts/${APP_ID}/public/data/messages`), payload);
-                    this.resetInput();
-                }
-            }
-
-            resetInput() {
-                this.els.inpMsg.value = '';
-                this.mediaBlob = null;
-                this.els.previewMedia.classList.add('hidden');
-                this.els.previewContent.innerHTML = '';
-            }
-
-            handleFileSelect(e) {
-                const file = e.target.files[0];
-                if (!file) return;
-                this.mediaBlob = file;
-                this.mediaType = file.type.startsWith('image') ? 'imageDataUrl' : file.type.startsWith('video') ? 'videoDataUrl' : 'audioDataUrl';
-                this.els.previewMedia.classList.remove('hidden');
-                document.getElementById('preview-name').textContent = file.name;
-                this.els.previewContent.innerHTML = file.type.startsWith('image') ? '<i class="fas fa-image"></i>' : '<i class="fas fa-file"></i>';
-            }
-
-            toggleRecording() {
-                if (this.recorder && this.recorder.state === 'recording') {
-                    this.recorder.stop();
-                    this.els.btnRecord.classList.remove('text-red-600', 'animate-pulse');
-                } else {
-                    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-                        this.recorder = new MediaRecorder(stream);
-                        const chunks = [];
-                        this.recorder.ondataavailable = e => chunks.push(e.data);
-                        this.recorder.onstop = () => {
-                            this.mediaBlob = new Blob(chunks, { type: 'audio/webm' });
-                            this.mediaType = 'audioDataUrl';
-                            this.sendMessage({ preventDefault: () => {} }); // Auto send
-                        };
-                        this.recorder.start();
-                        this.els.btnRecord.classList.add('text-red-600', 'animate-pulse');
-                    });
-                }
-            }
-
-            loadMessages() {
-                if (this.msgUnsub) this.msgUnsub();
-                document.getElementById('loader').classList.remove('hidden');
-                const q = query(collection(this.db, `artifacts/${APP_ID}/public/data/messages`), where('channelId', '==', this.channel), orderBy('timestamp'));
-                
-                this.msgUnsub = onSnapshot(q, (snap) => {
-                    document.getElementById('loader').classList.add('hidden');
-                    if (snap.empty) document.getElementById('empty-state').classList.remove('hidden');
-                    else document.getElementById('empty-state').classList.add('hidden');
-                    
-                    // Efficient render: only append new, clear all on full refresh logic
-                    this.els.msgContainer.innerHTML = '';
-                    snap.forEach(doc => {
-                        const msg = doc.data();
-                        if (msg.type !== 'chat') return;
+                // Load Messages
+                onSnapshot(query(collection(this.db, `artifacts/${APP_ID}/public/data/messages`), where('channelId', '==', this.channel), orderBy('timestamp')), snap => {
+                    $('loader').classList.add('hidden');
+                    if(snap.empty) $('empty-state').classList.remove('hidden'); else $('empty-state').classList.add('hidden');
+                    $('container-messages').innerHTML = '';
+                    snap.forEach(d => {
+                        const m = d.data();
+                        if(m.type !== 'chat') return;
                         const div = document.createElement('div');
-                        const isMe = msg.userId === this.user.uid;
-                        div.className = `flex ${isMe ? 'justify-end' : 'justify-start'}`;
-                        
+                        const me = m.userId === this.user.uid;
+                        div.className = `flex ${me ? 'justify-end' : 'justify-start'}`;
                         let content = '';
-                        if (msg.imageDataUrl) content += `<img src="${msg.imageDataUrl}" class="max-w-[200px] rounded mb-1">`;
-                        if (msg.audioDataUrl) content += `<audio controls src="${msg.audioDataUrl}" class="max-w-[200px]"></audio>`;
-                        if (msg.videoDataUrl) content += `<video controls src="${msg.videoDataUrl}" class="max-w-[200px]"></video>`;
-                        if (msg.text) content += `<p>${this.escapeHtml(msg.text)}</p>`;
-
+                        if(m.imageDataUrl) content += `<img src="${m.imageDataUrl}" class="max-w-[250px] rounded mb-1 cursor-pointer" onclick="window.open(this.src)">`;
+                        if(m.videoDataUrl) content += `<video src="${m.videoDataUrl}" controls class="max-w-[250px] rounded mb-1"></video>`;
+                        if(m.audioDataUrl) content += `<audio src="${m.audioDataUrl}" controls class="max-w-[250px] mb-1"></audio>`;
+                        if(m.text) content += `<p>${m.text}</p>`;
+                        
                         div.innerHTML = `
-                            <div class="max-w-xs md:max-w-md p-2 rounded-lg shadow text-sm ${isMe ? 'message-me rounded-br-none' : 'message-other rounded-bl-none'}">
-                                <div class="text-xs font-bold opacity-75 mb-1" style="color: ${msg.senderColor}">${this.escapeHtml(msg.userName)}</div>
+                            <div class="relative max-w-xs md:max-w-md p-2 rounded-lg shadow text-sm ${me ? 'message-me rounded-br-none' : 'message-other rounded-bl-none'}">
+                                <div class="text-[10px] font-bold opacity-75 mb-1" style="color:${m.senderColor}">${m.userName}</div>
                                 ${content}
-                                <div class="text-[10px] opacity-50 text-right mt-1">${msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '...'}</div>
+                                <div class="text-[9px] opacity-50 text-right mt-1">${m.timestamp?.toDate().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+                                ${me ? `<div class="absolute -top-2 right-0 flex space-x-1 opacity-0 hover:opacity-100 transition"><button class="bg-blue-500 text-white rounded-full p-1 w-5 h-5 flex items-center justify-center text-[10px]" onclick="window.editMsg('${d.id}', '${m.text}')"><i class="fas fa-pen"></i></button><button class="bg-red-500 text-white rounded-full p-1 w-5 h-5 flex items-center justify-center text-[10px]" onclick="window.delMsg('${d.id}')"><i class="fas fa-trash"></i></button></div>` : ''}
                             </div>`;
-                        this.els.msgContainer.appendChild(div);
+                        $('container-messages').appendChild(div);
                     });
-                    this.els.msgContainer.scrollTop = this.els.msgContainer.scrollHeight;
-                    
-                    // Notify if background
-                    if (document.hidden && !snap.metadata.hasPendingWrites) {
-                        const lastMsg = snap.docs[snap.docs.length-1]?.data();
-                        if (lastMsg && lastMsg.userId !== this.user.uid) new Notification(`New msg in #${this.channel}`);
+                    $('container-messages').scrollTop = $('container-messages').scrollHeight;
+                    if(document.hidden && !snap.metadata.hasPendingWrites && $('chk-channel-notif').checked) {
+                        const l = snap.docs[snap.docs.length-1]?.data();
+                        if(l && l.userId !== this.user.uid) new Notification(`New message in #${this.channel}`);
                     }
                 });
-            }
 
-            loadFriends() {
-                const q = query(collection(this.db, `artifacts/${APP_ID}/users/${this.user.uid}/friends`));
-                onSnapshot(q, snap => {
-                    this.els.friendList.innerHTML = '';
-                    snap.forEach(doc => {
-                        const f = doc.data();
-                        const li = document.createElement('li');
-                        li.className = "flex justify-between items-center bg-gray-200 dark:bg-gray-700 p-2 rounded";
-                        li.innerHTML = `
-                            <span class="truncate w-24 font-bold">${f.nickname || f.userId}</span>
-                            <div>
-                                <button class="text-blue-500 hover:text-blue-700 mx-1" onclick="document.dispatchEvent(new CustomEvent('call-friend', {detail: '${f.userId}'}))"><i class="fas fa-phone"></i></button>
-                                <button class="text-red-500 hover:text-red-700" onclick="document.dispatchEvent(new CustomEvent('del-friend', {detail: '${f.userId}'}))"><i class="fas fa-times"></i></button>
-                            </div>`;
-                        this.els.friendList.appendChild(li);
+                // Load Friends
+                onSnapshot(query(collection(this.db, `artifacts/${APP_ID}/users/${this.user.uid}/friends`)), snap => {
+                    $('list-friends').innerHTML = '';
+                    snap.forEach(d => {
+                        const f = d.data();
+                        $('list-friends').innerHTML += `
+                            <li class="flex justify-between items-center bg-gray-100 dark:bg-gray-700 p-2 rounded shadow-sm">
+                                <div class="truncate w-24">
+                                    <div class="font-bold">${f.nickname||f.userId}</div>
+                                    <div class="text-[10px] opacity-75 truncate">${f.note||''}</div>
+                                </div>
+                                <div class="flex space-x-1">
+                                    <button class="text-blue-500" onclick="document.getElementById('inp-call-target').value='${f.userId}'; document.getElementById('btn-call-start').click()"><i class="fas fa-phone"></i></button>
+                                    <button class="text-green-500" onclick="window.editFriend('${d.id}')"><i class="fas fa-edit"></i></button>
+                                    <button class="text-red-500" onclick="window.removeFriend('${d.id}')"><i class="fas fa-times"></i></button>
+                                </div>
+                            </li>`;
                     });
                 });
-                // Hacky event delegation for innerHTML buttons
-                document.addEventListener('call-friend', (e) => this.rtc.startCall(e.detail));
-                document.addEventListener('del-friend', (e) => deleteDoc(doc(this.db, `artifacts/${APP_ID}/users/${this.user.uid}/friends`, e.detail)));
+
+                // Global Helpers for HTML onclicks
+                window.editMsg = (id, txt) => { this.editId = id; $('inp-message').value = txt; $('btn-send').innerHTML = '<i class="fas fa-check"></i>'; };
+                window.delMsg = (id) => { this.delId = id; $('modal-confirm-delete').classList.remove('hidden'); };
+                window.editFriend = async (id) => { 
+                    this.friendEditId = id; 
+                    const d = await getDocs(query(collection(this.db, `artifacts/${APP_ID}/users/${this.user.uid}/friends`)));
+                    const f = d.docs.find(x => x.id === id).data();
+                    $('friend-target-id').textContent = id; $('inp-friend-nick').value = f.nickname||''; $('inp-friend-note').value = f.note||'';
+                    $('modal-friend').classList.remove('hidden');
+                };
+                window.removeFriend = id => deleteDoc(doc(this.db, `artifacts/${APP_ID}/users/${this.user.uid}/friends`, id));
             }
 
-            async addFriendByInput() {
-                const id = document.getElementById('inp-friend-code').value.trim();
-                if(id) {
-                    await setDoc(doc(this.db, `artifacts/${APP_ID}/users/${this.user.uid}/friends`, id), { userId: id, nickname: 'Friend', added: serverTimestamp() });
-                    document.getElementById('inp-friend-code').value = '';
+            async send(e) {
+                e.preventDefault();
+                const text = $('inp-message').value.trim();
+                if(!text && !this.blob) return;
+
+                if(this.editId) {
+                    await updateDoc(doc(this.db, `artifacts/${APP_ID}/public/data/messages`, this.editId), { text });
+                    this.editId = null; $('btn-send').innerHTML = '<i class="fas fa-paper-plane"></i>';
+                } else {
+                    $('progress-container').classList.remove('hidden'); $('progress-bar').style.width = '50%';
+                    let payload = { userId:this.user.uid, userName:$('inp-nickname').value||'Anon', text, channelId:this.channel, timestamp:serverTimestamp(), senderColor:$('inp-color').value||'#3b82f6', type:'chat' };
+                    if(this.blob) {
+                        const reader = new FileReader();
+                        reader.onload = async () => {
+                            payload[this.blobType] = reader.result;
+                            await addDoc(collection(this.db, `artifacts/${APP_ID}/public/data/messages`), payload);
+                            this.endSend();
+                        };
+                        reader.readAsDataURL(this.blob);
+                    } else {
+                        await addDoc(collection(this.db, `artifacts/${APP_ID}/public/data/messages`), payload);
+                        this.endSend();
+                    }
+                }
+                $('inp-message').value = '';
+            }
+
+            endSend() {
+                $('progress-bar').style.width = '100%'; setTimeout(() => { $('progress-container').classList.add('hidden'); $('progress-bar').style.width = '0'; }, 500);
+                this.clearMedia();
+            }
+
+            handleFile(e) {
+                const f = e.target.files[0];
+                if(!f) return;
+                this.blob = f;
+                this.blobType = f.type.startsWith('image') ? 'imageDataUrl' : f.type.startsWith('video') ? 'videoDataUrl' : 'audioDataUrl';
+                $('preview-media').classList.remove('hidden');
+                $('preview-name').textContent = f.name;
+                $('preview-content').innerHTML = `<i class="fas fa-file text-xl"></i>`;
+                if(f.size > MAX_DOC_SIZE) { 
+                    alert('File too large for DB. Try scaling.');
+                    if(f.type.startsWith('image') || f.type.startsWith('video')) $('btn-scale-media').classList.remove('hidden');
                 }
             }
 
-            joinChannel() {
-                this.channel = document.getElementById('inp-channel').value;
-                localStorage.setItem('wChatChannel', this.channel);
-                this.loadMessages();
-                // Close sidebar on mobile
-                if(window.innerWidth < 768) document.getElementById('sidebar').classList.add('w-0');
+            async scaleMedia() {
+                $('btn-scale-media').textContent = 'Scaling...';
+                try {
+                    this.blob = this.blob.type.startsWith('image') ? await ScalingUtils.scaleImage(this.blob) : await ScalingUtils.scaleVideo(this.blob);
+                    $('preview-name').textContent += ' (Scaled)';
+                    $('btn-scale-media').classList.add('hidden');
+                } catch(e) { alert('Scale failed: '+e); }
+                $('btn-scale-media').textContent = 'Scale Down';
             }
 
-            renderChannels() {
-                this.els.channelList.innerHTML = PUBLIC_CHANNELS.map(c => `<li><a href="#" class="block p-1 rounded hover:bg-gray-300 dark:hover:bg-gray-700 public-channel-item" onclick="document.getElementById('inp-channel').value='${c}'; document.getElementById('btn-join').click()">#${c}</a></li>`).join('');
+            clearMedia() { this.blob = null; $('preview-media').classList.add('hidden'); $('inp-file').value = ''; $('btn-scale-media').classList.add('hidden'); }
+            toggleRec() {
+                if(this.rec && this.rec.state === 'recording') this.rec.stop();
+                else {
+                    navigator.mediaDevices.getUserMedia({audio:true}).then(s => {
+                        this.rec = new MediaRecorder(s);
+                        const c = [];
+                        this.rec.ondataavailable = e => c.push(e.data);
+                        this.rec.onstop = () => { this.blob = new Blob(c,{type:'audio/webm'}); this.blobType = 'audioDataUrl'; this.send({preventDefault:()=>{}}); $('status-recording').classList.add('hidden'); };
+                        this.rec.start(); $('status-recording').classList.remove('hidden');
+                    });
+                }
             }
-
-            saveSettings() {
-                const theme = document.getElementById('sel-theme').value;
-                document.body.className = theme;
-                localStorage.setItem('wChatTheme', theme);
-                localStorage.setItem('wChatNick', document.getElementById('inp-nickname').value);
-                document.getElementById('modal-settings').classList.add('hidden');
+            cancelRec() { if(this.rec) this.rec.stop(); this.rec = null; $('status-recording').classList.add('hidden'); }
+            execDelete() { deleteDoc(doc(this.db, `artifacts/${APP_ID}/public/data/messages`, this.delId)); $('modal-confirm-delete').classList.add('hidden'); }
+            async addFriend(id) { 
+                if(!id) return;
+                if(id.length === 4) { // Code logic
+                    const q = query(collection(this.db, `artifacts/${APP_ID}/public/data/call_codes`), where('code','==',id));
+                    const s = await getDocs(q);
+                    if(s.empty) return alert('Invalid Code');
+                    id = s.docs[0].data().userId;
+                }
+                await setDoc(doc(this.db, `artifacts/${APP_ID}/users/${this.user.uid}/friends`, id), { userId:id }); 
+                $('inp-friend-code').value = '';
             }
-
-            async generateCallCode() {
-                const code = Math.floor(1000 + Math.random() * 9000);
-                await addDoc(collection(this.db, `artifacts/${APP_ID}/public/data/call_codes`), { code: String(code), userId: this.user.uid, timestamp: serverTimestamp() });
-                document.getElementById('display-code').textContent = code;
+            saveFriend() { updateDoc(doc(this.db, `artifacts/${APP_ID}/users/${this.user.uid}/friends`, this.friendEditId), { nickname:$('inp-friend-nick').value, note:$('inp-friend-note').value }); $('modal-friend').classList.add('hidden'); }
+            saveSettings() { 
+                localStorage.setItem('wChatTheme', $('sel-theme').value); document.body.className = $('sel-theme').value; 
+                $('modal-settings').classList.add('hidden'); 
             }
-
-            escapeHtml(text) {
-                if(!text) return '';
-                return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-            }
+            join() { this.channel = $('inp-channel').value; localStorage.setItem('wChatChannel', this.channel); this.initLogic(); $('btn-sidebar-toggle').click(); }
         }
 
-        // --- INIT ---
         window.app = new ChatApp();
-        document.getElementById('btn-req-notif').onclick = () => Notification.requestPermission();
     </script>
 </body>
 </html>

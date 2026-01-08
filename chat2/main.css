@@ -1,84 +1,45 @@
 /* Core Variables & Defaults */
 :root {
-    --bg-primary: #f3f4f6;
-    --bg-secondary: #e5e7eb;
-    --bg-tertiary: #d1d5db;
-    --text-main: #1f2937;
-    --text-muted: #4b5563;
-    --accent-color: #3b82f6; /* Blue-500 */
-    --accent-hover: #2563eb; /* Blue-600 */
+    --bg-primary: #f3f4f6; --bg-secondary: #e5e7eb; --bg-tertiary: #d1d5db;
+    --text-main: #1f2937; --text-muted: #4b5563;
+    --accent-color: #3b82f6; --accent-hover: #2563eb;
     --header-bg: linear-gradient(to right, #2563eb, #4338ca);
     --border-color: #d1d5db;
-    --msg-me-bg: #3b82f6;
-    --msg-me-text: #ffffff;
-    --msg-other-bg: #ffffff;
-    --msg-other-text: #1f2937;
-    --shadow-color: rgba(0, 0, 0, 0.1);
+    --msg-me-bg: #3b82f6; --msg-me-text: #ffffff;
+    --msg-other-bg: #ffffff; --msg-other-text: #1f2937;
+    --modal-bg: rgba(0, 0, 0, 0.75);
 }
 
-/* --- THEME DEFINITIONS --- */
-/* Dark */
+/* Themes */
 body.dark { --bg-primary: #111827; --bg-secondary: #1f2937; --bg-tertiary: #374151; --text-main: #f9fafb; --text-muted: #9ca3af; --border-color: #374151; --msg-other-bg: #1f2937; --msg-other-text: #f9fafb; }
-
-/* Midnight (OLED) */
 body.midnight { --bg-primary: #000000; --bg-secondary: #0a0a0a; --bg-tertiary: #1a1a1a; --text-main: #f9fafb; --text-muted: #a1a1aa; --header-bg: linear-gradient(to right, #1a202c, #2d3748); --border-color: #27272a; }
-
-/* Autumn */
 body.autumn { --bg-primary: #EAE7DC; --bg-secondary: #D8C3A5; --bg-tertiary: #8E8D8A; --text-main: #2A2A2A; --text-muted: #5C5C5C; --header-bg: linear-gradient(to right, #B83B00, #8F2D00); --accent-color: #E85A4F; --accent-hover: #E98074; --border-color: #C7BCA1; }
-
-/* Terminal */
 body.terminal { --bg-primary: #000000; --bg-secondary: #0c0c0c; --bg-tertiary: #1a1a1a; --text-main: #00FF00; --text-muted: #00cc00; --header-bg: #000; --accent-color: #00FF00; --accent-hover: #008800; --border-color: #00FF00; font-family: 'Courier New', monospace; --msg-me-bg: #003300; --msg-me-text: #00FF00; --msg-other-bg: #001100; --msg-other-text: #00FF00; }
-
-/* Windows 95 */
 body.windows95 { --bg-primary: #008080; --bg-secondary: #c0c0c0; --bg-tertiary: #dfdfdf; --text-main: #000000; --text-muted: #404040; --header-bg: #000080; --accent-color: #000080; --border-color: #808080; font-family: 'MS Sans Serif', sans-serif; --msg-me-bg: #fff; --msg-me-text: #000; --msg-other-bg: #fff; }
-body.windows95 * { border-radius: 0 !important; } /* Hard edge override */
-
-/* Mario */
 body.mario { --bg-primary: #6B85F1; --bg-secondary: #F7E4B3; --bg-tertiary: #92CD40; --text-main: #2D2D2D; --header-bg: linear-gradient(to right, #E44D26, #B83B00); --accent-color: #E44D26; --border-color: #A06634; font-family: 'Press Start 2P', cursive; }
-
-/* Windows XP */
 body.windowsxp { --bg-primary: #3A6EA5; --bg-secondary: #EFF3F9; --bg-tertiary: #DDE8F3; --text-main: #000; --header-bg: linear-gradient(to bottom, #0058EE, #0073EF); --accent-color: #3A6EA5; }
-
-/* Wackybox */
 body.wackybox { --bg-primary: #FF00FF; --bg-secondary: #00FF00; --bg-tertiary: #FFFF00; --text-main: #0000FF; --header-bg: linear-gradient(to right, #FFFF00, #FF0000); --accent-color: #FF1493; font-family: 'Comic Sans MS', cursive; }
-
-/* Abyssal Blue */
 body.abyssal-blue { --bg-primary: #0A192F; --bg-secondary: #112240; --bg-tertiary: #233554; --text-main: #E6F1FF; --text-muted: #8892b0; --header-bg: #0A192F; --accent-color: #64ffda; --accent-hover: #4db6ac; --msg-me-bg: #112240; --msg-me-text: #64ffda; }
-
-/* Synthwave */
 body.synthwave-glow { --bg-primary: #2b213a; --bg-secondary: #241b2f; --bg-tertiary: #120458; --text-main: #ff71ce; --text-muted: #01cdfe; --header-bg: linear-gradient(to right, #ff71ce, #01cdfe); --accent-color: #05ffa1; --msg-me-bg: #b967ff; --msg-me-text: #fff; font-family: 'VT323', monospace; }
-
-/* Grayscale */
 body.grayscale-refined { --bg-primary: #f5f5f5; --bg-secondary: #ffffff; --bg-tertiary: #e0e0e0; --text-main: #1a1a1a; --text-muted: #666; --header-bg: #333; --accent-color: #666; }
 
-/* --- COMPONENT STYLES USING VARIABLES --- */
+/* Styles */
 body { background-color: var(--bg-primary); color: var(--text-main); transition: background-color 0.3s, color 0.3s; }
 header { background: var(--header-bg); }
-.bg-white { background-color: var(--bg-secondary) !important; color: var(--text-main) !important; border-color: var(--border-color) !important; }
+aside { background-color: var(--bg-secondary); border-right: 1px solid var(--border-color); }
+.bg-white, .modal-content { background-color: var(--bg-secondary) !important; color: var(--text-main) !important; border-color: var(--border-color) !important; }
 .bg-gray-100, .bg-gray-200 { background-color: var(--bg-tertiary); color: var(--text-main); }
 .text-gray-900 { color: var(--text-main); }
 .text-gray-700, .text-gray-600, .text-gray-500 { color: var(--text-muted); }
 .border-gray-300 { border-color: var(--border-color); }
-
-/* Buttons & Accents */
 .bg-blue-500, .bg-blue-600 { background-color: var(--accent-color); color: #fff; }
 .bg-blue-500:hover, .bg-blue-600:hover { background-color: var(--accent-hover); }
-
-/* Scrollbars */
 .custom-scrollbar::-webkit-scrollbar { width: 8px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: var(--bg-secondary); }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--bg-tertiary); border-radius: 4px; }
-.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--accent-color); }
-
-/* Sidebar & Panels */
-aside { background-color: var(--bg-secondary); border-right: 1px solid var(--border-color); }
-.public-channel-item:hover { background-color: var(--bg-tertiary); color: var(--accent-color); }
-
-/* Chat Bubbles Override */
 .message-me { background-color: var(--msg-me-bg); color: var(--msg-me-text); }
 .message-other { background-color: var(--msg-other-bg); color: var(--msg-other-text); }
-
-/* Toggle Switch */
+.modal-overlay { background-color: var(--modal-bg); }
 .toggle-checkbox:checked { right: 0; border-color: var(--accent-color); }
 .toggle-checkbox:checked + .toggle-label { background-color: var(--accent-color); }
 .toggle-label { background-color: var(--bg-tertiary); }
