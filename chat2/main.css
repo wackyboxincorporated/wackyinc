@@ -1,45 +1,155 @@
-/* Core Variables & Defaults */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base Variable Defaults (Light) */
 :root {
-    --bg-primary: #f3f4f6; --bg-secondary: #e5e7eb; --bg-tertiary: #d1d5db;
-    --text-main: #1f2937; --text-muted: #4b5563;
-    --accent-color: #3b82f6; --accent-hover: #2563eb;
-    --header-bg: linear-gradient(to right, #2563eb, #4338ca);
-    --border-color: #d1d5db;
-    --msg-me-bg: #3b82f6; --msg-me-text: #ffffff;
-    --msg-other-bg: #ffffff; --msg-other-text: #1f2937;
-    --modal-bg: rgba(0, 0, 0, 0.75);
+    --bg-main: #f3f4f6;
+    --bg-panel: #ffffff;
+    --bg-sidebar: #e5e7eb;
+    --bg-input: #ffffff;
+    --bg-header: linear-gradient(to right, #2563eb, #4338ca);
+    --text-main: #1f2937;
+    --accent: #3b82f6;
 }
 
-/* Themes */
-body.dark { --bg-primary: #111827; --bg-secondary: #1f2937; --bg-tertiary: #374151; --text-main: #f9fafb; --text-muted: #9ca3af; --border-color: #374151; --msg-other-bg: #1f2937; --msg-other-text: #f9fafb; }
-body.midnight { --bg-primary: #000000; --bg-secondary: #0a0a0a; --bg-tertiary: #1a1a1a; --text-main: #f9fafb; --text-muted: #a1a1aa; --header-bg: linear-gradient(to right, #1a202c, #2d3748); --border-color: #27272a; }
-body.autumn { --bg-primary: #EAE7DC; --bg-secondary: #D8C3A5; --bg-tertiary: #8E8D8A; --text-main: #2A2A2A; --text-muted: #5C5C5C; --header-bg: linear-gradient(to right, #B83B00, #8F2D00); --accent-color: #E85A4F; --accent-hover: #E98074; --border-color: #C7BCA1; }
-body.terminal { --bg-primary: #000000; --bg-secondary: #0c0c0c; --bg-tertiary: #1a1a1a; --text-main: #00FF00; --text-muted: #00cc00; --header-bg: #000; --accent-color: #00FF00; --accent-hover: #008800; --border-color: #00FF00; font-family: 'Courier New', monospace; --msg-me-bg: #003300; --msg-me-text: #00FF00; --msg-other-bg: #001100; --msg-other-text: #00FF00; }
-body.windows95 { --bg-primary: #008080; --bg-secondary: #c0c0c0; --bg-tertiary: #dfdfdf; --text-main: #000000; --text-muted: #404040; --header-bg: #000080; --accent-color: #000080; --border-color: #808080; font-family: 'MS Sans Serif', sans-serif; --msg-me-bg: #fff; --msg-me-text: #000; --msg-other-bg: #fff; }
-body.mario { --bg-primary: #6B85F1; --bg-secondary: #F7E4B3; --bg-tertiary: #92CD40; --text-main: #2D2D2D; --header-bg: linear-gradient(to right, #E44D26, #B83B00); --accent-color: #E44D26; --border-color: #A06634; font-family: 'Press Start 2P', cursive; }
-body.windowsxp { --bg-primary: #3A6EA5; --bg-secondary: #EFF3F9; --bg-tertiary: #DDE8F3; --text-main: #000; --header-bg: linear-gradient(to bottom, #0058EE, #0073EF); --accent-color: #3A6EA5; }
-body.wackybox { --bg-primary: #FF00FF; --bg-secondary: #00FF00; --bg-tertiary: #FFFF00; --text-main: #0000FF; --header-bg: linear-gradient(to right, #FFFF00, #FF0000); --accent-color: #FF1493; font-family: 'Comic Sans MS', cursive; }
-body.abyssal-blue { --bg-primary: #0A192F; --bg-secondary: #112240; --bg-tertiary: #233554; --text-main: #E6F1FF; --text-muted: #8892b0; --header-bg: #0A192F; --accent-color: #64ffda; --accent-hover: #4db6ac; --msg-me-bg: #112240; --msg-me-text: #64ffda; }
-body.synthwave-glow { --bg-primary: #2b213a; --bg-secondary: #241b2f; --bg-tertiary: #120458; --text-main: #ff71ce; --text-muted: #01cdfe; --header-bg: linear-gradient(to right, #ff71ce, #01cdfe); --accent-color: #05ffa1; --msg-me-bg: #b967ff; --msg-me-text: #fff; font-family: 'VT323', monospace; }
-body.grayscale-refined { --bg-primary: #f5f5f5; --bg-secondary: #ffffff; --bg-tertiary: #e0e0e0; --text-main: #1a1a1a; --text-muted: #666; --header-bg: #333; --accent-color: #666; }
+/* --- Theme Definitions --- */
 
-/* Styles */
-body { background-color: var(--bg-primary); color: var(--text-main); transition: background-color 0.3s, color 0.3s; }
-header { background: var(--header-bg); }
-aside { background-color: var(--bg-secondary); border-right: 1px solid var(--border-color); }
-.bg-white, .modal-content { background-color: var(--bg-secondary) !important; color: var(--text-main) !important; border-color: var(--border-color) !important; }
-.bg-gray-100, .bg-gray-200 { background-color: var(--bg-tertiary); color: var(--text-main); }
-.text-gray-900 { color: var(--text-main); }
-.text-gray-700, .text-gray-600, .text-gray-500 { color: var(--text-muted); }
-.border-gray-300 { border-color: var(--border-color); }
-.bg-blue-500, .bg-blue-600 { background-color: var(--accent-color); color: #fff; }
-.bg-blue-500:hover, .bg-blue-600:hover { background-color: var(--accent-hover); }
+.dark {
+    --bg-main: #111827;
+    --bg-panel: #1f2937;
+    --bg-sidebar: #374151;
+    --bg-input: #374151;
+    --text-main: #f9fafb;
+    --accent: #3b82f6;
+}
+
+.midnight {
+    --bg-main: #000000;
+    --bg-panel: #0a0a0a;
+    --bg-sidebar: #1a202c;
+    --bg-input: #000;
+    --bg-header: linear-gradient(to right, #1a202c, #2d3748);
+    --text-main: #f9fafb;
+    --accent: #2d3748;
+}
+
+.autumn {
+    --bg-main: #EAE7DC;
+    --bg-panel: #F8F4E3;
+    --bg-sidebar: #D4CDBC;
+    --bg-input: #FFF;
+    --bg-header: linear-gradient(to right, #B83B00, #8F2D00);
+    --text-main: #2A2A2A;
+    --accent: #D2691E;
+}
+
+.terminal {
+    --bg-main: #000;
+    --bg-panel: #000;
+    --bg-sidebar: #001a00;
+    --bg-input: #000;
+    --bg-header: #003300;
+    --text-main: #00FF00;
+    --accent: #008000;
+    font-family: 'Courier New', monospace;
+}
+
+.mario {
+    --bg-main: #6B85F1;
+    --bg-panel: #F7E4B3;
+    --bg-sidebar: #92CD40;
+    --bg-input: #FFF;
+    --bg-header: linear-gradient(to right, #B83B00, #E44D26);
+    --text-main: #2D2D2D;
+    --accent: #CC0000;
+    font-family: cursive;
+}
+
+.windows95 {
+    --bg-main: #008080;
+    --bg-panel: #C0C0C0;
+    --bg-sidebar: #C0C0C0;
+    --bg-input: #FFF;
+    --bg-header: #000080;
+    --text-main: #000;
+    --accent: #000080;
+    font-family: 'MS Sans Serif', sans-serif;
+}
+
+.windowsxp {
+    --bg-main: #3A6EA5;
+    --bg-panel: #EFF3F9;
+    --bg-sidebar: #DDE8F3;
+    --bg-input: #FFF;
+    --bg-header: linear-gradient(to right, #003399, #0077EE);
+    --text-main: #000;
+    --accent: #003399;
+}
+
+.wackybox {
+    --bg-main: #FF00FF;
+    --bg-panel: #00FF00;
+    --bg-sidebar: #008000;
+    --bg-input: #FFFF00;
+    --bg-header: linear-gradient(to right, #FFFF00, #FF0000);
+    --text-main: #0000FF;
+    --accent: #FF69B4;
+    font-family: 'Comic Sans MS', cursive;
+}
+
+.abyssal-blue {
+    --bg-main: #0A192F;
+    --bg-panel: #1B2B40;
+    --bg-sidebar: #0F2038;
+    --bg-input: #112240;
+    --bg-header: linear-gradient(to right, #004D7A, #007BA7);
+    --text-main: #E0FFFF;
+    --accent: #007BA7;
+}
+
+.verdant-canopy {
+    --bg-main: #334233;
+    --bg-panel: #4C5C4C;
+    --bg-sidebar: #3A4C3A;
+    --bg-input: #2F3E2F;
+    --bg-header: linear-gradient(to right, #228B22, #3CB371);
+    --text-main: #F0F5E9;
+    --accent: #6B8E23;
+}
+
+.synthwave-glow {
+    --bg-main: #1F1B24;
+    --bg-panel: #2A243A;
+    --bg-sidebar: #362F47;
+    --bg-input: #000;
+    --bg-header: linear-gradient(to right, #8A2BE2, #FF1493);
+    --text-main: #00FFFF;
+    --accent: #FF1493;
+    font-family: monospace;
+}
+
+/* --- Utility Classes Mapping to Variables --- */
+
+.bg-main { background: var(--bg-main); color: var(--text-main); }
+.bg-panel { background: var(--bg-panel); color: var(--text-main); }
+.bg-sidebar { background: var(--bg-sidebar); }
+.bg-header { background: var(--bg-header); }
+.bg-input { background: var(--bg-input); color: var(--text-main); }
+.text-main { color: var(--text-main); }
+.bg-accent { background: var(--accent); }
+.text-accent { color: var(--accent); }
+
+/* Scrollbar */
 .custom-scrollbar::-webkit-scrollbar { width: 8px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: var(--bg-secondary); }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: var(--bg-tertiary); border-radius: 4px; }
-.message-me { background-color: var(--msg-me-bg); color: var(--msg-me-text); }
-.message-other { background-color: var(--msg-other-bg); color: var(--msg-other-text); }
-.modal-overlay { background-color: var(--modal-bg); }
-.toggle-checkbox:checked { right: 0; border-color: var(--accent-color); }
-.toggle-checkbox:checked + .toggle-label { background-color: var(--accent-color); }
-.toggle-label { background-color: var(--bg-tertiary); }
+.custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 4px; }
+
+/* Win95 Specific Overrides (Example of handling unique shapes) */
+.windows95 .bg-panel, .windows95 button, .windows95 input {
+    border: 2px outset #fff;
+    border-right-color: #000;
+    border-bottom-color: #000;
+    border-radius: 0;
+}
+.windows95 button:active { border-style: inset; }
