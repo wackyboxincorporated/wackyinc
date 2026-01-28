@@ -69,7 +69,7 @@ function renderDesktopIcons() {
     const rows = Math.floor(availableHeight / (iconHeight + 10));
     
     // Ensure at least 1 item per page to avoid infinity loops
-    const iconsPerPage = Math.max(1, cols * rows);
+    const iconsPerPage = Math.max(4, cols * rows);
     const totalPages = Math.ceil(desktopItems.length / iconsPerPage);
 
     // Generate Pages
