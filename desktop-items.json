@@ -43,6 +43,7 @@
     { "name": "xm", "type": "folder", "url": "https://wackybox.org/xm" },
     { "name": "wbs services", "type": "folder", "url": "https://www.wbsservices.work/" },
 	{ "name": "TTAB", "type": "folder", "url": "https://www.talktoabutt.site" },
+	{ "name": "curl", "type": "folder", "url": "https://wackybox.org/curl" },
     { "name": "MAIN.pmp", "type": "file", "class": "code" },
     { "name": "VIET.html", "type": "file", "class": "code", "action": "newTab" },
     { "name": "WSPAGE-v0.2.html", "type": "file", "class": "code", "action": "newTab" },
@@ -66,3 +67,4 @@
     { "name": "Projecdfgvb.zip", "type": "file", "class": "zip" }
 
 ]
+
