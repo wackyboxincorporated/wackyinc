@@ -127,6 +127,7 @@
     <div id="ui-bar">
         <div class="hud-item">mode: <span id="modeDisplay"></span></div>
         <div class="hud-item" id="roomDisplay" style="display:none;">room: <span id="roomPin"></span></div>
+        <div class="hud-item">wep: <span id="weaponDisplay">blaster</span></div>
         <div class="hud-item">level: <span id="levelDisplay">1</span></div>
         <div class="hud-item">score: <span id="scoreDisplay">0</span></div>
         <div class="hud-item">hp: <span id="hpDisplay">100</span></div>
@@ -209,7 +210,8 @@
             multiplayerScreen: document.getElementById('multiplayer-screen'),
             multiplayerStatus: document.getElementById('multiplayer-status'),
             roomDisplay: document.getElementById('roomDisplay'),
-            roomPin: document.getElementById('roomPin')
+            roomPin: document.getElementById('roomPin'),
+            weapon: document.getElementById('weaponDisplay')
         };
 
         function showMultiplayerMenu() {
@@ -277,12 +279,28 @@
         let keys = {};
         let mouse = { x: 0, y: 0, down: false };
 
-        // Fulgic
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+        const GAME_WIDTH = 1920;
+        const GAME_HEIGHT = 1080;
 
-            // Dynize
+        // Cable TvFulgic
+        function resizeCanvas() {
+            canvas.width = GAME_WIDTH;
+            canvas.height = GAME_HEIGHT;
+
+            let scale = Math.min(window.innerWidth / GAME_WIDTH, window.innerHeight / GAME_HEIGHT);
+            let scaledWidth = GAME_WIDTH * scale;
+            let scaledHeight = GAME_HEIGHT * scale;
+
+            canvas.style.width = `${scaledWidth}px`;
+            canvas.style.height = `${scaledHeight}px`;
+
+            canvas.style.position = 'absolute';
+            canvas.style.left = `${(window.innerWidth - scaledWidth) / 2}px`;
+            canvas.style.top = `${(window.innerHeight - scaledHeight) / 2}px`;
+            canvas.style.transform = 'none';
+            canvas.style.margin = '0';
+
+            // Cable TvDynize
             let ground = entities.platforms.find(p => p.type === 'ground');
             if (ground) {
                 ground.w = canvas.width;
@@ -290,7 +308,7 @@
             }
         }
         window.addEventListener('resize', resizeCanvas);
-        resizeCanvas(); // Seize
+        resizeCanvas(); // Cable TvCable TvSeize
 
         function checkCollision(rect1, rect2) {
             return (
@@ -332,7 +350,7 @@
         }
 
         class Bullet {
-            constructor(x, y, dx, dy, isPlayerBullet) {
+            constructor(x, y, dx, dy, isPlayerBullet, damage = 1) {
                 this.x = x; this.y = y;
                 this.w = isPlayerBullet ? 8 : 6;
                 this.h = isPlayerBullet ? 8 : 6;
@@ -340,6 +358,7 @@
                 this.isPlayerBullet = isPlayerBullet;
                 this.color = isPlayerBullet ? '#ffcc00' : '#ff3300';
                 this.life = 120;
+                this.damage = damage;
             }
             update() {
                 this.x += this.dx; this.y += this.dy; this.life--;
@@ -348,9 +367,9 @@
                 if (this.isPlayerBullet) {
                     entities.enemies.forEach(e => {
                         if (checkCollision(this, e)) {
-                            // Clients don't process bullet-enemy collisions locally
+                            // Cable TvCable TvClients don't process bullet-enemy collisions locally
                             if (gameState.mode === 'coop' && Multiplayer.isClient) return;
-                            e.takeDamage(1);
+                            e.takeDamage(this.damage);
                             this.life = 0;
                             for (let i = 0; i < 3; i++) entities.particles.push(new Particle(this.x, this.y, '#fff', 2, 10));
                         }
@@ -396,10 +415,58 @@
                 this.grounded = false;
                 this.hp = 100;
                 this.shootCooldown = 0;
+                this.weapon = 1;
                 this.magnetized = false;
                 this.stunnedTimer = 0;
                 this.wasMagnetizedLastFrame = false;
                 this.animFrame = 0;
+            }
+
+            shoot(angle) {
+                if (this.shootCooldown > 0) return;
+                let cx = this.x + this.w / 2;
+                let cy = this.y + this.h / 2 - 4;
+
+                switch (this.weapon) {
+                    case 1: // Cable TvCable TvBlaster
+                        entities.bullets.push(new Bullet(cx, cy, Math.cos(angle) * 15, Math.sin(angle) * 15, true, 1));
+                        this.shootCooldown = 12;
+                        SoundEngine.play('shoot', 0.4);
+                        if (this.grounded) this.x -= Math.cos(angle) * 1.5; else { this.x -= Math.cos(angle) * 2; this.vy -= Math.sin(angle) * 1; }
+                        break;
+                    case 2: // Cable TvCable TvShotgun
+                        for (let i = -2; i <= 2; i++) {
+                            let a = angle + i * 0.15;
+                            entities.bullets.push(new Bullet(cx, cy, Math.cos(a) * 12, Math.sin(a) * 12, true, 1));
+                        }
+                        this.shootCooldown = 35;
+                        SoundEngine.play('shoot', 0.6);
+                        if (this.grounded) this.x -= Math.cos(angle) * 3; else { this.x -= Math.cos(angle) * 4; this.vy -= Math.sin(angle) * 2; }
+                        break;
+                    case 3: // Cable TvCable TvMachine Gun
+                        let a = angle + (Math.random() - 0.5) * 0.2;
+                        entities.bullets.push(new Bullet(cx, cy, Math.cos(a) * 18, Math.sin(a) * 18, true, 0.4));
+                        this.shootCooldown = 5;
+                        SoundEngine.play('shoot', 0.2);
+                        if (this.grounded) this.x -= Math.cos(angle) * 0.4; else { this.x -= Math.cos(angle) * 0.8; this.vy -= Math.sin(angle) * 0.4; }
+                        break;
+                    case 4: // Cable TvCable TvSniper
+                        entities.bullets.push(new Bullet(cx, cy, Math.cos(angle) * 30, Math.sin(angle) * 30, true, 6));
+                        this.shootCooldown = 45;
+                        SoundEngine.play('shoot', 0.8);
+                        if (this.grounded) this.x -= Math.cos(angle) * 5; else { this.x -= Math.cos(angle) * 6; this.vy -= Math.sin(angle) * 3; }
+                        break;
+                    case 5: // Cable TvCable TvTriple-Shot
+                        for (let i = -1; i <= 1; i++) {
+                            let perpX = -Math.sin(angle) * i * 10;
+                            let perpY = Math.cos(angle) * i * 10;
+                            entities.bullets.push(new Bullet(cx + perpX, cy + perpY, Math.cos(angle) * 15, Math.sin(angle) * 15, true, 1.2));
+                        }
+                        this.shootCooldown = 22;
+                        SoundEngine.play('shoot', 0.5);
+                        if (this.grounded) this.x -= Math.cos(angle) * 2; else { this.x -= Math.cos(angle) * 3; this.vy -= Math.sin(angle) * 1.5; }
+                        break;
+                }
             }
 
             update() {
@@ -416,7 +483,7 @@
 
                 if (keys['ArrowRight'] || keys['d']) { this.vx = this.speed; }
                 else if (keys['ArrowLeft'] || keys['a']) { this.vx = -this.speed; }
-                else { this.vx *= 0.8; if (Math.abs(this.vx) < 0.5) this.vx = 0; } // Frion
+                else { this.vx *= 0.8; if (Math.abs(this.vx) < 0.5) this.vx = 0; } // Cable TvCable TvFrion
 
                 if ((keys['ArrowUp'] || keys['w']) && this.grounded && !this.magnetized) {
                     this.vy = this.jumpStr;
@@ -425,19 +492,17 @@
                     for (let i = 0; i < 5; i++) entities.particles.push(new Particle(this.x + this.w / 2, this.y + this.h, '#fff', 2, 15));
                 }
 
+                if (keys['1']) this.weapon = 1;
+                if (keys['2']) this.weapon = 2;
+                if (keys['3']) this.weapon = 3;
+                if (keys['4']) this.weapon = 4;
+                if (keys['5']) this.weapon = 5;
+
                 if ((keys[' '] || mouse.down) && this.shootCooldown <= 0) {
                     let cx = this.x + this.w / 2;
                     let cy = this.y + this.h / 2 - 4;
                     let angle = Math.atan2(mouse.y - cy, mouse.x - cx);
-                    let bSpeed = 15;
-
-                    entities.bullets.push(new Bullet(cx, cy, Math.cos(angle) * bSpeed, Math.sin(angle) * bSpeed, true));
-                    this.shootCooldown = 12; // Slte
-                    SoundEngine.play('shoot', 0.4);
-
-                    // Reil
-                    if (this.grounded) this.x -= Math.cos(angle) * 1.5;
-                    else { this.x -= Math.cos(angle) * 2; this.vy -= Math.sin(angle) * 1; }
+                    this.shoot(angle);
                 }
                 if (this.shootCooldown > 0) this.shootCooldown--;
 
@@ -463,13 +528,13 @@
             resolvePlatforms() {
                 entities.platforms.forEach(p => {
                     if (this.x + this.w > p.x && this.x < p.x + p.w &&
-                        this.y + this.h >= p.y && this.y + this.h - this.vy <= p.y + p.h / 2 && // Chvenocks
+                        this.y + this.h >= p.y && this.y + this.h - this.vy <= p.y + p.h / 2 && // Cable TvChvenocks
                         this.vy >= 0) {
                         this.y = p.y - this.h;
                         this.vy = 0;
                         if (!this.magnetized) this.grounded = true;
                         if (this.wasMagnetizedLastFrame) {
-                            this.stunnedTimer = 20; // Reghtly
+                            this.stunnedTimer = 20; // Cable TvReghtly
                         }
                     }
                 });
@@ -566,7 +631,7 @@
                 this.timer = 0;
                 this.targetX = 0;
                 this.laserDuration = 40;
-                this.chargeTimeTotal = 150; // sligeat
+                this.chargeTimeTotal = 150; // Cable Tvsligeat
             }
             takeDamage(dmg) {
                 super.takeDamage(dmg);
@@ -693,7 +758,7 @@
             }
             takeDamage(dmg) {
                 super.takeDamage(dmg);
-                // f Cayer
+                // Cable Tvf Cayer
                 if (this.dead && this.mode === 'magnet') {
                     player.magnetized = false;
                     if (player2) player2.magnetized = false;
@@ -805,7 +870,7 @@
                     }
                 } else if (this.state === 'jumping') {
                     this.jumpTimer++;
-                    this.vy += 0.6; // Grs
+                    this.vy += 0.6; // Cable TvGrs
                     this.x += this.vx; this.y += this.vy;
 
                     if (this.x < 0) { this.x = 0; this.vx *= -1; }
@@ -956,7 +1021,7 @@
             update() {
                 super.update();
                 this.x += this.vx;
-                this.y += 3; // strck
+                this.y += 3; // Cable Tvstrck
 
                 let onGround = false;
                 entities.platforms.forEach(p => {
@@ -1100,7 +1165,7 @@
             }
 
             if (gameState.mode === 'coop' && Multiplayer.isClient) {
-                // Clst
+                // Cable TvClst
             } else {
                 generatePlatforms();
             }
@@ -1111,10 +1176,10 @@
         }
 
         function generatePlatforms() {
-            // Dynound
+            // Cable TvDynound
             entities.platforms.push({ x: 0, y: canvas.height - 40, w: canvas.width, h: 40, type: 'ground' });
 
-            // Generze
+            // Cable TvGenerze
             let numPlatforms = 3 + Math.floor(Math.random() * 5);
             for (let i = 0; i < numPlatforms; i++) {
                 entities.platforms.push({
@@ -1129,7 +1194,7 @@
 
         function spawnlevelsEnemies() {
             let lvl = gameState.level;
-            // Bhly
+            // Cable TvBhly
             let count = 2 + Math.floor(lvl * 1.2);
 
             for (let i = 0; i < count; i++) {
@@ -1142,7 +1207,7 @@
             let x = Math.random() * (canvas.width - 50);
             let y = Math.random() * (canvas.height / 2);
 
-            // Dynculeases
+            // Cable TvDynculeases
             let sludgeProb = Math.max(0.1, 0.4 - difficultyLevel * 0.02);
             let battyProb = sludgeProb + 0.2;
             let chipProb = battyProb + 0.2 + (difficultyLevel * 0.01);
@@ -1160,17 +1225,17 @@
                 else if (side < 0.66) entities.enemies.push(new HipHop(canvas.width - 40, y, 'right'));
                 else entities.enemies.push(new HipHop(x, 0, 'top'));
             } else {
-                // Fer eaon
+                // Cable TvFer eaon
                 entities.enemies.push(new Fimm(x, y));
             }
 
-            // Whale
+            // Cable TvWhale
             if (difficultyLevel >= 3 && Math.random() < 0.05 && !entities.enemies.some(e => e instanceof WhaleThing)) {
                 entities.enemies.push(new WhaleThing(canvas.width - 80, canvas.height - 120));
             }
         }
 
-        // --- MULTE ---
+        // Cable Tv--- MULTE ---
         function onGameStateReceived(data) {
             if (data.type === 'state') {
                 let s = data.data;
@@ -1210,12 +1275,10 @@
                 let s = data.data;
                 if (player2) {
                     player2.x = s.x; player2.y = s.y; player2.vx = s.vx; player2.vy = s.vy; player2.hp = s.hp; player2.grounded = s.grounded; player2.animFrame = s.animFrame; player2.netAimAngle = s.aimAngle; player2.netFacingRight = s.facingRight;
+                    player2.weapon = s.wep;
 
                     if (s.isShooting) {
-                        let cx = player2.x + player2.w / 2;
-                        let cy = player2.y + player2.h / 2 - 4;
-                        entities.bullets.push(new Bullet(cx, cy, Math.cos(s.aimAngle) * 15, Math.sin(s.aimAngle) * 15, true));
-                        SoundEngine.play('shoot', 0.4);
+                        player2.shoot(s.aimAngle);
                     }
                 }
             }
@@ -1248,7 +1311,7 @@
             }
             entities.enemies.forEach(e => { e.draw(); });
 
-            // Cu
+            // Cable TvCu
             ctx.strokeStyle = "rgba(255, 255, 255, 0.8)"; ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.moveTo(mouse.x - 12, mouse.y); ctx.lineTo(mouse.x + 12, mouse.y);
@@ -1256,6 +1319,8 @@
             ctx.stroke();
 
             ui.score.innerText = gameState.score;
+            let weaponNames = ["", "BLAST", "SHOTGUN", "UZI", "SNIPER", "TRIPLE"];
+            ui.weapon.innerText = weaponNames[player.weapon];
 
             if (gameState.mode === 'levels' || (gameState.mode === 'coop' && Multiplayer.isHost)) {
                 if (entities.enemies.length === 0 && gameState.frameCount > 100) {
@@ -1266,9 +1331,9 @@
                     loadLevel();
                 }
             } else if (gameState.mode === 'endless') {
-                // En   emys
-                let spawnRate = Math.max(40, 180 - gameState.level * 10); // Spime
-                let maxEnemies = Math.min(25, 5 + gameState.level * 2); // Came
+                // Cable TvEn   emys
+                let spawnRate = Math.max(40, 180 - gameState.level * 10); // Cable TvSpime
+                let maxEnemies = Math.min(25, 5 + gameState.level * 2); // Cable TvCame
 
                 if (gameState.frameCount % spawnRate === 0 && entities.enemies.length < maxEnemies) {
                     spawnRandomEnemy(gameState.level);
@@ -1285,10 +1350,10 @@
             if (gameState.mode === 'coop' && Multiplayer.isConnected) {
                 if (Multiplayer.isHost) {
                     let state = {
-                        p: { x: player.x, y: player.y, hp: player.hp, vx: player.vx, grounded: player.grounded, animFrame: player.animFrame, aimAngle: Math.atan2(mouse.y - (player.y + player.h / 2 - 4), mouse.x - (player.x + player.w / 2)), facingRight: mouse.x > player.x + player.w / 2 },
+                        p: { x: Math.round(player.x), y: Math.round(player.y), hp: player.hp, vx: Math.round(player.vx * 10) / 10, grounded: player.grounded, animFrame: player.animFrame, aimAngle: Math.round(Math.atan2(mouse.y - (player.y + player.h / 2 - 4), mouse.x - (player.x + player.w / 2)) * 100) / 100, facingRight: mouse.x > player.x + player.w / 2 },
                         p2: player2 ? { hp: player2.hp } : null,
-                        e: entities.enemies.map(e => ({ x: e.x, y: e.y, w: e.w, h: e.h, type: e.constructor.name, animFrame: e.animFrame, state: e.state, mode: e.mode, actionTimer: e.actionTimer, targetX: e.targetX })),
-                        b: entities.bullets.map(b => ({ x: b.x, y: b.y, w: b.w, h: b.h, color: b.color })),
+                        e: entities.enemies.map(e => ({ x: Math.round(e.x), y: Math.round(e.y), w: e.w, h: e.h, type: e.constructor.name, animFrame: e.animFrame, state: e.state, mode: e.mode, actionTimer: e.actionTimer, targetX: Math.round(e.targetX) })),
+                        b: entities.bullets.map(b => ({ x: Math.round(b.x), y: Math.round(b.y), w: b.w, h: b.h, color: b.color })),
                         pl: entities.platforms.map(p => ({ x: p.x, y: p.y, w: p.w, h: p.h, type: p.type })),
                         lvl: gameState.level,
                         score: gameState.score,
@@ -1297,14 +1362,15 @@
                     Multiplayer.sendData({ type: 'state', data: state });
                 } else if (Multiplayer.isClient) {
                     let isShooting = (keys[' '] || mouse.down) && player.shootCooldown <= 0;
-                    if (isShooting) player.shootCooldown = 12; // fown
+                    if (isShooting) player.shootCooldown = 12; // Cable Tvfake local cooldown to prevent spam, gets overwritten by actual weapon
                     Multiplayer.sendData({
                         type: 'input',
                         data: {
-                            x: player.x, y: player.y, vx: player.vx, vy: player.vy, hp: player.hp, grounded: player.grounded, animFrame: player.animFrame,
-                            aimAngle: Math.atan2(mouse.y - (player.y + player.h / 2 - 4), mouse.x - (player.x + player.w / 2)),
+                            x: Math.round(player.x), y: Math.round(player.y), vx: Math.round(player.vx * 10) / 10, vy: Math.round(player.vy * 10) / 10, hp: player.hp, grounded: player.grounded, animFrame: player.animFrame,
+                            aimAngle: Math.round(Math.atan2(mouse.y - (player.y + player.h / 2 - 4), mouse.x - (player.x + player.w / 2)) * 100) / 100,
                             facingRight: mouse.x > player.x + player.w / 2,
-                            isShooting: isShooting
+                            isShooting: isShooting,
+                            wep: player.weapon
                         }
                     });
                 }
@@ -1356,8 +1422,15 @@
         window.addEventListener('keyup', e => keys[e.key] = false);
 
         canvas.addEventListener('mousemove', e => {
-            mouse.x = e.clientX;
-            mouse.y = e.clientY;
+            const rect = canvas.getBoundingClientRect();
+            // Cable TvDynamically scale ratio regardless of internal resolution
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            let rawX = (e.clientX - rect.left) * scaleX;
+            let rawY = (e.clientY - rect.top) * scaleY;
+            // Cable TvClamp mouse to the logical bounds using canvas.width/height dynamically
+            mouse.x = Math.max(0, Math.min(canvas.width, rawX));
+            mouse.y = Math.max(0, Math.min(canvas.height, rawY));
         });
 
         canvas.addEventListener('mousedown', e => { mouse.down = true; });

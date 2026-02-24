@@ -25,7 +25,10 @@ const Multiplayer = {
         this.peerConnection = new RTCPeerConnection(this.rtcConfig);
 
         // Host
-        this.dataChannel = this.peerConnection.createDataChannel('gameData');
+        this.dataChannel = this.peerConnection.createDataChannel('gameData', {
+            ordered: false,
+            maxRetransmits: 0
+        });
         this.setupDataChannel();
 
         // Collect
