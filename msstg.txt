@@ -1,0 +1,10 @@
+The button control system on MSST v4.0a and v5.1 works by using short and long presses for different commands.
+
+Defining Press Types
+A **short press** is a quick press-and-release. A **long press** is pressing and holding the button for over 500ms; the action will occur after 500ms even if you do not let go of the button. A **long press and release** is pressing and holding for 500ms, but the action will only occur when you release the button.
+
+At a Standstill (Idle Dashboard)
+When the scooter is at a standstill, a **long press** will open the settings menu. You must not be moving. To quickly exit (if you're on the Reverse option), simply long press again and let go. Short presses scroll through options (or change values) and long presses are like an "Enter" key. From a standstill at the idle dashboard, a **short press** will increment the speed target by whatever the interval of your Accel profile is set to. For Comfort, 1. Normal, this is 2. Sport, 4. TDE, 2. Eco, 2. The motor will kick on accordingly to the profile as well, and get you to the target speed. The screen will show your target and current speed. (In MPH. Firmware setting for KPH is being developed.) Sequential short presses will increment the speed target until it reaches its maximum value, then another short press will bring it down to the first value.
+
+While Moving (Applying Throttle)
+At any time the motor speed target is above 0 (you are intentionally applying throttle), a **long press and release** (about 500ms) will enter the **Soft Stop** phase, setting motor power to an extremely low value (but not entirely OFF). During this phase, the speaker will beep a low tone every half-second to signal to you that you are in this stage, and the screen will display "Soft Stop Hold to Stop". This way, you can naturally lose speed slowly. A **long press** *during* the Soft Stop stage will apply the motor brake, set the speed target to 0, and bring you to the Idle dashboard again. You can cancel Soft Stop by a **short press** and you will return to the first speed increment your profile allows
