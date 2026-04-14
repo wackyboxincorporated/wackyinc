@@ -503,13 +503,25 @@ const initAudio = async () => {
             audioInitialized = true;
             
             audioUI.innerText = 'Fetching soundtracks...';
-            const response = await fetch('Soundtrack/');
-            const html = await response.text();
+            let response = await fetch('Soundtrack/');
+            let html = await response.text();
             
             // Regex to find href pointing to music files in the directory listing
             const regex = /href="([^"]+\.(?:xm|mod|it|s3m|mptm))"/gi;
             const matches = [...html.matchAll(regex)];
             tracks = matches.map(m => decodeURIComponent(m[1]).replace(/^.*[\\\/]/, ''));
+            
+            // Fallback for static hosts (like GitHub Pages) that don't support directory listing
+            if (tracks.length === 0) {
+                try {
+                    const jsonResponse = await fetch('Soundtrack/index.json');
+                    if (jsonResponse.ok) {
+                        tracks = await jsonResponse.json();
+                    }
+                } catch(e) {
+                    console.warn('Fallback to index.json failed', e);
+                }
+            }
             
             if (tracks.length > 0) {
                 playTrack(currentTrackIndex);
