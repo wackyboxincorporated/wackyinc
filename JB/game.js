@@ -19,10 +19,12 @@ let camOffsetPitchVelo = 0;
 let isCameraResetting = false;
 let camMovingUp = false, camMovingDown = false, camMovingLeft = false, camMovingRight = false;
 
-let moveForward = false, moveBackward = false, rotateLeft = false, rotateRight = false;
+let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
 let canJump = false;
 let isGroundPounding = false;
 let isShooting = false;
+let isRightMouseDown = false;
+let mousePos = new THREE.Vector2(0, 0);
 let shadowsEnabled = true;
 let motionBlurEnabled = false;
 
@@ -282,6 +284,10 @@ const init = () => {
 
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('keyup', onKeyUp);
+    document.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('mouseup', onMouseUp);
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('contextmenu', e => e.preventDefault());
 
     buildLevel(currentLevel);
     createClouds();
@@ -593,8 +599,8 @@ function onKeyDown(event) {
         case 'ArrowRight': camMovingRight = true; isCameraResetting = false; break;
         case 'KeyW': moveForward = true; break;
         case 'KeyS': moveBackward = true; break;
-        case 'KeyA': rotateLeft = true; break;
-        case 'KeyD': rotateRight = true; break;
+        case 'KeyA': moveLeft = true; break;
+        case 'KeyD': moveRight = true; break;
         case 'Enter': isCameraResetting = true; break;
         case 'Tab': 
             event.preventDefault();
@@ -654,11 +660,56 @@ function onKeyUp(event) {
         case 'ArrowRight': camMovingRight = false; break;
         case 'KeyW': moveForward = false; break;
         case 'KeyS': moveBackward = false; break;
-        case 'KeyA': rotateLeft = false; break;
-        case 'KeyD': rotateRight = false; break;
+        case 'KeyA': moveLeft = false; break;
+        case 'KeyD': moveRight = false; break;
         case 'KeyK': isShooting = false; break;
         case 'KeyQ': 
         case 'KeyE': adjustPitch = 0; break;
+    }
+}
+
+function onMouseDown(event) {
+    if (gameState !== 'PLAYING') return;
+    if (event.button === 2) {
+        isRightMouseDown = true;
+        const crosshair = document.getElementById('crosshair');
+        if (crosshair) crosshair.style.display = 'none';
+    } else if (event.button === 0 && !isRightMouseDown) {
+        isShooting = true;
+    }
+}
+
+function onMouseUp(event) {
+    if (event.button === 2) {
+        isRightMouseDown = false;
+        const crosshair = document.getElementById('crosshair');
+        if (crosshair) crosshair.style.display = 'block';
+    } else if (event.button === 0) {
+        isShooting = false;
+    }
+}
+
+function onMouseMove(event) {
+    if (gameState !== 'PLAYING') return;
+    
+    // For raycasting
+    mousePos.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mousePos.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    const crosshair = document.getElementById('crosshair');
+    if (crosshair) {
+        crosshair.style.left = event.clientX + 'px';
+        crosshair.style.top = event.clientY + 'px';
+    }
+
+    if (isRightMouseDown) {
+        const dx = event.movementX || 0;
+        const dy = event.movementY || 0;
+        const camSpeed = 0.005;
+        camOffsetYaw -= dx * camSpeed;
+        camOffsetPitch -= dy * camSpeed;
+        camOffsetPitch = Math.max(-1.2, Math.min(1.2, camOffsetPitch));
+        isCameraResetting = false;
     }
 }
 
@@ -814,21 +865,34 @@ const updateEnemies = (delta, time) => {
 const updatePhysics = (delta, time) => {
     const wasOnObject = canJump;
 
-    if (rotateLeft) player.rotation.y += 1.5 * delta;
-    if (rotateRight) player.rotation.y -= 1.5 * delta;
+    const moveX = Number(moveRight) - Number(moveLeft);
+    const moveZ = Number(moveBackward) - Number(moveForward);
 
-    direction.set(0, 0, -1);
-    direction.applyEuler(player.rotation);
-    direction.normalize();
+    if (moveX !== 0 || moveZ !== 0) {
+        direction.set(moveX, 0, moveZ).normalize();
+        direction.applyAxisAngle(new THREE.Vector3(0, 1, 0), camOffsetYaw);
+        
+        const targetRotationY = Math.atan2(-direction.x, -direction.z);
+        let diff = targetRotationY - player.rotation.y;
+        diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+        player.rotation.y += diff * 15.0 * delta;
+    } else {
+        direction.set(0, 0, -1);
+        direction.applyEuler(player.rotation);
+        direction.normalize();
+    }
 
     gunPitch += adjustPitch * 2.0 * delta;
     gunPitch = Math.max(-Math.PI/3, Math.min(Math.PI/3, gunPitch));
 
     if (isShooting && time - lastShotTime > 150) {
-        let shootDir = new THREE.Vector3(0, 0, -1);
-        shootDir.applyEuler(new THREE.Euler(gunPitch, player.rotation.y, 0, 'YXZ'));
-        shootDir.normalize();
-        spawnProjectile(player.position.clone().add(new THREE.Vector3(0, 0.6, 0)), shootDir, true);
+        let raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mousePos, camera);
+        let targetPoint = raycaster.ray.origin.clone().add(raycaster.ray.direction.multiplyScalar(100));
+        let spawnPos = player.position.clone().add(new THREE.Vector3(0, 0.6, 0));
+        let shootDir = targetPoint.sub(spawnPos).normalize();
+        
+        spawnProjectile(spawnPos, shootDir, true);
         lastShotTime = time;
     }
 
@@ -837,10 +901,9 @@ const updatePhysics = (delta, time) => {
         velocity.z -= velocity.z * 8.0 * delta;
 
         const speed = 110.0;
-        const moveDir = Number(moveForward) - Number(moveBackward);
-        if (moveForward || moveBackward) {
-            velocity.x += direction.x * moveDir * speed * delta;
-            velocity.z += direction.z * moveDir * speed * delta;
+        if (moveX !== 0 || moveZ !== 0) {
+            velocity.x += direction.x * speed * delta;
+            velocity.z += direction.z * speed * delta;
         }
     }
 
@@ -1024,8 +1087,11 @@ const animate = () => {
     if (isCameraResetting) {
         const stiffness = 120.0;
         const damping = 12.0;
+
+        let yawDiff = player.rotation.y - camOffsetYaw;
+        yawDiff = Math.atan2(Math.sin(yawDiff), Math.cos(yawDiff));
         
-        const fYaw = -stiffness * camOffsetYaw - damping * camOffsetYawVelo;
+        const fYaw = stiffness * yawDiff - damping * camOffsetYawVelo;
         const fPitch = -stiffness * camOffsetPitch - damping * camOffsetPitchVelo;
         
         camOffsetYawVelo += fYaw * delta;
@@ -1034,9 +1100,9 @@ const animate = () => {
         camOffsetYaw += camOffsetYawVelo * delta;
         camOffsetPitch += camOffsetPitchVelo * delta;
         
-        if (Math.abs(camOffsetYaw) < 0.0001 && Math.abs(camOffsetPitch) < 0.0001 && 
-            Math.abs(camOffsetYawVelo) < 0.0001 && Math.abs(camOffsetPitchVelo) < 0.0001) {
-            camOffsetYaw = 0; camOffsetPitch = 0;
+        if (Math.abs(yawDiff) < 0.005 && Math.abs(camOffsetPitch) < 0.005 && 
+            Math.abs(camOffsetYawVelo) < 0.005 && Math.abs(camOffsetPitchVelo) < 0.005) {
+            camOffsetYaw = player.rotation.y; camOffsetPitch = 0;
             camOffsetYawVelo = 0; camOffsetPitchVelo = 0;
             isCameraResetting = false;
         }
@@ -1057,13 +1123,11 @@ const animate = () => {
     orbitMatrix.makeRotationFromEuler(camEuler);
     idealOffset.applyMatrix4(orbitMatrix);
 
-    idealOffset.applyEuler(player.rotation); 
     idealOffset.add(player.position);
     camera.position.lerp(idealOffset, 0.2);
     
     const lookAtTarget = new THREE.Vector3(0, 0, -5);
     lookAtTarget.applyMatrix4(orbitMatrix); // Rotate look target as well for consistent framing
-    lookAtTarget.applyEuler(player.rotation);
     lookAtTarget.add(player.position);
     camera.lookAt(lookAtTarget);
 
