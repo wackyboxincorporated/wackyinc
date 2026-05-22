@@ -28,7 +28,7 @@ let appSettings = {
     alwaysOpenInWindow: false,
     taskbarAutohide: false, 
     uiSounds: { 
-        enabled: false,
+        enabled: true,
         volume: 0.5,
         click: '',
         windowOpen: '',
@@ -59,7 +59,11 @@ function loadSettings() {
     try {
         const savedSettings = localStorage.getItem(SETTINGS_KEY);
         if (savedSettings) {
-            appSettings = { ...appSettings, ...JSON.parse(savedSettings) }; 
+            const parsed = JSON.parse(savedSettings);
+            if (parsed && parsed.uiSounds) {
+                parsed.uiSounds = { ...appSettings.uiSounds, ...parsed.uiSounds };
+            }
+            appSettings = { ...appSettings, ...parsed }; 
         }
     } catch (e) {
         console.error("Failed to load settings:", e);
@@ -110,11 +114,7 @@ function applySettings() {
 
     body.classList.remove('theme-light', 'theme-dark', 'theme-retro', 'theme-neon', 'theme-soft', 'theme-cameron', 'theme-wnt');
     
-    // Rename mapping logic
     let themeClass = `theme-${appSettings.theme}`;
-    if (appSettings.theme === 'soft') themeClass = 'theme-soft'; // Keep CSS class same, just label changed
-    if (appSettings.theme === 'cameron') themeClass = 'theme-soft'; // Use soft CSS for Cameron
-    if (appSettings.theme === 'wnt') themeClass = 'theme-retro'; // Use retro CSS for WNT
     
     body.classList.add(themeClass);
     
@@ -254,8 +254,8 @@ function applySettings() {
 }
 
 let fancyWallpaper = {
-    scene: null, camera: null, renderer: null, particles: null,
-    animationFrameId: null, container: null
+    scene: null, camera: null, renderer: null, cube: null,
+    animationFrameId: null, container: null, onMouseMove: null, onWindowResize: null
 };
 
 function initFancyWallpaper() {
@@ -268,54 +268,56 @@ function initFancyWallpaper() {
     fancyWallpaper.container.style.zIndex = '0';
     fancyWallpaper.scene = new THREE.Scene();
     fancyWallpaper.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    fancyWallpaper.renderer = new THREE.WebGLRenderer({ canvas: fancyWallpaper.container, alpha: true });
+    fancyWallpaper.renderer = new THREE.WebGLRenderer({ canvas: fancyWallpaper.container, alpha: true, antialias: true });
     fancyWallpaper.renderer.setSize(window.innerWidth, window.innerHeight);
+    fancyWallpaper.renderer.setPixelRatio(window.devicePixelRatio);
     fancyWallpaper.renderer.setClearColor(0x000000, 0); 
 
-    const particleCount = 5000;
-    const particles = new THREE.BufferGeometry();
-    const positions = new Float32Array(particleCount * 3);
-    const colors = new Float32Array(particleCount * 3);
-    const color = new THREE.Color();
+    // Create multi-color materials for the cube
+    const materials = [
+        new THREE.MeshBasicMaterial({ color: 0xff4757 }), // Right: Red
+        new THREE.MeshBasicMaterial({ color: 0x2ed573 }), // Left: Green
+        new THREE.MeshBasicMaterial({ color: 0x1e90ff }), // Top: Blue
+        new THREE.MeshBasicMaterial({ color: 0xffa502 }), // Bottom: Yellow
+        new THREE.MeshBasicMaterial({ color: 0xff00ff }), // Front: Pink
+        new THREE.MeshBasicMaterial({ color: 0x00ffff })  // Back: Cyan
+    ];
 
-    for (let i = 0; i < particleCount; i++) {
-        positions[i * 3] = (Math.random() - 0.5) * 20;
-        positions[i * 3 + 1] = (Math.random() - 0.5) * 20;
-        positions[i * 3 + 2] = (Math.random() - 0.5) * 20;
-        
-        color.setHSL(Math.random(), 0.7, 0.7);
-        colors[i * 3] = color.r;
-        colors[i * 3 + 1] = color.g;
-        colors[i * 3 + 2] = color.b;
-    }
-    particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    particles.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    
-    const material = new THREE.PointsMaterial({
-        size: 0.05,
-        vertexColors: true,
-        blending: THREE.AdditiveBlending,
-        transparent: true,
-        opacity: 0.75
-    });
-    
-    fancyWallpaper.particles = new THREE.Points(particles, material);
-    fancyWallpaper.scene.add(fancyWallpaper.particles);
+    const geometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
+    fancyWallpaper.cube = new THREE.Mesh(geometry, materials);
+    fancyWallpaper.scene.add(fancyWallpaper.cube);
+
     fancyWallpaper.camera.position.z = 5;
 
-    const onWindowResize = () => {
+    let mouse = { x: 0, y: 0 };
+    fancyWallpaper.onMouseMove = (event) => {
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    };
+    window.addEventListener('mousemove', fancyWallpaper.onMouseMove, { passive: true });
+
+    fancyWallpaper.onWindowResize = () => {
         if (!fancyWallpaper.renderer) return;
         fancyWallpaper.camera.aspect = window.innerWidth / window.innerHeight;
         fancyWallpaper.camera.updateProjectionMatrix();
         fancyWallpaper.renderer.setSize(window.innerWidth, window.innerHeight);
     };
-    window.addEventListener('resize', onWindowResize, false);
+    window.addEventListener('resize', fancyWallpaper.onWindowResize, false);
 
     const animate = () => {
         fancyWallpaper.animationFrameId = requestAnimationFrame(animate);
-        const time = Date.now() * 0.0001;
-        fancyWallpaper.particles.rotation.x = time * 0.25;
-        fancyWallpaper.particles.rotation.y = time * 0.5;
+        
+        if (fancyWallpaper.cube) {
+            fancyWallpaper.cube.rotation.x += 0.01;
+            fancyWallpaper.cube.rotation.y += 0.015;
+            
+            const targetX = mouse.x * 3.8;
+            const targetY = mouse.y * 2.8;
+            
+            fancyWallpaper.cube.position.x += (targetX - fancyWallpaper.cube.position.x) * 0.08;
+            fancyWallpaper.cube.position.y += (targetY - fancyWallpaper.cube.position.y) * 0.08;
+        }
+        
         fancyWallpaper.renderer.render(fancyWallpaper.scene, fancyWallpaper.camera);
     };
     animate();
@@ -325,15 +327,24 @@ function destroyFancyWallpaper() {
     if (fancyWallpaper.animationFrameId) {
         cancelAnimationFrame(fancyWallpaper.animationFrameId);
     }
+    if (fancyWallpaper.onMouseMove) {
+        window.removeEventListener('mousemove', fancyWallpaper.onMouseMove);
+    }
+    if (fancyWallpaper.onWindowResize) {
+        window.removeEventListener('resize', fancyWallpaper.onWindowResize);
+    }
     if (fancyWallpaper.renderer) {
         fancyWallpaper.renderer.dispose();
-        fancyWallpaper.renderer.domElement.remove();
         fancyWallpaper.renderer = null;
     }
     if (fancyWallpaper.container) {
         fancyWallpaper.container.classList.remove('visible');
     }
-    fancyWallpaper = { scene: null, camera: null, renderer: null, particles: null, animationFrameId: null, container: fancyWallpaper.container };
+    fancyWallpaper = { 
+        scene: null, camera: null, renderer: null, cube: null, 
+        animationFrameId: null, container: fancyWallpaper.container,
+        onMouseMove: null, onWindowResize: null
+    };
 }
 
 async function initializeDesktop() {
@@ -399,17 +410,133 @@ async function initializeDesktop() {
     setupMobileGestures();
     
     document.body.addEventListener('click', (e) => {
-        if (e.target.closest('button, .icon, .menu-item, .task-item, .sidebar-button, .dot')) {
+        if (e.target.closest('button, .icon, .menu-item, .task-item, .sidebar-button, .dot, .start-button')) {
             playUISound('click');
         }
     }, true); 
+
+    // Play startup chime on first user interaction
+    const playStartupOnFirstClick = () => {
+        playUISound('startup');
+        document.removeEventListener('click', playStartupOnFirstClick, true);
+    };
+    document.addEventListener('click', playStartupOnFirstClick, true);
+}
+
+function playSynthSound(type) {
+    if (!appSettings.uiSounds || !appSettings.uiSounds.enabled) return;
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        const volume = appSettings.uiSounds.volume !== undefined ? appSettings.uiSounds.volume : 0.5;
+        const masterGain = ctx.createGain();
+        masterGain.gain.setValueAtTime(volume, ctx.currentTime);
+        masterGain.connect(ctx.destination);
+
+        const now = ctx.currentTime;
+
+        if (type === 'click') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(1200, now);
+            osc.frequency.exponentialRampToValueAtTime(150, now + 0.05);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+            
+            osc.connect(gain);
+            gain.connect(masterGain);
+            osc.start(now);
+            osc.stop(now + 0.05);
+        } else if (type === 'windowOpen') {
+            const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+            notes.forEach((freq, idx) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+                
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.15, now + idx * 0.05 + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.2);
+                
+                osc.connect(gain);
+                gain.connect(masterGain);
+                osc.start(now + idx * 0.05);
+                osc.stop(now + idx * 0.05 + 0.2);
+            });
+        } else if (type === 'windowClose') {
+            const notes = [1046.50, 783.99, 659.25, 523.25]; // C6, G5, E5, C5
+            notes.forEach((freq, idx) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, now + idx * 0.04);
+                
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.15, now + idx * 0.04 + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.04 + 0.18);
+                
+                osc.connect(gain);
+                gain.connect(masterGain);
+                osc.start(now + idx * 0.04);
+                osc.stop(now + idx * 0.04 + 0.18);
+            });
+        } else if (type === 'error') {
+            const freqs = [150, 153];
+            freqs.forEach(freq => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(freq, now);
+                
+                const filter = ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(600, now);
+                filter.frequency.exponentialRampToValueAtTime(200, now + 0.35);
+                
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(masterGain);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            });
+        } else if (type === 'startup') {
+            const freqs = [164.81, 246.94, 329.63, 440.00, 493.88, 659.25]; // E3, B3, E4, A4, B4, E5
+            const startTimes = [0, 0.1, 0.2, 0.35, 0.5, 0.65];
+            freqs.forEach((freq, idx) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, now + startTimes[idx]);
+                
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.1, now + startTimes[idx] + 0.5);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + startTimes[idx] + 2.0);
+                
+                osc.connect(gain);
+                gain.connect(masterGain);
+                osc.start(now + startTimes[idx]);
+                osc.stop(now + startTimes[idx] + 2.0);
+            });
+        }
+    } catch (e) {
+        console.error("Synthesizer error:", e);
+    }
 }
 
 function playUISound(soundName) {
     if (!appSettings.uiSounds.enabled) return;
     
     const url = appSettings.uiSounds[soundName];
-    if (!url) return; 
+    if (!url) {
+        playSynthSound(soundName);
+        return;
+    }
     
     try {
         let audio = audioCache[soundName];
@@ -417,11 +544,15 @@ function playUISound(soundName) {
             audio.currentTime = 0;
             audio.volume = appSettings.uiSounds.volume;
             audio.play().catch(e => {
-                console.warn(`Audio play failed for '${soundName}'.`, e.message);
+                console.warn(`Audio play failed for '${soundName}'. Falling back to synth.`, e.message);
+                playSynthSound(soundName);
             });
+        } else {
+            playSynthSound(soundName);
         }
     } catch (e) {
         console.error(`Error playing sound '${soundName}':`, e);
+        playSynthSound(soundName);
     }
 }
 

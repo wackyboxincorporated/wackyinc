@@ -275,10 +275,14 @@ function launchItem(item) {
     if (isMobile()) closeMobileSidebar();
 
     if (item.type === 'folder') {
-        if (appSettings.alwaysOpenInWindow) {
-            openIframeWindow(item.name, item.url);
+        if (item.contents) {
+            openExplorerApp({ startFolder: item.name });
         } else {
-            openWebAppPrompt(item);
+            if (appSettings.alwaysOpenInWindow) {
+                openIframeWindow(item.name, item.url);
+            } else {
+                openWebAppPrompt(item);
+            }
         }
         return;
     }
@@ -646,36 +650,342 @@ function remove_taskbar_item(windowId) {
     if (item) item.remove(); 
 }
 
-function setupStartMenu() { 
-    const startBtn = document.getElementById('start-button'); 
-    const startMenu = document.getElementById('start-menu'); 
-    const programsContainer = document.getElementById('start-programs'); 
-    const docsContainer = document.getElementById('start-docs'); 
+function setupStartMenu() {
+    const startBtn = document.getElementById('start-button');
+    const startMenu = document.getElementById('start-menu');
     
-    programsContainer.innerHTML = '';
-    docsContainer.innerHTML = '';
+    if (!document.getElementById('start-menu-layout')) {
+        startMenu.innerHTML = `
+            <div id="start-menu-layout">
+                <div id="start-menu-left">
+                    <div id="start-left-content">
+                        <div id="start-programs-pane">
+                            <div class="start-pane-header">Pinned Programs</div>
+                            <div id="start-pinned-programs"></div>
+                            <div id="start-all-programs-btn" class="all-programs-btn">
+                                <span>All Programs</span> <span class="arrow">&raquo;</span>
+                            </div>
+                        </div>
+                        <div id="start-all-programs-pane" style="display: none;">
+                            <div id="start-all-programs-back" class="all-programs-back">
+                                <span class="arrow">&laquo;</span> <span>Back</span>
+                            </div>
+                            <div id="start-all-programs-tree"></div>
+                        </div>
+                        <div id="start-search-results-pane" style="display: none;">
+                            <div class="start-pane-header">Search Results</div>
+                            <div id="start-search-results"></div>
+                        </div>
+                    </div>
+                    <div id="start-search-box">
+                        <span class="search-icon">&#128269;</span>
+                        <input type="text" id="start-search-input" placeholder="Search programs and files" autocomplete="off">
+                        <span id="start-search-clear" style="display: none;">&times;</span>
+                    </div>
+                </div>
+                <div id="start-menu-right">
+                    <div id="start-user-area">
+                        <div id="start-user-avatar"></div>
+                        <span id="start-user-name">User</span>
+                    </div>
+                    <div id="start-right-links">
+                        <div class="right-link" data-path="Games"><div class="right-link-icon games-icon"></div><span>Games</span></div>
+                        <div class="right-link" data-path="Websites & Projects"><div class="right-link-icon websites-icon"></div><span>Websites</span></div>
+                        <div class="right-link" data-path="Documents & Code"><div class="right-link-icon docs-icon"></div><span>Documents</span></div>
+                        <div class="right-link" data-path="Media & Files"><div class="right-link-icon media-icon"></div><span>Music & Videos</span></div>
+                        <div class="right-link" data-path="Computer"><div class="right-link-icon computer-icon"></div><span>Computer</span></div>
+                        <div class="right-link-separator"></div>
+                        <div class="right-link" data-action="settings"><div class="right-link-icon settings-icon"></div><span>Control Panel</span></div>
+                        <div class="right-link" data-action="terminal"><div class="right-link-icon terminal-icon"></div><span>Command Prompt</span></div>
+                        <div class="right-link" data-action="about"><div class="right-link-icon about-icon"></div><span>Help and Support</span></div>
+                    </div>
+                    <div id="start-shutdown-bar">
+                        <button id="start-shutdown-btn">Shut Down</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        const allProgramsBtn = document.getElementById('start-all-programs-btn');
+        const allProgramsBack = document.getElementById('start-all-programs-back');
+        const searchInput = document.getElementById('start-search-input');
+        const searchClear = document.getElementById('start-search-clear');
+        
+        const programsPane = document.getElementById('start-programs-pane');
+        const allProgramsPane = document.getElementById('start-all-programs-pane');
+        const searchPane = document.getElementById('start-search-results-pane');
+        
+        allProgramsBtn.onclick = (e) => {
+            e.stopPropagation();
+            programsPane.style.display = 'none';
+            allProgramsPane.style.display = 'block';
+            searchPane.style.display = 'none';
+            renderAllProgramsTree();
+        };
+        
+        allProgramsBack.onclick = (e) => {
+            e.stopPropagation();
+            programsPane.style.display = 'block';
+            allProgramsPane.style.display = 'none';
+            searchPane.style.display = 'none';
+        };
+        
+        searchInput.oninput = (e) => {
+            const query = e.target.value.trim().toLowerCase();
+            if (query.length > 0) {
+                searchClear.style.display = 'block';
+                programsPane.style.display = 'none';
+                allProgramsPane.style.display = 'none';
+                searchPane.style.display = 'block';
+                performStartSearch(query);
+            } else {
+                searchClear.style.display = 'none';
+                searchPane.style.display = 'none';
+                if (allProgramsPane.style.display === 'block') {
+                    allProgramsPane.style.display = 'block';
+                } else {
+                    programsPane.style.display = 'block';
+                }
+            }
+        };
+        
+        searchClear.onclick = (e) => {
+            e.stopPropagation();
+            searchInput.value = '';
+            searchClear.style.display = 'none';
+            searchPane.style.display = 'none';
+            programsPane.style.display = 'block';
+            allProgramsPane.style.display = 'none';
+            searchInput.focus();
+        };
+
+        document.getElementById('start-shutdown-btn').onclick = () => {
+            playUISound('error');
+            const overlay = document.createElement('div');
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0'; overlay.style.left = '0';
+            overlay.style.width = '100%'; overlay.style.height = '100%';
+            overlay.style.background = '#000';
+            overlay.style.zIndex = '99999';
+            overlay.style.display = 'flex';
+            overlay.style.flexDirection = 'column';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            overlay.style.color = '#fff';
+            overlay.style.fontFamily = "'Segoe UI', sans-serif";
+            overlay.innerHTML = `
+                <div class="icon-img webapp-settings" style="width: 60px; height: 60px; filter: hue-rotate(180deg); margin-bottom: 20px; animation: spin 2s linear infinite;"></div>
+                <div style="font-size: 20px;">Shutting down...</div>
+                <style>@keyframes spin { 100% { transform: rotate(360deg); } }</style>
+            `;
+            document.body.appendChild(overlay);
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        };
+        
+        document.querySelectorAll('#start-right-links .right-link').forEach(link => {
+            link.onclick = (e) => {
+                e.stopPropagation();
+                startMenu.classList.remove('open');
+                
+                const action = link.dataset.action;
+                const path = link.dataset.path;
+                
+                if (action) {
+                    if (action === 'settings') openSettingsApp();
+                    if (action === 'terminal') openTerminalApp();
+                    if (action === 'about') openAboutApp();
+                } else if (path) {
+                    openExplorerApp({ startFolder: path });
+                }
+            };
+        });
+    }
     
-    const apps = desktopItems.filter(i => i.type === 'system_app');
+    const pinnedContainer = document.getElementById('start-pinned-programs');
+    pinnedContainer.innerHTML = '';
     
-    apps.forEach(app => { 
-        const item = document.createElement('div'); 
-        item.className = 'menu-item'; 
-        item.innerHTML = `<div class="icon-img ${app.class}" style="width:24px; height:24px;"></div> <span>${app.name}</span>`; 
-        item.onclick = () => { launchItem(app); startMenu.classList.remove('open'); }; 
-        programsContainer.appendChild(item); 
-    }); 
+    const pinnedApps = [
+        { name: 'Browser', class: 'webapp-browser', action: 'openBrowser' },
+        { name: 'Notepad', class: 'webapp-notepad', action: 'openNotepad' },
+        { name: 'Calculator', class: 'webapp-computer', action: 'openCalculator' },
+        { name: 'Theme Studio', class: 'webapp-themes', action: 'openThemeApp' },
+        { name: 'File Explorer', class: 'webapp-explorer', action: 'openExplorer' }
+    ];
     
-    desktopItems.filter(i => i.type === 'file' && ['document', 'image', 'code'].includes(i.class)).slice(0, 5).forEach(doc => { 
-        const item = document.createElement('div'); 
-        item.className = 'menu-item'; 
-        item.innerHTML = `<div class="icon-img ${doc.class}" style="width:24px; height:24px;"></div> <span>${doc.name}</span>`; 
-        item.onclick = () => { launchItem(doc); startMenu.classList.remove('open'); }; 
-        docsContainer.appendChild(item); 
-    }); 
+    pinnedApps.forEach(app => {
+        const item = document.createElement('div');
+        item.className = 'menu-item';
+        item.innerHTML = `<div class="icon-img ${app.class}" style="width:32px; height:32px;"></div> <span>${app.name}</span>`;
+        item.onclick = () => {
+            if (app.action === 'openBrowser') openBrowserApp();
+            if (app.action === 'openNotepad') openNotepadApp();
+            if (app.action === 'openCalculator') openCalculatorApp();
+            if (app.action === 'openThemeApp') openThemeApp();
+            if (app.action === 'openExplorer') openExplorerApp();
+            startMenu.classList.remove('open');
+        };
+        pinnedContainer.appendChild(item);
+    });
+
+    const gamesFolder = desktopItems.find(i => i.name === 'Games');
+    if (gamesFolder && gamesFolder.contents) {
+        const separator = document.createElement('div');
+        separator.className = 'start-pane-separator';
+        pinnedContainer.appendChild(separator);
+        
+        gamesFolder.contents.slice(0, 3).forEach(game => {
+            const item = document.createElement('div');
+            item.className = 'menu-item';
+            item.innerHTML = `<div class="icon-img folder" style="width:32px; height:32px; filter: hue-rotate(90deg);"></div> <span>${game.name}</span>`;
+            item.onclick = () => {
+                launchItem(game);
+                startMenu.classList.remove('open');
+            };
+            pinnedContainer.appendChild(item);
+        });
+    }
     
-    startBtn.addEventListener('click', (e) => { e.stopPropagation(); startMenu.classList.toggle('open'); }); 
-    document.addEventListener('click', () => startMenu.classList.remove('open')); 
-    startMenu.addEventListener('click', e => e.stopPropagation()); 
+    if (!startBtn.dataset.wired) {
+        startBtn.onclick = (e) => {
+            e.stopPropagation();
+            startMenu.classList.toggle('open');
+            if (startMenu.classList.contains('open')) {
+                setTimeout(() => document.getElementById('start-search-input')?.focus(), 50);
+            }
+        };
+        startBtn.dataset.wired = "true";
+    }
+    
+    document.addEventListener('click', () => startMenu.classList.remove('open'));
+    startMenu.onclick = (e) => e.stopPropagation();
+}
+
+function renderAllProgramsTree() {
+    const treeContainer = document.getElementById('start-all-programs-tree');
+    treeContainer.innerHTML = '';
+    
+    const systemAppsFolder = {
+        name: "System Accessories",
+        contents: desktopItems.filter(i => i.type === 'system_app')
+    };
+    
+    const folders = [
+        ...desktopItems.filter(i => i.type === 'folder'),
+        systemAppsFolder
+    ];
+    
+    folders.forEach(folder => {
+        const folderNode = document.createElement('div');
+        folderNode.className = 'tree-folder';
+        
+        const folderHeader = document.createElement('div');
+        folderHeader.className = 'tree-folder-header';
+        folderHeader.innerHTML = `<span class="tree-arrow">&#9656;</span> <div class="icon-img folder" style="width:18px; height:18px; display:inline-block; vertical-align:middle; margin:0 5px 0 0;"></div> <span>${folder.name}</span>`;
+        
+        const folderContent = document.createElement('div');
+        folderContent.className = 'tree-folder-content';
+        folderContent.style.display = 'none';
+        
+        folder.contents.forEach(item => {
+            const leafNode = document.createElement('div');
+            leafNode.className = 'tree-leaf menu-item';
+            const cls = item.class || (item.type === 'system_app' ? 'webapp-computer' : 'folder');
+            leafNode.innerHTML = `<div class="icon-img ${cls}" style="width:20px; height:20px;"></div> <span>${item.name}</span>`;
+            leafNode.onclick = (e) => {
+                e.stopPropagation();
+                launchItem(item);
+                document.getElementById('start-menu').classList.remove('open');
+            };
+            folderContent.appendChild(leafNode);
+        });
+        
+        folderHeader.onclick = (e) => {
+            e.stopPropagation();
+            const isOpen = folderContent.style.display === 'block';
+            folderContent.style.display = isOpen ? 'none' : 'block';
+            folderHeader.querySelector('.tree-arrow').innerHTML = isOpen ? '&#9656;' : '&#9662;';
+        };
+        
+        folderNode.appendChild(folderHeader);
+        folderNode.appendChild(folderContent);
+        treeContainer.appendChild(folderNode);
+    });
+}
+
+function performStartSearch(query) {
+    const resultsContainer = document.getElementById('start-search-results');
+    resultsContainer.innerHTML = '';
+    
+    const results = {
+        games: [],
+        websites: [],
+        files: [],
+        programs: []
+    };
+    
+    desktopItems.forEach(item => {
+        if (item.type === 'folder' && item.contents) {
+            item.contents.forEach(child => {
+                if (child.name.toLowerCase().includes(query)) {
+                    if (item.name === 'Games') results.games.push(child);
+                    else if (item.name === 'Websites & Projects') results.websites.push(child);
+                    else if (item.name === 'Documents & Code') results.files.push(child);
+                    else if (item.name === 'Media & Files') results.files.push(child);
+                }
+            });
+        } else if (item.type === 'system_app') {
+            if (item.name.toLowerCase().includes(query)) {
+                results.programs.push(item);
+            }
+        } else {
+            if (item.name.toLowerCase().includes(query)) {
+                if (item.type === 'locked_folder') results.files.push(item);
+                else if (item.class === 'webapp-browser') results.websites.push(item);
+                else results.files.push(item);
+            }
+        }
+    });
+    
+    customDesktopItems.forEach(item => {
+        if (item.name.toLowerCase().includes(query)) {
+            results.websites.push(item);
+        }
+    });
+    
+    let hasResults = false;
+    
+    const renderSection = (title, list) => {
+        if (list.length === 0) return;
+        hasResults = true;
+        
+        const sectionHeader = document.createElement('div');
+        sectionHeader.className = 'search-section-header';
+        sectionHeader.textContent = title;
+        resultsContainer.appendChild(sectionHeader);
+        
+        list.forEach(item => {
+            const resItem = document.createElement('div');
+            resItem.className = 'menu-item';
+            const cls = item.class || (item.type === 'system_app' ? 'webapp-computer' : 'folder');
+            resItem.innerHTML = `<div class="icon-img ${cls}" style="width:24px; height:24px;"></div> <span>${item.name}</span>`;
+            resItem.onclick = () => {
+                launchItem(item);
+                document.getElementById('start-menu').classList.remove('open');
+            };
+            resultsContainer.appendChild(resItem);
+        });
+    };
+    
+    renderSection('Games', results.games);
+    renderSection('Programs', results.programs);
+    renderSection('Websites', results.websites);
+    renderSection('Files & Documents', results.files);
+    
+    if (!hasResults) {
+        resultsContainer.innerHTML = '<div style="padding:10px; color:var(--theme-text-secondary); text-align:center;">No items match your search.</div>';
+    }
 }
 
 function setupMobileControls() {

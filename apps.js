@@ -412,31 +412,232 @@ function openBrowserApp() {
     });
 }
 
-function openExplorerApp() {
-    const explorerHTML = `<div id="explorer-app"></div>`;
-    const win = openWindow('File Explorer', explorerHTML, {width: '500px', height: '400px'});
-    const contentArea = win.querySelector('#explorer-app');
+function openExplorerApp(options = {}) {
+    if (typeof options === 'string') {
+        options = { startFolder: options };
+    }
     
-    desktopItems.forEach(item => {
-        const iconDiv = createIconElement(item);
-        iconDiv.addEventListener('dblclick', () => {
-            launchItem(item);
-            if (item.type !== 'system_app' && item.type !== 'webapp') {
-                closeWindow(win.id); 
+    // Initialize navigation path stack
+    let currentPath = ['Computer'];
+    if (options.startFolder) {
+        // Resolve startFolder in desktopItems to verify it's a valid folder name
+        const validFolder = desktopItems.find(item => item.name === options.startFolder && (item.type === 'folder' || item.type === 'locked_folder'));
+        if (validFolder) {
+            currentPath = ['Computer', options.startFolder];
+        }
+    }
+    
+    let history = [ [...currentPath] ];
+    let historyIndex = 0;
+    let query = '';
+    
+    // Generate Explorer HTML
+    const explorerHTML = `
+        <div id="explorer-app-wrapper">
+            <div class="explorer-toolbar">
+                <button class="explorer-nav-btn explorer-back-btn" title="Back" disabled>&larr;</button>
+                <button class="explorer-nav-btn explorer-forward-btn" title="Forward" disabled>&rarr;</button>
+                <div class="explorer-address-bar">
+                    <span class="explorer-address-icon">&#128193;</span>
+                    <input type="text" class="explorer-address-input" readonly value="">
+                </div>
+                <div class="explorer-search-bar">
+                    <span class="explorer-search-icon">&#128269;</span>
+                    <input type="text" class="explorer-search-input" placeholder="Search folder...">
+                </div>
+            </div>
+            <div class="explorer-body">
+                <div class="explorer-sidebar">
+                    <div class="explorer-sidebar-section">
+                        <div class="explorer-sidebar-header">Shortcuts</div>
+                        <div class="explorer-sidebar-item" data-path="Computer">
+                            <span class="sidebar-icon-img computer"></span>
+                            <span>Computer</span>
+                        </div>
+                        <div class="explorer-sidebar-item" data-path="Games">
+                            <span class="sidebar-icon-img games"></span>
+                            <span>Games</span>
+                        </div>
+                        <div class="explorer-sidebar-item" data-path="Websites & Projects">
+                            <span class="sidebar-icon-img websites"></span>
+                            <span>Websites</span>
+                        </div>
+                        <div class="explorer-sidebar-item" data-path="Documents & Code">
+                            <span class="sidebar-icon-img docs"></span>
+                            <span>Documents</span>
+                        </div>
+                        <div class="explorer-sidebar-item" data-path="Media & Files">
+                            <span class="sidebar-icon-img media"></span>
+                            <span>Media</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="explorer-content"></div>
+            </div>
+        </div>
+    `;
+    
+    const win = openWindow('File Explorer', explorerHTML, {width: '650px', height: '450px'});
+    const wrapper = win.querySelector('#explorer-app-wrapper');
+    if (!wrapper) return;
+    
+    const backBtn = wrapper.querySelector('.explorer-back-btn');
+    const forwardBtn = wrapper.querySelector('.explorer-forward-btn');
+    const addressInput = wrapper.querySelector('.explorer-address-input');
+    const searchInput = wrapper.querySelector('.explorer-search-input');
+    const sidebarItems = wrapper.querySelectorAll('.explorer-sidebar-item');
+    const contentArea = wrapper.querySelector('.explorer-content');
+    
+    // Resolve full paths inside desktopItems
+    function resolvePath(path) {
+        if (path.length === 0 || path[0] !== 'Computer') {
+            return { name: 'Computer', contents: getRootContents() };
+        }
+        
+        let currentContents = getRootContents();
+        let folderName = 'Computer';
+        
+        for (let i = 1; i < path.length; i++) {
+            const nextSegment = path[i];
+            const found = currentContents.find(item => item.name === nextSegment && (item.type === 'folder' || item.type === 'locked_folder'));
+            if (found) {
+                folderName = found.name;
+                currentContents = found.contents || [];
+            } else {
+                return { name: 'Computer', contents: getRootContents() };
+            }
+        }
+        
+        return { name: folderName, contents: currentContents };
+    }
+    
+    function getRootContents() {
+        return desktopItems.filter(item => item.type === 'folder' || item.type === 'locked_folder');
+    }
+    
+    function navigateTo(targetPath) {
+        // Remove future history if we navigated after a Back action
+        history = history.slice(0, historyIndex + 1);
+        history.push([...targetPath]);
+        historyIndex = history.length - 1;
+        render();
+    }
+    
+    function render() {
+        currentPath = history[historyIndex];
+        
+        // Update Address Bar
+        addressInput.value = currentPath.join(' \u25B8 ');
+        
+        // Update Back/Forward Buttons
+        backBtn.disabled = (historyIndex === 0);
+        forwardBtn.disabled = (historyIndex === history.length - 1);
+        
+        // Update Sidebar Active Class
+        sidebarItems.forEach(item => {
+            const pathName = item.getAttribute('data-path');
+            if (pathName === 'Computer' && currentPath.length === 1) {
+                item.classList.add('active');
+            } else if (currentPath.length > 1 && currentPath[1] === pathName) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
             }
         });
-        contentArea.appendChild(iconDiv);
+        
+        // Fetch contents
+        const folder = resolvePath(currentPath);
+        let contents = folder.contents;
+        
+        // Apply Search Filtering if query exists
+        if (query) {
+            contents = contents.filter(item => item.name.toLowerCase().includes(query.toLowerCase()));
+        }
+        
+        // Clear and Render content area
+        contentArea.innerHTML = '';
+        
+        if (contents.length === 0) {
+            const emptyMsg = document.createElement('div');
+            emptyMsg.className = 'explorer-empty-message';
+            emptyMsg.textContent = query ? 'No search results found.' : 'This folder is empty.';
+            contentArea.appendChild(emptyMsg);
+            return;
+        }
+        
+        contents.forEach(item => {
+            const iconDiv = createIconElement(item);
+            const eventType = isMobile() ? 'click' : 'dblclick';
+            
+            iconDiv.addEventListener(eventType, (e) => {
+                e.stopPropagation();
+                if (item.type === 'folder' && item.contents) {
+                    navigateTo([...currentPath, item.name]);
+                } else {
+                    launchItem(item);
+                    if (item.type !== 'system_app' && item.type !== 'webapp' && item.type !== 'folder') {
+                        closeWindow(win.id);
+                    }
+                }
+            });
+            
+            contentArea.appendChild(iconDiv);
+        });
+    }
+    
+    // Wire up Address Bar click to copy path
+    addressInput.addEventListener('click', () => {
+        addressInput.select();
     });
+    
+    // Wire up Back/Forward Buttons
+    backBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (historyIndex > 0) {
+            historyIndex--;
+            render();
+        }
+    });
+    
+    forwardBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (historyIndex < history.length - 1) {
+            historyIndex++;
+            render();
+        }
+    });
+    
+    // Wire up Search Input
+    searchInput.addEventListener('input', (e) => {
+        query = e.target.value.trim();
+        render();
+    });
+    
+    // Wire up Sidebar Items
+    sidebarItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const target = item.getAttribute('data-path');
+            if (target === 'Computer') {
+                navigateTo(['Computer']);
+            } else {
+                navigateTo(['Computer', target]);
+            }
+        });
+    });
+    
+    // Initial Render
+    render();
 }
 
 function openAboutApp() {
     const aboutHTML = `
         <div id="about-app">
             <div class="icon-img webapp-space" style="filter: hue-rotate(180deg);"></div>
-            <h2>wbOS! v3</h2>
+            <h2>wbOS! v4</h2>
             <p>welcome to this particular nonsense!</p>
             <p>wackybox incorporated. technology of tomorrow, on the technology of today <3</p>
-            <p>Version 3.0 - massive UI overhaul</p>
+            <p>Version 4.0 - massive UI overhaul.. again</p>
         </div>
     `;
     openWindow('About wbOS', aboutHTML, {width: '400px', height: '450px', hideMaximize: true, hideMinimize: true});
@@ -480,7 +681,7 @@ function handleTerminalCommand(cmd, output) {
     
     switch(command) {
         case 'help':
-            output.textContent += "Available commands:\n  help    - Shows this message\n  ls      - Lists items on the desktop\n  date    - Shows the current date and time\n  clear   - Clears the terminal screen\n  echo    - Prints text to the terminal\n  poo    - Stinks\n  theme   - Change theme. Usage: theme [light|dark|retro|neon|soft]";
+            output.textContent += "Available commands:\n  help    - Shows this message\n  ls      - Lists items on the desktop\n  date    - Shows the current date and time\n  clear   - Clears the terminal screen\n  echo    - Prints text to the terminal\n  poo    - Stinks\n  theme   - Change theme. Usage: theme [light|dark|retro|neon|soft|wnt|cameron]";
             break;
         case 'ls':
             output.textContent += "Desktop Items:\n" + desktopItems.map(item => `  - ${item.name} (${item.type})`).join('\n');
@@ -499,13 +700,13 @@ function handleTerminalCommand(cmd, output) {
             break;
         case 'theme':
             const newTheme = args[1];
-            if (['light', 'dark', 'retro', 'neon', 'soft'].includes(newTheme)) {
+            if (['light', 'dark', 'retro', 'neon', 'soft', 'wnt', 'cameron'].includes(newTheme)) {
                 appSettings.theme = newTheme;
                 applySettings();
                 saveSettings();
                 output.textContent += `Theme set to ${newTheme}.`;
             } else {
-                output.textContent += "Usage: theme [light|dark|retro|neon|soft]";
+                output.textContent += "Usage: theme [light|dark|retro|neon|soft|wnt|cameron]";
             }
             break;
         case '':
@@ -532,9 +733,9 @@ function openThemeApp() {
                 <div id="theme-mode-toggle">
                     <button class="theme-mode-btn light" data-theme="light">Light</button>
                     <button class="theme-mode-btn dark" data-theme="dark">Dark</button>
-                    <button class="theme-mode-btn retro" data-theme="wnt">WNT</button>
+                    <button class="theme-mode-btn wnt" data-theme="wnt">WNT</button>
                     <button class="theme-mode-btn neon" data-theme="neon">Neon</button>
-                    <button class="theme-mode-btn soft" data-theme="cameron">Cameron's Theme</button>
+                    <button class="theme-mode-btn cameron" data-theme="cameron">Cameron's Theme</button>
                 </div>
             </div>
             
