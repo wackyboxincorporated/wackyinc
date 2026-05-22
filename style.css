@@ -593,9 +593,7 @@ html, body {
     left: calc(70px + env(safe-area-inset-left, 0));
     transform: translateX(20px) scale(0.95);
 }
-#start-menu #search-results-container .menu-item {
-    color: #000000 !important;
-}
+
 #start-menu.open {
     visibility: visible;
     opacity: 1;
@@ -2012,4 +2010,11 @@ html, body {
     .explorer-sidebar {
         display: none;
     }
+}
+
+/* Start Menu Search Results styling */
+#start-search-results,
+#start-search-results *,
+#start-search-results-pane .start-pane-header {
+    color: #000000 !important;
 }

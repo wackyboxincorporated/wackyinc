@@ -2011,3 +2011,10 @@ html, body {
         display: none;
     }
 }
+
+/* Start Menu Search Results styling */
+#start-search-results,
+#start-search-results *,
+#start-search-results-pane .start-pane-header {
+    color: #000000 !important;
+}
