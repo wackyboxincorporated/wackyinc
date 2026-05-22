@@ -2012,9 +2012,19 @@ html, body {
     }
 }
 
-/* Start Menu Search Results styling */
-#start-search-results,
-#start-search-results *,
-#start-search-results-pane .start-pane-header {
+/* Start Menu Left Pane text contrast overrides - only apply black text in dark, neon, and Cameron themes when glass is enabled */
+.theme-dark.graphics-glass #start-menu-left,
+.theme-dark.graphics-glass #start-menu-left *,
+.theme-neon.graphics-glass #start-menu-left,
+.theme-neon.graphics-glass #start-menu-left *,
+.theme-cameron.graphics-glass #start-menu-left,
+.theme-cameron.graphics-glass #start-menu-left * {
     color: #000000 !important;
+}
+
+/* Search input placeholder contrast overrides for dark glass modes */
+.theme-dark.graphics-glass #start-search-input::placeholder,
+.theme-neon.graphics-glass #start-search-input::placeholder,
+.theme-cameron.graphics-glass #start-search-input::placeholder {
+    color: rgba(0, 0, 0, 0.6) !important;
 }
