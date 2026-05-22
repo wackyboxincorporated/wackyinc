@@ -423,16 +423,41 @@ async function initializeDesktop() {
     document.addEventListener('click', playStartupOnFirstClick, true);
 }
 
+let synthAudioContext = null;
+let synthMasterGain = null;
+
+function getSynthAudioContext() {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return null;
+    
+    if (!synthAudioContext) {
+        try {
+            synthAudioContext = new AudioContextClass();
+            synthMasterGain = synthAudioContext.createGain();
+            synthMasterGain.connect(synthAudioContext.destination);
+        } catch (e) {
+            console.error("Failed to initialize synth AudioContext:", e);
+            return null;
+        }
+    }
+    
+    if (synthAudioContext.state === 'suspended') {
+        synthAudioContext.resume().catch(e => console.warn("Failed to resume AudioContext:", e));
+    }
+    
+    const volume = appSettings.uiSounds.volume !== undefined ? appSettings.uiSounds.volume : 0.5;
+    if (synthMasterGain) {
+        synthMasterGain.gain.setValueAtTime(volume, synthAudioContext.currentTime);
+    }
+    
+    return synthAudioContext;
+}
+
 function playSynthSound(type) {
     if (!appSettings.uiSounds || !appSettings.uiSounds.enabled) return;
     try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContext) return;
-        const ctx = new AudioContext();
-        const volume = appSettings.uiSounds.volume !== undefined ? appSettings.uiSounds.volume : 0.5;
-        const masterGain = ctx.createGain();
-        masterGain.gain.setValueAtTime(volume, ctx.currentTime);
-        masterGain.connect(ctx.destination);
+        const ctx = getSynthAudioContext();
+        if (!ctx || !synthMasterGain) return;
 
         const now = ctx.currentTime;
 
@@ -446,9 +471,16 @@ function playSynthSound(type) {
             gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
             
             osc.connect(gain);
-            gain.connect(masterGain);
+            gain.connect(synthMasterGain);
             osc.start(now);
             osc.stop(now + 0.05);
+
+            setTimeout(() => {
+                try {
+                    osc.disconnect();
+                    gain.disconnect();
+                } catch (e) {}
+            }, 100);
         } else if (type === 'windowOpen') {
             const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
             notes.forEach((freq, idx) => {
@@ -462,9 +494,16 @@ function playSynthSound(type) {
                 gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.2);
                 
                 osc.connect(gain);
-                gain.connect(masterGain);
+                gain.connect(synthMasterGain);
                 osc.start(now + idx * 0.05);
                 osc.stop(now + idx * 0.05 + 0.2);
+
+                setTimeout(() => {
+                    try {
+                        osc.disconnect();
+                        gain.disconnect();
+                    } catch (e) {}
+                }, (idx * 0.05 + 0.2) * 1000 + 100);
             });
         } else if (type === 'windowClose') {
             const notes = [1046.50, 783.99, 659.25, 523.25]; // C6, G5, E5, C5
@@ -479,9 +518,16 @@ function playSynthSound(type) {
                 gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.04 + 0.18);
                 
                 osc.connect(gain);
-                gain.connect(masterGain);
+                gain.connect(synthMasterGain);
                 osc.start(now + idx * 0.04);
                 osc.stop(now + idx * 0.04 + 0.18);
+
+                setTimeout(() => {
+                    try {
+                        osc.disconnect();
+                        gain.disconnect();
+                    } catch (e) {}
+                }, (idx * 0.04 + 0.18) * 1000 + 100);
             });
         } else if (type === 'error') {
             const freqs = [150, 153];
@@ -501,9 +547,17 @@ function playSynthSound(type) {
                 
                 osc.connect(filter);
                 filter.connect(gain);
-                gain.connect(masterGain);
+                gain.connect(synthMasterGain);
                 osc.start(now);
                 osc.stop(now + 0.4);
+
+                setTimeout(() => {
+                    try {
+                        osc.disconnect();
+                        filter.disconnect();
+                        gain.disconnect();
+                    } catch (e) {}
+                }, 500);
             });
         } else if (type === 'startup') {
             const freqs = [164.81, 246.94, 329.63, 440.00, 493.88, 659.25]; // E3, B3, E4, A4, B4, E5
@@ -519,9 +573,16 @@ function playSynthSound(type) {
                 gain.gain.exponentialRampToValueAtTime(0.001, now + startTimes[idx] + 2.0);
                 
                 osc.connect(gain);
-                gain.connect(masterGain);
+                gain.connect(synthMasterGain);
                 osc.start(now + startTimes[idx]);
                 osc.stop(now + startTimes[idx] + 2.0);
+
+                setTimeout(() => {
+                    try {
+                        osc.disconnect();
+                        gain.disconnect();
+                    } catch (e) {}
+                }, (startTimes[idx] + 2.0) * 1000 + 100);
             });
         }
     } catch (e) {
