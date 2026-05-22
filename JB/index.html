@@ -164,6 +164,29 @@
         .btn:hover {
             background: #00cca3;
         }
+
+        #crosshair {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            pointer-events: none;
+            z-index: 15;
+            display: block;
+            transform: translate(-50%, -50%);
+            top: 50%;
+            left: 50%;
+        }
+        #crosshair::before, #crosshair::after {
+            content: '';
+            position: absolute;
+            background: rgba(0, 255, 204, 0.8);
+        }
+        #crosshair::before {
+            top: 9px; left: 0; width: 20px; height: 2px;
+        }
+        #crosshair::after {
+            top: 0; left: 9px; width: 2px; height: 20px;
+        }
     </style>
 
     <script type="text/javascript">
@@ -184,6 +207,7 @@
     </script>
 </head>
 <body>
+    <div id="crosshair"></div>
     <div id="ui-layer">
         <div class="status-panel">
             <table class="data-table">
