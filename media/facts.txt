@@ -1,21 +1,13 @@
-welcome to mpo. this is the first release version! this is meant to replace 
-the existing "media" app at wackybox.org.
-press SPACE to pause/play, ARROW KEYS to navigate queue, C to clear queue, 
-scroll while hovering over the red "100" to change volume. 
-mpo supports basically every audio format a modern browser does, 
-with tracker music as well.
+welcome to mpo. this is the first release version! this is meant to replace the existing "media" app at wackybox.org.
+press SPACE to pause/play, ARROW KEYS to navigate queue, C to clear queue, scroll while hovering over the red "100" to change volume. 
+mpo supports basically every audio format a modern browser does, with tracker music as well.
 files can be dropped onto the queue, or uploaded with the button.
 you know there's a lot to check out at wackybox.org! 
 we're working on the 5th major version.
 if you have any issues, you can report them at wackyboxinc@gmail.com. 
 eventually we'll have company email!
-have you ever wondered what it'd be like to live in a CGI world where everything 
-has obnoxious slime physics and way too much grass?
-we're working on JBsquared. a weird c++-based opengl simulator thing meant to 
-portray the open fields of our headspace. only for linux systems!
+have you ever wondered what it'd be like to live in a CGI world where everything has obnoxious slime physics and way too much grass?
+we're working on JBsquared. a weird c++-based opengl simulator thing meant to portray the open fields of our headspace. only for linux systems!
 keep an eye out for more stuff here. we'll update it occasionally. 
 eventually /news will exist and this will simply eat off of its plate for info!
 this list is about to loop!....
-
-
-
