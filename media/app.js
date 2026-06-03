@@ -1309,6 +1309,45 @@
       });
   }
 
+  function getQueryMediaUrl() {
+    const search = window.location.search;
+    if (!search) return null;
+    let decoded = decodeURIComponent(search);
+    if (decoded.startsWith('?=')) {
+      let url = decoded.slice(2);
+      if (url.startsWith('"') && url.endsWith('"')) {
+        url = url.slice(1, -1);
+      }
+      return url;
+    } else if (decoded.startsWith('?')) {
+      let url = decoded.slice(1);
+      if (url.startsWith('"') && url.endsWith('"')) {
+        url = url.slice(1, -1);
+      }
+      return url;
+    }
+    return null;
+  }
+
+  function setupPostMessageListener() {
+    window.addEventListener('message', (event) => {
+      if (event.data && typeof event.data === 'object') {
+        const url = event.data.url || event.data.src || event.data.mediaUrl;
+        if (url) {
+          handleURLUpload(url);
+        }
+      } else if (typeof event.data === 'string') {
+        if (event.data.startsWith('http://') || event.data.startsWith('https://') || event.data.startsWith('/')) {
+          let url = event.data;
+          if (url.startsWith('"') && url.endsWith('"')) {
+            url = url.slice(1, -1);
+          }
+          handleURLUpload(url);
+        }
+      }
+    });
+  }
+
   window.addEventListener('DOMContentLoaded', () => {
     loadQueueFromDOM();
     setupTabs();
@@ -1320,6 +1359,21 @@
     fetchFacts();
     
     console.log("meaty player online core initialized successfully.");
+
+    // Enable interaction to unlock AudioContext
+    window.addEventListener('click', () => {
+      initAudio();
+      if (state.audioContext && state.audioContext.state === 'suspended') {
+        state.audioContext.resume();
+      }
+    });
+
+    setupPostMessageListener();
+
+    const queryUrl = getQueryMediaUrl();
+    if (queryUrl) {
+      handleURLUpload(queryUrl);
+    }
   });
 
 })();

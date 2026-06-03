@@ -371,19 +371,17 @@ async function initializeDesktop() {
         class: "locked-folder",
         password: "wackycom600",
         contents: [
-            { "name": "19-4.flac", "type": "file", "class": "audio" },
-            { "name": "Confusion.mp3", "type": "file", "class": "audio" },
+            { "name": "Bliss_(Windows_XP).png", "type": "file", "class": "image" },
+            { "name": "Caligula.webm", "type": "file", "class": "video" },
             { "name": "Grain (1).mp3", "type": "file", "class": "audio" },
-            { "name": "dawn comes ever closer.mp3", "type": "file", "class": "audio" },
-            { "name": "diamond in your soul.ogg", "type": "file", "class": "audio" },
-            { "name": "headlock.ogg", "type": "file", "class": "audio" },
-            { "name": "horn.wav", "type": "file", "class": "audio" },
-            { "name": "me when i'm an orange.flac", "type": "file", "class": "audio" },
+            { "name": "Really joke m.mp3", "type": "file", "class": "audio" },
+            { "name": "Your'e Note Reale.mp3", "type": "file", "class": "audio" },
+            { "name": "craft.mp4", "type": "file", "class": "video" },
+            { "name": "gONEW.mp3", "type": "file", "class": "audio" },
             { "name": "minecraft.ogg", "type": "file", "class": "audio" },
             { "name": "smile sower.ogg", "type": "file", "class": "audio" },
-            { "name": "spitting images.ogg", "type": "file", "class": "audio" },
+            { "name": "sunflowers_puresky_4k.hdr", "type": "file", "class": "image" },
             { "name": "the brown lane.ogg", "type": "file", "class": "audio" },
-            { "name": "wii all feel the same.ogg", "type": "file", "class": "audio" },
         ]
     };
 
