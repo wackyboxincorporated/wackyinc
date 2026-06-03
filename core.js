@@ -13,35 +13,35 @@ let audioCache = {};
 const isMobile = () => window.matchMedia("(max-width: 768px), (max-height: 500px) and (orientation: landscape)").matches;
 
 let appSettings = {
-    wallpaper: 'glassy-gradient',
+    wallpaper: 'default',
     wallpaperCustom: null, 
     theme: 'mts-new',
     graphics3d: false, 
     graphicsGlass: true, 
-    glassTint: '#ffffff', // Store as HEX now for stability
-    windowOpacity: 0.1, // NEW: Default opacity
-    titleColor: 'auto', // 'auto' or hex
+    glassTint: '#ffffff', 
+    windowOpacity: 0.25, 
+    titleColor: 'auto', 
     autoContrastTitle: true,
     taskbarPosition: 'bottom',
-    taskbarMode: 'standard', // 'standard' or 'compact'
+    taskbarMode: 'standard', 
     iconSize: 'medium',
     alwaysOpenInWindow: false,
     taskbarAutohide: false, 
-    lightAngle: 135, // Default light angle in degrees
-    lightIntensity: 0.25, // Default light intensity
-    windowBackground: '', // Default window background
-    windowBgType: 'default', // 'default', 'solid', 'gradient'
+    lightAngle: 135, 
+    lightIntensity: 0.25, 
+    windowBackground: '', 
+    windowBgType: 'default', 
     windowBgSolid: '#00000e',
     windowBgGrad1: '#f3904f',
     windowBgGrad2: '#3b4371',
     windowBgGradDir: 'to top',
-    contentBackground: '', // Default content/sector background
-    contentBgType: 'default', // 'default', 'solid', 'gradient'
+    contentBackground: '', 
+    contentBgType: 'default', 
     contentBgSolid: '#000000',
     contentBgGrad1: '#2b4c7e',
     contentBgGrad2: '#0a0f1d',
     contentBgGradDir: 'to top',
-    textPrimary: '', // Mts new custom colors
+    textPrimary: '', 
     accentPrimary: '',
     textSecondary: '',
     borderColor: '',
@@ -54,7 +54,7 @@ let appSettings = {
         error: ''
     }
 };
-const SETTINGS_KEY = 'wackybox_settings_v7'; // Version bumped
+const SETTINGS_KEY = 'wackybox_settings_v7'; 
 const CUSTOM_APPS_KEY = 'wackybox_custom_apps_v1'; 
 
 function saveSettings() {
@@ -102,7 +102,7 @@ function loadSettings() {
 }
 
 function hexToRgb(hex) {
-    // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
+    
     var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
     hex = hex.replace(shorthandRegex, function(m, r, g, b) {
         return r + r + g + g + b + b;
@@ -116,14 +116,28 @@ function hexToRgb(hex) {
     } : null;
 }
 
-// Calculate luminance to determine if text should be black or white
+
 function getContrastColor(hexColor) {
     const rgb = hexToRgb(hexColor);
     if (!rgb) return '#000000';
     
-    // SRP calculation
+    
     const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
     return luminance > 0.5 ? '#000000' : '#ffffff';
+}
+
+
+function getDarkTintRgb(hex, factor = 0.08, baseR = 12, baseG = 12, baseB = 14) {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return { r: baseR, g: baseG, b: baseB };
+    const r = Math.min(35, Math.max(0, Math.round(rgb.r * factor + baseR * (1 - factor))));
+    const g = Math.min(35, Math.max(0, Math.round(rgb.g * factor + baseG * (1 - factor))));
+    const b = Math.min(40, Math.max(0, Math.round(rgb.b * factor + baseB * (1 - factor))));
+    return { r, g, b };
+}
+
+function rgbToString(rgbObj) {
+    return `rgb(${rgbObj.r}, ${rgbObj.g}, ${rgbObj.b})`;
 }
 
 function applySettings() {
@@ -150,7 +164,7 @@ function applySettings() {
         destroyFancyWallpaper();
     }
 
-    // Construct Window background override (independent of theme)
+    
     let winBg = '';
     if (appSettings.windowBgType === 'solid') {
         winBg = appSettings.windowBgSolid || '#00000e';
@@ -164,7 +178,7 @@ function applySettings() {
             winBg = `linear-gradient(${dir}, ${c1}, ${c2})`;
         }
     } else {
-        winBg = appSettings.windowBackground || ''; // fallback to legacy if set
+        winBg = appSettings.windowBackground || ''; 
     }
     
     if (winBg) {
@@ -173,7 +187,7 @@ function applySettings() {
         document.body.style.removeProperty('--window-bg-override');
     }
 
-    // Construct Content background override
+    
     let contentBg = '';
     if (appSettings.contentBgType === 'solid') {
         contentBg = appSettings.contentBgSolid || '#000000';
@@ -196,7 +210,7 @@ function applySettings() {
         document.body.style.removeProperty('--content-bg-override');
     }
 
-    // Mts new custom theme colors overrides
+    
     if (appSettings.theme === 'mts-new') {
         if (appSettings.textPrimary) document.body.style.setProperty('--theme-text-primary', appSettings.textPrimary);
         else document.body.style.removeProperty('--theme-text-primary');
@@ -209,18 +223,37 @@ function applySettings() {
         
         if (appSettings.borderColor) document.body.style.setProperty('--theme-border-color', appSettings.borderColor);
         else document.body.style.removeProperty('--theme-border-color');
+
+        
+        const baseColor = appSettings.accentPrimary || '#2be19b';
+        const bgPrimaryRgb = getDarkTintRgb(baseColor, 0.08, 12, 12, 14);
+        const bgPrimary = rgbToString(bgPrimaryRgb);
+        const bgSecondary = '#000000';
+        const bgTertiaryRgb = getDarkTintRgb(baseColor, 0.15, 18, 18, 22);
+        const bgTertiary = rgbToString(bgTertiaryRgb);
+
+        document.body.style.setProperty('--theme-bg-primary', bgPrimary);
+        document.body.style.setProperty('--theme-bg-secondary', bgSecondary);
+        document.body.style.setProperty('--theme-bg-tertiary', bgTertiary);
+        document.body.style.setProperty('--glass-tint', `${bgPrimaryRgb.r}, ${bgPrimaryRgb.g}, ${bgPrimaryRgb.b}`);
+        document.documentElement.style.setProperty('--glass-tint', `${bgPrimaryRgb.r}, ${bgPrimaryRgb.g}, ${bgPrimaryRgb.b}`);
     } else {
         document.body.style.removeProperty('--theme-text-primary');
         document.body.style.removeProperty('--theme-accent-primary');
         document.body.style.removeProperty('--theme-text-secondary');
         document.body.style.removeProperty('--theme-border-color');
+        document.body.style.removeProperty('--theme-bg-primary');
+        document.body.style.removeProperty('--theme-bg-secondary');
+        document.body.style.removeProperty('--theme-bg-tertiary');
+        document.body.style.removeProperty('--glass-tint');
+        document.documentElement.style.removeProperty('--glass-tint');
     }
 
-    // Light direction configuration (degree angle & intensity)
+    
     const angle = appSettings.lightAngle !== undefined ? appSettings.lightAngle : 135;
     const intensity = appSettings.lightIntensity !== undefined ? appSettings.lightIntensity : 0.25;
     
-    // Calculate light X and Y on circular elements
+    
     const angleRad = (angle * Math.PI) / 180;
     const lightX = 50 + 50 * Math.cos(angleRad);
     const lightY = 50 - 50 * Math.sin(angleRad);
@@ -229,6 +262,11 @@ function applySettings() {
     document.body.style.setProperty('--light-y', `${lightY}%`);
     document.body.style.setProperty('--light-angle-deg', `${angle}deg`);
     document.body.style.setProperty('--light-intensity', intensity);
+
+    const hlX = -1.5 * Math.cos(angleRad);
+    const hlY = 1.5 * Math.sin(angleRad);
+    document.body.style.setProperty('--border-highlight-x', `${hlX.toFixed(2)}px`);
+    document.body.style.setProperty('--border-highlight-y', `${hlY.toFixed(2)}px`);
     
     const overlay = document.getElementById('desktop-reflection-overlay');
     if (overlay) {
@@ -236,39 +274,39 @@ function applySettings() {
         overlay.style.opacity = '1';
     }
 
-    // NEW: Apply Opacity Variable
-    // Ensure there is a fallback if setting is missing
+    
+    
     const opacity = appSettings.windowOpacity !== undefined ? appSettings.windowOpacity : 0.1;
     document.body.style.setProperty('--window-opacity', opacity);
     document.documentElement.style.setProperty('--window-opacity', opacity);
 
-    // Improved Tint Logic
+    
     if (appSettings.glassTint) {
         const rgb = hexToRgb(appSettings.glassTint);
         if (rgb) {
             document.body.style.setProperty('--glass-tint', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
             document.documentElement.style.setProperty('--glass-tint', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
             
-            // Handle Title Text Color
+            
             let titleColor = appSettings.titleColor;
             if (appSettings.autoContrastTitle) {
                 if (appSettings.graphicsGlass) {
                     titleColor = getContrastColor(appSettings.glassTint);
                 } else {
-                    // In non-glass mode, titles are based on the theme's titlebar background.
+                    
                     const darkThemes = ['cameron', 'mts-new'];
                     if (darkThemes.includes(appSettings.theme)) {
-                        titleColor = getContrastColor('#000000'); // Yields #ffffff
+                        titleColor = getContrastColor('#000000'); 
                     } else {
-                        titleColor = getContrastColor('#ffffff'); // Yields #000000
+                        titleColor = getContrastColor('#ffffff'); 
                     }
                 }
             } else if (titleColor === 'auto') {
                  titleColor = 'var(--theme-text-secondary)';
             }
             
-            // We inject a style rule for window title specifically
-            // Check if style tag exists
+            
+            
             let styleTag = document.getElementById('dynamic-theme-styles');
             if (!styleTag) {
                 styleTag = document.createElement('style');
@@ -321,7 +359,7 @@ function applySettings() {
             break;
         case 'default':
         default:
-            desktop.style.background = 'radial-gradient(circle at center, #000030 0%, #00000e 100%)';
+            desktop.style.background = 'url("windows_vista_49.jpg") center/cover no-repeat';
             break;
     }
 
@@ -339,7 +377,7 @@ function applySettings() {
         body.classList.add('taskbar-autohide');
     }
     
-    // Update icons size
+    
     const iconContainers = [container, document.getElementById('mobile-icon-pages')];
     iconContainers.forEach(cont => {
         if (!cont) return;
@@ -347,29 +385,59 @@ function applySettings() {
         cont.classList.add(`icon-size-${appSettings.iconSize}`);
     });
 
-    // Refresh UI rendering for pagination/grid changes
+    
     if (isMobile()) {
         renderMobileIcons();
     } else {
-        renderDesktopIcons(); // Also re-render desktop to handle pagination updates
+        renderDesktopIcons(); 
     }
     
-    // Update taskbar items style based on mode
+    
     document.querySelectorAll('.task-item').forEach(item => {
-        // Force re-render of text/style
+        
         const title = item.getAttribute('title') || item.textContent;
         if (appSettings.taskbarMode === 'compact') {
-            item.textContent = ''; // Clear text
-            item.title = title; // Add tooltip
-            item.style.width = '40px'; // Square-ish
+            item.textContent = ''; 
+            item.title = title; 
+            item.style.width = '40px'; 
             item.style.justifyContent = 'center';
         } else {
-            item.textContent = title; // Restore text
+            item.textContent = title; 
             item.removeAttribute('title');
-            item.style.width = ''; // Reset width
+            item.style.width = ''; 
             item.style.justifyContent = '';
         }
     });
+
+    let clockBgColor = '#000000';
+    if (appSettings.windowBgType === 'solid' && appSettings.windowBgSolid) {
+        clockBgColor = appSettings.windowBgSolid;
+    } else if (appSettings.windowBgType === 'gradient' && appSettings.windowBgGrad2) {
+        clockBgColor = appSettings.windowBgGrad2;
+    } else {
+        if (appSettings.theme === 'mts-new') {
+            const baseColor = appSettings.accentPrimary || '#2be19b';
+            const bgPrimaryRgb = getDarkTintRgb(baseColor, 0.08, 12, 12, 14);
+            clockBgColor = rgbToString(bgPrimaryRgb);
+        } else if (appSettings.theme === 'cameron') {
+            clockBgColor = '#3b0066';
+        } else if (appSettings.theme === 'light') {
+            clockBgColor = '#f5f5f5';
+        } else if (appSettings.theme === 'dark') {
+            clockBgColor = '#121212';
+        } else if (appSettings.theme === 'retro') {
+            clockBgColor = '#c0c0c0';
+        } else if (appSettings.theme === 'neon') {
+            clockBgColor = '#050010';
+        } else if (appSettings.theme === 'soft') {
+            clockBgColor = '#f4effa';
+        } else if (appSettings.theme === 'wnt') {
+            clockBgColor = '#3a6ea5';
+        }
+    }
+    const clockTextColor = getContrastColor(clockBgColor);
+    document.body.style.setProperty('--clock-text-color', clockTextColor);
+    document.documentElement.style.setProperty('--clock-text-color', clockTextColor);
 }
 
 let fancyWallpaper = {
@@ -392,14 +460,14 @@ function initFancyWallpaper() {
     fancyWallpaper.renderer.setPixelRatio(window.devicePixelRatio);
     fancyWallpaper.renderer.setClearColor(0x000000, 0); 
 
-    // Create multi-color materials for the cube
+    
     const materials = [
-        new THREE.MeshBasicMaterial({ color: 0xff4757 }), // Right: Red
-        new THREE.MeshBasicMaterial({ color: 0x2ed573 }), // Left: Green
-        new THREE.MeshBasicMaterial({ color: 0x1e90ff }), // Top: Blue
-        new THREE.MeshBasicMaterial({ color: 0xffa502 }), // Bottom: Yellow
-        new THREE.MeshBasicMaterial({ color: 0xff00ff }), // Front: Pink
-        new THREE.MeshBasicMaterial({ color: 0x00ffff })  // Back: Cyan
+        new THREE.MeshBasicMaterial({ color: 0xff4757 }), 
+        new THREE.MeshBasicMaterial({ color: 0x2ed573 }), 
+        new THREE.MeshBasicMaterial({ color: 0x1e90ff }), 
+        new THREE.MeshBasicMaterial({ color: 0xffa502 }), 
+        new THREE.MeshBasicMaterial({ color: 0xff00ff }), 
+        new THREE.MeshBasicMaterial({ color: 0x00ffff })  
     ];
 
     const geometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
@@ -515,6 +583,7 @@ async function initializeDesktop() {
         { name: 'Terminal', type: 'system_app', class: 'webapp-terminal', action: 'openTerminal' },
         { name: 'Theme studio', type: 'system_app', class: 'webapp-themes', action: 'openThemeApp' },
         { name: 'Video Player', type: 'system_app', class: 'webapp-video', action: 'openVideoPlayer' }, 
+        { name: 'Meaty Player', type: 'system_app', class: 'webapp-meaty', action: 'openMeatyPlayer' }, 
     ];
 
     desktopItems = [...filteredDesktopItems, LOCKED_FOLDER, ...systemApps, ...customDesktopItems];
@@ -532,7 +601,7 @@ async function initializeDesktop() {
         }
     }, true); 
 
-    // Play startup chime on first user interaction
+    
     const playStartupOnFirstClick = () => {
         playUISound('startup');
         document.removeEventListener('click', playStartupOnFirstClick, true);
@@ -599,7 +668,7 @@ function playSynthSound(type) {
                 } catch (e) {}
             }, 100);
         } else if (type === 'windowOpen') {
-            const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+            const notes = [523.25, 659.25, 783.99, 1046.50]; 
             notes.forEach((freq, idx) => {
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
@@ -623,7 +692,7 @@ function playSynthSound(type) {
                 }, (idx * 0.05 + 0.2) * 1000 + 100);
             });
         } else if (type === 'windowClose') {
-            const notes = [1046.50, 783.99, 659.25, 523.25]; // C6, G5, E5, C5
+            const notes = [1046.50, 783.99, 659.25, 523.25]; 
             notes.forEach((freq, idx) => {
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
@@ -677,7 +746,7 @@ function playSynthSound(type) {
                 }, 500);
             });
         } else if (type === 'startup') {
-            const freqs = [164.81, 246.94, 329.63, 440.00, 493.88, 659.25]; // E3, B3, E4, A4, B4, E5
+            const freqs = [164.81, 246.94, 329.63, 440.00, 493.88, 659.25]; 
             const startTimes = [0, 0.1, 0.2, 0.35, 0.5, 0.65];
             freqs.forEach((freq, idx) => {
                 const osc = ctx.createOscillator();
@@ -760,7 +829,7 @@ const resizeObserver = new ResizeObserver(() => {
     if (isMobile()) {
         renderMobileIcons();
     } else {
-        // Add debounce to prevent massive lag on resize
+        
         if (window.desktopResizeTimeout) clearTimeout(window.desktopResizeTimeout);
         window.desktopResizeTimeout = setTimeout(renderDesktopIcons, 200);
     }

@@ -7,7 +7,7 @@ function renderDesktopIcons() {
     const container = document.getElementById('desktop-icon-container');
     if (!container) return;
 
-    // Ensure container has dimensions before calculating grid
+    
     if (container.clientWidth === 0 || container.clientHeight === 0) {
         setTimeout(renderDesktopIcons, 100);
         return;
@@ -15,8 +15,8 @@ function renderDesktopIcons() {
 
     container.innerHTML = '';
 
-    // Create Wrapper and Dots container dynamically
-    // Use JS styling to ensure it works without style.css modifications
+    
+    
     const wrapper = document.createElement('div');
     wrapper.id = 'desktop-pages-wrapper';
     wrapper.style.display = 'flex';
@@ -25,10 +25,10 @@ function renderDesktopIcons() {
     wrapper.style.scrollSnapType = 'x mandatory';
     wrapper.style.height = '100%';
     wrapper.style.width = '100%';
-    wrapper.style.scrollbarWidth = 'none'; // Firefox
+    wrapper.style.scrollbarWidth = 'none'; 
     container.appendChild(wrapper);
 
-    // Hide scrollbar Webkit
+    
     const style = document.createElement('style');
     style.innerHTML = `#desktop-pages-wrapper::-webkit-scrollbar { display: none; }`;
     container.appendChild(style);
@@ -45,9 +45,9 @@ function renderDesktopIcons() {
     dotsContainer.style.zIndex = '20';
     container.appendChild(dotsContainer);
 
-    // Create a temporary icon to measure dimensions
+    
     const tempIcon = createIconElement({ name: 'Temp', class: 'folder' });
-    // We need to put it in a temp page to get correct spacing
+    
     const tempPage = document.createElement('div');
     tempPage.style.position = 'absolute';
     tempPage.style.visibility = 'hidden';
@@ -58,21 +58,21 @@ function renderDesktopIcons() {
     const iconWidth = tempIcon.offsetWidth + parseFloat(iconStyle.marginLeft) + parseFloat(iconStyle.marginRight);
     const iconHeight = tempIcon.offsetHeight + parseFloat(iconStyle.marginTop) + parseFloat(iconStyle.marginBottom);
 
-    wrapper.removeChild(tempPage); // Clean up
+    wrapper.removeChild(tempPage); 
 
-    // Calculate capacity
-    // Subtract space for dots at bottom (approx 40px)
+    
+    
     const availableHeight = container.clientHeight - 40;
     const availableWidth = container.clientWidth;
 
-    const cols = Math.floor(availableWidth / (iconWidth + 10)); // +10 for gap
+    const cols = Math.floor(availableWidth / (iconWidth + 10)); 
     const rows = Math.floor(availableHeight / (iconHeight + 10));
 
-    // Ensure at least 1 item per page to avoid infinity loops
+    
     const iconsPerPage = Math.max(4, cols * rows);
     const totalPages = Math.ceil(desktopItems.length / iconsPerPage);
 
-    // Generate Pages
+    
     for (let i = 0; i < totalPages; i++) {
         const page = document.createElement('div');
         page.className = 'desktop-page';
@@ -97,7 +97,7 @@ function renderDesktopIcons() {
         dotsContainer.appendChild(dot);
     }
 
-    // Handle Scroll Updates for Dots
+    
     wrapper.addEventListener('scroll', () => {
         const pageIndex = Math.round(wrapper.scrollLeft / wrapper.clientWidth);
         const dots = dotsContainer.querySelectorAll('.dot');
@@ -106,7 +106,7 @@ function renderDesktopIcons() {
         });
     });
 
-    // Place Icons
+    
     desktopItems.forEach((item, index) => {
         const pageIndex = Math.floor(index / iconsPerPage);
         const page = wrapper.children[pageIndex];
@@ -119,8 +119,8 @@ function renderDesktopIcons() {
                 document.querySelectorAll('.icon.selected').forEach(i => i.classList.remove('selected'));
                 iconDiv.classList.add('selected');
             });
-            // Dragging inside pagination is complex, simplified for now
-            // dragElement(iconDiv); 
+            
+            
             page.appendChild(iconDiv);
         }
     });
@@ -205,8 +205,8 @@ function setupGlobalDragSelect() {
     const container = document.getElementById('desktop-icon-container');
     if (!container) return;
 
-    // Note: Drag select logic might conflict with pagination scrolling/swiping
-    // Keeping it basic for now, mostly effective on the visible page
+    
+    
 
     let selectionBox = document.createElement('div');
     selectionBox.style.position = 'absolute';
@@ -251,7 +251,7 @@ function setupGlobalDragSelect() {
         const boxRect = selectionBox.getBoundingClientRect();
         icons.forEach(icon => {
             const iconRect = icon.getBoundingClientRect();
-            // Only select visible icons
+            
             if (icon.offsetParent === null) return;
 
             const isIntersecting = !(
@@ -305,6 +305,7 @@ function launchItem(item) {
         if (item.action === 'openThemeApp') openThemeApp();
         if (item.action === 'openAbout') openAboutApp();
         if (item.action === 'openVideoPlayer') openVideoPlayerApp();
+        if (item.action === 'openMeatyPlayer') openMediaPlayerWindow();
         return;
     }
 
@@ -343,7 +344,7 @@ function openDesktopWindow(windowId, title, contentHTML, options = {}) {
     if (options.minWidth) windowDiv.style.minWidth = options.minWidth;
     if (options.minHeight) windowDiv.style.minHeight = options.minHeight;
 
-    // UPDATED: Minimize icon is now an emdash '—'
+    
     windowDiv.innerHTML = `
         <div class="window-header">
             <span class="window-title">${title}</span>
@@ -621,13 +622,13 @@ function add_taskbar_item(windowId, title) {
     const item = document.createElement('div');
     item.className = 'task-item';
 
-    // Check taskbar mode
+    
     if (appSettings.taskbarMode === 'compact') {
-        item.title = title; // Tooltip
+        item.title = title; 
         item.style.width = '40px';
         item.style.justifyContent = 'center';
-        // Note: Real implementation would use an app icon here, but we don't pass icon class to openWindow yet.
-        // For now, just blank or first letter could work, but CSS background handles active state.
+        
+        
     } else {
         item.textContent = title;
     }
@@ -647,7 +648,10 @@ function add_taskbar_item(windowId, title) {
 function remove_taskbar_item(windowId) {
     if (isMobile()) return;
     const item = document.querySelector(`.task-item[data-window-id="${windowId}"]`);
-    if (item) item.remove();
+    if (item) {
+        item.classList.add('closing');
+        setTimeout(() => item.remove(), 250);
+    }
 }
 
 function setupStartMenu() {
@@ -1050,14 +1054,14 @@ function showMobileHome(isMinimizing) {
 
     if (!isMinimizing) {
         openMobileAppOrder = [];
-        // Destroy all open windows
+        
         Object.keys(openWindows).forEach(windowId => {
             const win = openWindows[windowId];
             if (win) win.remove();
             delete openWindows[windowId];
         });
     } else {
-        // Minimize all open windows
+        
         Object.values(openWindows).forEach(appPage => {
             appPage.classList.remove('active', 'inactive-behind');
             appPage.classList.add('minimized');

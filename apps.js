@@ -25,16 +25,16 @@ function openCalculatorApp() {
             </div>
         </div>
     `;
-    const win = openWindow('Calculator', calcHTML, {width: '300px', height: '450px', minWidth: '250px', minHeight: '350px'});
+    const win = openWindow('Calculator', calcHTML, { width: '300px', height: '450px', minWidth: '250px', minHeight: '350px' });
     const contentArea = win.querySelector('.window-content, .mobile-app-content');
     if (contentArea) contentArea.style.padding = '0';
-    
+
     const calculator = win.querySelector('#calculator');
     if (!calculator) return;
-    
+
     const display = calculator.querySelector('#calc-display');
     const buttons = calculator.querySelector('#calc-buttons');
-    
+
     let state = {
         displayValue: '0',
         firstOperand: null,
@@ -85,14 +85,14 @@ function openCalculatorApp() {
             if (state.operator && state.firstOperand !== null) {
                 const result = performCalculation(state.firstOperand, parseFloat(state.displayValue), state.operator);
                 state.displayValue = String(result);
-                state.firstOperand = null; 
+                state.firstOperand = null;
                 state.operator = null;
                 state.waitingForSecondOperand = true;
             }
         } else if (['add', 'subtract', 'multiply', 'divide'].includes(key)) {
             if (state.displayValue === 'Error') return;
             const inputValue = parseFloat(state.displayValue);
-            
+
             if (state.operator && !state.waitingForSecondOperand) {
                 const result = performCalculation(state.firstOperand, inputValue, state.operator);
                 state.displayValue = String(result);
@@ -100,11 +100,11 @@ function openCalculatorApp() {
             } else {
                 state.firstOperand = inputValue;
             }
-            
+
             state.operator = key;
             state.waitingForSecondOperand = true;
         }
-        
+
         display.value = state.displayValue.length > 14 ? parseFloat(state.displayValue).toExponential(9) : state.displayValue;
     });
 }
@@ -116,14 +116,14 @@ function openClockApp() {
             <div id="clock-date"></div>
         </div>
     `;
-    const win = openWindow('Clock', clockHTML, {width: '400px', height: '250px', minWidth: '300px', minHeight: '200px'});
+    const win = openWindow('Clock', clockHTML, { width: '400px', height: '250px', minWidth: '300px', minHeight: '200px' });
     const contentArea = win.querySelector('.window-content, .mobile-app-content');
     if (contentArea) contentArea.style.padding = '0';
-    
+
     const timeEl = win.querySelector('#clock-time');
     const dateEl = win.querySelector('#clock-date');
     let clockInterval;
-    
+
     function updateAppClock() {
         if (!document.body.contains(win)) {
             clearInterval(clockInterval);
@@ -137,15 +137,103 @@ function openClockApp() {
     clockInterval = setInterval(updateAppClock, 1000);
 }
 
-function openNotepadApp() {
+function findFileInSystem(fileName) {
+    function search(items) {
+        for (const item of items) {
+            if (item.name === fileName) return item;
+            if (item.type === 'folder' && item.contents) {
+                const found = search(item.contents);
+                if (found) return found;
+            }
+        }
+        return null;
+    }
+    return search(desktopItems);
+}
+
+async function getVirtualFileContent(fileName) {
+    const override = localStorage.getItem(`wacky_file_override_${fileName}`);
+    if (override !== null) {
+        return override;
+    }
+    try {
+        const response = await fetch(`${BASE_URL}${encodeURIComponent(fileName)}`);
+        if (!response.ok) {
+            if (findFileInSystem(fileName)) {
+                return '';
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.text();
+    } catch (e) {
+        if (findFileInSystem(fileName)) {
+            return '';
+        }
+        throw e;
+    }
+}
+
+async function openNotepadApp(fileName = null) {
     const notepadHTML = `
         <div id="notepad-app">
+            <div class="notepad-toolbar">
+                <button id="notepad-save-btn">Save</button>
+                <span id="notepad-status" style="margin-left: 10px; font-size: 11px; opacity: 0.7;"></span>
+            </div>
             <textarea id="notepad-textarea" placeholder="Start typing..."></textarea>
         </div>
     `;
-    const win = openWindow('Notepad', notepadHTML, {width: '500px', height: '400px'});
+    const title = fileName ? `Notepad - ${fileName}` : 'Notepad';
+    const win = openWindow(title, notepadHTML, { width: '500px', height: '400px' });
     const contentArea = win.querySelector('.window-content, .mobile-app-content');
     if (contentArea) contentArea.style.padding = '0';
+
+    const textarea = win.querySelector('#notepad-textarea');
+    const saveBtn = win.querySelector('#notepad-save-btn');
+    const statusSpan = win.querySelector('#notepad-status');
+
+    let currentFileName = fileName;
+
+    if (currentFileName) {
+        statusSpan.textContent = 'Loading...';
+        try {
+            const content = await getVirtualFileContent(currentFileName);
+            textarea.value = content;
+            statusSpan.textContent = '';
+        } catch (error) {
+            textarea.value = `Error loading file: ${error.message}`;
+            statusSpan.textContent = 'Error';
+        }
+    }
+
+    saveBtn.addEventListener('click', () => {
+        if (!currentFileName) {
+            const newName = prompt('Enter a filename to save as:', 'untitled.txt');
+            if (!newName) return;
+            currentFileName = newName;
+
+
+            const titleElem = win.querySelector('.window-title');
+            if (titleElem) titleElem.textContent = `Notepad - ${currentFileName}`;
+
+
+            const newItem = { name: currentFileName, type: 'file', class: 'document' };
+            desktopItems.push(newItem);
+            renderUI();
+        }
+
+        try {
+            localStorage.setItem(`wacky_file_override_${currentFileName}`, textarea.value);
+            statusSpan.textContent = 'Saved successfully';
+            setTimeout(() => {
+                if (statusSpan.textContent === 'Saved successfully') {
+                    statusSpan.textContent = '';
+                }
+            }, 2000);
+        } catch (e) {
+            statusSpan.textContent = 'Failed to save';
+        }
+    });
 }
 
 function openSettingsApp() {
@@ -157,7 +245,7 @@ function openSettingsApp() {
                 <label>Visual Effects</label>
                 <div class="setting-group-row">
                     <input type="checkbox" id="graphics-glass-check">
-                    <label for="graphics-glass-check">Enable Glass (Aero) Effects</label>
+                    <label for="graphics-glass-check">Enable glass aero bs effects</label>
                 </div>
                 <div class="setting-group-row">
                     <input type="checkbox" id="graphics-3d-check">
@@ -236,36 +324,36 @@ function openSettingsApp() {
             </div>
         </div>
     `;
-    const win = openWindow('Settings', settingsHTML, {width: '500px', height: '650px', minWidth: '400px'});
-    
+    const win = openWindow('Settings', settingsHTML, { width: '500px', height: '650px', minWidth: '400px' });
+
     const glassCheck = win.querySelector('#graphics-glass-check');
     const threeDCheck = win.querySelector('#graphics-3d-check');
     const taskbarSelect = win.querySelector('#taskbar-select');
-    const taskbarModeSelect = win.querySelector('#taskbar-mode-select'); // New
-    const taskbarAutohideCheck = win.querySelector('#taskbar-autohide-check'); 
+    const taskbarModeSelect = win.querySelector('#taskbar-mode-select');
+    const taskbarAutohideCheck = win.querySelector('#taskbar-autohide-check');
     const iconSizeSelect = win.querySelector('#icon-size-select');
     const alwaysOpenCheck = win.querySelector('#always-open-in-window-check');
-    
+
     glassCheck.checked = appSettings.graphicsGlass;
     threeDCheck.checked = appSettings.graphics3d;
     taskbarSelect.value = appSettings.taskbarPosition;
     taskbarModeSelect.value = appSettings.taskbarMode || 'standard';
-    taskbarAutohideCheck.checked = appSettings.taskbarAutohide; 
+    taskbarAutohideCheck.checked = appSettings.taskbarAutohide;
     iconSizeSelect.value = appSettings.iconSize;
     alwaysOpenCheck.checked = appSettings.alwaysOpenInWindow;
-    
+
     glassCheck.addEventListener('change', (e) => {
         appSettings.graphicsGlass = e.target.checked;
         applySettings();
         saveSettings();
     });
-    
+
     threeDCheck.addEventListener('change', (e) => {
         appSettings.graphics3d = e.target.checked;
         applySettings();
         saveSettings();
     });
-    
+
     taskbarSelect.addEventListener('change', (e) => {
         appSettings.taskbarPosition = e.target.value;
         applySettings();
@@ -277,24 +365,24 @@ function openSettingsApp() {
         applySettings();
         saveSettings();
     });
-    
+
     taskbarAutohideCheck.addEventListener('change', (e) => {
         appSettings.taskbarAutohide = e.target.checked;
         applySettings();
         saveSettings();
     });
-    
+
     iconSizeSelect.addEventListener('change', (e) => {
         appSettings.iconSize = e.target.value;
         applySettings();
         saveSettings();
     });
-    
+
     alwaysOpenCheck.addEventListener('change', (e) => {
         appSettings.alwaysOpenInWindow = e.target.checked;
         saveSettings();
     });
-    
+
     win.querySelector('#open-sound-settings-btn').addEventListener('click', openSoundSettings);
     win.querySelector('#open-theme-app-btn').addEventListener('click', openThemeApp);
 
@@ -306,7 +394,7 @@ function openSettingsApp() {
             customAppListDiv.innerHTML = '<div style="padding: 10px; text-align: center; color: var(--theme-text-secondary);">No custom apps added.</div>';
             return;
         }
-        
+
         customDesktopItems.forEach((app, index) => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'custom-app-item';
@@ -315,58 +403,58 @@ function openSettingsApp() {
                 <span class="custom-app-item-url">${app.url}</span>
                 <button class="custom-app-item-remove" data-index="${index}" title="Remove App">&times;</button>
             `;
-            
+
             itemDiv.querySelector('.custom-app-item-remove').addEventListener('click', (e) => {
                 const appIndex = parseInt(e.target.dataset.index);
-                customDesktopItems.splice(appIndex, 1); 
-                saveCustomApps(); 
-                renderCustomAppList(); 
-                
+                customDesktopItems.splice(appIndex, 1);
+                saveCustomApps();
+                renderCustomAppList();
+
                 const systemApps = desktopItems.filter(i => i.type === 'system_app');
                 const builtInItems = desktopItems.filter(i => i.type !== 'system_app' && i.type !== 'webapp');
                 desktopItems = [...builtInItems, ...systemApps, ...customDesktopItems];
-                
+
                 renderUI();
                 setupStartMenu();
             });
-            
+
             customAppListDiv.appendChild(itemDiv);
         });
     }
-    
+
     renderCustomAppList();
-    
+
     win.querySelector('#add-custom-app-btn').addEventListener('click', () => {
         const nameInput = win.querySelector('#custom-app-name');
         const urlInput = win.querySelector('#custom-app-url');
         const name = nameInput.value;
         let url = urlInput.value;
-        
+
         if (!name || !url) {
             alert('Please enter both a name and a URL.');
             return;
         }
-        
+
         if (!url.startsWith('http')) {
             url = `https://${url}`;
         }
-        
+
         const newApp = {
             name: name,
             type: 'webapp',
-            class: 'webapp-browser', 
+            class: 'webapp-browser',
             url: url
         };
-        
+
         customDesktopItems.push(newApp);
         saveCustomApps();
-        
+
         desktopItems.push(newApp);
-        
-        renderUI(); 
-        setupStartMenu(); 
-        renderCustomAppList(); 
-        
+
+        renderUI();
+        setupStartMenu();
+        renderCustomAppList();
+
         nameInput.value = '';
         urlInput.value = '';
     });
@@ -385,7 +473,7 @@ function openBrowserApp() {
             <iframe id="browser-frame" src="about:blank" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
         </div>
     `;
-    const win = openWindow('Browser', browserHTML, {width: '800px', height: '600px'});
+    const win = openWindow('Browser', browserHTML, { width: '800px', height: '600px' });
     const contentArea = win.querySelector('.window-content, .mobile-app-content');
     if (contentArea) contentArea.style.padding = '0';
 
@@ -393,7 +481,7 @@ function openBrowserApp() {
     const urlInput = win.querySelector('#browser-url');
     const goBtn = win.querySelector('#browser-go');
     const reloadBtn = win.querySelector('#browser-reload');
-    
+
     const loadUrl = () => {
         let url = urlInput.value.trim();
         if (!url.startsWith('http://') && !url.startsWith('https://')) {
@@ -402,7 +490,7 @@ function openBrowserApp() {
         iframe.src = url;
         urlInput.value = url;
     };
-    
+
     goBtn.addEventListener('click', loadUrl);
     urlInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') loadUrl();
@@ -416,22 +504,22 @@ function openExplorerApp(options = {}) {
     if (typeof options === 'string') {
         options = { startFolder: options };
     }
-    
-    // Initialize navigation path stack
+
+
     let currentPath = ['Computer'];
     if (options.startFolder) {
-        // Resolve startFolder in desktopItems to verify it's a valid folder name
+
         const validFolder = desktopItems.find(item => item.name === options.startFolder && (item.type === 'folder' || item.type === 'locked_folder'));
         if (validFolder) {
             currentPath = ['Computer', options.startFolder];
         }
     }
-    
-    let history = [ [...currentPath] ];
+
+    let history = [[...currentPath]];
     let historyIndex = 0;
     let query = '';
-    
-    // Generate Explorer HTML
+
+
     const explorerHTML = `
         <div id="explorer-app-wrapper">
             <div class="explorer-toolbar">
@@ -476,27 +564,27 @@ function openExplorerApp(options = {}) {
             </div>
         </div>
     `;
-    
-    const win = openWindow('File Explorer', explorerHTML, {width: '650px', height: '450px'});
+
+    const win = openWindow('File Explorer', explorerHTML, { width: '650px', height: '450px' });
     const wrapper = win.querySelector('#explorer-app-wrapper');
     if (!wrapper) return;
-    
+
     const backBtn = wrapper.querySelector('.explorer-back-btn');
     const forwardBtn = wrapper.querySelector('.explorer-forward-btn');
     const addressInput = wrapper.querySelector('.explorer-address-input');
     const searchInput = wrapper.querySelector('.explorer-search-input');
     const sidebarItems = wrapper.querySelectorAll('.explorer-sidebar-item');
     const contentArea = wrapper.querySelector('.explorer-content');
-    
-    // Resolve full paths inside desktopItems
+
+
     function resolvePath(path) {
         if (path.length === 0 || path[0] !== 'Computer') {
             return { name: 'Computer', contents: getRootContents() };
         }
-        
+
         let currentContents = getRootContents();
         let folderName = 'Computer';
-        
+
         for (let i = 1; i < path.length; i++) {
             const nextSegment = path[i];
             const found = currentContents.find(item => item.name === nextSegment && (item.type === 'folder' || item.type === 'locked_folder'));
@@ -507,33 +595,33 @@ function openExplorerApp(options = {}) {
                 return { name: 'Computer', contents: getRootContents() };
             }
         }
-        
+
         return { name: folderName, contents: currentContents };
     }
-    
+
     function getRootContents() {
         return desktopItems.filter(item => item.type === 'folder' || item.type === 'locked_folder');
     }
-    
+
     function navigateTo(targetPath) {
-        // Remove future history if we navigated after a Back action
+
         history = history.slice(0, historyIndex + 1);
         history.push([...targetPath]);
         historyIndex = history.length - 1;
         render();
     }
-    
+
     function render() {
         currentPath = history[historyIndex];
-        
-        // Update Address Bar
+
+
         addressInput.value = currentPath.join(' \u25B8 ');
-        
-        // Update Back/Forward Buttons
+
+
         backBtn.disabled = (historyIndex === 0);
         forwardBtn.disabled = (historyIndex === history.length - 1);
-        
-        // Update Sidebar Active Class
+
+
         sidebarItems.forEach(item => {
             const pathName = item.getAttribute('data-path');
             if (pathName === 'Computer' && currentPath.length === 1) {
@@ -544,19 +632,19 @@ function openExplorerApp(options = {}) {
                 item.classList.remove('active');
             }
         });
-        
-        // Fetch contents
+
+
         const folder = resolvePath(currentPath);
         let contents = folder.contents;
-        
-        // Apply Search Filtering if query exists
+
+
         if (query) {
             contents = contents.filter(item => item.name.toLowerCase().includes(query.toLowerCase()));
         }
-        
-        // Clear and Render content area
+
+
         contentArea.innerHTML = '';
-        
+
         if (contents.length === 0) {
             const emptyMsg = document.createElement('div');
             emptyMsg.className = 'explorer-empty-message';
@@ -564,11 +652,11 @@ function openExplorerApp(options = {}) {
             contentArea.appendChild(emptyMsg);
             return;
         }
-        
+
         contents.forEach(item => {
             const iconDiv = createIconElement(item);
             const eventType = isMobile() ? 'click' : 'dblclick';
-            
+
             iconDiv.addEventListener(eventType, (e) => {
                 e.stopPropagation();
                 if (item.type === 'folder' && item.contents) {
@@ -580,17 +668,17 @@ function openExplorerApp(options = {}) {
                     }
                 }
             });
-            
+
             contentArea.appendChild(iconDiv);
         });
     }
-    
-    // Wire up Address Bar click to copy path
+
+
     addressInput.addEventListener('click', () => {
         addressInput.select();
     });
-    
-    // Wire up Back/Forward Buttons
+
+
     backBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         if (historyIndex > 0) {
@@ -598,7 +686,7 @@ function openExplorerApp(options = {}) {
             render();
         }
     });
-    
+
     forwardBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         if (historyIndex < history.length - 1) {
@@ -606,14 +694,14 @@ function openExplorerApp(options = {}) {
             render();
         }
     });
-    
-    // Wire up Search Input
+
+
     searchInput.addEventListener('input', (e) => {
         query = e.target.value.trim();
         render();
     });
-    
-    // Wire up Sidebar Items
+
+
     sidebarItems.forEach(item => {
         item.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -625,8 +713,8 @@ function openExplorerApp(options = {}) {
             }
         });
     });
-    
-    // Initial Render
+
+
     render();
 }
 
@@ -634,99 +722,305 @@ function openAboutApp() {
     const aboutHTML = `
         <div id="about-app">
             <div class="icon-img webapp-space" style="filter: hue-rotate(180deg);"></div>
-            <h2>wbOS! v4</h2>
+            <h2>wbOS! v5.1</h2>
             <p>welcome to this particular nonsense!</p>
             <p>wackybox incorporated. technology of tomorrow, on the technology of today <3</p>
-            <p>Version 4.0 - massive UI overhaul.. again</p>
+            <p>Version 5.1 - Would you look at that? More... more UI changes. Of course</p>
         </div>
     `;
-    openWindow('About wbOS', aboutHTML, {width: '400px', height: '450px', hideMaximize: true, hideMinimize: true});
+    openWindow('About wbOS', aboutHTML, { width: '400px', height: '450px', hideMaximize: true, hideMinimize: true });
 }
 
+const terminalHistory = [];
+
 function openTerminalApp() {
+    let historyIdx = terminalHistory.length;
+
+    const terminalState = {
+        currentFolder: null,
+        currentFolderName: 'Desktop'
+    };
+
     const terminalHTML = `
         <div id="terminal-app">
-            <div id="terminal-output">Welcome to wbOS Terminal v1.0. Type 'help' for commands.</div>
+            <div id="terminal-output">Welcome to wbOS Terminal v5.1. Type 'help' for commands.</div>
             <div id="terminal-input-line">
-                <span id="terminal-prompt">user@wackybox:~$ </span>
-                <input type="text" id="terminal-input" autofocus>
+                <span id="terminal-prompt">user@wackybox:~/Desktop$ </span>
+                <input type="text" id="terminal-input" autofocus autocomplete="off" spellcheck="false">
             </div>
         </div>
     `;
-    const win = openWindow('Terminal', terminalHTML, {width: '500px', height: '350px'});
+    const win = openWindow('Terminal', terminalHTML, { width: '600px', height: '400px' });
     const contentArea = win.querySelector('.window-content, .mobile-app-content');
     if (contentArea) contentArea.style.padding = '0';
-    
+
     const output = win.querySelector('#terminal-output');
     const input = win.querySelector('#terminal-input');
-    
-    win.addEventListener('click', () => input.focus());
-    
-    input.addEventListener('keydown', (e) => {
-        if (e.key !== 'Enter') return;
-        
-        const command = input.value.trim();
-        output.textContent += `\nuser@wackybox:~$ ${command}\n`;
-        
-        handleTerminalCommand(command, output);
-        
-        input.value = '';
-        output.parentElement.scrollTop = output.parentElement.scrollHeight;
-    });
-}
+    const prompt = win.querySelector('#terminal-prompt');
 
-function handleTerminalCommand(cmd, output) {
-    const args = cmd.split(' ');
-    const command = args[0].toLowerCase();
-    
-    switch(command) {
-        case 'help':
-            output.textContent += "Available commands:\n  help    - Shows this message\n  ls      - Lists items on the desktop\n  date    - Shows the current date and time\n  clear   - Clears the terminal screen\n  echo    - Prints text to the terminal\n  poo    - Stinks\n  theme   - Change theme. Usage: theme [light|dark|retro|neon|soft|wnt|cameron|mts-new]";
-            break;
-        case 'ls':
-            output.textContent += "Desktop Items:\n" + desktopItems.map(item => `  - ${item.name} (${item.type})`).join('\n');
-            break;
-        case 'poo':
-            output.textContent += "💩\n";
-            break;
-        case 'date':
-            output.textContent += new Date().toString();
-            break;
-        case 'clear':
-            output.textContent = "Welcome to wbOS Terminal v1.0. Type 'help' for commands.";
-            break;
-        case 'echo':
-            output.textContent += args.slice(1).join(' ');
-            break;
-        case 'theme':
-            const newTheme = args[1];
-            if (['light', 'dark', 'retro', 'neon', 'soft', 'wnt', 'cameron', 'mts-new'].includes(newTheme)) {
-                appSettings.theme = newTheme;
-                applySettings();
-                saveSettings();
-                output.textContent += `Theme set to ${newTheme}.`;
-            } else {
-                output.textContent += "Usage: theme [light|dark|retro|neon|soft|wnt|cameron|mts-new]";
+    win.addEventListener('click', () => input.focus());
+
+    function updatePrompt() {
+        const pathStr = terminalState.currentFolder ? `~/Desktop/${terminalState.currentFolderName}` : `~/Desktop`;
+        prompt.textContent = `user@wackybox:${pathStr}$ `;
+    }
+
+    function findItemInCurrent(name) {
+        const items = terminalState.currentFolder ? (terminalState.currentFolder.contents || []) : desktopItems;
+        return items.find(item => item.name === name);
+    }
+
+    input.addEventListener('keydown', async (e) => {
+        if (e.key === 'Enter') {
+            const command = input.value.trim();
+            output.textContent += `\n${prompt.textContent}${input.value}\n`;
+
+            if (command) {
+                terminalHistory.push(command);
+                historyIdx = terminalHistory.length;
+                await runCommand(command);
             }
-            break;
-        case '':
-            break;
-        default:
-            output.textContent += `Command not found: ${command}`;
+
+            input.value = '';
+            output.parentElement.scrollTop = output.parentElement.scrollHeight;
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (terminalHistory.length === 0) return;
+            if (historyIdx > 0) {
+                historyIdx--;
+            }
+            input.value = terminalHistory[historyIdx];
+            setTimeout(() => { input.selectionStart = input.selectionEnd = input.value.length; }, 0);
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (historyIdx < terminalHistory.length - 1) {
+                historyIdx++;
+                input.value = terminalHistory[historyIdx];
+            } else {
+                historyIdx = terminalHistory.length;
+                input.value = '';
+            }
+        } else if (e.key === 'Tab') {
+            e.preventDefault();
+            const val = input.value;
+            const parts = val.split(' ');
+            if (parts.length === 1) {
+                const prefix = parts[0].toLowerCase();
+                const commands = ['help', 'ls', 'date', 'clear', 'echo', 'poo', 'theme', 'cat', 'rm', 'touch', 'open', 'pwd', 'cd', 'sysinfo'];
+                const matches = commands.filter(c => c.startsWith(prefix));
+                if (matches.length === 1) {
+                    input.value = matches[0] + ' ';
+                } else if (matches.length > 1) {
+                    output.textContent += `\n${matches.join('  ')}\n`;
+                    updatePrompt();
+                    output.textContent += input.value;
+                    output.parentElement.scrollTop = output.parentElement.scrollHeight;
+                }
+            } else if (parts.length > 1) {
+                const cmd = parts[0].toLowerCase();
+                if (['cat', 'rm', 'open', 'cd'].includes(cmd)) {
+                    const prefix = parts.slice(1).join(' ').toLowerCase();
+                    const items = terminalState.currentFolder ? (terminalState.currentFolder.contents || []) : desktopItems;
+                    const matches = items
+                        .filter(item => {
+                            if (cmd === 'cd') return item.type === 'folder';
+                            return true;
+                        })
+                        .map(item => item.name)
+                        .filter(name => name.toLowerCase().startsWith(prefix));
+
+                    if (matches.length === 1) {
+                        input.value = `${cmd} ${matches[0]}`;
+                    } else if (matches.length > 1) {
+                        output.textContent += `\n${matches.join('  ')}\n`;
+                        updatePrompt();
+                        output.textContent += input.value;
+                        output.parentElement.scrollTop = output.parentElement.scrollHeight;
+                    }
+                }
+            }
+        }
+    });
+
+    async function runCommand(cmdLine) {
+        const args = cmdLine.split(' ');
+        const command = args[0].toLowerCase();
+
+        switch (command) {
+            case 'help':
+                output.textContent += "Available commands:\n" +
+                    "  help    - Shows this message\n" +
+                    "  ls      - Lists items in the current directory\n" +
+                    "  cd [dir]- Changes current directory (e.g. cd Games, cd ..)\n" +
+                    "  pwd     - Prints current working directory\n" +
+                    "  cat [f] - Displays contents of a desktop file\n" +
+                    "  touch[f]- Creates an empty file on the desktop\n" +
+                    "  rm [f]  - Removes a file/folder from the desktop\n" +
+                    "  open [f]- Launches a file or application\n" +
+                    "  sysinfo - Displays system details and stats\n" +
+                    "  date    - Shows current date and time\n" +
+                    "  clear   - Clears the terminal screen\n" +
+                    "  echo    - Prints text to the terminal\n" +
+                    "  theme   - Sets theme (e.g. theme light|dark|retro|neon|soft|wnt|cameron|mts-new)\n" +
+                    "  poo     - Stinks\n";
+                break;
+            case 'ls':
+                const items = terminalState.currentFolder ? (terminalState.currentFolder.contents || []) : desktopItems;
+                if (items.length === 0) {
+                    output.textContent += "(empty directory)\n";
+                } else {
+                    output.textContent += items.map(item => `  ${item.name} (${item.type === 'folder' ? 'dir' : item.class || 'file'})`).join('\n') + "\n";
+                }
+                break;
+            case 'pwd':
+                const pathStr = terminalState.currentFolder ? `~/Desktop/${terminalState.currentFolderName}` : `~/Desktop`;
+                output.textContent += `${pathStr}\n`;
+                break;
+            case 'cd':
+                if (args.length < 2) {
+                    terminalState.currentFolder = null;
+                    terminalState.currentFolderName = 'Desktop';
+                    updatePrompt();
+                } else {
+                    const targetDir = args.slice(1).join(' ');
+                    if (targetDir === '..') {
+                        terminalState.currentFolder = null;
+                        terminalState.currentFolderName = 'Desktop';
+                        updatePrompt();
+                    } else {
+                        const found = findItemInCurrent(targetDir);
+                        if (found && found.type === 'folder') {
+                            terminalState.currentFolder = found;
+                            terminalState.currentFolderName = found.name;
+                            updatePrompt();
+                        } else {
+                            output.textContent += `cd: no such directory: ${targetDir}\n`;
+                        }
+                    }
+                }
+                break;
+            case 'cat':
+                if (args.length < 2) {
+                    output.textContent += "Usage: cat [filename]\n";
+                } else {
+                    const filename = args.slice(1).join(' ');
+                    const item = findItemInCurrent(filename);
+                    if (!item) {
+                        output.textContent += `cat: ${filename}: file not found\n`;
+                    } else if (item.type === 'folder') {
+                        output.textContent += `cat: ${filename}: is a directory\n`;
+                    } else {
+                        try {
+                            const text = await getVirtualFileContent(item.name);
+                            output.textContent += text + "\n";
+                        } catch (err) {
+                            output.textContent += `cat: error reading ${filename}: ${err.message}\n`;
+                        }
+                    }
+                }
+                break;
+            case 'touch':
+                if (args.length < 2) {
+                    output.textContent += "Usage: touch [filename]\n";
+                } else {
+                    const filename = args.slice(1).join(' ');
+                    if (findItemInCurrent(filename)) {
+                        output.textContent += `touch: ${filename} already exists\n`;
+                    } else {
+                        const newItem = { name: filename, type: 'file', class: 'document' };
+                        if (terminalState.currentFolder) {
+                            if (!terminalState.currentFolder.contents) terminalState.currentFolder.contents = [];
+                            terminalState.currentFolder.contents.push(newItem);
+                        } else {
+                            desktopItems.push(newItem);
+                        }
+                        renderUI();
+                        output.textContent += `Created file ${filename}.\n`;
+                    }
+                }
+                break;
+            case 'rm':
+                if (args.length < 2) {
+                    output.textContent += "Usage: rm [filename]\n";
+                } else {
+                    const filename = args.slice(1).join(' ');
+                    const itemsList = terminalState.currentFolder ? (terminalState.currentFolder.contents || []) : desktopItems;
+                    const index = itemsList.findIndex(item => item.name === filename);
+                    if (index !== -1) {
+                        itemsList.splice(index, 1);
+                        renderUI();
+                        output.textContent += `Removed ${filename}.\n`;
+                    } else {
+                        output.textContent += `rm: ${filename}: file or directory not found\n`;
+                    }
+                }
+                break;
+            case 'open':
+                if (args.length < 2) {
+                    output.textContent += "Usage: open [filename_or_app]\n";
+                } else {
+                    const targetName = args.slice(1).join(' ');
+                    const item = findItemInCurrent(targetName);
+                    if (item) {
+                        launchItem(item);
+                        output.textContent += `Opening ${targetName}...\n`;
+                    } else {
+                        output.textContent += `open: ${targetName}: not found\n`;
+                    }
+                }
+                break;
+            case 'sysinfo':
+                output.textContent += "System Information:\n" +
+                    `  OS Name       - wbOS\n` +
+                    `  Version       - v5.1\n` +
+                    `  Resolution    - ${window.innerWidth}x${window.innerHeight}\n` +
+                    `  Language      - ${navigator.language}\n` +
+                    `  Theme         - ${appSettings.theme}\n` +
+                    `  Light Angle   - ${appSettings.lightAngle}°\n` +
+                    `  Light Int.    - ${appSettings.lightIntensity}\n` +
+                    `  Uptime (OS)   - ${Math.round(performance.now() / 1000)}s\n` +
+                    `  User Agent    - ${navigator.userAgent.split(' ')[0]}\n`;
+                break;
+            case 'date':
+                output.textContent += new Date().toString() + "\n";
+                break;
+            case 'clear':
+                output.textContent = "";
+                break;
+            case 'echo':
+                output.textContent += args.slice(1).join(' ') + "\n";
+                break;
+            case 'theme':
+                const newTheme = args[1];
+                if (['light', 'dark', 'retro', 'neon', 'soft', 'wnt', 'cameron', 'mts-new'].includes(newTheme)) {
+                    appSettings.theme = newTheme;
+                    applySettings();
+                    saveSettings();
+                    output.textContent += `Theme set to ${newTheme}.\n`;
+                } else {
+                    output.textContent += "Usage: theme [light|dark|retro|neon|soft|wnt|cameron|mts-new]\n";
+                }
+                break;
+            case 'poo':
+                output.textContent += "💩 Stinky!\n";
+                break;
+            default:
+                output.textContent += `Command not found: ${command}. Type 'help' for info.\n`;
+        }
     }
 }
 
 function openThemeApp() {
     const wallpapers = [
-        { id: 'default', name: 'Wacky green' },
-        { id: 'glassy-gradient', name: 'Glassy gradient' },
-        { id: 'ocean', name: 'Ocean blue' },
-        { id: 'solid', name: 'Solid gray' },
-        { id: 'sunset', name: 'Sunset' },
-        { id: 'forest', name: 'Forest' },
-        { id: 'nebula', name: 'Nebula' },
+        { id: 'default', name: 'Northern Aurora' },
+        { id: 'glassy-gradient', name: 'Midnight glass' },
+        { id: 'ocean', name: 'Vibrant aqua' },
+        { id: 'solid', name: 'Muted slate' },
+        { id: 'sunset', name: 'Dusk twilight' },
+        { id: 'forest', name: 'Teal forest' },
+        { id: 'nebula', name: 'Deep space' },
     ];
-    
+
     const themeHTML = `
         <div id="theme-app">
             <div class="setting-group">
@@ -859,7 +1153,7 @@ function openThemeApp() {
                 <small>Adjust how transparent the background and title bars are.</small>
                 <div class="setting-group-row" style="margin-top: 5px;">
                     <input type="range" id="window-opacity-slider" min="0.1" max="1.0" step="0.05" style="flex-grow: 1;">
-                    <span id="window-opacity-value" style="min-width: 40px; text-align: right;">10%</span>
+                    <span id="window-opacity-value" style="min-width: 40px; text-align: right;">25%</span>
                 </div>
             </div>
 
@@ -902,10 +1196,10 @@ function openThemeApp() {
             </div>
         </div>
     `;
-    const win = openWindow('Theme studio', themeHTML, {width: '450px', height: '650px'});
-    
+    const win = openWindow('Theme studio', themeHTML, { width: '450px', height: '650px' });
+
     const wpStyles = {
-        'default': 'radial-gradient(circle at 10% 90%, #6ec25d 0%, #3a8542 50%, #2e7141 100%)',
+        'default': 'url("windows_vista_49.jpg") center/cover no-repeat',
         'glassy-gradient': 'radial-gradient(ellipse at top left, #2b4c7e 0%, #152238 60%, #0a0f1d 100%)',
         'ocean': 'radial-gradient(circle at 80% 80%, #a2d2ff 0%, #3a86ff 50%, #003566 100%)',
         'solid': '#4a5759',
@@ -916,7 +1210,7 @@ function openThemeApp() {
     win.querySelectorAll('.wallpaper-preview').forEach(div => {
         div.style.background = wpStyles[div.dataset.wallpaperId];
     });
-    
+
     const mtsCustomizers = win.querySelector('#mts-new-customizers');
     const txtPrimaryPicker = win.querySelector('#color-text-primary');
     const txtSecondaryPicker = win.querySelector('#color-text-secondary');
@@ -933,10 +1227,10 @@ function openThemeApp() {
     }
     updateMtsPickerVisibility();
 
-    txtPrimaryPicker.value = appSettings.textPrimary || '#f28d8f';
-    txtSecondaryPicker.value = appSettings.textSecondary || '#ffb3b5';
-    accentPicker.value = appSettings.accentPrimary || '#c62828';
-    borderPicker.value = appSettings.borderColor || '#9e2a2b';
+    txtPrimaryPicker.value = appSettings.textPrimary || '#bafcd9';
+    txtSecondaryPicker.value = appSettings.textSecondary || '#dfffea';
+    accentPicker.value = appSettings.accentPrimary || '#2be19b';
+    borderPicker.value = appSettings.borderColor || '#127b50';
 
     txtPrimaryPicker.addEventListener('input', (e) => {
         appSettings.textPrimary = e.target.value;
@@ -963,15 +1257,15 @@ function openThemeApp() {
         appSettings.textSecondary = '';
         appSettings.accentPrimary = '';
         appSettings.borderColor = '';
-        txtPrimaryPicker.value = '#f28d8f';
-        txtSecondaryPicker.value = '#ffb3b5';
-        accentPicker.value = '#c62828';
-        borderPicker.value = '#9e2a2b';
+        txtPrimaryPicker.value = '#bafcd9';
+        txtSecondaryPicker.value = '#dfffea';
+        accentPicker.value = '#2be19b';
+        borderPicker.value = '#127b50';
         applySettings();
         saveSettings();
     });
 
-    // Window background controls
+
     const windowBgTypeSelect = win.querySelector('#window-bg-type-select');
     const windowBgSolidCtrl = win.querySelector('#window-bg-solid-ctrl');
     const windowBgPicker = win.querySelector('#window-bg-picker');
@@ -980,7 +1274,7 @@ function openThemeApp() {
     const windowBgGrad2 = win.querySelector('#window-bg-grad2');
     const windowBgGradDir = win.querySelector('#window-bg-grad-dir');
 
-    // Content background controls
+
     const contentBgTypeSelect = win.querySelector('#content-bg-type-select');
     const contentBgSolidCtrl = win.querySelector('#content-bg-solid-ctrl');
     const contentBgPicker = win.querySelector('#content-bg-picker');
@@ -989,7 +1283,7 @@ function openThemeApp() {
     const contentBgGrad2 = win.querySelector('#content-bg-grad2');
     const contentBgGradDir = win.querySelector('#content-bg-grad-dir');
 
-    // Set initial values
+
     windowBgTypeSelect.value = appSettings.windowBgType || 'default';
     windowBgPicker.value = appSettings.windowBgSolid || '#00000e';
     windowBgGrad1.value = appSettings.windowBgGrad1 || '#f3904f';
@@ -1033,7 +1327,7 @@ function openThemeApp() {
     updateWindowBgCtrlVisibility();
     updateContentBgCtrlVisibility();
 
-    // Event listeners
+
     windowBgTypeSelect.addEventListener('change', () => {
         appSettings.windowBgType = windowBgTypeSelect.value;
         updateWindowBgCtrlVisibility();
@@ -1078,20 +1372,20 @@ function openThemeApp() {
     contentBgGrad2.addEventListener('input', onContentBgGradChange);
     contentBgGradDir.addEventListener('change', onContentBgGradChange);
 
-    // Light reflection sliders
+
     const lightAngleSlider = win.querySelector('#light-angle-slider');
     const lightAngleValue = win.querySelector('#light-angle-value');
     const lightIntensitySlider = win.querySelector('#light-intensity-slider');
     const lightIntensityValue = win.querySelector('#light-intensity-value');
-    
+
     const angle = appSettings.lightAngle !== undefined ? appSettings.lightAngle : 135;
     const intensity = appSettings.lightIntensity !== undefined ? appSettings.lightIntensity : 0.25;
-    
+
     lightAngleSlider.value = angle;
     lightAngleValue.textContent = `${angle}°`;
     lightIntensitySlider.value = intensity;
     lightIntensityValue.textContent = `${Math.round(intensity * 100)}%`;
-    
+
     lightAngleSlider.addEventListener('input', (e) => {
         const val = parseInt(e.target.value);
         appSettings.lightAngle = val;
@@ -1099,7 +1393,7 @@ function openThemeApp() {
         applySettings();
         saveSettings();
     });
-    
+
     lightIntensitySlider.addEventListener('input', (e) => {
         const val = parseFloat(e.target.value);
         appSettings.lightIntensity = val;
@@ -1109,22 +1403,22 @@ function openThemeApp() {
     });
 
     win.querySelectorAll('.theme-mode-btn').forEach(btn => {
-        if(btn.dataset.theme === appSettings.theme) btn.classList.add('active');
+        if (btn.dataset.theme === appSettings.theme) btn.classList.add('active');
         btn.addEventListener('click', () => {
             appSettings.theme = btn.dataset.theme;
             applySettings();
             saveSettings();
-            
+
             win.querySelectorAll('.theme-mode-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             updateMtsPickerVisibility();
         });
     });
 
-    // Window Title Color Logic
+
     const titlePicker = win.querySelector('#title-text-picker');
     const contrastCheck = win.querySelector('#auto-contrast-check');
-    
+
     contrastCheck.checked = appSettings.autoContrastTitle;
     titlePicker.value = (appSettings.titleColor && appSettings.titleColor !== 'auto') ? appSettings.titleColor : '#333333';
     titlePicker.disabled = appSettings.autoContrastTitle;
@@ -1142,7 +1436,7 @@ function openThemeApp() {
         saveSettings();
     });
 
-    // Glass Tint Logic
+
     const tintPicker = win.querySelector('#glass-tint-picker');
     if (appSettings.glassTint && appSettings.glassTint.startsWith('#')) {
         tintPicker.value = appSettings.glassTint;
@@ -1155,7 +1449,7 @@ function openThemeApp() {
         applySettings();
         saveSettings();
     });
-    
+
     win.querySelector('#reset-tint-btn').addEventListener('click', () => {
         appSettings.glassTint = '#ffffff';
         tintPicker.value = '#ffffff';
@@ -1163,15 +1457,15 @@ function openThemeApp() {
         saveSettings();
     });
 
-    // Window Transparency (Opacity) Logic
+
     const opacitySlider = win.querySelector('#window-opacity-slider');
     const opacityDisplay = win.querySelector('#window-opacity-value');
-    
-    // Set initial value (default to 0.6 if undefined)
-    const currentOpacity = appSettings.windowOpacity !== undefined ? appSettings.windowOpacity : 0.1;
+
+
+    const currentOpacity = appSettings.windowOpacity !== undefined ? appSettings.windowOpacity : 0.25;
     opacitySlider.value = currentOpacity;
     opacityDisplay.textContent = Math.round(currentOpacity * 100) + '%';
-    
+
     opacitySlider.addEventListener('input', (e) => {
         const val = parseFloat(e.target.value);
         appSettings.windowOpacity = val;
@@ -1179,20 +1473,20 @@ function openThemeApp() {
         applySettings();
         saveSettings();
     });
-    
-    // Wallpaper Logic
+
+
     win.querySelectorAll('.wallpaper-preview').forEach(div => {
         div.addEventListener('click', () => {
             appSettings.wallpaper = div.dataset.wallpaperId;
-            appSettings.wallpaperCustom = null; 
+            appSettings.wallpaperCustom = null;
             applySettings();
             saveSettings();
-            
+
             win.querySelectorAll('.wallpaper-preview').forEach(d => d.classList.remove('active'));
             div.classList.add('active');
         });
     });
-    
+
     win.querySelector('#wallpaper-upload-btn').addEventListener('click', () => {
         const fileInput = win.querySelector('#wallpaper-upload');
         const file = fileInput.files[0];
@@ -1200,36 +1494,36 @@ function openThemeApp() {
             alert('Please select a file first.');
             return;
         }
-        if (file.size > 5 * 1024 * 1024) { 
+        if (file.size > 5 * 1024 * 1024) {
             alert('File is too large (Max 5MB). Please choose a smaller image.');
             return;
         }
-        
+
         const reader = new FileReader();
         reader.onload = (e) => {
-            appSettings.wallpaperCustom = e.target.result; 
-            appSettings.wallpaper = 'custom'; 
+            appSettings.wallpaperCustom = e.target.result;
+            appSettings.wallpaper = 'custom';
             applySettings();
             saveSettings();
             win.querySelectorAll('.wallpaper-preview.active').forEach(d => d.classList.remove('active'));
         };
         reader.readAsDataURL(file);
     });
-    
+
     win.querySelector('#gradient-apply-btn').addEventListener('click', () => {
         const c1 = win.querySelector('#gradient-color1').value;
         const c2 = win.querySelector('#gradient-color2').value;
         const dir = win.querySelector('#gradient-direction').value;
-        
+
         let gradient;
         if (dir === 'radial-gradient') {
             gradient = `radial-gradient(circle, ${c1}, ${c2})`;
         } else {
             gradient = `linear-gradient(${dir}, ${c1}, ${c2})`;
         }
-        
-        appSettings.wallpaperCustom = gradient; 
-        appSettings.wallpaper = 'custom'; 
+
+        appSettings.wallpaperCustom = gradient;
+        appSettings.wallpaper = 'custom';
         applySettings();
         saveSettings();
         win.querySelectorAll('.wallpaper-preview.active').forEach(d => d.classList.remove('active'));
@@ -1270,22 +1564,22 @@ function openSoundSettings() {
             <button id="save-sounds-btn" style="padding: 10px; background: var(--theme-accent-primary); color: var(--theme-accent-text); width: 100%; border: none; border-radius: 4px; cursor: pointer;">Save and Preload Sounds</button>
         </div>
     `;
-    const win = openWindow('UI Sound Settings', soundSettingsHTML, {width: '400px', height: '520px', minWidth: '350px'});
-    
+    const win = openWindow('UI Sound Settings', soundSettingsHTML, { width: '400px', height: '520px', minWidth: '350px' });
+
     const enabledCheck = win.querySelector('#sounds-enabled-check');
     const volumeSlider = win.querySelector('#sounds-volume-slider');
     const clickInput = win.querySelector('#sound-url-click');
     const openInput = win.querySelector('#sound-url-windowOpen');
     const closeInput = win.querySelector('#sound-url-windowClose');
     const errorInput = win.querySelector('#sound-url-error');
-    
+
     enabledCheck.checked = appSettings.uiSounds.enabled;
     volumeSlider.value = appSettings.uiSounds.volume;
     clickInput.value = appSettings.uiSounds.click;
     openInput.value = appSettings.uiSounds.windowOpen;
     closeInput.value = appSettings.uiSounds.windowClose;
     errorInput.value = appSettings.uiSounds.error;
-    
+
     win.querySelector('#save-sounds-btn').addEventListener('click', () => {
         appSettings.uiSounds.enabled = enabledCheck.checked;
         appSettings.uiSounds.volume = parseFloat(volumeSlider.value);
@@ -1293,8 +1587,8 @@ function openSoundSettings() {
         appSettings.uiSounds.windowOpen = openInput.value.trim();
         appSettings.uiSounds.windowClose = closeInput.value.trim();
         appSettings.uiSounds.error = errorInput.value.trim();
-        
-        preloadUISounds(); 
+
+        preloadUISounds();
         saveSettings();
         closeWindow(win.id);
     });
@@ -1303,7 +1597,7 @@ function openSoundSettings() {
 function openIframeWindow(title, url) {
     const content = `<iframe src="${url}" style="width:100%; height:100%; border:none;" title="${title}" sandbox="allow-scripts allow-same-origin"></iframe>`;
     const win = openWindow(title, content, { width: '80vw', height: '75vh' });
-    
+
     const contentArea = win.querySelector('.window-content, .mobile-app-content');
     if (contentArea) contentArea.style.padding = '0';
 }
@@ -1366,7 +1660,7 @@ function openPasswordModal(folderName, expectedPassword, onSuccessCallback) {
             closeWindow(modalWin.id);
             onSuccessCallback();
         } else {
-            playUISound('error'); 
+            playUISound('error');
             errorDiv.textContent = 'Incorrect password.';
             input.value = '';
             input.focus();
@@ -1381,14 +1675,14 @@ function openPasswordModal(folderName, expectedPassword, onSuccessCallback) {
     input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') checkPassword();
     });
-    
+
     setTimeout(() => input.focus(), 100);
 }
 
 function openLockedFolderWindow(folderName, contents) {
     const folderGridDiv = document.createElement('div');
     folderGridDiv.className = 'folder-grid';
-    
+
     contents.forEach(item => {
         const iconDiv = createIconElement(item);
         const eventType = isMobile() ? 'click' : 'dblclick';
@@ -1398,8 +1692,8 @@ function openLockedFolderWindow(folderName, contents) {
         });
         folderGridDiv.appendChild(iconDiv);
     });
-    
-    const win = openWindow(`${folderName} - Explorer`, '', {width: '400px', height: '300px'});
+
+    const win = openWindow(`${folderName} - Explorer`, '', { width: '400px', height: '300px' });
     const contentArea = win.querySelector('.window-content, .mobile-app-content');
     contentArea.style.padding = '5px';
     contentArea.appendChild(folderGridDiv);
@@ -1421,18 +1715,18 @@ function openVideoPlayerApp(fileName = null) {
             <input type="file" id="video-file-input" accept="video/*" style="display:none;">
         </div>
     `;
-    const win = openWindow(fileName ? `Video - ${fileName}` : 'Video Player', playerHTML, {width: '600px', height: '400px'});
+    const win = openWindow(fileName ? `Video - ${fileName}` : 'Video Player', playerHTML, { width: '600px', height: '400px' });
     const contentArea = win.querySelector('.window-content, .mobile-app-content');
     if (contentArea) contentArea.style.padding = '0';
-    
+
     const video = win.querySelector('#video-element');
     const openBtn = win.querySelector('#video-open-btn');
     const loadBtn = win.querySelector('#video-load-btn');
     const urlInput = win.querySelector('#video-url-input');
     const fileInput = win.querySelector('#video-file-input');
-    
+
     openBtn.addEventListener('click', () => fileInput.click());
-    
+
     fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -1442,14 +1736,14 @@ function openVideoPlayerApp(fileName = null) {
             win.querySelector('.window-title').textContent = `Video - ${file.name}`;
         }
     });
-    
+
     loadBtn.addEventListener('click', () => {
-        if(urlInput.value) {
+        if (urlInput.value) {
             video.src = urlInput.value;
             video.play();
         }
     });
-    
+
     if (fileName) {
         const videoUrl = `${BASE_URL}${encodeURIComponent(fileName)}`;
         video.src = videoUrl;
@@ -1458,34 +1752,43 @@ function openVideoPlayerApp(fileName = null) {
 }
 
 function openMediaPlayerWindow(fileName) {
-    const mediaFileUrl = `${BASE_URL}${encodeURIComponent(fileName)}`;
-    const playerLink = `${MEDIA_PLAYER_APP_URL}%22${mediaFileUrl}%22`;
-    const content = `<iframe src="${playerLink}" style="width:100%; height:100%; border:none;" title="Media Player"></iframe>`;
-    const win = openWindow(`Media Player - ${fileName}`, content, {width: '350px', height: '200px'});
+    let playerLink = MEDIA_PLAYER_APP_URL;
+    let title = 'Meaty Player';
+    let width = '600px';
+    let height = '450px';
+    if (fileName) {
+        const mediaFileUrl = `${BASE_URL}${encodeURIComponent(fileName)}`;
+        playerLink = `${MEDIA_PLAYER_APP_URL}%22${mediaFileUrl}%22`;
+        title = `Meaty Player - ${fileName}`;
+        width = '350px';
+        height = '200px';
+    }
+    const content = `<iframe src="${playerLink}" style="width:100%; height:100%; border:none;" title="Meaty Player"></iframe>`;
+    const win = openWindow(title, content, { width: width, height: height });
     const contentArea = win.querySelector('.window-content, .mobile-app-content');
     if (contentArea) contentArea.style.padding = '0';
 }
 
-function openImageViewWindow(fileName) { 
-    const imageUrl = `${BASE_URL}${encodeURIComponent(fileName)}`; 
-    const isHdr = fileName.toLowerCase().endsWith('.hdr'); 
-    const content = isHdr 
-        ? `<div id="hdr-container-${Date.now()}" style="width:100%; height:100%; background:#000;"></div>` 
-        : `<img src="${imageUrl}" style="width:100%; height:100%; object-fit:contain; display:block; margin:auto; background:var(--theme-bg-tertiary);" alt="${fileName}">`; 
-    
-    const win = openWindow(`Image Viewer - ${fileName}`, content, {width: '70vw', height: '70vh'}); 
+function openImageViewWindow(fileName) {
+    const imageUrl = `${BASE_URL}${encodeURIComponent(fileName)}`;
+    const isHdr = fileName.toLowerCase().endsWith('.hdr');
+    const content = isHdr
+        ? `<div id="hdr-container-${Date.now()}" style="width:100%; height:100%; background:#000;"></div>`
+        : `<img src="${imageUrl}" style="width:100%; height:100%; object-fit:contain; display:block; margin:auto; background:var(--theme-bg-tertiary);" alt="${fileName}">`;
+
+    const win = openWindow(`Image Viewer - ${fileName}`, content, { width: '70vw', height: '70vh' });
     const contentArea = win.querySelector('.window-content, .mobile-app-content');
     if (contentArea) contentArea.style.padding = '0';
-    
-    if (isHdr) { 
+
+    if (isHdr) {
         setTimeout(() => {
-            const containerId = win.querySelector('div[id^="hdr-container"]').id; 
-            initHdrViewer(containerId, imageUrl); 
+            const containerId = win.querySelector('div[id^="hdr-container"]').id;
+            initHdrViewer(containerId, imageUrl);
         }, 10);
-    } 
+    }
 }
 
-function initHdrViewer(containerId, imageUrl) { 
+function initHdrViewer(containerId, imageUrl) {
     const container = document.getElementById(containerId);
     if (!container || container.clientWidth === 0 || container.clientHeight === 0) {
         setTimeout(() => initHdrViewer(containerId, imageUrl), 50);
@@ -1493,31 +1796,31 @@ function initHdrViewer(containerId, imageUrl) {
     }
     const width = container.clientWidth;
     const height = container.clientHeight;
-    const scene = new THREE.Scene(); 
-    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000); 
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
     camera.position.set(0, 0, 0.1);
-    const renderer = new THREE.WebGLRenderer({ antialias: true }); 
-    renderer.setSize(width, height); 
-    renderer.toneMapping = THREE.ACESFilmicToneMapping; 
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(width, height);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.5;
     container.innerHTML = '';
-    container.appendChild(renderer.domElement); 
+    container.appendChild(renderer.domElement);
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableZoom = true;
     controls.enablePan = false;
     controls.target.set(0, 0, 0);
-    new THREE.RGBELoader().load(imageUrl, function (texture) { 
-        texture.mapping = THREE.EquirectangularReflectionMapping; 
-        scene.background = texture; 
-        scene.environment = texture; 
-        renderer.render(scene, camera); 
-        animate(); 
+    new THREE.RGBELoader().load(imageUrl, function (texture) {
+        texture.mapping = THREE.EquirectangularReflectionMapping;
+        scene.background = texture;
+        scene.environment = texture;
+        renderer.render(scene, camera);
+        animate();
     },
-    undefined,
-    (error) => {
-        console.error('An error occurred while loading the HDR file:', error);
-        container.innerHTML = '<div style="color:white; padding: 20px;">Error loading HDR file. Check console for details.</div>';
-    });
+        undefined,
+        (error) => {
+            console.error('An error occurred while loading the HDR file:', error);
+            container.innerHTML = '<div style="color:white; padding: 20px;">Error loading HDR file. Check console for details.</div>';
+        });
     const resizeHandler = (entries) => {
         const entry = entries[0];
         const w = entry.contentRect.width;
@@ -1530,33 +1833,21 @@ function initHdrViewer(containerId, imageUrl) {
     };
     new ResizeObserver(resizeHandler).observe(container);
     function animate() {
-        if(!document.getElementById(containerId)) return; 
+        if (!document.getElementById(containerId)) return;
         requestAnimationFrame(animate);
-        controls.update(); 
+        controls.update();
         renderer.render(scene, camera);
     }
 }
 
-async function openTextViewWindow(fileName) { 
-    const content = `<textarea style="width: 100%; height: 100%; box-sizing: border-box; border: none; padding: 5px; font-family: var(--theme-font-body); resize: none; background: var(--theme-bg-primary); color: var(--theme-text-primary);" readonly>Loading content for ${fileName}...</textarea>`; 
-    const win = openWindow(`Viewer - ${fileName}`, content); 
-    const textarea = win.querySelector('textarea'); 
-    const contentArea = win.querySelector('.window-content, .mobile-app-content');
-    if (contentArea) contentArea.style.padding = '0';
-    try { 
-        const response = await fetch(`${BASE_URL}${encodeURIComponent(fileName)}`); 
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`); 
-        const text = await response.text(); 
-        textarea.value = text; 
-    } catch (error) { 
-        textarea.value = `--- ERROR ---\n\nCould not fetch file content for "${fileName}".\n\nReason: ${error.message}`; 
-    } 
+async function openTextViewWindow(fileName) {
+    openNotepadApp(fileName);
 }
 
 function openFileInNewTab(fileName) { window.open(`${BASE_URL}${fileName}`, '_blank'); }
 
-function openErrorWindow(fileName, message) { 
-    playUISound('error'); 
-    const content = `<div style="padding:10px;"><h3 style="color: red;">Error</h3><p><strong>File:</strong> ${fileName}</p><p><strong>Reason:</strong> ${message}</p></div>`; 
-    openWindow('System Error', content); 
+function openErrorWindow(fileName, message) {
+    playUISound('error');
+    const content = `<div style="padding:10px;"><h3 style="color: red;">Error</h3><p><strong>File:</strong> ${fileName}</p><p><strong>Reason:</strong> ${message}</p></div>`;
+    openWindow('System Error', content);
 }
