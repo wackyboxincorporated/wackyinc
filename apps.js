@@ -681,7 +681,7 @@ function handleTerminalCommand(cmd, output) {
     
     switch(command) {
         case 'help':
-            output.textContent += "Available commands:\n  help    - Shows this message\n  ls      - Lists items on the desktop\n  date    - Shows the current date and time\n  clear   - Clears the terminal screen\n  echo    - Prints text to the terminal\n  poo    - Stinks\n  theme   - Change theme. Usage: theme [light|dark|retro|neon|soft|wnt|cameron]";
+            output.textContent += "Available commands:\n  help    - Shows this message\n  ls      - Lists items on the desktop\n  date    - Shows the current date and time\n  clear   - Clears the terminal screen\n  echo    - Prints text to the terminal\n  poo    - Stinks\n  theme   - Change theme. Usage: theme [light|dark|retro|neon|soft|wnt|cameron|mts-new]";
             break;
         case 'ls':
             output.textContent += "Desktop Items:\n" + desktopItems.map(item => `  - ${item.name} (${item.type})`).join('\n');
@@ -700,13 +700,13 @@ function handleTerminalCommand(cmd, output) {
             break;
         case 'theme':
             const newTheme = args[1];
-            if (['light', 'dark', 'retro', 'neon', 'soft', 'wnt', 'cameron'].includes(newTheme)) {
+            if (['light', 'dark', 'retro', 'neon', 'soft', 'wnt', 'cameron', 'mts-new'].includes(newTheme)) {
                 appSettings.theme = newTheme;
                 applySettings();
                 saveSettings();
                 output.textContent += `Theme set to ${newTheme}.`;
             } else {
-                output.textContent += "Usage: theme [light|dark|retro|neon|soft|wnt|cameron]";
+                output.textContent += "Usage: theme [light|dark|retro|neon|soft|wnt|cameron|mts-new]";
             }
             break;
         case '':
@@ -731,11 +731,14 @@ function openThemeApp() {
             <div class="setting-group">
                 <label>Color Theme</label>
                 <div id="theme-mode-toggle">
+                    <button class="theme-mode-btn mts-new" data-theme="mts-new">MTS New</button>
                     <button class="theme-mode-btn light" data-theme="light">Light</button>
                     <button class="theme-mode-btn dark" data-theme="dark">Dark</button>
+                    <button class="theme-mode-btn retro" data-theme="retro">Retro</button>
                     <button class="theme-mode-btn wnt" data-theme="wnt">WNT</button>
                     <button class="theme-mode-btn neon" data-theme="neon">Neon</button>
                     <button class="theme-mode-btn cameron" data-theme="cameron">Cameron's Theme</button>
+                    <button class="theme-mode-btn soft" data-theme="soft">Soft</button>
                 </div>
             </div>
             

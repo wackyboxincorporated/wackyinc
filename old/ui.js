@@ -699,7 +699,7 @@ function setupMobileControls() {
     });
     
     homeBtn.addEventListener('click', () => {
-        showMobileHome(false); 
+        showMobileHome(true); 
         closeMobileSidebar();
     });
     

@@ -15,9 +15,9 @@ const isMobile = () => window.matchMedia("(max-width: 768px), (max-height: 500px
 let appSettings = {
     wallpaper: 'default',
     wallpaperCustom: null, 
-    theme: 'light',
+    theme: 'mts-new',
     graphics3d: false, 
-    graphicsGlass: false, 
+    graphicsGlass: true, 
     glassTint: '#ffffff', // Store as HEX now for stability
     windowOpacity: 0.6, // NEW: Default opacity
     titleColor: 'auto', // 'auto' or hex
@@ -36,7 +36,7 @@ let appSettings = {
         error: ''
     }
 };
-const SETTINGS_KEY = 'wackybox_settings_v5'; // Version bumped
+const SETTINGS_KEY = 'wackybox_settings_v6'; // Version bumped
 const CUSTOM_APPS_KEY = 'wackybox_custom_apps_v1'; 
 
 function saveSettings() {
@@ -112,7 +112,7 @@ function applySettings() {
     const desktop = document.getElementById('desktop-root');
     const body = document.body;
 
-    body.classList.remove('theme-light', 'theme-dark', 'theme-retro', 'theme-neon', 'theme-soft', 'theme-cameron', 'theme-wnt');
+    body.classList.remove('theme-light', 'theme-dark', 'theme-retro', 'theme-neon', 'theme-soft', 'theme-cameron', 'theme-wnt', 'theme-mts-new');
     
     let themeClass = `theme-${appSettings.theme}`;
     
@@ -135,24 +135,29 @@ function applySettings() {
     // NEW: Apply Opacity Variable
     // Ensure there is a fallback if setting is missing
     const opacity = appSettings.windowOpacity !== undefined ? appSettings.windowOpacity : 0.6;
+    document.body.style.setProperty('--window-opacity', opacity);
     document.documentElement.style.setProperty('--window-opacity', opacity);
 
     // Improved Tint Logic
     if (appSettings.glassTint) {
         const rgb = hexToRgb(appSettings.glassTint);
         if (rgb) {
+            document.body.style.setProperty('--glass-tint', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
             document.documentElement.style.setProperty('--glass-tint', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
             
             // Handle Title Text Color
             let titleColor = appSettings.titleColor;
             if (appSettings.autoContrastTitle) {
-                // Logic: If glass mode is on, check tint. If not, check theme (simplified here to just check tint/white)
                 if (appSettings.graphicsGlass) {
                     titleColor = getContrastColor(appSettings.glassTint);
                 } else {
-                    // In non-glass mode, titles are usually based on theme. 
-                    // This overrides it if specific.
-                    titleColor = getContrastColor('#ffffff'); // Default header bg assumption
+                    // In non-glass mode, titles are based on the theme's titlebar background.
+                    const darkThemes = ['dark', 'neon', 'cameron', 'mts-new'];
+                    if (darkThemes.includes(appSettings.theme)) {
+                        titleColor = getContrastColor('#000000'); // Yields #ffffff
+                    } else {
+                        titleColor = getContrastColor('#ffffff'); // Yields #000000
+                    }
                 }
             } else if (titleColor === 'auto') {
                  titleColor = 'var(--theme-text-secondary)';
@@ -166,7 +171,14 @@ function applySettings() {
                 styleTag.id = 'dynamic-theme-styles';
                 document.head.appendChild(styleTag);
             }
-            styleTag.textContent = `.window-header { color: ${titleColor} !important; } .window-controls button { color: ${titleColor} !important; }`;
+            styleTag.textContent = `
+                .window-header { color: ${titleColor} !important; }
+                .window-controls button { color: ${titleColor} !important; }
+                .mobile-app-header { color: ${titleColor} !important; }
+                .mobile-app-back-btn, .mobile-app-close-btn { color: ${titleColor} !important; }
+                #mobile-top-bar { color: ${titleColor} !important; }
+                #mobile-sidebar { color: ${titleColor} !important; }
+            `;
         }
     }
     
