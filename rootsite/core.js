@@ -13,7 +13,7 @@ let audioCache = {};
 const isMobile = () => window.matchMedia("(max-width: 768px), (max-height: 500px) and (orientation: landscape)").matches;
 
 let appSettings = {
-    wallpaper: 'default',
+    wallpaper: 'glassy-gradient',
     wallpaperCustom: null, 
     theme: 'mts-new',
     graphics3d: false, 
@@ -27,6 +27,12 @@ let appSettings = {
     iconSize: 'medium',
     alwaysOpenInWindow: false,
     taskbarAutohide: false, 
+    lightDirection: 'top-left', // Default light direction
+    windowBackground: '', // Default window background
+    textPrimary: '', // Mts new custom colors
+    accentPrimary: '',
+    textSecondary: '',
+    borderColor: '',
     uiSounds: { 
         enabled: true,
         volume: 0.5,
@@ -36,7 +42,7 @@ let appSettings = {
         error: ''
     }
 };
-const SETTINGS_KEY = 'wackybox_settings_v6'; // Version bumped
+const SETTINGS_KEY = 'wackybox_settings_v7'; // Version bumped
 const CUSTOM_APPS_KEY = 'wackybox_custom_apps_v1'; 
 
 function saveSettings() {
@@ -132,6 +138,55 @@ function applySettings() {
         destroyFancyWallpaper();
     }
 
+    // Window background override (independent of theme)
+    if (appSettings.windowBackground) {
+        document.body.style.setProperty('--window-bg-override', appSettings.windowBackground);
+    } else {
+        document.body.style.removeProperty('--window-bg-override');
+    }
+
+    // Mts new custom theme colors overrides
+    if (appSettings.theme === 'mts-new') {
+        if (appSettings.textPrimary) document.body.style.setProperty('--theme-text-primary', appSettings.textPrimary);
+        else document.body.style.removeProperty('--theme-text-primary');
+        
+        if (appSettings.accentPrimary) document.body.style.setProperty('--theme-accent-primary', appSettings.accentPrimary);
+        else document.body.style.removeProperty('--theme-accent-primary');
+        
+        if (appSettings.textSecondary) document.body.style.setProperty('--theme-text-secondary', appSettings.textSecondary);
+        else document.body.style.removeProperty('--theme-text-secondary');
+        
+        if (appSettings.borderColor) document.body.style.setProperty('--theme-border-color', appSettings.borderColor);
+        else document.body.style.removeProperty('--theme-border-color');
+    } else {
+        document.body.style.removeProperty('--theme-text-primary');
+        document.body.style.removeProperty('--theme-accent-primary');
+        document.body.style.removeProperty('--theme-text-secondary');
+        document.body.style.removeProperty('--theme-border-color');
+    }
+
+    // Light direction configuration
+    body.classList.remove('light-top-left', 'light-top-right', 'light-top', 'light-none');
+    const lightDir = appSettings.lightDirection || 'top-left';
+    body.classList.add(`light-${lightDir}`);
+    
+    const overlay = document.getElementById('desktop-reflection-overlay');
+    if (overlay) {
+        if (lightDir === 'top-left') {
+            overlay.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 25%, transparent 25.1%, transparent 100%)';
+            overlay.style.opacity = '1';
+        } else if (lightDir === 'top-right') {
+            overlay.style.background = 'linear-gradient(225deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 25%, transparent 25.1%, transparent 100%)';
+            overlay.style.opacity = '1';
+        } else if (lightDir === 'top') {
+            overlay.style.background = 'linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 25%, transparent 25.1%, transparent 100%)';
+            overlay.style.opacity = '1';
+        } else {
+            overlay.style.background = 'none';
+            overlay.style.opacity = '0';
+        }
+    }
+
     // NEW: Apply Opacity Variable
     // Ensure there is a fallback if setting is missing
     const opacity = appSettings.windowOpacity !== undefined ? appSettings.windowOpacity : 0.1;
@@ -152,7 +207,7 @@ function applySettings() {
                     titleColor = getContrastColor(appSettings.glassTint);
                 } else {
                     // In non-glass mode, titles are based on the theme's titlebar background.
-                    const darkThemes = ['dark', 'neon', 'cameron', 'mts-new'];
+                    const darkThemes = ['cameron', 'mts-new'];
                     if (darkThemes.includes(appSettings.theme)) {
                         titleColor = getContrastColor('#000000'); // Yields #ffffff
                     } else {
@@ -184,6 +239,9 @@ function applySettings() {
     
     const wallpaperCanvas = document.getElementById('fancy-wallpaper-canvas');
     switch(appSettings.wallpaper) {
+        case 'glassy-gradient':
+            desktop.style.background = 'radial-gradient(ellipse at top left, #2b4c7e 0%, #152238 60%, #0a0f1d 100%)';
+            break;
         case 'ocean':
             desktop.style.background = 'radial-gradient(circle at 80% 80%, #a2d2ff 0%, #3a86ff 50%, #003566 100%)';
             break;
@@ -406,7 +464,7 @@ async function initializeDesktop() {
         { name: 'Browser', type: 'system_app', class: 'webapp-browser', action: 'openBrowser' },
         { name: 'File Explorer', type: 'system_app', class: 'webapp-explorer', action: 'openExplorer' },
         { name: 'Terminal', type: 'system_app', class: 'webapp-terminal', action: 'openTerminal' },
-        { name: 'Theme Studio', type: 'system_app', class: 'webapp-themes', action: 'openThemeApp' },
+        { name: 'Theme studio', type: 'system_app', class: 'webapp-themes', action: 'openThemeApp' },
         { name: 'Video Player', type: 'system_app', class: 'webapp-browser', action: 'openVideoPlayer' }, 
     ];
 

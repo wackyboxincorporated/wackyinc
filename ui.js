@@ -57,17 +57,17 @@ function renderDesktopIcons() {
     const iconStyle = window.getComputedStyle(tempIcon);
     const iconWidth = tempIcon.offsetWidth + parseFloat(iconStyle.marginLeft) + parseFloat(iconStyle.marginRight);
     const iconHeight = tempIcon.offsetHeight + parseFloat(iconStyle.marginTop) + parseFloat(iconStyle.marginBottom);
-    
+
     wrapper.removeChild(tempPage); // Clean up
 
     // Calculate capacity
     // Subtract space for dots at bottom (approx 40px)
-    const availableHeight = container.clientHeight - 40; 
+    const availableHeight = container.clientHeight - 40;
     const availableWidth = container.clientWidth;
 
     const cols = Math.floor(availableWidth / (iconWidth + 10)); // +10 for gap
     const rows = Math.floor(availableHeight / (iconHeight + 10));
-    
+
     // Ensure at least 1 item per page to avoid infinity loops
     const iconsPerPage = Math.max(4, cols * rows);
     const totalPages = Math.ceil(desktopItems.length / iconsPerPage);
@@ -110,7 +110,7 @@ function renderDesktopIcons() {
     desktopItems.forEach((item, index) => {
         const pageIndex = Math.floor(index / iconsPerPage);
         const page = wrapper.children[pageIndex];
-        
+
         if (page) {
             const iconDiv = createIconElement(item);
             iconDiv.addEventListener('dblclick', () => launchItem(item));
@@ -141,24 +141,24 @@ function renderMobileIcons() {
 
     const page = document.createElement('div');
     page.className = 'mobile-page';
-    page.style.visibility = 'hidden'; 
+    page.style.visibility = 'hidden';
     pagesContainer.appendChild(page);
-    
+
     const style = window.getComputedStyle(page);
     const gridRowHeight = parseFloat(style.getPropertyValue('grid-auto-rows')) || 95;
     const gridGap = parseFloat(style.getPropertyValue('gap')) || 10;
     const paddingTop = parseFloat(style.getPropertyValue('padding-top')) || 15;
-    
+
     const pageHeight = pagesContainer.clientHeight - (paddingTop * 2);
     const gridCols = style.getPropertyValue('grid-template-columns').split(' ').length || 3;
-    
+
     let iconsPerCol = Math.floor(pageHeight / (gridRowHeight + gridGap));
-    if (iconsPerCol < 1) iconsPerCol = 4; 
+    if (iconsPerCol < 1) iconsPerCol = 4;
 
     const iconsPerPage = Math.max(1, iconsPerCol * gridCols);
-    
-    pagesContainer.innerHTML = ''; 
-    
+
+    pagesContainer.innerHTML = '';
+
     const numPages = Math.ceil(desktopItems.length / iconsPerPage);
 
     for (let i = 0; i < numPages; i++) {
@@ -170,7 +170,7 @@ function renderMobileIcons() {
         dot.className = 'dot';
         dotsContainer.appendChild(dot);
     }
-    
+
     if (dotsContainer.firstChild) {
         dotsContainer.firstChild.classList.add('active');
     }
@@ -197,17 +197,17 @@ function createIconElement(item) {
     const iconDiv = document.createElement('div');
     iconDiv.className = 'icon';
     iconDiv.innerHTML = `<div class="icon-img ${item.class || 'folder'}"></div><div class="icon-name">${item.name}</div>`;
-    iconDiv.setAttribute('data-item-name', item.name); 
+    iconDiv.setAttribute('data-item-name', item.name);
     return iconDiv;
 }
 
 function setupGlobalDragSelect() {
     const container = document.getElementById('desktop-icon-container');
     if (!container) return;
-    
+
     // Note: Drag select logic might conflict with pagination scrolling/swiping
     // Keeping it basic for now, mostly effective on the visible page
-    
+
     let selectionBox = document.createElement('div');
     selectionBox.style.position = 'absolute';
     selectionBox.style.border = '1px dotted #fff';
@@ -215,38 +215,38 @@ function setupGlobalDragSelect() {
     selectionBox.style.zIndex = '999';
     selectionBox.style.display = 'none';
     document.getElementById('window-area').appendChild(selectionBox);
-    
+
     let startX, startY;
-    
+
     container.addEventListener('mousedown', (e) => {
-        if (e.target !== container && e.target.id !== 'desktop-pages-wrapper') return; 
-        
+        if (e.target !== container && e.target.id !== 'desktop-pages-wrapper') return;
+
         document.querySelectorAll('.icon.selected').forEach(i => i.classList.remove('selected'));
-        
+
         startX = e.clientX;
         startY = e.clientY;
-        
+
         selectionBox.style.left = `${startX}px`;
         selectionBox.style.top = `${startY}px`;
         selectionBox.style.width = '0px';
         selectionBox.style.height = '0px';
         selectionBox.style.display = 'block';
-        
+
         document.addEventListener('mousemove', onMouseMove);
         document.addEventListener('mouseup', onMouseUp);
     });
-    
+
     function onMouseMove(e) {
         let x = Math.min(e.clientX, startX);
         let y = Math.min(e.clientY, startY);
         let w = Math.abs(e.clientX - startX);
         let h = Math.abs(e.clientY - startY);
-        
+
         selectionBox.style.left = `${x}px`;
         selectionBox.style.top = `${y}px`;
         selectionBox.style.width = `${w}px`;
         selectionBox.style.height = `${h}px`;
-        
+
         const icons = container.querySelectorAll('.icon');
         const boxRect = selectionBox.getBoundingClientRect();
         icons.forEach(icon => {
@@ -263,7 +263,7 @@ function setupGlobalDragSelect() {
             icon.classList.toggle('selected', isIntersecting);
         });
     }
-    
+
     function onMouseUp() {
         selectionBox.style.display = 'none';
         document.removeEventListener('mousemove', onMouseMove);
@@ -286,7 +286,7 @@ function launchItem(item) {
         }
         return;
     }
-    
+
     if (item.type === 'locked_folder') {
         openPasswordModal(item.name, item.password, () => {
             openLockedFolderWindow(item.name, item.contents);
@@ -322,7 +322,7 @@ function launchItem(item) {
 
 function openWindow(title, contentHTML, options = {}) {
     const windowId = `win-${Date.now()}`;
-    
+
     if (isMobile()) {
         return openMobileWindow(windowId, title, contentHTML, options);
     } else {
@@ -355,40 +355,40 @@ function openDesktopWindow(windowId, title, contentHTML, options = {}) {
         </div>
         <div class="window-content">${contentHTML}</div>
     `;
-    
+
     document.getElementById('window-area').appendChild(windowDiv);
-    
+
     const winWidth = windowDiv.offsetWidth;
     const winHeight = windowDiv.offsetHeight;
-    
+
     const taskbar = document.querySelector('.taskbar');
     const taskbarRect = taskbar.getBoundingClientRect();
     let viewWidth = window.innerWidth;
     let viewHeight = window.innerHeight;
     let viewTop = 0;
     let viewLeft = 0;
-    
+
     if (appSettings.taskbarPosition === 'bottom') viewHeight -= taskbarRect.height;
     if (appSettings.taskbarPosition === 'top') { viewHeight -= taskbarRect.height; viewTop = taskbarRect.height; }
     if (appSettings.taskbarPosition === 'left') { viewWidth -= taskbarRect.width; viewLeft = taskbarRect.width; }
 
     windowDiv.style.left = `${viewLeft + Math.max(5, (viewWidth - winWidth) / 2)}px`;
     windowDiv.style.top = `${viewTop + Math.max(5, (viewHeight - winHeight) / 2)}px`;
-    
+
     requestAnimationFrame(() => {
         windowDiv.classList.remove('opening');
     });
-    
+
     const header = windowDiv.querySelector('.window-header');
     windowDiv.addEventListener('mousedown', () => bringWindowToFront(windowId));
     windowDiv.querySelector('.close-btn').addEventListener('click', () => closeWindow(windowId));
-    
+
     if (!options.hideMinimize) { windowDiv.querySelector('.minimize-btn').addEventListener('click', () => minimizeWindow(windowId)); }
-    if (!options.hideMaximize) { 
+    if (!options.hideMaximize) {
         const maximizeBtn = windowDiv.querySelector('.maximize-btn');
         maximizeBtn.addEventListener('click', () => maximizeWindow(windowId));
         header.addEventListener('dblclick', (e) => {
-            if (e.target.closest('button')) return; 
+            if (e.target.closest('button')) return;
             maximizeWindow(windowId);
         });
     }
@@ -396,9 +396,9 @@ function openDesktopWindow(windowId, title, contentHTML, options = {}) {
     dragElement(windowDiv);
     add_taskbar_item(windowId, title);
     openWindows[windowId] = windowDiv;
-    
+
     bringWindowToFront(windowId);
-    
+
     return windowDiv;
 }
 
@@ -407,9 +407,9 @@ function openMobileWindow(windowId, title, contentHTML, options = {}) {
     const appPage = document.createElement('div');
     appPage.className = 'mobile-app-page opening';
     appPage.id = windowId;
-    
+
     const hasBack = openMobileAppOrder.length > 0;
-    
+
     appPage.innerHTML = `
         <div class="mobile-app-header">
             <span class="mobile-app-back-btn">${hasBack ? '&#8249;' : '&times;'}</span>
@@ -418,23 +418,23 @@ function openMobileWindow(windowId, title, contentHTML, options = {}) {
         </div>
         <div class="mobile-app-content">${contentHTML}</div>
     `;
-    
-    if(hasBack) appPage.querySelector('.mobile-app-close-btn').style.display = 'none';
-    
+
+    if (hasBack) appPage.querySelector('.mobile-app-close-btn').style.display = 'none';
+
     document.getElementById('mobile-app-container').appendChild(appPage);
     appPage.querySelector('.mobile-app-back-btn').addEventListener('click', () => {
         if (hasBack) {
-            closeWindow(windowId, true); 
+            closeWindow(windowId, true);
         } else {
-            closeWindow(windowId); 
+            closeWindow(windowId);
         }
     });
     appPage.querySelector('.mobile-app-close-btn').addEventListener('click', () => closeWindow(windowId));
-    
+
     openWindows[windowId] = appPage;
-    
+
     bringWindowToFront(windowId);
-    
+
     requestAnimationFrame(() => {
         appPage.classList.remove('opening');
     });
@@ -446,34 +446,34 @@ function closeWindow(windowId, isMobileBack = false) {
     playUISound('windowClose');
     const win = openWindows[windowId];
     if (!win) return;
-    
+
     if (isMobile()) {
         const appIndex = openMobileAppOrder.indexOf(windowId);
         if (appIndex > -1) {
             openMobileAppOrder.splice(appIndex, 1);
         }
-        
+
         win.classList.add('closing');
         win.addEventListener('transitionend', () => {
             win.remove();
             delete openWindows[windowId];
             updateMobileTaskList();
         }, { once: true });
-        
+
         const nextAppId = openMobileAppOrder[openMobileAppOrder.length - 1];
         if (nextAppId) {
-            bringWindowToFront(nextAppId, true); 
+            bringWindowToFront(nextAppId, true);
         } else {
             showMobileHome(false);
         }
-        
+
     } else {
         if (win.classList.contains('minimized') && appSettings.graphicsGlass) {
             win.classList.add('minimizing');
         } else {
             win.classList.add('closing');
         }
-        
+
         win.addEventListener('transitionend', () => {
             win.remove();
             delete openWindows[windowId];
@@ -484,7 +484,7 @@ function closeWindow(windowId, isMobileBack = false) {
 
 function minimizeWindow(windowId) {
     if (isMobile()) {
-        showMobileHome(true); 
+        showMobileHome(true);
     } else {
         const win = document.getElementById(windowId);
         if (win) {
@@ -511,17 +511,17 @@ function maximizeWindow(windowId) {
 function bringWindowToFront(windowId, skipMobileAnimation = false) {
     const win = openWindows[windowId];
     if (!win) return;
-    
+
     if (isMobile()) {
         document.getElementById('mobile-homescreen').style.display = 'none';
         document.getElementById('mobile-app-container').style.display = 'block';
-        
+
         const appIndex = openMobileAppOrder.indexOf(windowId);
         if (appIndex > -1) {
             openMobileAppOrder.splice(appIndex, 1);
         }
         openMobileAppOrder.push(windowId);
-        
+
         Object.values(openWindows).forEach(appPage => {
             if (appPage.id === windowId) {
                 appPage.classList.remove('inactive-behind');
@@ -536,91 +536,91 @@ function bringWindowToFront(windowId, skipMobileAnimation = false) {
                 }
             }
         });
-        
+
         if (skipMobileAnimation) {
             win.classList.remove('opening');
         }
-        
+
         updateMobileTaskList();
 
     } else {
         highestZIndex++;
         win.style.zIndex = highestZIndex;
         win.classList.remove('minimized', 'minimizing');
-        
+
         document.querySelectorAll('.task-item').forEach(item => item.classList.remove('active'));
         const taskItem = document.querySelector(`.task-item[data-window-id="${windowId}"]`);
         if (taskItem) taskItem.classList.add('active');
     }
 }
 
-function dragElement(elmnt) { 
-    if (isMobile()) return; 
+function dragElement(elmnt) {
+    if (isMobile()) return;
 
-    let pos1 = 0, pos2 = 0; 
-    let header = elmnt.classList.contains('window') ? elmnt.querySelector('.window-header') : elmnt; 
-    
-    if (header) { header.onmousedown = dragMouseDown; } 
-    
-    function dragMouseDown(e) { 
-        if (e.button !== 0 || (e.target.tagName === 'BUTTON')) return; 
-        e.preventDefault(); 
-        if (elmnt.classList.contains('window')) bringWindowToFront(elmnt.id); 
-        
+    let pos1 = 0, pos2 = 0;
+    let header = elmnt.classList.contains('window') ? elmnt.querySelector('.window-header') : elmnt;
+
+    if (header) { header.onmousedown = dragMouseDown; }
+
+    function dragMouseDown(e) {
+        if (e.button !== 0 || (e.target.tagName === 'BUTTON')) return;
+        e.preventDefault();
+        if (elmnt.classList.contains('window')) bringWindowToFront(elmnt.id);
+
         pos1 = e.clientX - elmnt.offsetLeft;
         pos2 = e.clientY - elmnt.offsetTop;
-        
-        document.onmouseup = closeDragElement; 
-        document.onmousemove = elementDrag; 
-        elmnt.classList.add('dragging'); 
+
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+        elmnt.classList.add('dragging');
 
         elmnt.querySelectorAll('iframe, canvas').forEach(el => el.style.pointerEvents = 'none');
-    } 
-    
-    function elementDrag(e) { 
-        e.preventDefault(); 
-        if (elmnt.classList.contains('maximized')) return; 
-        
+    }
+
+    function elementDrag(e) {
+        e.preventDefault();
+        if (elmnt.classList.contains('maximized')) return;
+
         let newTop = e.clientY - pos2;
         let newLeft = e.clientX - pos1;
-        
+
         const taskbar = document.querySelector('.taskbar');
         const taskbarRect = taskbar.getBoundingClientRect();
-        
+
         let minTop = 0;
         let minLeft = 0;
         let maxTop = window.innerHeight - elmnt.offsetHeight;
         let maxLeft = window.innerWidth - elmnt.offsetWidth;
-        
+
         if (!appSettings.taskbarAutohide) {
             if (appSettings.taskbarPosition === 'top') minTop = taskbarRect.height;
             if (appSettings.taskbarPosition === 'bottom') maxTop = taskbarRect.top - elmnt.offsetHeight;
             if (appSettings.taskbarPosition === 'left') minLeft = taskbarRect.width;
         }
-        
+
         if (elmnt.classList.contains('window')) {
             let headerHeight = header ? header.offsetHeight : 40;
-            maxTop = window.innerHeight - headerHeight; 
+            maxTop = window.innerHeight - headerHeight;
         }
-        
-        elmnt.style.top = `${Math.max(minTop, Math.min(newTop, maxTop))}px`; 
-        elmnt.style.left = `${Math.max(minLeft, Math.min(newLeft, maxLeft))}px`; 
-    } 
-    
-    function closeDragElement() { 
-        document.onmouseup = null; 
-        document.onmousemove = null; 
-        elmnt.classList.remove('dragging'); 
-        
+
+        elmnt.style.top = `${Math.max(minTop, Math.min(newTop, maxTop))}px`;
+        elmnt.style.left = `${Math.max(minLeft, Math.min(newLeft, maxLeft))}px`;
+    }
+
+    function closeDragElement() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+        elmnt.classList.remove('dragging');
+
         elmnt.querySelectorAll('iframe, canvas').forEach(el => el.style.pointerEvents = 'auto');
-    } 
+    }
 }
 
-function add_taskbar_item(windowId, title) { 
+function add_taskbar_item(windowId, title) {
     if (isMobile()) return;
-    const item = document.createElement('div'); 
-    item.className = 'task-item'; 
-    
+    const item = document.createElement('div');
+    item.className = 'task-item';
+
     // Check taskbar mode
     if (appSettings.taskbarMode === 'compact') {
         item.title = title; // Tooltip
@@ -629,10 +629,10 @@ function add_taskbar_item(windowId, title) {
         // Note: Real implementation would use an app icon here, but we don't pass icon class to openWindow yet.
         // For now, just blank or first letter could work, but CSS background handles active state.
     } else {
-        item.textContent = title; 
+        item.textContent = title;
     }
-    
-    item.setAttribute('data-window-id', windowId); 
+
+    item.setAttribute('data-window-id', windowId);
     item.onclick = () => {
         const win = document.getElementById(windowId);
         if (win.classList.contains('minimized') || !win.classList.contains('active')) {
@@ -640,30 +640,30 @@ function add_taskbar_item(windowId, title) {
         } else {
             minimizeWindow(windowId);
         }
-    }; 
-    document.getElementById('task-items').appendChild(item); 
+    };
+    document.getElementById('task-items').appendChild(item);
 }
 
-function remove_taskbar_item(windowId) { 
+function remove_taskbar_item(windowId) {
     if (isMobile()) return;
-    const item = document.querySelector(`.task-item[data-window-id="${windowId}"]`); 
-    if (item) item.remove(); 
+    const item = document.querySelector(`.task-item[data-window-id="${windowId}"]`);
+    if (item) item.remove();
 }
 
 function setupStartMenu() {
     const startBtn = document.getElementById('start-button');
     const startMenu = document.getElementById('start-menu');
-    
+
     if (!document.getElementById('start-menu-layout')) {
         startMenu.innerHTML = `
             <div id="start-menu-layout">
                 <div id="start-menu-left">
                     <div id="start-left-content">
                         <div id="start-programs-pane">
-                            <div class="start-pane-header">Pinned Programs</div>
+                            <div class="start-pane-header">Pinned programs</div>
                             <div id="start-pinned-programs"></div>
                             <div id="start-all-programs-btn" class="all-programs-btn">
-                                <span>All Programs</span> <span class="arrow">&raquo;</span>
+                                <span>All programs</span> <span class="arrow">&raquo;</span>
                             </div>
                         </div>
                         <div id="start-all-programs-pane" style="display: none;">
@@ -673,7 +673,7 @@ function setupStartMenu() {
                             <div id="start-all-programs-tree"></div>
                         </div>
                         <div id="start-search-results-pane" style="display: none;">
-                            <div class="start-pane-header">Search Results</div>
+                            <div class="start-pane-header">Search results</div>
                             <div id="start-search-results"></div>
                         </div>
                     </div>
@@ -695,26 +695,26 @@ function setupStartMenu() {
                         <div class="right-link" data-path="Media & Files"><div class="right-link-icon media-icon"></div><span>Music & Videos</span></div>
                         <div class="right-link" data-path="Computer"><div class="right-link-icon computer-icon"></div><span>Computer</span></div>
                         <div class="right-link-separator"></div>
-                        <div class="right-link" data-action="settings"><div class="right-link-icon settings-icon"></div><span>Control Panel</span></div>
-                        <div class="right-link" data-action="terminal"><div class="right-link-icon terminal-icon"></div><span>Command Prompt</span></div>
-                        <div class="right-link" data-action="about"><div class="right-link-icon about-icon"></div><span>Help and Support</span></div>
+                        <div class="right-link" data-action="settings"><div class="right-link-icon settings-icon"></div><span>Control panel</span></div>
+                        <div class="right-link" data-action="terminal"><div class="right-link-icon terminal-icon"></div><span>Command prompt</span></div>
+                        <div class="right-link" data-action="about"><div class="right-link-icon about-icon"></div><span>Help and support</span></div>
                     </div>
                     <div id="start-shutdown-bar">
-                        <button id="start-shutdown-btn">Shut Down</button>
+                        <button id="start-shutdown-btn">Shut down</button>
                     </div>
                 </div>
             </div>
         `;
-        
+
         const allProgramsBtn = document.getElementById('start-all-programs-btn');
         const allProgramsBack = document.getElementById('start-all-programs-back');
         const searchInput = document.getElementById('start-search-input');
         const searchClear = document.getElementById('start-search-clear');
-        
+
         const programsPane = document.getElementById('start-programs-pane');
         const allProgramsPane = document.getElementById('start-all-programs-pane');
         const searchPane = document.getElementById('start-search-results-pane');
-        
+
         allProgramsBtn.onclick = (e) => {
             e.stopPropagation();
             programsPane.style.display = 'none';
@@ -722,14 +722,14 @@ function setupStartMenu() {
             searchPane.style.display = 'none';
             renderAllProgramsTree();
         };
-        
+
         allProgramsBack.onclick = (e) => {
             e.stopPropagation();
             programsPane.style.display = 'block';
             allProgramsPane.style.display = 'none';
             searchPane.style.display = 'none';
         };
-        
+
         searchInput.oninput = (e) => {
             const query = e.target.value.trim().toLowerCase();
             if (query.length > 0) {
@@ -748,7 +748,7 @@ function setupStartMenu() {
                 }
             }
         };
-        
+
         searchClear.onclick = (e) => {
             e.stopPropagation();
             searchInput.value = '';
@@ -783,15 +783,15 @@ function setupStartMenu() {
                 window.location.reload();
             }, 2000);
         };
-        
+
         document.querySelectorAll('#start-right-links .right-link').forEach(link => {
             link.onclick = (e) => {
                 e.stopPropagation();
                 startMenu.classList.remove('open');
-                
+
                 const action = link.dataset.action;
                 const path = link.dataset.path;
-                
+
                 if (action) {
                     if (action === 'settings') openSettingsApp();
                     if (action === 'terminal') openTerminalApp();
@@ -802,18 +802,18 @@ function setupStartMenu() {
             };
         });
     }
-    
+
     const pinnedContainer = document.getElementById('start-pinned-programs');
     pinnedContainer.innerHTML = '';
-    
+
     const pinnedApps = [
         { name: 'Browser', class: 'webapp-browser', action: 'openBrowser' },
         { name: 'Notepad', class: 'webapp-notepad', action: 'openNotepad' },
         { name: 'Calculator', class: 'webapp-computer', action: 'openCalculator' },
-        { name: 'Theme Studio', class: 'webapp-themes', action: 'openThemeApp' },
+        { name: 'Theme studio', class: 'webapp-themes', action: 'openThemeApp' },
         { name: 'File Explorer', class: 'webapp-explorer', action: 'openExplorer' }
     ];
-    
+
     pinnedApps.forEach(app => {
         const item = document.createElement('div');
         item.className = 'menu-item';
@@ -834,7 +834,7 @@ function setupStartMenu() {
         const separator = document.createElement('div');
         separator.className = 'start-pane-separator';
         pinnedContainer.appendChild(separator);
-        
+
         gamesFolder.contents.slice(0, 3).forEach(game => {
             const item = document.createElement('div');
             item.className = 'menu-item';
@@ -846,7 +846,7 @@ function setupStartMenu() {
             pinnedContainer.appendChild(item);
         });
     }
-    
+
     if (!startBtn.dataset.wired) {
         startBtn.onclick = (e) => {
             e.stopPropagation();
@@ -857,7 +857,7 @@ function setupStartMenu() {
         };
         startBtn.dataset.wired = "true";
     }
-    
+
     document.addEventListener('click', () => startMenu.classList.remove('open'));
     startMenu.onclick = (e) => e.stopPropagation();
 }
@@ -865,29 +865,29 @@ function setupStartMenu() {
 function renderAllProgramsTree() {
     const treeContainer = document.getElementById('start-all-programs-tree');
     treeContainer.innerHTML = '';
-    
+
     const systemAppsFolder = {
         name: "System Accessories",
         contents: desktopItems.filter(i => i.type === 'system_app')
     };
-    
+
     const folders = [
         ...desktopItems.filter(i => i.type === 'folder'),
         systemAppsFolder
     ];
-    
+
     folders.forEach(folder => {
         const folderNode = document.createElement('div');
         folderNode.className = 'tree-folder';
-        
+
         const folderHeader = document.createElement('div');
         folderHeader.className = 'tree-folder-header';
         folderHeader.innerHTML = `<span class="tree-arrow">&#9656;</span> <div class="icon-img folder" style="width:18px; height:18px; display:inline-block; vertical-align:middle; margin:0 5px 0 0;"></div> <span>${folder.name}</span>`;
-        
+
         const folderContent = document.createElement('div');
         folderContent.className = 'tree-folder-content';
         folderContent.style.display = 'none';
-        
+
         folder.contents.forEach(item => {
             const leafNode = document.createElement('div');
             leafNode.className = 'tree-leaf menu-item';
@@ -900,14 +900,14 @@ function renderAllProgramsTree() {
             };
             folderContent.appendChild(leafNode);
         });
-        
+
         folderHeader.onclick = (e) => {
             e.stopPropagation();
             const isOpen = folderContent.style.display === 'block';
             folderContent.style.display = isOpen ? 'none' : 'block';
             folderHeader.querySelector('.tree-arrow').innerHTML = isOpen ? '&#9656;' : '&#9662;';
         };
-        
+
         folderNode.appendChild(folderHeader);
         folderNode.appendChild(folderContent);
         treeContainer.appendChild(folderNode);
@@ -917,14 +917,14 @@ function renderAllProgramsTree() {
 function performStartSearch(query) {
     const resultsContainer = document.getElementById('start-search-results');
     resultsContainer.innerHTML = '';
-    
+
     const results = {
         games: [],
         websites: [],
         files: [],
         programs: []
     };
-    
+
     desktopItems.forEach(item => {
         if (item.type === 'folder' && item.contents) {
             item.contents.forEach(child => {
@@ -947,24 +947,24 @@ function performStartSearch(query) {
             }
         }
     });
-    
+
     customDesktopItems.forEach(item => {
         if (item.name.toLowerCase().includes(query)) {
             results.websites.push(item);
         }
     });
-    
+
     let hasResults = false;
-    
+
     const renderSection = (title, list) => {
         if (list.length === 0) return;
         hasResults = true;
-        
+
         const sectionHeader = document.createElement('div');
         sectionHeader.className = 'search-section-header';
         sectionHeader.textContent = title;
         resultsContainer.appendChild(sectionHeader);
-        
+
         list.forEach(item => {
             const resItem = document.createElement('div');
             resItem.className = 'menu-item';
@@ -977,12 +977,12 @@ function performStartSearch(query) {
             resultsContainer.appendChild(resItem);
         });
     };
-    
+
     renderSection('Games', results.games);
     renderSection('Programs', results.programs);
     renderSection('Websites', results.websites);
     renderSection('Files & Documents', results.files);
-    
+
     if (!hasResults) {
         resultsContainer.innerHTML = '<div style="padding:10px; color:var(--theme-text-secondary); text-align:center;">No items match your search.</div>';
     }
@@ -996,41 +996,41 @@ function setupMobileControls() {
     }
     updateClock();
     setInterval(updateClock, 1000);
-    
+
     const menuBtn = document.getElementById('mobile-menu-btn');
     const homeBtn = document.getElementById('mobile-home-btn');
     const sidebar = document.getElementById('mobile-sidebar');
     const overlay = document.getElementById('mobile-sidebar-overlay');
-    
+
     menuBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         sidebar.classList.add('open');
         overlay.classList.add('open');
     });
-    
+
     homeBtn.addEventListener('click', () => {
-        showMobileHome(true); 
+        showMobileHome(true);
         closeMobileSidebar();
     });
-    
+
     overlay.addEventListener('click', closeMobileSidebar);
 }
 
 function setupMobileGestures() {
     let touchStartX = 0;
     let touchEndX = 0;
-    
+
     document.body.addEventListener('touchstart', e => {
         if (!isMobile()) return;
         touchStartX = e.changedTouches[0].screenX;
     }, { passive: true });
-    
+
     document.body.addEventListener('touchend', e => {
         if (!isMobile()) return;
         touchEndX = e.changedTouches[0].screenX;
         handleSwipe();
     }, { passive: true });
-    
+
     function handleSwipe() {
         if (touchStartX < 30 && touchEndX > (touchStartX + 70)) {
             document.getElementById('mobile-sidebar').classList.add('open');
@@ -1047,11 +1047,11 @@ function closeMobileSidebar() {
 function showMobileHome(isMinimizing) {
     document.getElementById('mobile-homescreen').style.display = 'block';
     document.getElementById('mobile-app-container').style.display = 'none';
-    
+
     if (!isMinimizing) {
         openMobileAppOrder = [];
     }
-    
+
     setTimeout(() => {
         renderMobileIcons();
     }, 100);
@@ -1063,14 +1063,14 @@ function updateMobileTaskList() {
     const taskList = document.getElementById('mobile-task-list');
     if (!taskList) return;
     taskList.innerHTML = '';
-    
+
     const activeAppId = openMobileAppOrder[openMobileAppOrder.length - 1];
 
     [...openMobileAppOrder].reverse().forEach(windowId => {
         const win = openWindows[windowId];
         if (!win) return;
         const title = win.querySelector('.mobile-app-title, .window-title')?.textContent || 'Untitled';
-        
+
         const item = document.createElement('li');
         item.className = 'mobile-task-item';
         if (windowId === activeAppId) {
@@ -1080,16 +1080,16 @@ function updateMobileTaskList() {
             <span class="mobile-task-item-name">${title}</span>
             <span class="mobile-task-item-close">&times;</span>
         `;
-        
+
         item.querySelector('.mobile-task-item-name').addEventListener('click', () => {
             bringWindowToFront(windowId);
             closeMobileSidebar();
         });
-        
+
         item.querySelector('.mobile-task-item-close').addEventListener('click', () => {
             closeWindow(windowId);
         });
-        
+
         taskList.appendChild(item);
     });
 }

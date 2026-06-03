@@ -660,10 +660,10 @@ function setupStartMenu() {
                 <div id="start-menu-left">
                     <div id="start-left-content">
                         <div id="start-programs-pane">
-                            <div class="start-pane-header">Pinned Programs</div>
+                            <div class="start-pane-header">Pinned programs</div>
                             <div id="start-pinned-programs"></div>
                             <div id="start-all-programs-btn" class="all-programs-btn">
-                                <span>All Programs</span> <span class="arrow">&raquo;</span>
+                                <span>All programs</span> <span class="arrow">&raquo;</span>
                             </div>
                         </div>
                         <div id="start-all-programs-pane" style="display: none;">
@@ -673,7 +673,7 @@ function setupStartMenu() {
                             <div id="start-all-programs-tree"></div>
                         </div>
                         <div id="start-search-results-pane" style="display: none;">
-                            <div class="start-pane-header">Search Results</div>
+                            <div class="start-pane-header">Search results</div>
                             <div id="start-search-results"></div>
                         </div>
                     </div>
@@ -695,12 +695,12 @@ function setupStartMenu() {
                         <div class="right-link" data-path="Media & Files"><div class="right-link-icon media-icon"></div><span>Music & Videos</span></div>
                         <div class="right-link" data-path="Computer"><div class="right-link-icon computer-icon"></div><span>Computer</span></div>
                         <div class="right-link-separator"></div>
-                        <div class="right-link" data-action="settings"><div class="right-link-icon settings-icon"></div><span>Control Panel</span></div>
-                        <div class="right-link" data-action="terminal"><div class="right-link-icon terminal-icon"></div><span>Command Prompt</span></div>
-                        <div class="right-link" data-action="about"><div class="right-link-icon about-icon"></div><span>Help and Support</span></div>
+                        <div class="right-link" data-action="settings"><div class="right-link-icon settings-icon"></div><span>Control panel</span></div>
+                        <div class="right-link" data-action="terminal"><div class="right-link-icon terminal-icon"></div><span>Command prompt</span></div>
+                        <div class="right-link" data-action="about"><div class="right-link-icon about-icon"></div><span>Help and support</span></div>
                     </div>
                     <div id="start-shutdown-bar">
-                        <button id="start-shutdown-btn">Shut Down</button>
+                        <button id="start-shutdown-btn">Shut down</button>
                     </div>
                 </div>
             </div>
@@ -810,7 +810,7 @@ function setupStartMenu() {
         { name: 'Browser', class: 'webapp-browser', action: 'openBrowser' },
         { name: 'Notepad', class: 'webapp-notepad', action: 'openNotepad' },
         { name: 'Calculator', class: 'webapp-computer', action: 'openCalculator' },
-        { name: 'Theme Studio', class: 'webapp-themes', action: 'openThemeApp' },
+        { name: 'Theme studio', class: 'webapp-themes', action: 'openThemeApp' },
         { name: 'File Explorer', class: 'webapp-explorer', action: 'openExplorer' }
     ];
     

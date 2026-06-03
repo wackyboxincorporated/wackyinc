@@ -167,9 +167,9 @@ function openSettingsApp() {
             </div>
 
             <div class="setting-group">
-                <label>Theme Studio</label>
+                <label>Theme studio</label>
                 <small>Change colors, wallpapers, and window tinting.</small>
-                <button id="open-theme-app-btn" style="margin-top: 5px;">Open Theme Studio</button>
+                <button id="open-theme-app-btn" style="margin-top: 5px;">Open Theme studio</button>
             </div>
 
             <div class="setting-header">Layout</div>
@@ -222,16 +222,16 @@ function openSettingsApp() {
             </div>
             
             <div class="setting-group">
-                <label>Add Custom Web App</label>
+                <label>Add custom web app</label>
                 <div id="add-custom-app-form">
-                    <input type="text" id="custom-app-name" placeholder="App Name">
+                    <input type="text" id="custom-app-name" placeholder="App name">
                     <input type="text" id="custom-app-url" placeholder="https://example.com">
                     <button id="add-custom-app-btn">Add</button>
                 </div>
             </div>
 
             <div class="setting-group">
-                <label>Manage Custom Apps</label>
+                <label>Manage custom apps</label>
                 <div id="custom-apps-list"></div>
             </div>
         </div>
@@ -718,9 +718,10 @@ function handleTerminalCommand(cmd, output) {
 
 function openThemeApp() {
     const wallpapers = [
-        { id: 'default', name: 'Wacky Green' },
-        { id: 'ocean', name: 'Ocean Blue' },
-        { id: 'solid', name: 'Solid Gray' },
+        { id: 'default', name: 'Wacky green' },
+        { id: 'glassy-gradient', name: 'Glassy gradient' },
+        { id: 'ocean', name: 'Ocean blue' },
+        { id: 'solid', name: 'Solid gray' },
         { id: 'sunset', name: 'Sunset' },
         { id: 'forest', name: 'Forest' },
         { id: 'nebula', name: 'Nebula' },
@@ -729,43 +730,81 @@ function openThemeApp() {
     const themeHTML = `
         <div id="theme-app">
             <div class="setting-group">
-                <label>Color Theme</label>
+                <label>Color theme</label>
                 <div id="theme-mode-toggle">
-                    <button class="theme-mode-btn mts-new" data-theme="mts-new">MTS New</button>
-                    <button class="theme-mode-btn light" data-theme="light">Light</button>
-                    <button class="theme-mode-btn dark" data-theme="dark">Dark</button>
-                    <button class="theme-mode-btn retro" data-theme="retro">Retro</button>
-                    <button class="theme-mode-btn wnt" data-theme="wnt">WNT</button>
-                    <button class="theme-mode-btn neon" data-theme="neon">Neon</button>
-                    <button class="theme-mode-btn cameron" data-theme="cameron">Cameron's Theme</button>
-                    <button class="theme-mode-btn soft" data-theme="soft">Soft</button>
+                    <button class="theme-mode-btn mts-new" data-theme="mts-new">Mts new</button>
+                    <button class="theme-mode-btn cameron" data-theme="cameron">Cameron's theme</button>
                 </div>
             </div>
             
+            <div id="mts-new-customizers" class="setting-group" style="display: none;">
+                <label>Mts new colors</label>
+                <small>Customize the default colors for the Mts new theme.</small>
+                <div class="setting-group-row" style="margin-top: 5px; gap: 10px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <input type="color" id="color-text-primary" value="#8daef2">
+                        <label for="color-text-primary" style="font-size: 11px;">Primary text</label>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <input type="color" id="color-text-secondary" value="#a0c0ff">
+                        <label for="color-text-secondary" style="font-size: 11px;">Secondary text</label>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <input type="color" id="color-accent" value="#3a7bd5">
+                        <label for="color-accent" style="font-size: 11px;">Accent</label>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <input type="color" id="color-border" value="#3a7bd5">
+                        <label for="color-border" style="font-size: 11px;">Border</label>
+                    </div>
+                </div>
+                <button id="reset-mts-colors-btn" style="margin-top: 10px;">Reset Mts colors</button>
+            </div>
+
             <div class="setting-group">
-                <label>Window Title Text</label>
+                <label>Window background</label>
+                <small>Override window content backgrounds independent of theme.</small>
+                <div class="setting-group-row" style="gap: 10px; margin-top: 5px;">
+                    <input type="color" id="window-bg-picker" value="#00000e">
+                    <button id="reset-window-bg-btn">Reset</button>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label>Light direction</label>
+                <small>Simulate light source reflection on the desktop and icons.</small>
+                <select id="light-direction-select" style="margin-top: 5px; width: 100%; box-sizing: border-box;">
+                    <option value="top-left">Top left</option>
+                    <option value="top-right">Top right</option>
+                    <option value="top">Top</option>
+                    <option value="none">None</option>
+                </select>
+            </div>
+            
+            <div class="setting-group">
+                <label>Window title text</label>
                 <small>Customize the color of the text in window titlebars.</small>
                 <div class="setting-group-row">
                     <input type="color" id="title-text-picker" value="#333333">
                     <div style="display:flex; align-items:center; gap:5px; margin-left:10px;">
                          <input type="checkbox" id="auto-contrast-check">
-                         <label for="auto-contrast-check">Auto-Contrast</label>
+                         <label for="auto-contrast-check">Auto-contrast</label>
                     </div>
                 </div>
                 <small>Auto-contrast makes text black or white depending on the tint darkness.</small>
             </div>
 
             <div class="setting-group">
-                <label>Window Tint (Glass Mode)</label>
+                <label>Window tint (glass mode)</label>
                 <small>Controls the glass color of windows and taskbar.</small>
                 <div class="setting-group-row">
                     <input type="color" id="glass-tint-picker" value="#ffffff">
-                    <button id="reset-tint-btn">Reset to White</button>
+                    <button id="reset-tint-btn">Reset to white</button>
                 </div>
             </div>
 
             <div class="setting-group">
-                <label>Window Transparency</label>
+                <label>Window transparency</label>
                 <small>Adjust how transparent the background and title bars are.</small>
                 <div class="setting-group-row" style="margin-top: 5px;">
                     <input type="range" id="window-opacity-slider" min="0.1" max="1.0" step="0.05" style="flex-grow: 1;">
@@ -785,7 +824,7 @@ function openThemeApp() {
             </div>
             
             <div class="setting-group">
-                <label>Custom Wallpaper</label>
+                <label>Custom wallpaper</label>
                 <div class="setting-group-row" style="gap: 5px; margin-top: 5px;">
                     <input type="file" id="wallpaper-upload" accept="image/*">
                     <button id="wallpaper-upload-btn">&#10514; Upload</button>
@@ -799,23 +838,24 @@ function openThemeApp() {
                         <input type="color" id="gradient-color1" value="#f3904f">
                         <input type="color" id="gradient-color2" value="#3b4371">
                         <select id="gradient-direction">
-                            <option value="to top">To Top</option>
-                            <option value="to bottom">To Bottom</option>
-                            <option value="to left">To Left</option>
-                            <option value="to right">To Right</option>
+                            <option value="to top">To top</option>
+                            <option value="to bottom">To bottom</option>
+                            <option value="to left">To left</option>
+                            <option value="to right">To right</option>
                             <option value="45deg">Diagonal (45°)</option>
                             <option value="radial-gradient">Radial</option>
                         </select>
                     </div>
-                    <button id="gradient-apply-btn">Apply Gradient</button>
+                    <button id="gradient-apply-btn">Apply gradient</button>
                 </div>
             </div>
         </div>
     `;
-    const win = openWindow('Theme Studio', themeHTML, {width: '450px', height: '650px'});
+    const win = openWindow('Theme studio', themeHTML, {width: '450px', height: '650px'});
     
     const wpStyles = {
         'default': 'radial-gradient(circle at 10% 90%, #6ec25d 0%, #3a8542 50%, #2e7141 100%)',
+        'glassy-gradient': 'radial-gradient(ellipse at top left, #2b4c7e 0%, #152238 60%, #0a0f1d 100%)',
         'ocean': 'radial-gradient(circle at 80% 80%, #a2d2ff 0%, #3a86ff 50%, #003566 100%)',
         'solid': '#4a5759',
         'sunset': 'linear-gradient(to top, #f3904f, #3b4371)',
@@ -826,6 +866,85 @@ function openThemeApp() {
         div.style.background = wpStyles[div.dataset.wallpaperId];
     });
     
+    const mtsCustomizers = win.querySelector('#mts-new-customizers');
+    const txtPrimaryPicker = win.querySelector('#color-text-primary');
+    const txtSecondaryPicker = win.querySelector('#color-text-secondary');
+    const accentPicker = win.querySelector('#color-accent');
+    const borderPicker = win.querySelector('#color-border');
+    const resetMtsBtn = win.querySelector('#reset-mts-colors-btn');
+
+    function updateMtsPickerVisibility() {
+        if (appSettings.theme === 'mts-new') {
+            mtsCustomizers.style.display = 'block';
+        } else {
+            mtsCustomizers.style.display = 'none';
+        }
+    }
+    updateMtsPickerVisibility();
+
+    txtPrimaryPicker.value = appSettings.textPrimary || '#8daef2';
+    txtSecondaryPicker.value = appSettings.textSecondary || '#a0c0ff';
+    accentPicker.value = appSettings.accentPrimary || '#3a7bd5';
+    borderPicker.value = appSettings.borderColor || '#3a7bd5';
+
+    txtPrimaryPicker.addEventListener('input', (e) => {
+        appSettings.textPrimary = e.target.value;
+        applySettings();
+        saveSettings();
+    });
+    txtSecondaryPicker.addEventListener('input', (e) => {
+        appSettings.textSecondary = e.target.value;
+        applySettings();
+        saveSettings();
+    });
+    accentPicker.addEventListener('input', (e) => {
+        appSettings.accentPrimary = e.target.value;
+        applySettings();
+        saveSettings();
+    });
+    borderPicker.addEventListener('input', (e) => {
+        appSettings.borderColor = e.target.value;
+        applySettings();
+        saveSettings();
+    });
+    resetMtsBtn.addEventListener('click', () => {
+        appSettings.textPrimary = '';
+        appSettings.textSecondary = '';
+        appSettings.accentPrimary = '';
+        appSettings.borderColor = '';
+        txtPrimaryPicker.value = '#8daef2';
+        txtSecondaryPicker.value = '#a0c0ff';
+        accentPicker.value = '#3a7bd5';
+        borderPicker.value = '#3a7bd5';
+        applySettings();
+        saveSettings();
+    });
+
+    // Window Background independent of theme
+    const windowBgPicker = win.querySelector('#window-bg-picker');
+    const resetWindowBgBtn = win.querySelector('#reset-window-bg-btn');
+    windowBgPicker.value = appSettings.windowBackground || '#00000e';
+    windowBgPicker.addEventListener('input', (e) => {
+        appSettings.windowBackground = e.target.value;
+        applySettings();
+        saveSettings();
+    });
+    resetWindowBgBtn.addEventListener('click', () => {
+        appSettings.windowBackground = '';
+        windowBgPicker.value = '#00000e';
+        applySettings();
+        saveSettings();
+    });
+
+    // Light Direction independent of theme
+    const lightSelect = win.querySelector('#light-direction-select');
+    lightSelect.value = appSettings.lightDirection || 'top-left';
+    lightSelect.addEventListener('change', (e) => {
+        appSettings.lightDirection = e.target.value;
+        applySettings();
+        saveSettings();
+    });
+
     win.querySelectorAll('.theme-mode-btn').forEach(btn => {
         if(btn.dataset.theme === appSettings.theme) btn.classList.add('active');
         btn.addEventListener('click', () => {
@@ -835,6 +954,7 @@ function openThemeApp() {
             
             win.querySelectorAll('.theme-mode-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
+            updateMtsPickerVisibility();
         });
     });
 
