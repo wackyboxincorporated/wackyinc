@@ -197,12 +197,12 @@ function applySettings() {
                     desktop.style.background = appSettings.wallpaperCustom;
                 }
             } else {
-                desktop.style.background = 'radial-gradient(circle at 10% 90%, #6ec25d 0%, #3a8542 50%, #2e7141 100%)';
+                desktop.style.background = 'radial-gradient(circle at center, #000030 0%, #00000e 100%)';
             }
             break;
         case 'default':
         default:
-            desktop.style.background = 'radial-gradient(circle at 10% 90%, #6ec25d 0%, #3a8542 50%, #2e7141 100%)';
+            desktop.style.background = 'radial-gradient(circle at center, #000030 0%, #00000e 100%)';
             break;
     }
 

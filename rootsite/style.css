@@ -1,22 +1,54 @@
 :root {
-    --theme-bg-primary: #ffffff;
-    --theme-bg-secondary: #f0f0f0;
-    --theme-bg-tertiary: #e0e0e0;
-    --theme-text-primary: #111111;
-    --theme-text-secondary: #333333;
-    --theme-border-color: rgba(0, 0, 0, 0.1);
-    --theme-window-shadow: rgba(0,0,0,0.3);
-    --theme-accent-primary: #0078d4;
+    --theme-bg-primary: #00000e;
+    --theme-bg-secondary: #000000;
+    --theme-bg-tertiary: #000022;
+    --theme-text-primary: #00ff00;
+    --theme-text-secondary: #00ffff;
+    --theme-border-color: #ff0000;
+    --theme-window-shadow: 0 0 15px rgba(255, 0, 0, 0.4);
+    --theme-accent-primary: #ff8800;
     --theme-accent-text: #ffffff;
-    --theme-icon-text-shadow: rgba(0, 0, 0, 0.8);
+    --theme-icon-text-shadow: 0 0 4px #000000;
     
-    --glass-tint: 255, 255, 255;
-    --window-opacity: 0.6; /* NEW: Default opacity variable */
-    --glass-opacity-primary: 0.95;
-    --glass-opacity-secondary: 0.7;
-    --glass-opacity-taskbar: 0.6;
-    --glass-opacity-start: 0.8;
+    --glass-tint: 0, 0, 14;
+    --window-opacity: 1.0;
+    --glass-opacity-primary: 1.0;
+    --glass-opacity-secondary: 1.0;
+    --glass-opacity-taskbar: 1.0;
+    --glass-opacity-start: 1.0;
     --glass-blur: 0px;
+
+    --font-mono: 'Share Tech Mono', 'Courier New', monospace;
+    --font-sans: 'Outfit', sans-serif;
+    
+    --theme-font-body: var(--font-mono);
+    --theme-font-header: var(--font-sans);
+    --theme-border-radius: 0px;
+}
+
+.theme-light {
+    --theme-bg-primary: #00000e;
+    --theme-bg-secondary: #000000;
+    --theme-bg-tertiary: #000022;
+    --theme-text-primary: #00ff00;
+    --theme-text-secondary: #00ffff;
+    --theme-border-color: #ff0000;
+    --theme-window-shadow: 0 0 15px rgba(255, 0, 0, 0.4);
+    --theme-accent-primary: #ff8800;
+    --theme-accent-text: #ffffff;
+    --theme-icon-text-shadow: 0 0 4px #000000;
+    
+    --glass-tint: 0, 0, 14;
+    --window-opacity: 1.0;
+    --glass-opacity-primary: 1.0;
+    --glass-opacity-secondary: 1.0;
+    --glass-opacity-taskbar: 1.0;
+    --glass-opacity-start: 1.0;
+    --glass-blur: 0px;
+    
+    --theme-font-body: var(--font-mono);
+    --theme-font-header: var(--font-sans);
+    --theme-border-radius: 0px;
 }
 
 .theme-dark {
@@ -30,6 +62,9 @@
     --theme-accent-primary: #42a5f5;
     --theme-accent-text: #ffffff;
     --theme-icon-text-shadow: rgba(0, 0, 0, 0.9);
+    --theme-font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Tahoma', sans-serif;
+    --theme-font-header: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Tahoma', sans-serif;
+    --theme-border-radius: 8px;
 }
 
 .theme-retro {
@@ -44,6 +79,9 @@
     --theme-accent-text: #ffffff;
     --theme-icon-text-shadow: none;
     --glass-blur: 0px !important;
+    --theme-font-body: 'Segoe UI', 'Tahoma', sans-serif;
+    --theme-font-header: 'Segoe UI', 'Tahoma', sans-serif;
+    --theme-border-radius: 0px;
 }
 
 .theme-neon {
@@ -57,6 +95,9 @@
     --theme-accent-primary: #ff00ff;
     --theme-accent-text: #000000;
     --theme-icon-text-shadow: 0 0 5px #000000;
+    --theme-font-body: var(--font-mono);
+    --theme-font-header: var(--font-sans);
+    --theme-border-radius: 8px;
 }
 
 .theme-soft {
@@ -70,6 +111,9 @@
     --theme-accent-primary: #ff9999;
     --theme-accent-text: #ffffff;
     --theme-icon-text-shadow: rgba(255, 255, 255, 0.8);
+    --theme-font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Tahoma', sans-serif;
+    --theme-font-header: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Tahoma', sans-serif;
+    --theme-border-radius: 8px;
 }
 
 .theme-wnt {
@@ -84,6 +128,9 @@
     --theme-accent-text: #ffffff;
     --theme-icon-text-shadow: none;
     --glass-blur: 0px !important;
+    --theme-font-body: 'Segoe UI', 'Tahoma', sans-serif;
+    --theme-font-header: 'Segoe UI', 'Tahoma', sans-serif;
+    --theme-border-radius: 0px;
 }
 
 .theme-cameron {
@@ -97,6 +144,9 @@
     --theme-accent-primary: #ffff00;
     --theme-accent-text: #000000;
     --theme-icon-text-shadow: 0 0 4px #000000;
+    --theme-font-body: var(--font-mono);
+    --theme-font-header: var(--font-sans);
+    --theme-border-radius: 8px;
 }
 
 .graphics-glass {
@@ -200,10 +250,10 @@ html, body {
     height: 100dvh;
     width: 100%;
     overflow: hidden;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Tahoma', sans-serif;
+    font-family: var(--theme-font-body);
     -webkit-font-smoothing: antialiased;
     user-select: none;
-    background: #2e7141; 
+    background: var(--theme-bg-primary); 
     position: fixed;
     touch-action: pan-y; 
 }
@@ -336,7 +386,7 @@ html, body {
     display: flex;
     flex-direction: column;
     z-index: 1000;
-    border-radius: 8px;
+    border-radius: var(--theme-border-radius, 8px);
     min-width: 250px;
     min-height: 150px;
     border: 1px solid var(--theme-border-color);
@@ -404,8 +454,8 @@ html, body {
     font-size: 13px; font-weight: bold;
     display: flex; justify-content: space-between; align-items: center;
     user-select: none; 
-    border-top-left-radius: 8px; 
-    border-top-right-radius: 8px;
+    border-top-left-radius: var(--theme-border-radius, 8px); 
+    border-top-right-radius: var(--theme-border-radius, 8px);
     border-bottom: 1px solid var(--theme-border-color);
 }
 
@@ -415,7 +465,7 @@ html, body {
     border-radius: 0;
 }
 
-.window-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 3px; }
+.window-title { font-family: var(--theme-font-header); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 3px; }
 .window-controls { display: flex; }
 
 .window-controls button {
@@ -427,7 +477,7 @@ html, body {
     text-align: center;
     cursor: pointer;
     font-weight: normal;
-    font-family: 'Segoe UI', sans-serif;
+    font-family: var(--theme-font-header);
     font-size: 16px;
     margin-left: 2px;
     border-radius: 4px;
@@ -499,15 +549,16 @@ html, body {
 }
 
 .start-button {
-    background: #479e2c;
-    color: white; font-weight: bold; padding: 2px 12px; border-radius: 4px;
+    background: var(--theme-accent-primary);
+    color: var(--theme-accent-text); font-weight: bold; padding: 2px 12px; border-radius: var(--theme-border-radius, 4px);
     border: none;
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     cursor: pointer; font-size: 14px; font-style: italic;
-    transition: background 0.1s;
+    transition: background 0.1s, filter 0.1s;
+    font-family: var(--theme-font-header);
 }
-.start-button:hover { background: #5ac03a; }
-.start-button:active { background: #3f8a26; }
+.start-button:hover { filter: brightness(1.2); }
+.start-button:active { filter: brightness(0.8); }
 
 .theme-retro .start-button, .theme-wnt .start-button {
     background: #c0c0c0;
@@ -574,7 +625,7 @@ html, body {
     -webkit-backdrop-filter: blur(var(--glass-blur));
     border: 1px solid var(--theme-border-color);
     border-bottom: none;
-    border-top-right-radius: 6px;
+    border-top-right-radius: var(--theme-border-radius, 6px);
     z-index: 8999;
     color: var(--theme-text-primary);
     display: block;
@@ -603,6 +654,7 @@ html, body {
 .taskbar-left #start-menu.open { transform: translateX(0) scale(1); }
 
 #start-menu-content { padding: 5px; }
+#start-menu h4, .menu-section h4 { font-family: var(--theme-font-header); margin: 5px 10px; font-size: 14px; }
 .menu-section { border-top: 1px solid var(--theme-border-color); margin-top: 5px; padding-top: 5px; }
 .menu-item { 
     padding: 5px 10px; cursor: pointer; display: flex; 
@@ -909,6 +961,7 @@ html, body {
     font-size: 18px;
     font-weight: bold;
     border-bottom: 1px solid var(--theme-border-color);
+    font-family: var(--theme-font-header);
 }
 .sidebar-button {
     display: flex;
@@ -988,7 +1041,7 @@ html, body {
     flex-direction: column;
     background: var(--theme-bg-secondary);
     color: var(--theme-text-primary);
-    font-family: 'Segoe UI', 'Tahoma', sans-serif;
+    font-family: var(--theme-font-header);
 }
 #calc-display {
     background: var(--theme-bg-secondary);
@@ -1033,7 +1086,7 @@ html, body {
     height: 100%;
     background: var(--theme-bg-primary);
     color: var(--theme-text-primary);
-    font-family: 'DS-Digital', 'Lucida Console', monospace;
+    font-family: 'DS-Digital', var(--theme-font-body);
     padding: 10px;
     box-sizing: border-box;
     text-align: center;
@@ -1056,7 +1109,7 @@ html, body {
     flex-grow: 1;
     border: none;
     padding: 10px;
-    font-family: 'Lucida Console', monospace;
+    font-family: var(--theme-font-body);
     font-size: 14px;
     resize: none;
     box-sizing: border-box;
@@ -1309,7 +1362,7 @@ html, body {
 #terminal-app {
     background: #1e1e1e;
     color: #00ff00;
-    font-family: 'Lucida Console', monospace;
+    font-family: var(--theme-font-body);
     padding: 10px;
     overflow-y: auto;
     display: flex;
@@ -1333,7 +1386,7 @@ html, body {
     background: transparent;
     border: none;
     color: #00ff00;
-    font-family: 'Lucida Console', monospace;
+    font-family: var(--theme-font-body);
 }
 #terminal-input:focus {
     outline: none;
@@ -1500,7 +1553,7 @@ html, body {
 }
 
 #start-menu {
-    border-radius: 6px;
+    border-radius: var(--theme-border-radius, 6px);
     overflow: hidden;
     box-shadow: 0 10px 40px rgba(0,0,0,0.6);
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -1869,7 +1922,7 @@ html, body {
     border: none;
     background: transparent;
     color: var(--theme-text-primary);
-    font-family: 'Segoe UI', sans-serif;
+    font-family: var(--theme-font-header);
     font-size: 12px;
     outline: none;
     cursor: default;
@@ -1898,7 +1951,7 @@ html, body {
     border: none;
     background: transparent;
     color: var(--theme-text-primary);
-    font-family: 'Segoe UI', sans-serif;
+    font-family: var(--theme-font-header);
     font-size: 12px;
     outline: none;
 }

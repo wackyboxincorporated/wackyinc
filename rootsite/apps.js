@@ -1252,7 +1252,7 @@ function initHdrViewer(containerId, imageUrl) {
 }
 
 async function openTextViewWindow(fileName) { 
-    const content = `<textarea style="width: 100%; height: 100%; box-sizing: border-box; border: none; padding: 5px; font-family: 'Lucida Console', monospace; resize: none; background: var(--theme-bg-primary); color: var(--theme-text-primary);" readonly>Loading content for ${fileName}...</textarea>`; 
+    const content = `<textarea style="width: 100%; height: 100%; box-sizing: border-box; border: none; padding: 5px; font-family: var(--theme-font-body); resize: none; background: var(--theme-bg-primary); color: var(--theme-text-primary);" readonly>Loading content for ${fileName}...</textarea>`; 
     const win = openWindow(`Viewer - ${fileName}`, content); 
     const textarea = win.querySelector('textarea'); 
     const contentArea = win.querySelector('.window-content, .mobile-app-content');
