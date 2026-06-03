@@ -16,7 +16,6 @@
       { "name": "space2", "type": "folder", "url": "https://wackybox.org/space2" },
       { "name": "starfall", "type": "folder", "url": "https://wackybox.org/starfall" },
       { "name": "tabletop", "type": "folder", "url": "https://wackybox.org/tabletop" },
-      { "name": "testgarbage", "type": "folder", "url": "https://wackybox.org/testgarbage" },
       { "name": "w3d", "type": "folder", "url": "https://wackybox.org/w3d" },
       { "name": "TTAB", "type": "folder", "url": "https://www.talktoabutt.site" }
     ]
@@ -38,19 +37,12 @@
       { "name": "computer", "type": "folder", "url": "https://wackybox.org/computer" },
       { "name": "curl", "type": "folder", "url": "https://wackybox.org/curl" },
       { "name": "D", "type": "folder", "url": "https://wackybox.org/D" },
-      { "name": "dictate", "type": "folder", "url": "https://wackybox.org/dictate" },
       { "name": "draw", "type": "folder", "url": "https://wackybox.org/draw" },
       { "name": "E", "type": "folder", "url": "https://wackybox.org/E" },
-      { "name": "EEinfo", "type": "folder", "url": "https://wackybox.org/EEinfo" },
       { "name": "encrumbt", "type": "folder", "url": "https://wackybox.org/encrumbt" },
-      { "name": "gert100", "type": "folder", "url": "https://wackybox.org/gert100" },
-      { "name": "good", "type": "folder", "url": "https://wackybox.org/good" },
       { "name": "HP", "type": "folder", "url": "https://wackybox.org/HP" },
       { "name": "JB", "type": "folder", "url": "https://wackybox.org/JB" },
       { "name": "media", "type": "folder", "url": "https://wackybox.org/media" },
-      { "name": "merlin", "type": "folder", "url": "https://wackybox.org/merlin" },
-      { "name": "mod", "type": "folder", "url": "https://wackybox.org/mod" },
-      { "name": "mod0", "type": "folder", "url": "https://wackybox.org/mod0" },
       { "name": "msst", "type": "folder", "url": "https://wackybox.org/msst" },
       { "name": "old", "type": "folder", "url": "https://wackybox.org/old" },
       { "name": "ourworld/outside", "type": "folder", "url": "https://wackybox.org/ourworld%2Foutside" },
@@ -64,9 +56,7 @@
       { "name": "sacremento", "type": "folder", "url": "https://wackybox.org/sacremento" },
       { "name": "stop-it", "type": "folder", "url": "https://wackybox.org/stop-it" },
       { "name": "tdb", "type": "folder", "url": "https://wackybox.org/tdb" },
-      { "name": "wbs services", "type": "folder", "url": "https://www.wbsservices.work/" },
-      { "name": "xm", "type": "folder", "url": "https://wackybox.org/xm" },
-      { "name": "xm2", "type": "folder", "url": "https://wackybox.org/xm2" }
+      { "name": "wbs services", "type": "folder", "url": "https://www.wbsservices.work/" }
     ]
   },
   {
@@ -75,17 +65,9 @@
     "class": "folder",
     "contents": [
       { "name": "MAIN.pmp", "type": "file", "class": "code" },
-      { "name": "VIET.html", "type": "file", "class": "code", "action": "newTab" },
-      { "name": "WSPAGE-v0.2.html", "type": "file", "class": "code", "action": "newTab" },
-      { "name": "WSPAGE1(3).html", "type": "file", "class": "code", "action": "newTab" },
       { "name": "index.html", "type": "file", "class": "code", "action": "newTab" },
-      { "name": "index2.html", "type": "file", "class": "code", "action": "newTab" },
-      { "name": "p2.html", "type": "file", "class": "code", "action": "newTab" },
-      { "name": "p3.html", "type": "file", "class": "code", "action": "newTab" },
       { "name": "pennies.html", "type": "file", "class": "code", "action": "newTab" },
-      { "name": "restore-point.html", "type": "file", "class": "code", "action": "newTab" },
       { "name": "restore-point.pmp", "type": "file", "class": "code" },
-      { "name": "xamn.html", "type": "file", "class": "code", "action": "newTab" },
       { "name": "CNAME", "type": "file", "class": "document" },
       { "name": "README.md", "type": "file", "class": "document" }
     ]
@@ -97,8 +79,6 @@
     "contents": [
       { "name": "Bliss_(Windows_XP).png", "type": "file", "class": "image" },
       { "name": "sunflowers_puresky_4k.hdr", "type": "file", "class": "image" },
-      { "name": "p2", "type": "file", "class": "unknown" },
-      { "name": "p3", "type": "file", "class": "unknown" },
       { "name": "Caligula.webm", "type": "file", "class": "video" },
       { "name": "craft.mp4", "type": "file", "class": "video" },
       { "name": "Projecdfgvb.zip", "type": "file", "class": "zip" }
