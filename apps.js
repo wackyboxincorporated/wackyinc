@@ -771,14 +771,20 @@ function openThemeApp() {
             </div>
 
             <div class="setting-group">
-                <label>Light direction</label>
-                <small>Simulate light source reflection on the desktop and icons.</small>
-                <select id="light-direction-select" style="margin-top: 5px; width: 100%; box-sizing: border-box;">
-                    <option value="top-left">Top left</option>
-                    <option value="top-right">Top right</option>
-                    <option value="top">Top</option>
-                    <option value="none">None</option>
-                </select>
+                <label>Light angle (direction)</label>
+                <small>Simulate light source angle from 0 to 360 degrees.</small>
+                <div class="setting-group-row" style="margin-top: 5px;">
+                    <input type="range" id="light-angle-slider" min="0" max="360" step="1" style="flex-grow: 1;">
+                    <span id="light-angle-value" style="min-width: 45px; text-align: right;">135°</span>
+                </div>
+            </div>
+            <div class="setting-group">
+                <label>Light intensity</label>
+                <small>Adjust the brightness of reflection overlays.</small>
+                <div class="setting-group-row" style="margin-top: 5px;">
+                    <input type="range" id="light-intensity-slider" min="0" max="1" step="0.05" style="flex-grow: 1;">
+                    <span id="light-intensity-value" style="min-width: 45px; text-align: right;">25%</span>
+                </div>
             </div>
             
             <div class="setting-group">
@@ -882,10 +888,10 @@ function openThemeApp() {
     }
     updateMtsPickerVisibility();
 
-    txtPrimaryPicker.value = appSettings.textPrimary || '#8daef2';
-    txtSecondaryPicker.value = appSettings.textSecondary || '#a0c0ff';
-    accentPicker.value = appSettings.accentPrimary || '#3a7bd5';
-    borderPicker.value = appSettings.borderColor || '#3a7bd5';
+    txtPrimaryPicker.value = appSettings.textPrimary || '#f28d8f';
+    txtSecondaryPicker.value = appSettings.textSecondary || '#ffb3b5';
+    accentPicker.value = appSettings.accentPrimary || '#c62828';
+    borderPicker.value = appSettings.borderColor || '#9e2a2b';
 
     txtPrimaryPicker.addEventListener('input', (e) => {
         appSettings.textPrimary = e.target.value;
@@ -912,10 +918,10 @@ function openThemeApp() {
         appSettings.textSecondary = '';
         appSettings.accentPrimary = '';
         appSettings.borderColor = '';
-        txtPrimaryPicker.value = '#8daef2';
-        txtSecondaryPicker.value = '#a0c0ff';
-        accentPicker.value = '#3a7bd5';
-        borderPicker.value = '#3a7bd5';
+        txtPrimaryPicker.value = '#f28d8f';
+        txtSecondaryPicker.value = '#ffb3b5';
+        accentPicker.value = '#c62828';
+        borderPicker.value = '#9e2a2b';
         applySettings();
         saveSettings();
     });
@@ -936,11 +942,32 @@ function openThemeApp() {
         saveSettings();
     });
 
-    // Light Direction independent of theme
-    const lightSelect = win.querySelector('#light-direction-select');
-    lightSelect.value = appSettings.lightDirection || 'top-left';
-    lightSelect.addEventListener('change', (e) => {
-        appSettings.lightDirection = e.target.value;
+    // Light reflection sliders
+    const lightAngleSlider = win.querySelector('#light-angle-slider');
+    const lightAngleValue = win.querySelector('#light-angle-value');
+    const lightIntensitySlider = win.querySelector('#light-intensity-slider');
+    const lightIntensityValue = win.querySelector('#light-intensity-value');
+    
+    const angle = appSettings.lightAngle !== undefined ? appSettings.lightAngle : 135;
+    const intensity = appSettings.lightIntensity !== undefined ? appSettings.lightIntensity : 0.25;
+    
+    lightAngleSlider.value = angle;
+    lightAngleValue.textContent = `${angle}°`;
+    lightIntensitySlider.value = intensity;
+    lightIntensityValue.textContent = `${Math.round(intensity * 100)}%`;
+    
+    lightAngleSlider.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value);
+        appSettings.lightAngle = val;
+        lightAngleValue.textContent = `${val}°`;
+        applySettings();
+        saveSettings();
+    });
+    
+    lightIntensitySlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        appSettings.lightIntensity = val;
+        lightIntensityValue.textContent = `${Math.round(val * 100)}%`;
         applySettings();
         saveSettings();
     });

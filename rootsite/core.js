@@ -27,7 +27,8 @@ let appSettings = {
     iconSize: 'medium',
     alwaysOpenInWindow: false,
     taskbarAutohide: false, 
-    lightDirection: 'top-left', // Default light direction
+    lightAngle: 135, // Default light angle in degrees
+    lightIntensity: 0.25, // Default light intensity
     windowBackground: '', // Default window background
     textPrimary: '', // Mts new custom colors
     accentPrimary: '',
@@ -165,26 +166,24 @@ function applySettings() {
         document.body.style.removeProperty('--theme-border-color');
     }
 
-    // Light direction configuration
-    body.classList.remove('light-top-left', 'light-top-right', 'light-top', 'light-none');
-    const lightDir = appSettings.lightDirection || 'top-left';
-    body.classList.add(`light-${lightDir}`);
+    // Light direction configuration (degree angle & intensity)
+    const angle = appSettings.lightAngle !== undefined ? appSettings.lightAngle : 135;
+    const intensity = appSettings.lightIntensity !== undefined ? appSettings.lightIntensity : 0.25;
+    
+    // Calculate light X and Y on circular elements
+    const angleRad = (angle * Math.PI) / 180;
+    const lightX = 50 + 50 * Math.cos(angleRad);
+    const lightY = 50 - 50 * Math.sin(angleRad);
+    
+    document.body.style.setProperty('--light-x', `${lightX}%`);
+    document.body.style.setProperty('--light-y', `${lightY}%`);
+    document.body.style.setProperty('--light-angle-deg', `${angle}deg`);
+    document.body.style.setProperty('--light-intensity', intensity);
     
     const overlay = document.getElementById('desktop-reflection-overlay');
     if (overlay) {
-        if (lightDir === 'top-left') {
-            overlay.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 25%, transparent 25.1%, transparent 100%)';
-            overlay.style.opacity = '1';
-        } else if (lightDir === 'top-right') {
-            overlay.style.background = 'linear-gradient(225deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 25%, transparent 25.1%, transparent 100%)';
-            overlay.style.opacity = '1';
-        } else if (lightDir === 'top') {
-            overlay.style.background = 'linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 25%, transparent 25.1%, transparent 100%)';
-            overlay.style.opacity = '1';
-        } else {
-            overlay.style.background = 'none';
-            overlay.style.opacity = '0';
-        }
+        overlay.style.background = `linear-gradient(${angle}deg, rgba(255,255,255,${intensity * 0.48}) 0%, rgba(255,255,255,${intensity * 0.12}) 25%, transparent 25.1%, transparent 100%)`;
+        overlay.style.opacity = '1';
     }
 
     // NEW: Apply Opacity Variable
@@ -456,8 +455,8 @@ async function initializeDesktop() {
     };
 
     const systemApps = [
-        { name: 'Calculator', type: 'system_app', class: 'webapp-computer', action: 'openCalculator' },
-        { name: 'Clock', type: 'system_app', class: 'webapp-globe', action: 'openClock' },
+        { name: 'Calculator', type: 'system_app', class: 'webapp-calculator', action: 'openCalculator' },
+        { name: 'Clock', type: 'system_app', class: 'webapp-clock', action: 'openClock' },
         { name: 'About', type: 'system_app', class: 'webapp-about', action: 'openAbout' },
         { name: 'Notepad', type: 'system_app', class: 'webapp-notepad', action: 'openNotepad' },
         { name: 'Settings', type: 'system_app', class: 'webapp-settings', action: 'openSettings' },
@@ -465,7 +464,7 @@ async function initializeDesktop() {
         { name: 'File Explorer', type: 'system_app', class: 'webapp-explorer', action: 'openExplorer' },
         { name: 'Terminal', type: 'system_app', class: 'webapp-terminal', action: 'openTerminal' },
         { name: 'Theme studio', type: 'system_app', class: 'webapp-themes', action: 'openThemeApp' },
-        { name: 'Video Player', type: 'system_app', class: 'webapp-browser', action: 'openVideoPlayer' }, 
+        { name: 'Video Player', type: 'system_app', class: 'webapp-video', action: 'openVideoPlayer' }, 
     ];
 
     desktopItems = [...filteredDesktopItems, LOCKED_FOLDER, ...systemApps, ...customDesktopItems];
