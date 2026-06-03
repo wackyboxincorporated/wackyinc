@@ -4,9 +4,9 @@
     "type": "folder",
     "class": "folder",
     "contents": [
-      { "name": "Spillunkle", "type": "folder", "url": "https://wackybox.org/Spillunkle" },
       { "name": "bloons", "type": "folder", "url": "https://wackybox.org/bloons" },
       { "name": "ffish", "type": "folder", "url": "https://wackybox.org/ffish" },
+      { "name": "JB", "type": "folder", "url": "https://wackybox.org/JB" },
       { "name": "luigi", "type": "folder", "url": "https://wackybox.org/luigi" },
       { "name": "mario", "type": "folder", "url": "https://wackybox.org/mario" },
       { "name": "minecraft", "type": "folder", "url": "https://wackybox.org/minecraft" },
@@ -16,6 +16,7 @@
       { "name": "space2", "type": "folder", "url": "https://wackybox.org/space2" },
       { "name": "starfall", "type": "folder", "url": "https://wackybox.org/starfall" },
       { "name": "tabletop", "type": "folder", "url": "https://wackybox.org/tabletop" },
+      { "name": "tdb", "type": "folder", "url": "https://wackybox.org/tdb" },
       { "name": "w3d", "type": "folder", "url": "https://wackybox.org/w3d" },
       { "name": "TTAB", "type": "folder", "url": "https://www.talktoabutt.site" }
     ]
@@ -41,7 +42,6 @@
       { "name": "E", "type": "folder", "url": "https://wackybox.org/E" },
       { "name": "encrumbt", "type": "folder", "url": "https://wackybox.org/encrumbt" },
       { "name": "HP", "type": "folder", "url": "https://wackybox.org/HP" },
-      { "name": "JB", "type": "folder", "url": "https://wackybox.org/JB" },
       { "name": "media", "type": "folder", "url": "https://wackybox.org/media" },
       { "name": "msst", "type": "folder", "url": "https://wackybox.org/msst" },
       { "name": "old", "type": "folder", "url": "https://wackybox.org/old" },
@@ -55,7 +55,6 @@
       { "name": "rootsite", "type": "folder", "url": "https://wackybox.org/rootsite" },
       { "name": "sacremento", "type": "folder", "url": "https://wackybox.org/sacremento" },
       { "name": "stop-it", "type": "folder", "url": "https://wackybox.org/stop-it" },
-      { "name": "tdb", "type": "folder", "url": "https://wackybox.org/tdb" },
       { "name": "wbs services", "type": "folder", "url": "https://www.wbsservices.work/" }
     ]
   },
