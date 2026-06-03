@@ -889,6 +889,10 @@ html, body {
     transform: translateX(0);
     z-index: 999; 
 }
+.mobile-app-page.minimized {
+    transform: translateX(100%);
+    z-index: 999;
+}
 .mobile-app-page.closing {
     transform: translateX(100%);
     z-index: 1001; 

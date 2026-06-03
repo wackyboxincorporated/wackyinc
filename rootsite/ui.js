@@ -484,6 +484,11 @@ function closeWindow(windowId, isMobileBack = false) {
 
 function minimizeWindow(windowId) {
     if (isMobile()) {
+        const win = openWindows[windowId];
+        if (win) {
+            win.classList.remove('active', 'inactive-behind');
+            win.classList.add('minimized');
+        }
         showMobileHome(true); 
     } else {
         const win = document.getElementById(windowId);
@@ -524,16 +529,11 @@ function bringWindowToFront(windowId, skipMobileAnimation = false) {
         
         Object.values(openWindows).forEach(appPage => {
             if (appPage.id === windowId) {
-                appPage.classList.remove('inactive-behind');
+                appPage.classList.remove('inactive-behind', 'minimized');
                 appPage.classList.add('active');
             } else {
-                appPage.classList.remove('active');
-                const justBehindId = openMobileAppOrder[openMobileAppOrder.length - 2];
-                if (appPage.id === justBehindId) {
-                    appPage.classList.add('inactive-behind');
-                } else {
-                    appPage.classList.remove('inactive-behind');
-                }
+                appPage.classList.remove('active', 'inactive-behind');
+                appPage.classList.add('minimized');
             }
         });
         
@@ -1050,6 +1050,18 @@ function showMobileHome(isMinimizing) {
     
     if (!isMinimizing) {
         openMobileAppOrder = [];
+        // Destroy all open windows
+        Object.keys(openWindows).forEach(windowId => {
+            const win = openWindows[windowId];
+            if (win) win.remove();
+            delete openWindows[windowId];
+        });
+    } else {
+        // Minimize all open windows
+        Object.values(openWindows).forEach(appPage => {
+            appPage.classList.remove('active', 'inactive-behind');
+            appPage.classList.add('minimized');
+        });
     }
     
     setTimeout(() => {
