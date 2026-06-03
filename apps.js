@@ -764,9 +764,54 @@ function openThemeApp() {
             <div class="setting-group">
                 <label>Window background</label>
                 <small>Override window content backgrounds independent of theme.</small>
-                <div class="setting-group-row" style="gap: 10px; margin-top: 5px;">
-                    <input type="color" id="window-bg-picker" value="#00000e">
-                    <button id="reset-window-bg-btn">Reset</button>
+                <div class="setting-group-row" style="margin-top: 5px; flex-wrap: wrap; gap: 8px;">
+                    <select id="window-bg-type-select" style="padding: 6px; font-size: 13px;">
+                        <option value="default">Theme default</option>
+                        <option value="solid">Solid color</option>
+                        <option value="gradient">Gradient</option>
+                    </select>
+                    <div id="window-bg-solid-ctrl" style="display: none; align-items: center; gap: 5px;">
+                        <input type="color" id="window-bg-picker" value="#00000e">
+                    </div>
+                    <div id="window-bg-gradient-ctrl" style="display: none; align-items: center; gap: 5px;">
+                        <input type="color" id="window-bg-grad1" value="#f3904f">
+                        <input type="color" id="window-bg-grad2" value="#3b4371">
+                        <select id="window-bg-grad-dir" style="padding: 6px; font-size: 13px;">
+                            <option value="to top">To top</option>
+                            <option value="to bottom">To bottom</option>
+                            <option value="to left">To left</option>
+                            <option value="to right">To right</option>
+                            <option value="45deg">Diagonal (45°)</option>
+                            <option value="radial-gradient">Radial</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label>Content sector background</label>
+                <small>Override inner backgrounds (like Settings sectors or Calculator body).</small>
+                <div class="setting-group-row" style="margin-top: 5px; flex-wrap: wrap; gap: 8px;">
+                    <select id="content-bg-type-select" style="padding: 6px; font-size: 13px;">
+                        <option value="default">Theme default</option>
+                        <option value="solid">Solid color</option>
+                        <option value="gradient">Gradient</option>
+                    </select>
+                    <div id="content-bg-solid-ctrl" style="display: none; align-items: center; gap: 5px;">
+                        <input type="color" id="content-bg-picker" value="#000000">
+                    </div>
+                    <div id="content-bg-gradient-ctrl" style="display: none; align-items: center; gap: 5px;">
+                        <input type="color" id="content-bg-grad1" value="#2b4c7e">
+                        <input type="color" id="content-bg-grad2" value="#0a0f1d">
+                        <select id="content-bg-grad-dir" style="padding: 6px; font-size: 13px;">
+                            <option value="to top">To top</option>
+                            <option value="to bottom">To bottom</option>
+                            <option value="to left">To left</option>
+                            <option value="to right">To right</option>
+                            <option value="45deg">Diagonal (45°)</option>
+                            <option value="radial-gradient">Radial</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -926,21 +971,112 @@ function openThemeApp() {
         saveSettings();
     });
 
-    // Window Background independent of theme
+    // Window background controls
+    const windowBgTypeSelect = win.querySelector('#window-bg-type-select');
+    const windowBgSolidCtrl = win.querySelector('#window-bg-solid-ctrl');
     const windowBgPicker = win.querySelector('#window-bg-picker');
-    const resetWindowBgBtn = win.querySelector('#reset-window-bg-btn');
-    windowBgPicker.value = appSettings.windowBackground || '#00000e';
+    const windowBgGradientCtrl = win.querySelector('#window-bg-gradient-ctrl');
+    const windowBgGrad1 = win.querySelector('#window-bg-grad1');
+    const windowBgGrad2 = win.querySelector('#window-bg-grad2');
+    const windowBgGradDir = win.querySelector('#window-bg-grad-dir');
+
+    // Content background controls
+    const contentBgTypeSelect = win.querySelector('#content-bg-type-select');
+    const contentBgSolidCtrl = win.querySelector('#content-bg-solid-ctrl');
+    const contentBgPicker = win.querySelector('#content-bg-picker');
+    const contentBgGradientCtrl = win.querySelector('#content-bg-gradient-ctrl');
+    const contentBgGrad1 = win.querySelector('#content-bg-grad1');
+    const contentBgGrad2 = win.querySelector('#content-bg-grad2');
+    const contentBgGradDir = win.querySelector('#content-bg-grad-dir');
+
+    // Set initial values
+    windowBgTypeSelect.value = appSettings.windowBgType || 'default';
+    windowBgPicker.value = appSettings.windowBgSolid || '#00000e';
+    windowBgGrad1.value = appSettings.windowBgGrad1 || '#f3904f';
+    windowBgGrad2.value = appSettings.windowBgGrad2 || '#3b4371';
+    windowBgGradDir.value = appSettings.windowBgGradDir || 'to top';
+
+    contentBgTypeSelect.value = appSettings.contentBgType || 'default';
+    contentBgPicker.value = appSettings.contentBgSolid || '#000000';
+    contentBgGrad1.value = appSettings.contentBgGrad1 || '#2b4c7e';
+    contentBgGrad2.value = appSettings.contentBgGrad2 || '#0a0f1d';
+    contentBgGradDir.value = appSettings.contentBgGradDir || 'to top';
+
+    function updateWindowBgCtrlVisibility() {
+        const type = windowBgTypeSelect.value;
+        if (type === 'solid') {
+            windowBgSolidCtrl.style.display = 'flex';
+            windowBgGradientCtrl.style.display = 'none';
+        } else if (type === 'gradient') {
+            windowBgSolidCtrl.style.display = 'none';
+            windowBgGradientCtrl.style.display = 'flex';
+        } else {
+            windowBgSolidCtrl.style.display = 'none';
+            windowBgGradientCtrl.style.display = 'none';
+        }
+    }
+
+    function updateContentBgCtrlVisibility() {
+        const type = contentBgTypeSelect.value;
+        if (type === 'solid') {
+            contentBgSolidCtrl.style.display = 'flex';
+            contentBgGradientCtrl.style.display = 'none';
+        } else if (type === 'gradient') {
+            contentBgSolidCtrl.style.display = 'none';
+            contentBgGradientCtrl.style.display = 'flex';
+        } else {
+            contentBgSolidCtrl.style.display = 'none';
+            contentBgGradientCtrl.style.display = 'none';
+        }
+    }
+
+    updateWindowBgCtrlVisibility();
+    updateContentBgCtrlVisibility();
+
+    // Event listeners
+    windowBgTypeSelect.addEventListener('change', () => {
+        appSettings.windowBgType = windowBgTypeSelect.value;
+        updateWindowBgCtrlVisibility();
+        applySettings();
+        saveSettings();
+    });
     windowBgPicker.addEventListener('input', (e) => {
-        appSettings.windowBackground = e.target.value;
+        appSettings.windowBgSolid = e.target.value;
         applySettings();
         saveSettings();
     });
-    resetWindowBgBtn.addEventListener('click', () => {
-        appSettings.windowBackground = '';
-        windowBgPicker.value = '#00000e';
+    const onWindowBgGradChange = () => {
+        appSettings.windowBgGrad1 = windowBgGrad1.value;
+        appSettings.windowBgGrad2 = windowBgGrad2.value;
+        appSettings.windowBgGradDir = windowBgGradDir.value;
+        applySettings();
+        saveSettings();
+    };
+    windowBgGrad1.addEventListener('input', onWindowBgGradChange);
+    windowBgGrad2.addEventListener('input', onWindowBgGradChange);
+    windowBgGradDir.addEventListener('change', onWindowBgGradChange);
+
+    contentBgTypeSelect.addEventListener('change', () => {
+        appSettings.contentBgType = contentBgTypeSelect.value;
+        updateContentBgCtrlVisibility();
         applySettings();
         saveSettings();
     });
+    contentBgPicker.addEventListener('input', (e) => {
+        appSettings.contentBgSolid = e.target.value;
+        applySettings();
+        saveSettings();
+    });
+    const onContentBgGradChange = () => {
+        appSettings.contentBgGrad1 = contentBgGrad1.value;
+        appSettings.contentBgGrad2 = contentBgGrad2.value;
+        appSettings.contentBgGradDir = contentBgGradDir.value;
+        applySettings();
+        saveSettings();
+    };
+    contentBgGrad1.addEventListener('input', onContentBgGradChange);
+    contentBgGrad2.addEventListener('input', onContentBgGradChange);
+    contentBgGradDir.addEventListener('change', onContentBgGradChange);
 
     // Light reflection sliders
     const lightAngleSlider = win.querySelector('#light-angle-slider');

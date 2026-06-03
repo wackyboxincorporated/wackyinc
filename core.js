@@ -30,6 +30,17 @@ let appSettings = {
     lightAngle: 135, // Default light angle in degrees
     lightIntensity: 0.25, // Default light intensity
     windowBackground: '', // Default window background
+    windowBgType: 'default', // 'default', 'solid', 'gradient'
+    windowBgSolid: '#00000e',
+    windowBgGrad1: '#f3904f',
+    windowBgGrad2: '#3b4371',
+    windowBgGradDir: 'to top',
+    contentBackground: '', // Default content/sector background
+    contentBgType: 'default', // 'default', 'solid', 'gradient'
+    contentBgSolid: '#000000',
+    contentBgGrad1: '#2b4c7e',
+    contentBgGrad2: '#0a0f1d',
+    contentBgGradDir: 'to top',
     textPrimary: '', // Mts new custom colors
     accentPrimary: '',
     textSecondary: '',
@@ -139,11 +150,50 @@ function applySettings() {
         destroyFancyWallpaper();
     }
 
-    // Window background override (independent of theme)
-    if (appSettings.windowBackground) {
-        document.body.style.setProperty('--window-bg-override', appSettings.windowBackground);
+    // Construct Window background override (independent of theme)
+    let winBg = '';
+    if (appSettings.windowBgType === 'solid') {
+        winBg = appSettings.windowBgSolid || '#00000e';
+    } else if (appSettings.windowBgType === 'gradient') {
+        const dir = appSettings.windowBgGradDir || 'to top';
+        const c1 = appSettings.windowBgGrad1 || '#f3904f';
+        const c2 = appSettings.windowBgGrad2 || '#3b4371';
+        if (dir === 'radial-gradient') {
+            winBg = `radial-gradient(circle, ${c1} 0%, ${c2} 100%)`;
+        } else {
+            winBg = `linear-gradient(${dir}, ${c1}, ${c2})`;
+        }
+    } else {
+        winBg = appSettings.windowBackground || ''; // fallback to legacy if set
+    }
+    
+    if (winBg) {
+        document.body.style.setProperty('--window-bg-override', winBg);
     } else {
         document.body.style.removeProperty('--window-bg-override');
+    }
+
+    // Construct Content background override
+    let contentBg = '';
+    if (appSettings.contentBgType === 'solid') {
+        contentBg = appSettings.contentBgSolid || '#000000';
+    } else if (appSettings.contentBgType === 'gradient') {
+        const dir = appSettings.contentBgGradDir || 'to top';
+        const c1 = appSettings.contentBgGrad1 || '#2b4c7e';
+        const c2 = appSettings.contentBgGrad2 || '#0a0f1d';
+        if (dir === 'radial-gradient') {
+            contentBg = `radial-gradient(circle, ${c1} 0%, ${c2} 100%)`;
+        } else {
+            contentBg = `linear-gradient(${dir}, ${c1}, ${c2})`;
+        }
+    } else {
+        contentBg = appSettings.contentBackground || '';
+    }
+    
+    if (contentBg) {
+        document.body.style.setProperty('--content-bg-override', contentBg);
+    } else {
+        document.body.style.removeProperty('--content-bg-override');
     }
 
     // Mts new custom theme colors overrides
