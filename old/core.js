@@ -19,7 +19,7 @@ let appSettings = {
     graphics3d: false, 
     graphicsGlass: true, 
     glassTint: '#ffffff', // Store as HEX now for stability
-    windowOpacity: 0.6, // NEW: Default opacity
+    windowOpacity: 0.1, // NEW: Default opacity
     titleColor: 'auto', // 'auto' or hex
     autoContrastTitle: true,
     taskbarPosition: 'bottom',
@@ -134,7 +134,7 @@ function applySettings() {
 
     // NEW: Apply Opacity Variable
     // Ensure there is a fallback if setting is missing
-    const opacity = appSettings.windowOpacity !== undefined ? appSettings.windowOpacity : 0.6;
+    const opacity = appSettings.windowOpacity !== undefined ? appSettings.windowOpacity : 0.1;
     document.body.style.setProperty('--window-opacity', opacity);
     document.documentElement.style.setProperty('--window-opacity', opacity);
 

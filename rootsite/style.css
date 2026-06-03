@@ -15,7 +15,7 @@
     --theme-icon-text-shadow: 0 0 4px #000000;
     
     --glass-tint: 0, 0, 14;
-    --window-opacity: 0.6;
+    --window-opacity: 0.1;
     --glass-blur: 20px;
     
     --theme-font-body: var(--font-mono);
@@ -1587,6 +1587,8 @@ html, body {
     background: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0px, rgba(255, 255, 255, 0.02) 1px, transparent 1px, transparent 4px),
                 rgba(var(--glass-tint), var(--window-opacity)) !important;
     border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    backdrop-filter: blur(var(--glass-blur, 20px));
+    -webkit-backdrop-filter: blur(var(--glass-blur, 20px));
 }
 
 #start-menu-layout {
@@ -1605,7 +1607,7 @@ html, body {
 }
 
 .graphics-glass #start-menu-left {
-    background: rgba(255, 255, 255, 0.88);
+    background: rgba(255, 255, 255, 0.1) !important;
 }
 
 #start-left-content {
@@ -2089,25 +2091,7 @@ html, body {
     }
 }
 
-/* Start Menu Left Pane text contrast overrides - only apply black text in dark, neon, Cameron, and MTS New themes when glass is enabled */
-.theme-dark.graphics-glass #start-menu-left,
-.theme-dark.graphics-glass #start-menu-left *,
-.theme-neon.graphics-glass #start-menu-left,
-.theme-neon.graphics-glass #start-menu-left *,
-.theme-cameron.graphics-glass #start-menu-left,
-.theme-cameron.graphics-glass #start-menu-left *,
-.theme-mts-new.graphics-glass #start-menu-left,
-.theme-mts-new.graphics-glass #start-menu-left * {
-    color: #000000 !important;
-}
 
-/* Search input placeholder contrast overrides for dark glass modes */
-.theme-dark.graphics-glass #start-search-input::placeholder,
-.theme-neon.graphics-glass #start-search-input::placeholder,
-.theme-cameron.graphics-glass #start-search-input::placeholder,
-.theme-mts-new.graphics-glass #start-search-input::placeholder {
-    color: rgba(0, 0, 0, 0.6) !important;
-}
 
 /* Mobile Aero Glass Styles */
 .graphics-glass #mobile-top-bar {

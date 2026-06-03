@@ -15,7 +15,7 @@
     --theme-icon-text-shadow: 0 0 4px #000000;
     
     --glass-tint: 0, 0, 14;
-    --window-opacity: 0.6;
+    --window-opacity: 0.1;
     --glass-blur: 20px;
     
     --theme-font-body: var(--font-mono);
@@ -143,6 +143,8 @@
 }
 .graphics-glass #start-menu {
     background: rgba(var(--glass-tint), var(--window-opacity)) !important;
+    backdrop-filter: blur(var(--glass-blur, 20px));
+    -webkit-backdrop-filter: blur(var(--glass-blur, 20px));
 }
 
 html, body {

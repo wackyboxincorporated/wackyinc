@@ -568,7 +568,7 @@ function openThemeApp() {
                 <small>Adjust how transparent the background and title bars are.</small>
                 <div class="setting-group-row" style="margin-top: 5px;">
                     <input type="range" id="window-opacity-slider" min="0.1" max="1.0" step="0.05" style="flex-grow: 1;">
-                    <span id="window-opacity-value" style="min-width: 40px; text-align: right;">60%</span>
+                    <span id="window-opacity-value" style="min-width: 40px; text-align: right;">10%</span>
                 </div>
             </div>
 
@@ -684,7 +684,7 @@ function openThemeApp() {
     const opacityDisplay = win.querySelector('#window-opacity-value');
     
     // Set initial value (default to 0.6 if undefined)
-    const currentOpacity = appSettings.windowOpacity !== undefined ? appSettings.windowOpacity : 0.6;
+    const currentOpacity = appSettings.windowOpacity !== undefined ? appSettings.windowOpacity : 0.1;
     opacitySlider.value = currentOpacity;
     opacityDisplay.textContent = Math.round(currentOpacity * 100) + '%';
     
