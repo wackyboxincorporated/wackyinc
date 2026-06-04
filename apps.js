@@ -1175,6 +1175,18 @@ function openThemeApp() {
                     <button id="wallpaper-upload-btn">&#10514; Upload</button>
                 </div>
             </div>
+
+            <div class="setting-group" id="wallpaper-style-group">
+                <label>Wallpaper style</label>
+                <small>Select how the background image is scaled and positioned.</small>
+                <select id="wallpaper-style-select" style="width: 100%; margin-top: 5px; background: rgba(0,0,0,0.2); color: var(--theme-text-primary); border: 1px solid var(--theme-border-color); padding: 5px; border-radius: 4px; outline: none; font-family: var(--theme-font-body);">
+                    <option value="cover" ${appSettings.wallpaperStyle === 'cover' ? 'selected' : ''}>Fill (Cover)</option>
+                    <option value="contain" ${appSettings.wallpaperStyle === 'contain' ? 'selected' : ''}>Fit (Contain)</option>
+                    <option value="stretch" ${appSettings.wallpaperStyle === 'stretch' ? 'selected' : ''}>Stretch</option>
+                    <option value="tile" ${appSettings.wallpaperStyle === 'tile' ? 'selected' : ''}>Tile</option>
+                    <option value="center" ${appSettings.wallpaperStyle === 'center' ? 'selected' : ''}>Center</option>
+                </select>
+            </div>
             
             <div class="setting-group">
                 <div id="custom-gradient-creator">
@@ -1475,6 +1487,21 @@ function openThemeApp() {
     });
 
 
+    const styleGroup = win.querySelector('#wallpaper-style-group');
+    const styleSelect = win.querySelector('#wallpaper-style-select');
+    function updateStyleGroupVisibility() {
+        const isImg = appSettings.wallpaper === 'default' || 
+                      (appSettings.wallpaper === 'custom' && appSettings.wallpaperCustom && appSettings.wallpaperCustom.startsWith('data:image'));
+        styleGroup.style.display = isImg ? 'block' : 'none';
+    }
+    updateStyleGroupVisibility();
+
+    styleSelect.addEventListener('change', (e) => {
+        appSettings.wallpaperStyle = e.target.value;
+        applySettings();
+        saveSettings();
+    });
+
     win.querySelectorAll('.wallpaper-preview').forEach(div => {
         div.addEventListener('click', () => {
             appSettings.wallpaper = div.dataset.wallpaperId;
@@ -1484,6 +1511,7 @@ function openThemeApp() {
 
             win.querySelectorAll('.wallpaper-preview').forEach(d => d.classList.remove('active'));
             div.classList.add('active');
+            updateStyleGroupVisibility();
         });
     });
 
@@ -1506,6 +1534,7 @@ function openThemeApp() {
             applySettings();
             saveSettings();
             win.querySelectorAll('.wallpaper-preview.active').forEach(d => d.classList.remove('active'));
+            updateStyleGroupVisibility();
         };
         reader.readAsDataURL(file);
     });
@@ -1527,6 +1556,7 @@ function openThemeApp() {
         applySettings();
         saveSettings();
         win.querySelectorAll('.wallpaper-preview.active').forEach(d => d.classList.remove('active'));
+        updateStyleGroupVisibility();
     });
 }
 

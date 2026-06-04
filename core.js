@@ -15,6 +15,7 @@ const isMobile = () => window.matchMedia("(max-width: 768px), (max-height: 500px
 let appSettings = {
     wallpaper: 'default',
     wallpaperCustom: null, 
+    wallpaperStyle: 'cover',
     theme: 'mts-new',
     graphics3d: false, 
     graphicsGlass: true, 
@@ -324,7 +325,31 @@ function applySettings() {
         }
     }
     
+    function applyWallpaperStyle(element, style) {
+        const s = style || 'cover';
+        element.style.backgroundRepeat = s === 'tile' ? 'repeat' : 'no-repeat';
+        if (s === 'cover') {
+            element.style.backgroundSize = 'cover';
+            element.style.backgroundPosition = 'center';
+        } else if (s === 'contain') {
+            element.style.backgroundSize = 'contain';
+            element.style.backgroundPosition = 'center';
+        } else if (s === 'stretch') {
+            element.style.backgroundSize = '100% 100%';
+            element.style.backgroundPosition = 'center';
+        } else if (s === 'tile') {
+            element.style.backgroundSize = 'auto';
+            element.style.backgroundPosition = 'top left';
+        } else if (s === 'center') {
+            element.style.backgroundSize = 'auto';
+            element.style.backgroundPosition = 'center';
+        }
+    }
+
     const wallpaperCanvas = document.getElementById('fancy-wallpaper-canvas');
+    desktop.style.backgroundSize = '';
+    desktop.style.backgroundPosition = '';
+    desktop.style.backgroundRepeat = '';
     switch(appSettings.wallpaper) {
         case 'glassy-gradient':
             desktop.style.background = 'radial-gradient(ellipse at top left, #2b4c7e 0%, #152238 60%, #0a0f1d 100%)';
@@ -347,9 +372,8 @@ function applySettings() {
         case 'custom':
             if (appSettings.wallpaperCustom) {
                 if (appSettings.wallpaperCustom.startsWith('data:image')) {
-                    desktop.style.background = `url(${appSettings.wallpaperCustom})`;
-                    desktop.style.backgroundSize = 'cover';
-                    desktop.style.backgroundPosition = 'center';
+                    desktop.style.backgroundImage = `url(${appSettings.wallpaperCustom})`;
+                    applyWallpaperStyle(desktop, appSettings.wallpaperStyle);
                 } else {
                     desktop.style.background = appSettings.wallpaperCustom;
                 }
@@ -359,7 +383,8 @@ function applySettings() {
             break;
         case 'default':
         default:
-            desktop.style.background = 'url("windows_vista_49.jpg") center/cover no-repeat';
+            desktop.style.backgroundImage = 'url("windows_vista_49.jpg")';
+            applyWallpaperStyle(desktop, appSettings.wallpaperStyle);
             break;
     }
 
@@ -441,7 +466,7 @@ function applySettings() {
 }
 
 let fancyWallpaper = {
-    scene: null, camera: null, renderer: null, cube: null,
+    scene: null, camera: null, renderer: null, cube: null, reflectedCube: null, noiseTexture: null,
     animationFrameId: null, container: null, onMouseMove: null, onWindowResize: null
 };
 
@@ -459,8 +484,31 @@ function initFancyWallpaper() {
     fancyWallpaper.renderer.setSize(window.innerWidth, window.innerHeight);
     fancyWallpaper.renderer.setPixelRatio(window.devicePixelRatio);
     fancyWallpaper.renderer.setClearColor(0x000000, 0); 
+    fancyWallpaper.renderer.localClippingEnabled = true;
 
-    
+    function createNoiseTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 128;
+        canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        const imgData = ctx.createImageData(128, 128);
+        const data = imgData.data;
+        for (let i = 0; i < data.length; i += 4) {
+            const val = Math.floor(Math.random() * 80) + 175;
+            data[i] = val;
+            data[i+1] = val;
+            data[i+2] = val;
+            data[i+3] = 255;
+        }
+        ctx.putImageData(imgData, 0, 0);
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(2, 2);
+        return texture;
+    }
+    fancyWallpaper.noiseTexture = createNoiseTexture();
+
     const materials = [
         new THREE.MeshBasicMaterial({ color: 0xff4757 }), 
         new THREE.MeshBasicMaterial({ color: 0x2ed573 }), 
@@ -476,6 +524,22 @@ function initFancyWallpaper() {
 
     fancyWallpaper.camera.position.z = 5;
 
+    const halfHeight = fancyWallpaper.camera.position.z * Math.tan((fancyWallpaper.camera.fov * Math.PI) / 360);
+    const Y_waterline = -halfHeight + 0.107 * (2 * halfHeight);
+    const localPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), Y_waterline);
+
+    const reflectedMaterials = materials.map(mat => {
+        const clone = mat.clone();
+        clone.transparent = true;
+        clone.opacity = 0.45;
+        clone.clippingPlanes = [localPlane];
+        clone.map = fancyWallpaper.noiseTexture;
+        return clone;
+    });
+
+    fancyWallpaper.reflectedCube = new THREE.Mesh(geometry, reflectedMaterials);
+    fancyWallpaper.scene.add(fancyWallpaper.reflectedCube);
+
     let mouse = { x: 0, y: 0 };
     fancyWallpaper.onMouseMove = (event) => {
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -488,6 +552,9 @@ function initFancyWallpaper() {
         fancyWallpaper.camera.aspect = window.innerWidth / window.innerHeight;
         fancyWallpaper.camera.updateProjectionMatrix();
         fancyWallpaper.renderer.setSize(window.innerWidth, window.innerHeight);
+
+        const newHalfHeight = fancyWallpaper.camera.position.z * Math.tan((fancyWallpaper.camera.fov * Math.PI) / 360);
+        localPlane.constant = -newHalfHeight + 0.107 * (2 * newHalfHeight);
     };
     window.addEventListener('resize', fancyWallpaper.onWindowResize, false);
 
@@ -503,6 +570,35 @@ function initFancyWallpaper() {
             
             fancyWallpaper.cube.position.x += (targetX - fancyWallpaper.cube.position.x) * 0.08;
             fancyWallpaper.cube.position.y += (targetY - fancyWallpaper.cube.position.y) * 0.08;
+
+            if (appSettings.wallpaper === 'default' && fancyWallpaper.reflectedCube) {
+                fancyWallpaper.reflectedCube.visible = true;
+                
+                const time = Date.now() * 0.0035;
+                const waveX = Math.sin(time + fancyWallpaper.cube.position.y * 3.5) * 0.06;
+                const waveY = Math.cos(time + fancyWallpaper.cube.position.x * 3.5) * 0.03;
+                
+                fancyWallpaper.reflectedCube.position.x = fancyWallpaper.cube.position.x + waveX;
+                fancyWallpaper.reflectedCube.position.y = 2 * localPlane.constant - fancyWallpaper.cube.position.y + waveY;
+                fancyWallpaper.reflectedCube.position.z = fancyWallpaper.cube.position.z;
+                
+                fancyWallpaper.reflectedCube.scale.set(
+                    1.0 + Math.sin(time * 1.5) * 0.04, 
+                    -1.0, 
+                    1.0 + Math.cos(time * 1.5) * 0.04
+                );
+                
+                fancyWallpaper.reflectedCube.rotation.x = fancyWallpaper.cube.rotation.x + Math.sin(time) * 0.04;
+                fancyWallpaper.reflectedCube.rotation.y = fancyWallpaper.cube.rotation.y + Math.cos(time) * 0.04;
+                fancyWallpaper.reflectedCube.rotation.z = fancyWallpaper.cube.rotation.z;
+
+                if (fancyWallpaper.noiseTexture) {
+                    fancyWallpaper.noiseTexture.offset.x += 0.015;
+                    fancyWallpaper.noiseTexture.offset.y += 0.02;
+                }
+            } else if (fancyWallpaper.reflectedCube) {
+                fancyWallpaper.reflectedCube.visible = false;
+            }
         }
         
         fancyWallpaper.renderer.render(fancyWallpaper.scene, fancyWallpaper.camera);
@@ -520,6 +616,9 @@ function destroyFancyWallpaper() {
     if (fancyWallpaper.onWindowResize) {
         window.removeEventListener('resize', fancyWallpaper.onWindowResize);
     }
+    if (fancyWallpaper.noiseTexture) {
+        fancyWallpaper.noiseTexture.dispose();
+    }
     if (fancyWallpaper.renderer) {
         fancyWallpaper.renderer.dispose();
         fancyWallpaper.renderer = null;
@@ -528,7 +627,7 @@ function destroyFancyWallpaper() {
         fancyWallpaper.container.classList.remove('visible');
     }
     fancyWallpaper = { 
-        scene: null, camera: null, renderer: null, cube: null, 
+        scene: null, camera: null, renderer: null, cube: null, reflectedCube: null, noiseTexture: null,
         animationFrameId: null, container: fancyWallpaper.container,
         onMouseMove: null, onWindowResize: null
     };
