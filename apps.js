@@ -722,10 +722,10 @@ function openAboutApp() {
     const aboutHTML = `
         <div id="about-app">
             <div class="icon-img webapp-space" style="filter: hue-rotate(180deg);"></div>
-            <h2>wbOS! v5.1</h2>
+            <h2>wbOS! v5.2</h2>
             <p>welcome to this particular nonsense!</p>
             <p>wackybox incorporated. technology of tomorrow, on the technology of today <3</p>
-            <p>Version 5.1 - Would you look at that? More... more UI changes. Of course</p>
+            <p>Version 5.2 - Would you look at that? More... more UI changes. Of course</p>
         </div>
     `;
     openWindow('About wbOS', aboutHTML, { width: '400px', height: '450px', hideMaximize: true, hideMinimize: true });
@@ -743,7 +743,7 @@ function openTerminalApp() {
 
     const terminalHTML = `
         <div id="terminal-app">
-            <div id="terminal-output">Welcome to wbOS Terminal v5.1. Type 'help' for commands.</div>
+            <div id="terminal-output">Welcome to wbOS Terminal v5.2. Type 'help' for commands.</div>
             <div id="terminal-input-line">
                 <span id="terminal-prompt">user@wackybox:~/Desktop$ </span>
                 <input type="text" id="terminal-input" autofocus autocomplete="off" spellcheck="false">
@@ -972,7 +972,7 @@ function openTerminalApp() {
             case 'sysinfo':
                 output.textContent += "System Information:\n" +
                     `  OS Name       - wbOS\n` +
-                    `  Version       - v5.1\n` +
+                    `  Version       - v5.2\n` +
                     `  Resolution    - ${window.innerWidth}x${window.innerHeight}\n` +
                     `  Language      - ${navigator.language}\n` +
                     `  Theme         - ${appSettings.theme}\n` +

@@ -467,7 +467,7 @@ function applySettings() {
 
 let fancyWallpaper = {
     scene: null, camera: null, renderer: null, cube: null, reflectedCube: null, noiseTexture: null,
-    animationFrameId: null, container: null, onMouseMove: null, onWindowResize: null
+    waterPlane: null, animationFrameId: null, container: null, onMouseMove: null, onWindowResize: null
 };
 
 function initFancyWallpaper() {
@@ -528,17 +528,136 @@ function initFancyWallpaper() {
     const Y_waterline = -halfHeight + 0.107 * (2 * halfHeight);
     const localPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), Y_waterline);
 
-    const reflectedMaterials = materials.map(mat => {
-        const clone = mat.clone();
-        clone.transparent = true;
-        clone.opacity = 0.45;
-        clone.clippingPlanes = [localPlane];
-        clone.map = fancyWallpaper.noiseTexture;
-        return clone;
+    const colors = [
+        new THREE.Color(0xff4757), 
+        new THREE.Color(0x2ed573), 
+        new THREE.Color(0x1e90ff), 
+        new THREE.Color(0xffa502), 
+        new THREE.Color(0xff00ff), 
+        new THREE.Color(0x00ffff)  
+    ];
+
+    const vertexShader = `
+        #include <clipping_planes_pars_vertex>
+        varying vec2 vUv;
+        void main() {
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            #include <clipping_planes_vertex>
+            vUv = uv;
+            gl_Position = projectionMatrix * mvPosition;
+        }
+    `;
+
+    const fragmentShader = `
+        #include <clipping_planes_pars_fragment>
+        uniform sampler2D map;
+        uniform float time;
+        uniform vec3 uniformColor;
+        varying vec2 vUv;
+        void main() {
+            #include <clipping_planes_fragment>
+            vec2 uv = vUv;
+            vec2 center = vec2(0.5, 0.5);
+            vec2 toCenter = uv - center;
+            float dist = length(toCenter);
+            float wave1 = sin(dist * 35.0 - time * 8.0) * 0.03 * exp(-dist * 1.5);
+            float wave2 = sin(uv.x * 25.0 + uv.y * 15.0 - time * 5.0) * 0.02;
+            uv += (dist > 0.0 ? (toCenter / dist) : vec2(0.0)) * wave1;
+            uv.x += wave2;
+            uv.y += wave2 * 0.5;
+            vec4 texColor = texture2D(map, uv);
+            gl_FragColor = vec4(uniformColor * texColor.rgb, 0.45);
+        }
+    `;
+
+    const reflectedMaterials = colors.map(col => {
+        return new THREE.ShaderMaterial({
+            uniforms: {
+                map: { value: fancyWallpaper.noiseTexture },
+                time: { value: 0 },
+                uniformColor: { value: col }
+            },
+            vertexShader: vertexShader,
+            fragmentShader: fragmentShader,
+            transparent: true,
+            clipping: true,
+            clippingPlanes: [localPlane]
+        });
     });
 
     fancyWallpaper.reflectedCube = new THREE.Mesh(geometry, reflectedMaterials);
     fancyWallpaper.scene.add(fancyWallpaper.reflectedCube);
+
+    // Create horizontal plane at Y_waterline for visible ripples
+    const waterPlaneGeo = new THREE.PlaneGeometry(100, 100);
+    waterPlaneGeo.rotateX(-Math.PI / 2);
+    
+    const waterPlaneMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+            time: { value: 0 },
+            disturberPos: { value: new THREE.Vector2(0, 0) },
+            disturbance: { value: 0.0 },
+            map: { value: fancyWallpaper.noiseTexture }
+        },
+        vertexShader: `
+            varying vec3 vWorldPos;
+            void main() {
+                vec4 worldPos = modelMatrix * vec4(position, 1.0);
+                vWorldPos = worldPos.xyz;
+                gl_Position = projectionMatrix * viewMatrix * worldPos;
+            }
+        `,
+        fragmentShader: `
+            uniform float time;
+            uniform vec2 disturberPos;
+            uniform float disturbance;
+            uniform sampler2D map;
+            varying vec3 vWorldPos;
+            void main() {
+                float dist = length(vWorldPos.xz - disturberPos);
+                
+                // Gentle backdrop current/waves
+                float baseRipple = sin(dist * 6.0 - time * 2.0) * 0.02;
+                
+                // Expanding rings when cube disturbs the waterline
+                float distRipple = 0.0;
+                if (disturbance > 0.0) {
+                    float wave = sin(dist * 12.0 - time * 8.0);
+                    float atten = exp(-dist * 0.3) / (dist + 0.15);
+                    distRipple = wave * atten * disturbance * 0.35;
+                }
+                
+                float total = baseRipple + distRipple;
+                
+                // Sample grain texture with ripple distortion
+                vec2 texUv = vWorldPos.xz * 0.25 + total * 0.05;
+                vec4 noise = texture2D(map, texUv);
+                
+                // Glassy teal/blue water color
+                vec3 baseWaterColor = vec3(0.02, 0.15, 0.22);
+                // Mix in the grain noise
+                baseWaterColor += (noise.rgb - 0.5) * 0.08;
+                
+                // Ripple highlights and shadows
+                float highlight = smoothstep(0.005, 0.04, total) * 0.22;
+                float shadow = smoothstep(-0.04, -0.005, total) * 0.12;
+                
+                vec3 finalColor = baseWaterColor + vec3(0.6, 0.9, 1.0) * highlight - vec3(0.0, 0.05, 0.1) * shadow;
+                
+                // Base opacity of the water plane, faded in distance
+                float distFade = clamp(1.0 - dist * 0.06, 0.0, 1.0);
+                float alpha = (0.55 + highlight * 0.45) * distFade;
+                
+                gl_FragColor = vec4(finalColor, alpha);
+            }
+        `,
+        transparent: true,
+        depthWrite: false
+    });
+    
+    fancyWallpaper.waterPlane = new THREE.Mesh(waterPlaneGeo, waterPlaneMaterial);
+    fancyWallpaper.waterPlane.position.y = Y_waterline;
+    fancyWallpaper.scene.add(fancyWallpaper.waterPlane);
 
     let mouse = { x: 0, y: 0 };
     fancyWallpaper.onMouseMove = (event) => {
@@ -555,6 +674,10 @@ function initFancyWallpaper() {
 
         const newHalfHeight = fancyWallpaper.camera.position.z * Math.tan((fancyWallpaper.camera.fov * Math.PI) / 360);
         localPlane.constant = -newHalfHeight + 0.107 * (2 * newHalfHeight);
+        
+        if (fancyWallpaper.waterPlane) {
+            fancyWallpaper.waterPlane.position.y = localPlane.constant;
+        }
     };
     window.addEventListener('resize', fancyWallpaper.onWindowResize, false);
 
@@ -568,11 +691,16 @@ function initFancyWallpaper() {
             const targetX = mouse.x * 3.8;
             const targetY = mouse.y * 2.8;
             
+            // Add automatic bobbing so it periodically dips into the water
+            const bobPeriod = Date.now() * 0.0015;
+            const bob = Math.sin(bobPeriod) * 1.5 - 1.0;
+            
             fancyWallpaper.cube.position.x += (targetX - fancyWallpaper.cube.position.x) * 0.08;
-            fancyWallpaper.cube.position.y += (targetY - fancyWallpaper.cube.position.y) * 0.08;
+            fancyWallpaper.cube.position.y += ((targetY + bob) - fancyWallpaper.cube.position.y) * 0.08;
 
             if (appSettings.wallpaper === 'default' && fancyWallpaper.reflectedCube) {
                 fancyWallpaper.reflectedCube.visible = true;
+                if (fancyWallpaper.waterPlane) fancyWallpaper.waterPlane.visible = true;
                 
                 const time = Date.now() * 0.0035;
                 const waveX = Math.sin(time + fancyWallpaper.cube.position.y * 3.5) * 0.06;
@@ -596,8 +724,32 @@ function initFancyWallpaper() {
                     fancyWallpaper.noiseTexture.offset.x += 0.015;
                     fancyWallpaper.noiseTexture.offset.y += 0.02;
                 }
-            } else if (fancyWallpaper.reflectedCube) {
-                fancyWallpaper.reflectedCube.visible = false;
+                if (fancyWallpaper.reflectedCube.material && Array.isArray(fancyWallpaper.reflectedCube.material)) {
+                    const timeSec = time * 0.5;
+                    fancyWallpaper.reflectedCube.material.forEach(mat => {
+                        if (mat.uniforms && mat.uniforms.time) {
+                            mat.uniforms.time.value = timeSec;
+                        }
+                    });
+                }
+                
+                // Update water plane uniforms
+                if (fancyWallpaper.waterPlane && fancyWallpaper.waterPlane.material) {
+                    const wpMat = fancyWallpaper.waterPlane.material;
+                    wpMat.uniforms.time.value = time;
+                    wpMat.uniforms.disturberPos.value.set(fancyWallpaper.cube.position.x, fancyWallpaper.cube.position.z);
+                    
+                    const bottomY = fancyWallpaper.cube.position.y - 0.75;
+                    const depth = localPlane.constant - bottomY;
+                    let distVal = 0.0;
+                    if (depth > 0.0) {
+                        distVal = Math.min(depth * 1.5, 1.0);
+                    }
+                    wpMat.uniforms.disturbance.value = distVal;
+                }
+            } else {
+                if (fancyWallpaper.reflectedCube) fancyWallpaper.reflectedCube.visible = false;
+                if (fancyWallpaper.waterPlane) fancyWallpaper.waterPlane.visible = false;
             }
         }
         
@@ -619,6 +771,10 @@ function destroyFancyWallpaper() {
     if (fancyWallpaper.noiseTexture) {
         fancyWallpaper.noiseTexture.dispose();
     }
+    if (fancyWallpaper.waterPlane) {
+        if (fancyWallpaper.waterPlane.geometry) fancyWallpaper.waterPlane.geometry.dispose();
+        if (fancyWallpaper.waterPlane.material) fancyWallpaper.waterPlane.material.dispose();
+    }
     if (fancyWallpaper.renderer) {
         fancyWallpaper.renderer.dispose();
         fancyWallpaper.renderer = null;
@@ -628,7 +784,7 @@ function destroyFancyWallpaper() {
     }
     fancyWallpaper = { 
         scene: null, camera: null, renderer: null, cube: null, reflectedCube: null, noiseTexture: null,
-        animationFrameId: null, container: fancyWallpaper.container,
+        waterPlane: null, animationFrameId: null, container: fancyWallpaper.container,
         onMouseMove: null, onWindowResize: null
     };
 }
