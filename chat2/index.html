@@ -6,7 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>wChat 2</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Link to the external CSS file -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
@@ -57,21 +59,21 @@
 </head>
 <body class="flex flex-col h-screen bg-gray-100 text-gray-900 font-sans">
 
-    <header class="bg-gradient-to-r from-blue-600 to-indigo-700 p-4 shadow-md rounded-b-xl flex justify-between items-center">
-        <h1 class="text-3xl font-extrabold text-white">wChat 2</h1>
-        <div class="flex items-center space-x-4">
-            <button id="userSettingsButton" class="text-white text-2xl p-2 rounded-full hover:bg-white hover:bg-opacity-20 transition-colors duration-200">
+    <header class="bg-gradient-to-r from-blue-600 to-indigo-700 p-4 shadow-md rounded-b-xl flex flex-col sm:flex-row justify-between items-center gap-3">
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-white">wChat 2</h1>
+        <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-4">
+            <button id="userSettingsButton" class="text-white text-2xl p-1 rounded-full hover:bg-white hover:bg-opacity-20 transition-colors duration-200">
                 &#x2699;
             </button>
             <!-- Your User ID Display -->
-            <span id="userIdDisplayHeader" class="text-sm text-white font-medium bg-blue-500 py-1 px-3 rounded-full shadow-inner">
+            <span id="userIdDisplayHeader" class="text-xs sm:text-sm text-white font-medium bg-blue-500 py-1 px-3 rounded-full shadow-inner">
                 Your ID: Loading...
             </span>
             <input
                 type="text"
                 id="nicknameInput"
-                placeholder="Set your nickname"
-                class="p-2 rounded-lg bg-white bg-opacity-20 text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-white transition-all duration-300 w-32 md:w-48"
+                placeholder="Nickname"
+                class="p-1.5 sm:p-2 rounded-lg bg-white bg-opacity-20 text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-white transition-all duration-300 w-28 sm:w-32 md:w-48 text-sm"
                 maxlength="20"
             />
         </div>
@@ -80,11 +82,6 @@
     <!-- Removed the channel control section from here -->
 
     <main class="flex flex-1 overflow-hidden relative">
-        <button id="sidebarToggle" class="absolute top-4 left-4 p-1 rounded-full bg-blue-500 text-white shadow-md z-10 transition-transform duration-300 hover:scale-110">
-            <svg id="toggleIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform rotate-0" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-            </svg>
-        </button>
 
         <aside id="sidebar" class="w-0 bg-gray-200 dark:bg-gray-800 transition-all duration-300 ease-in-out overflow-hidden flex-shrink-0">
             <div id="channelListContent" class="p-4 pt-10 h-full overflow-y-auto">
@@ -138,6 +135,35 @@
         </aside>
 
         <div id="chatContentArea" class="flex-1 flex flex-col overflow-hidden">
+            <!-- Chat Header Toolbar -->
+            <div id="chatHeaderToolbar" class="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                <!-- Sidebar Toggle Button -->
+                <button id="sidebarToggle" class="p-1 rounded-lg bg-blue-500 text-white shadow-md transition-transform duration-300 hover:scale-110" title="Toggle Channels">
+                    <svg id="toggleIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform rotate-0" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+
+                <!-- Center Channel Display -->
+                <div id="topChannelDisplay" class="font-semibold text-lg text-gray-800 dark:text-gray-100 font-header">
+                    #general-chat
+                </div>
+
+                <!-- Friends Sidebar Toggle Button -->
+                <button id="friendsToggleButton" class="p-1 rounded-lg bg-blue-500 text-white shadow-md transition-transform duration-300 hover:scale-110" title="Toggle Friends">
+                    <svg id="friendsToggleIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform rotate-180" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- WebRTC Video Feeds (relocated here) -->
+            <div class="flex flex-col md:flex-row gap-2 p-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700" id="videoFeedsContainer">
+                <video id="localVideo" class="w-full md:w-1/2 h-32 rounded-lg bg-gray-200 dark:bg-gray-600 object-cover hidden" autoplay muted></video>
+                <video id="remoteVideo" class="w-full md:w-1/2 h-32 rounded-lg bg-gray-200 dark:bg-gray-600 object-cover hidden" autoplay></video>
+                <audio id="remoteAudio" controls class="w-full md:w-1/2 mt-2 hidden"></audio>
+            </div>
+
             <div id="messagesListContainer" class="flex-1 relative overflow-y-auto p-4 space-y-3 custom-scrollbar">
                 <div id="noMessagesPlaceholder" class="absolute inset-0 flex items-center justify-center hidden">
                     <p class="text-gray-600 dark:text-gray-400 text-lg">No messages yet. Start the conversation!</p>
@@ -148,12 +174,6 @@
             </div>
         </div>
 
-        <!-- Friends List Sidebar -->
-        <button id="friendsToggleButton" class="absolute top-4 right-4 p-1 rounded-full bg-blue-500 text-white shadow-md z-10 transition-transform duration-300 hover:scale-110">
-            <svg id="friendsToggleIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform rotate-180" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-            </svg>
-        </button>
         <aside id="friendsSidebar" class="w-0 bg-gray-200 dark:bg-gray-800 transition-all duration-300 ease-in-out overflow-hidden flex-shrink-0">
             <div id="friendsListContent" class="p-4 pt-10 h-full overflow-y-auto">
                 <h3 class="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-100">Friends</h3>
@@ -197,7 +217,7 @@
         <!-- WebRTC Call Controls -->
         <div class="flex items-center space-x-2">
             <!-- The toggle button remains visible -->
-            <button id="webrtcToggleButton" class="p-1 rounded-full bg-blue-500 text-white shadow-md z-10 transition-transform duration-300 hover:scale-110">
+            <button type="button" id="webrtcToggleButton" class="p-1 rounded-full bg-blue-500 text-white shadow-md z-10 transition-transform duration-300 hover:scale-110">
                 <svg id="webrtcToggleIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform rotate-0" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                 </svg>
@@ -242,14 +262,9 @@
                 </div>
                 <div id="callStatus" class="text-sm text-gray-700 dark:text-gray-300 text-center mt-2 flex items-center justify-center gap-2">
                     Idle
-                    <button id="addFriendFromCallButton" class="text-blue-500 hover:text-blue-700 hidden text-base" title="Add current caller to friends list">
+                    <button type="button" id="addFriendFromCallButton" class="text-blue-500 hover:text-blue-700 hidden text-base" title="Add current caller to friends list">
                         <i class="fas fa-user-plus"></i>
                     </button>
-                </div>
-                <div class="flex flex-col md:flex-row gap-2 mt-2" id="videoFeedsContainer">
-                    <video id="localVideo" class="w-full md:w-1/2 h-32 rounded-lg bg-gray-200 dark:bg-gray-600 object-cover hidden" autoplay muted></video>
-                    <video id="remoteVideo" class="w-full md:w-1/2 h-32 rounded-lg bg-gray-200 dark:bg-gray-600 object-cover hidden" autoplay></video>
-                    <audio id="remoteAudio" controls class="w-full md:w-1/2 mt-2 hidden"></audio>
                 </div>
             </div>
         </div>
@@ -385,37 +400,16 @@
                 <label for="themeSelect" class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">App Theme:</label>
                 <label for="themeSelect" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Theme:</label>
                 <select id="themeSelect" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white dark:bg-gray-700 dark:text-gray-100">
+                    <option value="system">System (Follow OS Theme)</option>
+                    <option value="mts-new">Mts new</option>
+                    <option value="cameron">Cameron's theme</option>
+                    <option value="retro">Retro</option>
+                    <option value="wnt">Windows NT</option>
+                    <option value="neon">Neon</option>
+                    <option value="soft">Soft</option>
                     <option value="light">Light</option>
                     <option value="dark">Dark</option>
-                    <option value="midnight">Midnight</option>
-                    <option value="autumn">Autumn</option>
-                    <option value="terminal">Terminal</option>
-                    <option value="mario">Super Pixel</option>    
-                      <option value="windows95">Classic Teal</option>
-                         <option value="windowsxp">Blissful Blue</option>
-                    <option value="windows7">Aero Glass</option>
-                            <option value="windows10">Modern Dark</option>
-                        <option value="wackybox">Wackybox</option>
-    <option value="abyssal-blue">Abyssal Blue</option>
-    <option value="verdant-canopy">Verdant Canopy</option>
-    <option value="synthwave-glow">Synthwave Glow</option>
-    <option value="grayscale-refined">Grayscale Refined</option>
-    <option value="twilight-ember">Twilight Ember</option>
-    <option value="amethyst-haze">Amethyst Haze</option>
-    <option value="neon-glitch">Neon Glitch</option>
-    <option value="arid-ochre">Arid Ochre</option>
-    <option value="cocoa-mint">Cocoa Mint</option>
-    <option value="pixel-pop">Pixel Pop</option>
-    <option value="sunbeam-code-light">Sunbeam Code (Light)</option>
-    <option value="sunbeam-code-dark">Sunbeam Code (Dark)</option>
-    <option value="earthen-tones">Earthen Tones</option>
-    <option value="orchid-bloom">Orchid Bloom</option>
-    <option value="verdant-depths">Verdant Depths</option>
-    <option value="gilded-frame">Gilded Frame</option>
-    <option value="aqua-serenity">Aqua Serenity</option>
-    <option value="pastel-harmony">Pastel Harmony</option>
-    <option value="coffee-blend">Coffee Blend</option>
-        </select>
+                </select>
 
                 
             </div>
@@ -514,7 +508,16 @@
         let currentUserName = localStorage.getItem('wChatUserName') || '';
         let currentChannelId = localStorage.getItem('wChatCurrentChannel') || 'general-chat';
         let currentColor = localStorage.getItem('wChatUserColor') || '#4CAF50';
-        let currentTheme = localStorage.getItem('wChatTheme') || 'dark';
+        let defaultTheme = 'dark';
+        try {
+            const settings = JSON.parse(localStorage.getItem('wackybox_settings_v7'));
+            if (settings && settings.theme) {
+                defaultTheme = settings.theme;
+            }
+        } catch (e) {
+            console.warn("Failed to load OS settings:", e);
+        }
+        let currentTheme = localStorage.getItem('wChatTheme') || defaultTheme;
         let messageListenerInitialized = false;
         let messageIdToDelete = null;
         let messageIdToEdit = null;
@@ -556,6 +559,7 @@
         const channelInput = document.getElementById('channelInput');
         const joinChannelButton = document.getElementById('joinChannelButton');
         const currentChannelDisplay = document.getElementById('currentChannelDisplay');
+        const topChannelDisplay = document.getElementById('topChannelDisplay');
         const sidebar = document.getElementById('sidebar');
         const sidebarToggle = document.getElementById('sidebarToggle');
         const toggleIcon = document.getElementById('toggleIcon');
@@ -709,6 +713,39 @@
             'paisley', 'rants'
         ];
 
+        function hexToRgb(hex) {
+            var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+            hex = hex.replace(shorthandRegex, function(m, r, g, b) {
+                return r + r + g + g + b + b;
+            });
+            var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
+        function getContrastColor(hexColor) {
+            const rgb = hexToRgb(hexColor);
+            if (!rgb) return '#ffffff';
+            const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
+            return luminance > 0.5 ? '#000000' : '#ffffff';
+        }
+
+        function getDarkTintRgb(hex, factor = 0.08, baseR = 12, baseG = 12, baseB = 14) {
+            const rgb = hexToRgb(hex);
+            if (!rgb) return { r: baseR, g: baseG, b: baseB };
+            const r = Math.min(35, Math.max(0, Math.round(rgb.r * factor + baseR * (1 - factor))));
+            const g = Math.min(35, Math.max(0, Math.round(rgb.g * factor + baseG * (1 - factor))));
+            const b = Math.min(40, Math.max(0, Math.round(rgb.b * factor + baseB * (1 - factor))));
+            return { r, g, b };
+        }
+
+        function rgbToString(rgbObj) {
+            return `rgb(${rgbObj.r}, ${rgbObj.g}, ${rgbObj.b})`;
+        }
+
         /**
          * Applies the selected theme to the body element.
          * Handles both predefined themes and system preference.
@@ -716,8 +753,18 @@
          */
         function applyTheme(theme) {
             const body = document.body;
-            // Remove all existing theme classes to prevent conflicts
-            body.classList.remove('light', 'dark', 'midnight', 'autumn', 'terminal', 'mario', 'windows95', 'windowsxp', 'windows7', 'windows10', 'wackybox');
+            // Remove all option values of the theme select to prevent conflicts dynamically
+            const themeSelect = document.getElementById('themeSelect');
+            if (themeSelect) {
+                Array.from(themeSelect.options).forEach(opt => {
+                    body.classList.remove(opt.value);
+                });
+            }
+            body.classList.remove('light', 'dark', 'system', 'midnight', 'autumn', 'terminal', 'mario', 'windows95', 'windowsxp', 'windows7', 'windows10', 'wackybox', 'wackybox_settings_v7', 'mts-new', 'cameron', 'retro', 'wnt', 'neon', 'soft');
+
+            // Clear custom css property overrides to prevent theme leaks
+            const props = ['--theme-bg-primary', '--theme-bg-secondary', '--theme-bg-tertiary', '--theme-text-primary', '--theme-text-secondary', '--theme-border-color', '--theme-accent-primary', '--theme-accent-text'];
+            props.forEach(prop => body.style.removeProperty(prop));
 
             if (theme === 'system') {
                 // Apply 'dark' or 'light' based on user's system preference
@@ -729,16 +776,46 @@
             } else {
                 // Apply the selected custom theme
                 body.classList.add(theme);
+
+                // If mts-new is selected, check for custom color overrides from wbOS
+                if (theme === 'mts-new') {
+                    try {
+                        const settings = JSON.parse(localStorage.getItem('wackybox_settings_v7'));
+                        if (settings) {
+                            if (settings.textPrimary) body.style.setProperty('--theme-text-primary', settings.textPrimary);
+                            if (settings.textSecondary) body.style.setProperty('--theme-text-secondary', settings.textSecondary);
+                            if (settings.borderColor) body.style.setProperty('--theme-border-color', settings.borderColor);
+                            if (settings.accentPrimary) {
+                                body.style.setProperty('--theme-accent-primary', settings.accentPrimary);
+                                body.style.setProperty('--theme-accent-text', getContrastColor(settings.accentPrimary));
+                            }
+                            
+                            const baseColor = settings.accentPrimary || '#2be19b';
+                            const bgPrimaryRgb = getDarkTintRgb(baseColor, 0.08, 12, 12, 14);
+                            const bgPrimary = rgbToString(bgPrimaryRgb);
+                            const bgSecondary = '#000000';
+                            const bgTertiaryRgb = getDarkTintRgb(baseColor, 0.15, 18, 18, 22);
+                            const bgTertiary = rgbToString(bgTertiaryRgb);
+
+                            body.style.setProperty('--theme-bg-primary', bgPrimary);
+                            body.style.setProperty('--theme-bg-secondary', bgSecondary);
+                            body.style.setProperty('--theme-bg-tertiary', bgTertiary);
+                        }
+                    } catch (e) {
+                        console.warn("Failed to load custom colors for mts-new:", e);
+                    }
+                }
             }
         }
 
-        // Apply theme on initial load based on localStorage or default to 'dark'
-        applyTheme(localStorage.getItem('wChatTheme') || 'dark');
+        // Apply theme on initial load based on localStorage settings or default to OS theme
+        applyTheme(localStorage.getItem('wChatTheme') || defaultTheme);
 
         // Initialize input fields with stored values
         nicknameInput.value = currentUserName;
         channelInput.value = currentChannelId;
         currentChannelDisplay.textContent = `Current: #${currentChannelId}`;
+        topChannelDisplay.textContent = `#${currentChannelId}`;
 
         /**
          * Resets the message input area from edit mode to send mode.
@@ -2336,6 +2413,7 @@
                 currentChannelId = newChannel;
                 localStorage.setItem('wChatCurrentChannel', currentChannelId); // Save to local storage
                 currentChannelDisplay.textContent = `Current: #${currentChannelId}`;
+                topChannelDisplay.textContent = `#${currentChannelId}`;
                 if (db) {
                     setupMessageListener(); // Re-initialize message listener for the new channel
                     updateChannelNotificationUI(); // Update per-channel notification UI for the new channel
@@ -2453,7 +2531,7 @@
         function openUserSettingsModal() {
             userSettingsModal.classList.remove('hidden');
             userColorInput.value = currentColor; // Set current color
-            themeSelect.value = localStorage.getItem('wChatTheme') || 'dark'; // Set current theme
+            themeSelect.value = localStorage.getItem('wChatTheme') || defaultTheme; // Set current theme
             updateNotificationPermissionStatusUI(Notification.permission || 'default'); // Update status when modal opens
         }
 
@@ -3302,13 +3380,43 @@
         });
 
         // Toggle sidebar visibility
-        sidebarToggle.addEventListener('click', toggleSidebar);
+        sidebarToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleSidebar();
+        });
         // Toggle channel control area visibility
         channelToggleButton.addEventListener('click', toggleChannelControl); // Now for the sidebar internal toggle
         // Toggle WebRTC control area visibility
         webrtcToggleButton.addEventListener('click', toggleWebRTCControls);
         // Toggle Friends sidebar visibility
-        friendsToggleButton.addEventListener('click', toggleFriendsSidebar);
+        friendsToggleButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleFriendsSidebar();
+        });
+
+        // Click outside sidebars on mobile to close them
+        document.getElementById('chatContentArea').addEventListener('click', () => {
+            if (window.innerWidth < 768) {
+                if (sidebar.classList.contains('w-64')) {
+                    sidebar.classList.remove('w-64');
+                    sidebar.classList.add('w-0');
+                    toggleIcon.classList.remove('rotate-180');
+                }
+                if (friendsSidebar.classList.contains('w-64')) {
+                    friendsSidebar.classList.remove('w-64');
+                    friendsSidebar.classList.add('w-0');
+                    friendsToggleIcon.classList.remove('rotate-0');
+                    friendsToggleIcon.classList.add('rotate-180');
+                }
+            }
+        });
+
+        // Close user settings modal by clicking backdrop
+        userSettingsModal.addEventListener('click', (e) => {
+            if (e.target === userSettingsModal) {
+                closeUserSettingsModal();
+            }
+        });
 
         // Confirmation modal for message deletion
         confirmDeleteYes.addEventListener('click', () => {
@@ -3688,7 +3796,7 @@
             }
 
             // Ensure theme is applied correctly on load
-            applyTheme(localStorage.getItem('wChatTheme') || 'dark');
+            applyTheme(localStorage.getItem('wChatTheme') || defaultTheme);
         };
     </script>
 </body>
