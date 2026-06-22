@@ -294,6 +294,9 @@
                         <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
                     </svg>
                 </button>
+                <button type="button" id="scaleAudioButton" class="hidden bg-yellow-500 hover:bg-yellow-600 text-white text-xs py-1 px-2 rounded-lg shadow-sm transition-colors">
+                    Scale Down
+                </button>
             </div>
         </div>
 
@@ -579,6 +582,7 @@
         const audioUploadPreview = document.getElementById('audioUploadPreview');
         const audioFileName = document.getElementById('audioFileName');
         const cancelAudioUploadButton = document.getElementById('cancelAudioUploadButton');
+        const scaleAudioButton = document.getElementById('scaleAudioButton');
 
         // Video Upload elements
         const videoUploadPreviewContainer = document.getElementById('videoUploadPreviewContainer');
@@ -853,6 +857,7 @@
             audioUploadPreview.src = '';
             audioFileName.textContent = '';
             audioUploadPreviewContainer.classList.add('hidden');
+            scaleAudioButton.classList.add('hidden'); // Hide scale button
             hideFileSizeMessage(); // Use the new hide function
         }
 
@@ -2805,7 +2810,7 @@
             let audioStream;
             let combinedStream;
             let mediaRecorder;
-            let animationFrameId;
+            let drawIntervalId;
 
             return new Promise((resolve, reject) => {
                 videoElement.onloadedmetadata = async () => {
@@ -2938,11 +2943,10 @@
 
                     const drawFrame = () => {
                         if (videoElement.paused || videoElement.ended) {
-                            cancelAnimationFrame(animationFrameId);
+                            clearInterval(drawIntervalId);
                             return;
                         }
                         ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-                        animationFrameId = requestAnimationFrame(drawFrame);
                     };
 
                     mediaRecorder.onstop = () => {
@@ -2959,7 +2963,7 @@
                         if (audioSource) audioSource.disconnect();
                         if (audioDestination) audioDestination.disconnect();
                         if (audioContext) audioContext.close();
-                        cancelAnimationFrame(animationFrameId);
+                        clearInterval(drawIntervalId);
 
                         if (scaledBlob.size <= FIRESTORE_MAX_DOC_SIZE) {
                             resolve(scaledBlob);
@@ -2981,12 +2985,13 @@
                         if (audioSource) audioSource.disconnect();
                         if (audioDestination) audioDestination.disconnect();
                         if (audioContext) audioContext.close();
-                        cancelAnimationFrame(animationFrameId);
+                        clearInterval(drawIntervalId);
                     };
 
                     videoElement.play().then(() => {
                         mediaRecorder.start();
                         drawFrame(); 
+                        drawIntervalId = setInterval(drawFrame, 100);
                         // Stop recording after video duration plus a small buffer
                         setTimeout(() => {
                             if (mediaRecorder.state === 'recording') {
@@ -3014,6 +3019,187 @@
                     sendButton.disabled = true;
                 }
             });
+        }
+
+        /**
+         * Attempts to compress/re-encode an audio file to reduce its size to fit under 1MB Firestore limit.
+         * Runs offline and completes in milliseconds.
+         * @param {File} audioFile - The audio file to scale.
+         * @returns {Promise<Blob>} A promise that resolves with the scaled audio Blob.
+         */
+        async function scaleAudio(audioFile) {
+            scaleAudioButton.disabled = true;
+            scaleAudioButton.textContent = "Scaling...";
+            sendButton.disabled = true;
+            showFileSizeMessage("I am compressing your audio. Please be patient...", false);
+
+            try {
+                // Read file as ArrayBuffer
+                const arrayBuffer = await audioFile.arrayBuffer();
+                
+                // Create a temporary AudioContext to decode the original audio
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                let decodedBuffer;
+                try {
+                    decodedBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                } catch (decodeError) {
+                    audioContext.close();
+                    throw new Error("Could not decode audio data. Format might be unsupported.");
+                }
+                audioContext.close(); // Close immediately to free resources
+
+                const duration = decodedBuffer.duration;
+                if (!duration || isNaN(duration)) {
+                    throw new Error("Invalid audio duration.");
+                }
+
+                // Determine target parameters to fit under Firestore limits after Base64 encoding
+                const MAX_ALLOWED_FILE_SIZE = 550 * 1024; // 563,200 bytes (very safe for Base64)
+                
+                let is16Bit = true;
+                let targetSampleRate = Math.floor(MAX_ALLOWED_FILE_SIZE / (2 * duration));
+                if (targetSampleRate < 8000) {
+                    is16Bit = false;
+                    targetSampleRate = Math.floor(MAX_ALLOWED_FILE_SIZE / duration);
+                }
+
+                // Allow decimation to lower sample rates (down to 3000 Hz) to keep longer audio files small,
+                // while using browser-supported 8000 Hz (or higher) sample rates for the OfflineAudioContext render.
+                let finalSampleRate = 8000;
+                if (targetSampleRate >= 22050) {
+                    finalSampleRate = 22050;
+                } else if (targetSampleRate >= 16000) {
+                    finalSampleRate = 16000;
+                } else if (targetSampleRate >= 11025) {
+                    finalSampleRate = 11025;
+                } else if (targetSampleRate >= 8000) {
+                    finalSampleRate = 8000;
+                } else {
+                    finalSampleRate = Math.max(3000, targetSampleRate);
+                }
+
+                // OfflineAudioContext requires a minimum sample rate of 8000 Hz.
+                const renderSampleRate = Math.max(8000, finalSampleRate);
+
+                // Resample using OfflineAudioContext
+                const numberOfChannels = 1; // mono is sufficient and halves file size
+                const offlineCtx = new OfflineAudioContext(
+                    numberOfChannels,
+                    Math.floor(duration * renderSampleRate),
+                    renderSampleRate
+                );
+
+                const bufferSource = offlineCtx.createBufferSource();
+                bufferSource.buffer = decodedBuffer;
+                bufferSource.connect(offlineCtx.destination);
+                bufferSource.start();
+
+                const renderedBuffer = await offlineCtx.startRendering();
+
+                // Convert AudioBuffer to WAV Blob, decimating if finalSampleRate < renderSampleRate
+                const scaledBlob = bufferToWav(renderedBuffer, is16Bit, finalSampleRate);
+                
+                // Add name property to make it behave like a File
+                scaledBlob.name = audioFile.name ? audioFile.name.replace(/\.[^/.]+$/, "") + ".wav" : "scaled_audio.wav";
+
+                return scaledBlob;
+
+            } catch (error) {
+                console.error("scaleAudio error:", error);
+                throw error;
+            } finally {
+                scaleAudioButton.disabled = false;
+                scaleAudioButton.textContent = "Scale Down";
+                if (currentAudioFile && currentAudioFile.size <= FIRESTORE_MAX_DOC_SIZE) {
+                    sendButton.disabled = false;
+                } else {
+                    sendButton.disabled = true;
+                }
+            }
+        }
+
+        /**
+         * Converts an AudioBuffer to a WAV file Blob (8-bit or 16-bit mono),
+         * with optional decimation to a lower target sample rate.
+         */
+        function bufferToWav(buffer, is16Bit = true, targetSampleRate = null) {
+            const channelData = buffer.getChannelData(0);
+            const originalSampleRate = buffer.sampleRate;
+            
+            // Calculate decimation ratio
+            const finalSampleRate = targetSampleRate || originalSampleRate;
+            const ratio = originalSampleRate / finalSampleRate;
+            let numSamples = Math.floor(channelData.length / ratio);
+            
+            // Enforce even number of samples to prevent boundary/alignment parsing bugs
+            if (numSamples % 2 !== 0) {
+                numSamples--;
+            }
+            
+            const bitsPerSample = is16Bit ? 16 : 8;
+            const bytesPerSample = bitsPerSample / 8;
+            const fileLength = numSamples * bytesPerSample + 44;
+            const arrayBuffer = new ArrayBuffer(fileLength);
+            const view = new DataView(arrayBuffer);
+            
+            function writeString(view, offset, string) {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            }
+
+            // RIFF identifier
+            writeString(view, 0, 'RIFF');
+            // file length minus RIFF identifier and length size
+            view.setUint32(4, fileLength - 8, true);
+            // RIFF type
+            writeString(view, 8, 'WAVE');
+            // format chunk identifier
+            writeString(view, 12, 'fmt ');
+            // format chunk length
+            view.setUint32(16, 16, true);
+            // sample format (raw PCM = 1)
+            view.setUint16(20, 1, true);
+            // channel count (1 for mono)
+            view.setUint16(22, 1, true);
+            // sample rate
+            view.setUint32(24, finalSampleRate, true);
+            // byte rate (sample rate * block align)
+            view.setUint32(28, finalSampleRate * bytesPerSample, true);
+            // block align (channel count * bytes per sample)
+            view.setUint16(32, bytesPerSample, true);
+            // bits per sample
+            view.setUint16(34, bitsPerSample, true);
+            // data chunk identifier
+            writeString(view, 36, 'data');
+            // data chunk length
+            view.setUint32(40, numSamples * bytesPerSample, true);
+            
+            // write PCM audio samples
+            let offset = 44;
+            if (is16Bit) {
+                for (let i = 0; i < numSamples; i++) {
+                    let sourceIndex = Math.floor(i * ratio);
+                    let sample = channelData[sourceIndex];
+                    if (isNaN(sample)) sample = 0;
+                    if (sample < -1) sample = -1;
+                    if (sample > 1) sample = 1;
+                    let intSample = Math.round(sample < 0 ? sample * 0x8000 : sample * 0x7FFF);
+                    view.setInt16(offset + i * 2, intSample, true);
+                }
+            } else {
+                for (let i = 0; i < numSamples; i++) {
+                    let sourceIndex = Math.floor(i * ratio);
+                    let sample = channelData[sourceIndex];
+                    if (isNaN(sample)) sample = 0;
+                    if (sample < -1) sample = -1;
+                    if (sample > 1) sample = 1;
+                    let byteSample = Math.round(sample * 127) + 128;
+                    view.setUint8(offset + i, byteSample);
+                }
+            }
+            
+            return new Blob([arrayBuffer], { type: 'audio/wav' });
         }
 
 
@@ -3490,9 +3676,10 @@
                 audioUploadPreview.src = URL.createObjectURL(file);
                 audioUploadPreviewContainer.classList.remove('hidden');
 
-                // Check size against FIRESTORE_MAX_DOC_SIZE (no scaling, so check final size)
-                if (file.size > FIRESTORE_MAX_DOC_SIZE) { 
-                    showFileSizeMessage(`Audio file is too large (${(file.size / 1024).toFixed(2)} KB). Max direct upload size for audio is ${(FIRESTORE_MAX_DOC_SIZE / 1024).toFixed(2)} KB. Please try a smaller file.`, false);
+                // Check size against MAX_RAW_FILE_SIZE_BEFORE_ENCODING
+                if (file.size > MAX_RAW_FILE_SIZE_BEFORE_ENCODING) { 
+                    showFileSizeMessage(`Audio file is too large (${(file.size / 1024).toFixed(2)} KB). Max raw size is ${(MAX_RAW_FILE_SIZE_BEFORE_ENCODING / 1024).toFixed(2)} KB to fit Firestore's 1MB document limit after Base64 encoding.`, false);
+                    scaleAudioButton.classList.remove('hidden');
                     sendButton.disabled = true; 
                 } else {
                     sendButton.disabled = false; 
@@ -3584,12 +3771,45 @@
                     }
                 } catch (error) {
                     console.error("Video scaling failed:", error);
-                    showModalMessage(`Video scaling failed: ${error.message || 'Unknown error'}. This feature has extreme limitations due to file size.`, false);
+                    showModalMessage("Video Scaling Failed", `${error.message || 'Unknown error'}. This feature has extreme limitations due to file size.`);
                 } finally {
                     scaleVideoButton.disabled = false;
                     scaleVideoButton.textContent = "Scale Down";
                     if (currentVideoFile && currentVideoFile.size <= FIRESTORE_MAX_DOC_SIZE) {
                          sendButton.disabled = false;
+                    } else {
+                        sendButton.disabled = true;
+                    }
+                }
+            }
+        });
+
+        // Handle audio scaling attempt
+        scaleAudioButton.addEventListener('click', async () => {
+            if (currentAudioFile) {
+                try {
+                    const scaledBlob = await scaleAudio(currentAudioFile);
+                    if (scaledBlob.size <= FIRESTORE_MAX_DOC_SIZE) {
+                        if (audioUploadPreview.src && audioUploadPreview.src.startsWith('blob:')) {
+                            URL.revokeObjectURL(audioUploadPreview.src);
+                        }
+                        currentAudioFile = scaledBlob;
+                        audioUploadPreview.src = URL.createObjectURL(scaledBlob);
+                        audioFileName.textContent = `Scaled: ${currentAudioFile.name || 'audio'} (${(currentAudioFile.size / 1024).toFixed(2)} KB)`;
+                        showFileSizeMessage("Audio scaled successfully! Ready to send.", true);
+                        scaleAudioButton.classList.add('hidden');
+                        sendButton.disabled = false;
+                    } else {
+                        showFileSizeMessage(`Failed to scale audio below ${(FIRESTORE_MAX_DOC_SIZE / 1024).toFixed(2)} KB. Current size: ${(scaledBlob.size / 1024).toFixed(2)} KB.`, false);
+                    }
+                } catch (error) {
+                    console.error("Audio scaling failed:", error);
+                    showModalMessage("Audio Scaling Failed", `${error.message || 'Unknown error'}. This feature has extreme limitations due to file size.`);
+                } finally {
+                    scaleAudioButton.disabled = false;
+                    scaleAudioButton.textContent = "Scale Down";
+                    if (currentAudioFile && currentAudioFile.size <= FIRESTORE_MAX_DOC_SIZE) {
+                        sendButton.disabled = false;
                     } else {
                         sendButton.disabled = true;
                     }
