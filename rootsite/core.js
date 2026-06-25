@@ -438,7 +438,7 @@ async function initializeDesktop() {
         name: "Wackycom media vault",
         type: "locked_folder",
         class: "locked-folder",
-        password: "wackycom600",
+        passwordHash: "4033079d33b678f4f66d37b9557df43aa629a83ab00ff5f1dc68b8182b089225",
         contents: [
             { "name": "Bliss_(Windows_XP).png", "type": "file", "class": "image" },
             { "name": "Caligula.webm", "type": "file", "class": "video" },

@@ -288,7 +288,7 @@ function launchItem(item) {
     }
     
     if (item.type === 'locked_folder') {
-        openPasswordModal(item.name, item.password, () => {
+        openPasswordModal(item.name, item.passwordHash || item.password, () => {
             openLockedFolderWindow(item.name, item.contents);
         });
         return;
@@ -316,7 +316,8 @@ function launchItem(item) {
         case 'video': openVideoPlayerApp(item.name); break;
         case 'image': openImageViewWindow(item.name); break;
         case 'document': case 'code': case 'unknown': openTextViewWindow(item.name); break;
-        case 'zip': default: openErrorWindow(item.name, 'Zip processing support will be added in the near future.'); break;
+        case 'zip': openZipWindow(item.name); break;
+        default: openErrorWindow(item.name, 'Unsupported file type.'); break;
     }
 }
 

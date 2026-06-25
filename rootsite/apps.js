@@ -1202,6 +1202,14 @@ function openWebAppPrompt(item) {
     });
 }
 
+async function sha256(message) {
+    const msgBuffer = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashHex;
+}
+
 function openPasswordModal(folderName, expectedPassword, onSuccessCallback) {
     const modalContent = `
         <div class="password-modal">
@@ -1225,8 +1233,9 @@ function openPasswordModal(folderName, expectedPassword, onSuccessCallback) {
     const submitBtn = modalWin.querySelector('#submit-password');
     const errorDiv = modalWin.querySelector('#password-error');
 
-    const checkPassword = () => {
-        if (input.value === expectedPassword) {
+    const checkPassword = async () => {
+        const hashed = await sha256(input.value);
+        if (hashed === expectedPassword || input.value === expectedPassword) {
             closeWindow(modalWin.id);
             onSuccessCallback();
         } else {
@@ -1423,4 +1432,251 @@ function openErrorWindow(fileName, message) {
     playUISound('error'); 
     const content = `<div style="padding:10px;"><h3 style="color: red;">Error</h3><p><strong>File:</strong> ${fileName}</p><p><strong>Reason:</strong> ${message}</p></div>`; 
     openWindow('System Error', content); 
+}
+
+function getIconClassForExtension(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    if (['png', 'jpg', 'jpeg', 'gif', 'bmp', 'svg', 'webp', 'hdr'].includes(ext)) return 'image';
+    if (['mp4', 'webm', 'avi', 'mov', 'mkv'].includes(ext)) return 'video';
+    if (['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(ext)) return 'audio';
+    if (['zip', 'rar', 'tar', 'gz', '7z'].includes(ext)) return 'zip';
+    if (['js', 'py', 'c', 'cpp', 'h', 'java', 'go', 'ts', 'json', 'css', 'html', 'pmp'].includes(ext)) return 'code';
+    return 'document';
+}
+
+function getMimeTypeForExtension(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    switch(ext) {
+        case 'png': return 'image/png';
+        case 'jpg': case 'jpeg': return 'image/jpeg';
+        case 'gif': return 'image/gif';
+        case 'svg': return 'image/svg+xml';
+        case 'webp': return 'image/webp';
+        case 'hdr': return 'image/vnd.radiance';
+        case 'mp4': return 'video/mp4';
+        case 'webm': return 'video/webm';
+        case 'mp3': return 'audio/mpeg';
+        case 'wav': return 'audio/wav';
+        case 'ogg': return 'audio/ogg';
+        default: return 'application/octet-stream';
+    }
+}
+
+async function openZipWindow(fileName, customUrl = null) {
+    const url = customUrl || `${BASE_URL}${encodeURIComponent(fileName)}`;
+    const zipHTML = `
+        <div class="zip-explorer-wrapper" style="display:flex; flex-direction:column; height:100%; background:var(--theme-bg-primary); color:var(--theme-text-primary); font-family:var(--theme-font-body);">
+            <div class="zip-toolbar" style="padding: 8px; display:flex; align-items:center; gap:10px; border-bottom: 1px solid var(--theme-border-color); background:rgba(0,0,0,0.2);">
+                <button class="zip-back-btn" style="padding: 4px 8px; background:rgba(255,255,255,0.1); border:1px solid var(--theme-border-color); border-radius:3px; color:var(--theme-text-primary); cursor:pointer;" disabled>&larr; Up</button>
+                <button class="zip-extract-all-btn" style="padding: 4px 8px; background:var(--theme-accent-primary); border:none; border-radius:3px; color:var(--theme-accent-text); cursor:pointer;">Extract All to Desktop</button>
+                <span class="zip-path-label" style="font-size:12px; opacity:0.8;">Archive: ${fileName}</span>
+                <span class="zip-status" style="margin-left:auto; font-size:11px; opacity:0.7;">Loading...</span>
+            </div>
+            <div class="zip-file-list" style="flex:1; overflow-y:auto; padding:15px; display:grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap:15px; align-content:flex-start;"></div>
+        </div>
+    `;
+
+    const win = openWindow(`Zip Archiver - ${fileName}`, zipHTML, { width: '550px', height: '400px' });
+    const contentArea = win.querySelector('.window-content, .mobile-app-content');
+    if (contentArea) contentArea.style.padding = '0';
+
+    const fileList = win.querySelector('.zip-file-list');
+    const backBtn = win.querySelector('.zip-back-btn');
+    const extractAllBtn = win.querySelector('.zip-extract-all-btn');
+    const statusSpan = win.querySelector('.zip-status');
+
+    try {
+        if (!window.JSZip) {
+            statusSpan.textContent = 'JSZip library not loaded';
+            return;
+        }
+
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const arrayBuffer = await response.arrayBuffer();
+        const zip = await JSZip.loadAsync(arrayBuffer);
+
+        const root = { name: 'Root', type: 'folder', contents: [], path: '' };
+
+        for (const path in zip.files) {
+            const file = zip.files[path];
+            const parts = path.split('/');
+            if (path.endsWith('/')) {
+                parts.pop();
+            }
+            if (parts.length === 0 || parts[0] === '') continue;
+
+            let current = root;
+            let currentPath = '';
+
+            for (let i = 0; i < parts.length; i++) {
+                const part = parts[i];
+                currentPath += (currentPath ? '/' : '') + part;
+                const isLast = (i === parts.length - 1);
+
+                if (isLast && !file.dir) {
+                    current.contents.push({
+                        name: part,
+                        type: 'file',
+                        class: getIconClassForExtension(part),
+                        zipFile: file,
+                        path: path
+                    });
+                } else {
+                    let dir = current.contents.find(item => item.name === part && item.type === 'folder');
+                    if (!dir) {
+                        dir = {
+                            name: part,
+                            type: 'folder',
+                            class: 'folder',
+                            contents: [],
+                            path: currentPath
+                        };
+                        current.contents.push(dir);
+                    }
+                    current = dir;
+                }
+            }
+        }
+
+        let currentFolder = root;
+        let pathHistory = [root];
+
+        const renderFolder = () => {
+            fileList.innerHTML = '';
+            backBtn.disabled = (pathHistory.length <= 1);
+            
+            if (currentFolder.contents.length === 0) {
+                fileList.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 20px; opacity:0.6;">This folder is empty.</div>';
+                return;
+            }
+
+            currentFolder.contents.forEach(item => {
+                const iconDiv = document.createElement('div');
+                iconDiv.className = 'icon';
+                iconDiv.style.cursor = 'pointer';
+                iconDiv.innerHTML = `<div class="icon-img ${item.class}"></div><div class="icon-name" style="word-break:break-all; text-align:center; font-size:11px; margin-top:4px;">${item.name}</div>`;
+                
+                iconDiv.addEventListener('mousedown', (e) => {
+                    e.stopPropagation();
+                    win.querySelectorAll('.icon.selected').forEach(i => i.classList.remove('selected'));
+                    iconDiv.classList.add('selected');
+                });
+
+                const triggerLaunch = async () => {
+                    if (item.type === 'folder') {
+                        pathHistory.push(item);
+                        currentFolder = item;
+                        renderFolder();
+                    } else {
+                        statusSpan.textContent = 'Extracting...';
+                        try {
+                            const zipFile = item.zipFile;
+                            if (item.class === 'code' || item.class === 'document') {
+                                const text = await zipFile.async('string');
+                                localStorage.setItem(`wacky_file_override_${item.name}`, text);
+                                openNotepadApp(item.name);
+                            } else if (item.class === 'image') {
+                                const blob = await zipFile.async('blob');
+                                const blobUrl = URL.createObjectURL(blob);
+                                openImageViewWindow(item.name, blobUrl);
+                            } else if (item.class === 'video') {
+                                const blob = await zipFile.async('blob');
+                                const blobUrl = URL.createObjectURL(blob);
+                                openVideoPlayerApp(item.name, blobUrl);
+                            } else if (item.class === 'audio') {
+                                const blob = await zipFile.async('blob');
+                                const blobUrl = URL.createObjectURL(blob);
+                                openMediaPlayerWindow(item.name, blobUrl);
+                            } else {
+                                const blob = await zipFile.async('blob');
+                                const link = document.createElement('a');
+                                link.href = URL.createObjectURL(blob);
+                                link.download = item.name;
+                                link.click();
+                            }
+                            statusSpan.textContent = 'Ready';
+                        } catch (err) {
+                            statusSpan.textContent = 'Failed';
+                            openErrorWindow(item.name, err.message);
+                        }
+                    }
+                };
+
+                if (isMobile()) {
+                    iconDiv.addEventListener('click', triggerLaunch);
+                } else {
+                    iconDiv.addEventListener('dblclick', triggerLaunch);
+                }
+
+                fileList.appendChild(iconDiv);
+            });
+        };
+
+        backBtn.onclick = () => {
+            if (pathHistory.length > 1) {
+                pathHistory.pop();
+                currentFolder = pathHistory[pathHistory.length - 1];
+                renderFolder();
+            }
+        };
+
+        extractAllBtn.onclick = async () => {
+            statusSpan.textContent = 'Extracting all...';
+            try {
+                let count = 0;
+                for (const path in zip.files) {
+                    const file = zip.files[path];
+                    if (file.dir) continue;
+                    const parts = path.split('/');
+                    const name = parts[parts.length - 1];
+                    const cls = getIconClassForExtension(name);
+
+                    if (cls === 'code' || cls === 'document') {
+                        const content = await file.async('string');
+                        localStorage.setItem(`wacky_file_override_${name}`, content);
+                    } else {
+                        const blob = await file.async('blob');
+                        const reader = new FileReader();
+                        await new Promise((resolve, reject) => {
+                            reader.onload = () => {
+                                localStorage.setItem(`wacky_file_override_${name}`, reader.result);
+                                resolve();
+                            };
+                            reader.onerror = reject;
+                            reader.readAsDataURL(blob);
+                        });
+                    }
+
+                    const exists = customDesktopItems.some(i => i.name === name);
+                    if (!exists) {
+                        const newItem = {
+                            name: name,
+                            type: 'file',
+                            class: cls
+                        };
+                        customDesktopItems.push(newItem);
+                        desktopItems.push(newItem);
+                    }
+                    count++;
+                }
+
+                if (count > 0) {
+                    saveCustomApps();
+                    renderUI();
+                }
+                statusSpan.textContent = `Extracted ${count} items`;
+            } catch (err) {
+                statusSpan.textContent = 'Extraction failed';
+                openErrorWindow(fileName, err.message);
+            }
+        };
+
+        statusSpan.textContent = 'Ready';
+        renderFolder();
+
+    } catch (e) {
+        statusSpan.textContent = 'Failed to load';
+        openErrorWindow(fileName, e.message);
+    }
 }
