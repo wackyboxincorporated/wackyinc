@@ -99,6 +99,7 @@ function openTile(title, contentEl, opts = {}) {
         <div class="tile-header">
             <span class="tile-title">${title}</span>
             <div class="tile-controls">
+                <button class="tile-control-btn minimize" title="minimize">_</button>
                 <button class="tile-control-btn float" title="toggle float">⊡</button>
                 <button class="tile-control-btn close" title="close">✕</button>
             </div>
@@ -120,12 +121,18 @@ function openTile(title, contentEl, opts = {}) {
         y: options.y || 50,
         icon: options.icon || '',
         visible: true,
+        minimized: false,
         lastFocused: Date.now()
     };
     const closeBtn = el.querySelector('.tile-control-btn.close');
     closeBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         closeTile(id);
+    });
+    const minBtn = el.querySelector('.tile-control-btn.minimize');
+    minBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        minimizeTile(id);
     });
     const floatBtn = el.querySelector('.tile-control-btn.float');
     floatBtn.addEventListener('click', (e) => {
@@ -159,6 +166,26 @@ function openTile(title, contentEl, opts = {}) {
     }
     return id;
 }
+function minimizeTile(id) {
+    const tile = getTileById(id);
+    if (!tile) return;
+    tile.minimized = true;
+    tile.visible = false;
+    tile.element.style.display = 'none';
+    if (activeTileId == id) {
+        const remainingVisible = openTiles.filter(t => t.id != id && !t.minimized && t.visible !== false);
+        if (remainingVisible.length > 0) {
+            activeTileId = remainingVisible[remainingVisible.length - 1].id;
+        } else {
+            activeTileId = null;
+        }
+    }
+    retile();
+    if (typeof renderTopBar === 'function') renderTopBar();
+    if (openTiles.filter(t => !t.minimized).length === 0 && typeof expandMenu === 'function') {
+        expandMenu();
+    }
+}
 function closeTile(id) {
     const tileIndex = openTiles.findIndex(t => t.id == id);
     if (tileIndex === -1) return;
@@ -189,24 +216,36 @@ function focusTile(id) {
     activeTileId = id;
     const tile = getTileById(id);
     if (tile) {
+        tile.minimized = false;
+        tile.visible = true;
         tile.lastFocused = Date.now();
     }
     const isMobile = isMobilePhone();
     const isPortrait = isPortraitMode();
     if (isMobile && isPortrait) {
-        openTiles.forEach(t => t.visible = false);
+        openTiles.forEach(t => {
+            if (t.id != activeTileId) t.visible = false;
+        });
         const focused = getTileById(activeTileId);
-        if (focused) focused.visible = true;
-        const otherTiles = openTiles.filter(t => t.id != activeTileId);
+        if (focused) {
+            focused.visible = true;
+            focused.minimized = false;
+        }
+        const otherTiles = openTiles.filter(t => t.id != activeTileId && !t.minimized);
         if (otherTiles.length > 0) {
             otherTiles.sort((a, b) => (b.lastFocused || 0) - (a.lastFocused || 0));
             otherTiles[0].visible = true;
         }
     } else {
-        openTiles.forEach(t => t.visible = true);
+        openTiles.forEach(t => {
+            if (t.id == activeTileId) {
+                t.visible = true;
+                t.minimized = false;
+            }
+        });
     }
     openTiles.forEach(t => {
-        if (t.visible === false) {
+        if (t.minimized || t.visible === false) {
             t.element.style.display = 'none';
         } else {
             t.element.style.display = t.isFloat ? 'block' : 'flex';
@@ -225,7 +264,7 @@ function focusTile(id) {
     retile();
 }
 function retile() {
-    const tiledTiles = openTiles.filter(t => !t.isFloat && t.visible !== false);
+    const tiledTiles = openTiles.filter(t => !t.isFloat && !t.minimized && t.visible !== false);
     const container = document.getElementById('tile-container');
     const topBar = document.getElementById('top-bar');
     if (!container) return;

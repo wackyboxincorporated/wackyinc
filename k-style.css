@@ -612,6 +612,15 @@ input:focus {
 .tile-control-btn.close:hover {
     color: #ff4444;
 }
+.tile-control-btn.minimize:hover {
+    color: #ffffff;
+}
+.top-bar-tile-tab.minimized {
+    opacity: 0.5;
+}
+.mobile-task-item.minimized {
+    opacity: 0.6;
+}
 .tile-content {
     flex: 1;
     overflow: auto;

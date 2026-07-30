@@ -295,8 +295,8 @@ function renderTopBar() {
           </button>
           <div class="mobile-task-dropdown-menu" id="mobile-task-menu" style="display:none;">
             ${openTiles.map(t => `
-              <div class="mobile-task-item ${t.id == activeTileId ? 'active' : ''}" data-id="${t.id}">
-                <span class="item-title">${t.icon || '■'} ${t.title.toLowerCase()}</span>
+              <div class="mobile-task-item ${t.id == activeTileId ? 'active' : ''} ${t.minimized ? 'minimized' : ''}" data-id="${t.id}">
+                <span class="item-title">${t.icon || '■'} ${t.title.toLowerCase()} ${t.minimized ? '[_]' : ''}</span>
                 <span class="item-close" data-close-id="${t.id}" title="close">✕</span>
               </div>
             `).join('')}
@@ -311,9 +311,9 @@ function renderTopBar() {
         const isActive = typeof activeTileId !== 'undefined' && activeTileId == tile.id;
         const icon = tile.icon || (tile.isFloat ? '⊡' : '■');
         tileIndicatorsHTML += `
-          <div class="top-bar-tile-tab ${isActive ? 'active' : ''}" data-id="${tile.id}" title="${tile.title}">
+          <div class="top-bar-tile-tab ${isActive ? 'active' : ''} ${tile.minimized ? 'minimized' : ''}" data-id="${tile.id}" title="${tile.title}">
             <span>${icon}</span>
-            <span class="tab-title">${tile.title.toLowerCase()}</span>
+            <span class="tab-title">${tile.title.toLowerCase()} ${tile.minimized ? '[_]' : ''}</span>
             <span class="tab-close-btn" data-close-id="${tile.id}" title="close">✕</span>
           </div>
         `;
