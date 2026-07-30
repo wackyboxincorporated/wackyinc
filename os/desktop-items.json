@@ -63,12 +63,12 @@
     "type": "folder",
     "class": "folder",
     "contents": [
-      { "name": "MAIN.pmp", "type": "file", "class": "code" },
+      { "name": "archives/MAIN.pmp", "type": "file", "class": "code" },
       { "name": "index.html", "type": "file", "class": "code", "action": "newTab" },
       { "name": "pennies.html", "type": "file", "class": "code", "action": "newTab" },
-      { "name": "restore-point.pmp", "type": "file", "class": "code" },
-      { "name": "CNAME", "type": "file", "class": "document" },
-      { "name": "README.md", "type": "file", "class": "document" }
+      { "name": "archives/restore-point.pmp", "type": "file", "class": "code" },
+      { "name": "documents/CNAME", "type": "file", "class": "document" },
+      { "name": "documents/README.md", "type": "file", "class": "document" }
     ]
   },
   {
@@ -76,11 +76,11 @@
     "type": "folder",
     "class": "folder",
     "contents": [
-      { "name": "Bliss_(Windows_XP).png", "type": "file", "class": "image" },
-      { "name": "sunflowers_puresky_4k.hdr", "type": "file", "class": "image" },
-      { "name": "Caligula.webm", "type": "file", "class": "video" },
-      { "name": "craft.mp4", "type": "file", "class": "video" },
-      { "name": "Projecdfgvb.zip", "type": "file", "class": "zip" }
+      { "name": "media/Bliss_(Windows_XP).png", "type": "file", "class": "image" },
+      { "name": "media/sunflowers_puresky_4k.hdr", "type": "file", "class": "image" },
+      { "name": "media/Caligula.webm", "type": "file", "class": "video" },
+      { "name": "media/craft.mp4", "type": "file", "class": "video" },
+      { "name": "archives/Projecdfgvb.zip", "type": "file", "class": "zip" }
     ]
   }
 ]

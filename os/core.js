@@ -4,6 +4,19 @@ const MEDIA_PLAYER_APP_URL = `${BASE_URL}media?=`;
 let desktopItems = [];
 let customDesktopItems = []; 
 let LOCKED_FOLDER = {};
+const systemApps = [
+    { name: 'Calculator', type: 'system_app', class: 'webapp-calculator', action: 'openCalculator' },
+    { name: 'Clock', type: 'system_app', class: 'webapp-clock', action: 'openClock' },
+    { name: 'About', type: 'system_app', class: 'webapp-about', action: 'openAbout' },
+    { name: 'Notepad', type: 'system_app', class: 'webapp-notepad', action: 'openNotepad' },
+    { name: 'Settings', type: 'system_app', class: 'webapp-settings', action: 'openSettings' },
+    { name: 'Browser', type: 'system_app', class: 'webapp-browser', action: 'openBrowser' },
+    { name: 'File Explorer', type: 'system_app', class: 'webapp-explorer', action: 'openExplorer' },
+    { name: 'Terminal', type: 'system_app', class: 'webapp-terminal', action: 'openTerminal' },
+    { name: 'Theme studio', type: 'system_app', class: 'webapp-themes', action: 'openThemeApp' },
+    { name: 'Video Player', type: 'system_app', class: 'webapp-video', action: 'openVideoPlayer' }, 
+    { name: 'Meaty Player', type: 'system_app', class: 'webapp-meaty', action: 'openMeatyPlayer' }, 
+];
 let highestZIndex = 1000;
 let openWindows = {}; 
 let openMobileAppOrder = []; 
@@ -21,10 +34,22 @@ let appSettings = {
     graphicsGlass: true, 
     glassTint: '#ffffff', 
     windowOpacity: 0.25, 
+    contentOpacity: null,
     titleColor: 'auto', 
     autoContrastTitle: true,
     taskbarPosition: 'bottom',
     taskbarMode: 'standard', 
+    taskbarSize: 36,
+    taskbarHeight: 36,
+    taskbarAlignment: 'left',
+    taskbarGroupWindows: true,
+    taskbarShowClockSeconds: true,
+    taskbarClockFormat: '12h',
+    taskbarCustomBg: '',
+    taskbarTextColor: '',
+    taskbarClockColor: '',
+    taskbarOpacity: 0.85,
+    quickLaunchApps: ['Browser', 'Terminal', 'Notepad', 'File Explorer'],
     iconSize: 'medium',
     alwaysOpenInWindow: false,
     taskbarAutohide: false, 
@@ -46,6 +71,12 @@ let appSettings = {
     accentPrimary: '',
     textSecondary: '',
     borderColor: '',
+    windowCornerRadius: null,
+    windowBorderWidth: null,
+    windowShadowBlur: null,
+    glassBlur: null,
+    systemFont: 'default',
+    startMenuTextBold: false,
     uiSounds: { 
         enabled: true,
         volume: 0.5,
@@ -55,7 +86,7 @@ let appSettings = {
         error: ''
     }
 };
-const SETTINGS_KEY = 'wackybox_settings_v7'; 
+const SETTINGS_KEY = 'wackybox_settings_v10'; 
 const CUSTOM_APPS_KEY = 'wackybox_custom_apps_v1'; 
 
 function saveSettings() {
@@ -74,7 +105,17 @@ function saveCustomApps() {
     }
 }
 
-function loadSettings() {
+async function loadSettings() {
+    try {
+        const response = await fetch('default-theme.json');
+        if (response.ok) {
+            const defaultPreset = await response.json();
+            appSettings = { ...appSettings, ...defaultPreset };
+        }
+    } catch (err) {
+        // Default theme preset file optional
+    }
+
     try {
         const savedSettings = localStorage.getItem(SETTINGS_KEY);
         if (savedSettings) {
@@ -167,14 +208,27 @@ function applySettings() {
 
     
     let winBg = '';
+    const winOp = appSettings.windowOpacity !== undefined ? appSettings.windowOpacity : 0.25;
+
     if (appSettings.windowBgType === 'solid') {
-        winBg = appSettings.windowBgSolid || '#00000e';
+        const hexColor = appSettings.windowBgSolid || '#00000e';
+        const rgb = hexToRgb(hexColor);
+        if (rgb) {
+            winBg = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${winOp})`;
+        } else {
+            winBg = hexColor;
+        }
     } else if (appSettings.windowBgType === 'gradient') {
         const dir = appSettings.windowBgGradDir || 'to top';
-        const c1 = appSettings.windowBgGrad1 || '#f3904f';
-        const c2 = appSettings.windowBgGrad2 || '#3b4371';
+        const c1Hex = appSettings.windowBgGrad1 || '#f3904f';
+        const c2Hex = appSettings.windowBgGrad2 || '#3b4371';
+        const rgb1 = hexToRgb(c1Hex);
+        const rgb2 = hexToRgb(c2Hex);
+        const c1 = rgb1 ? `rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, ${winOp})` : c1Hex;
+        const c2 = rgb2 ? `rgba(${rgb2.r}, ${rgb2.g}, ${rgb2.b}, ${winOp})` : c2Hex;
+        
         if (dir === 'radial-gradient') {
-            winBg = `radial-gradient(circle, ${c1} 0%, ${c2} 100%)`;
+            winBg = `radial-gradient(circle, ${c1}, ${c2})`;
         } else {
             winBg = `linear-gradient(${dir}, ${c1}, ${c2})`;
         }
@@ -190,14 +244,27 @@ function applySettings() {
 
     
     let contentBg = '';
+    const contentOp = appSettings.contentOpacity !== null && appSettings.contentOpacity !== undefined ? appSettings.contentOpacity : 0.85;
+
     if (appSettings.contentBgType === 'solid') {
-        contentBg = appSettings.contentBgSolid || '#000000';
+        const hexColor = appSettings.contentBgSolid || '#000000';
+        const rgb = hexToRgb(hexColor);
+        if (rgb) {
+            contentBg = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${contentOp})`;
+        } else {
+            contentBg = hexColor;
+        }
     } else if (appSettings.contentBgType === 'gradient') {
         const dir = appSettings.contentBgGradDir || 'to top';
-        const c1 = appSettings.contentBgGrad1 || '#2b4c7e';
-        const c2 = appSettings.contentBgGrad2 || '#0a0f1d';
+        const c1Hex = appSettings.contentBgGrad1 || '#2b4c7e';
+        const c2Hex = appSettings.contentBgGrad2 || '#0a0f1d';
+        const rgb1 = hexToRgb(c1Hex);
+        const rgb2 = hexToRgb(c2Hex);
+        const c1 = rgb1 ? `rgba(${rgb1.r}, ${rgb1.g}, ${rgb1.b}, ${contentOp})` : c1Hex;
+        const c2 = rgb2 ? `rgba(${rgb2.r}, ${rgb2.g}, ${rgb2.b}, ${contentOp})` : c2Hex;
+        
         if (dir === 'radial-gradient') {
-            contentBg = `radial-gradient(circle, ${c1} 0%, ${c2} 100%)`;
+            contentBg = `radial-gradient(circle, ${c1}, ${c2})`;
         } else {
             contentBg = `linear-gradient(${dir}, ${c1}, ${c2})`;
         }
@@ -212,20 +279,39 @@ function applySettings() {
     }
 
     
-    if (appSettings.theme === 'mts-new') {
-        if (appSettings.textPrimary) document.body.style.setProperty('--theme-text-primary', appSettings.textPrimary);
-        else document.body.style.removeProperty('--theme-text-primary');
-        
-        if (appSettings.accentPrimary) document.body.style.setProperty('--theme-accent-primary', appSettings.accentPrimary);
-        else document.body.style.removeProperty('--theme-accent-primary');
-        
-        if (appSettings.textSecondary) document.body.style.setProperty('--theme-text-secondary', appSettings.textSecondary);
-        else document.body.style.removeProperty('--theme-text-secondary');
-        
-        if (appSettings.borderColor) document.body.style.setProperty('--theme-border-color', appSettings.borderColor);
-        else document.body.style.removeProperty('--theme-border-color');
+    if (appSettings.textPrimary) {
+        document.body.style.setProperty('--theme-text-primary', appSettings.textPrimary);
+        document.documentElement.style.setProperty('--theme-text-primary', appSettings.textPrimary);
+    } else {
+        document.body.style.removeProperty('--theme-text-primary');
+        document.documentElement.style.removeProperty('--theme-text-primary');
+    }
+    
+    if (appSettings.accentPrimary) {
+        document.body.style.setProperty('--theme-accent-primary', appSettings.accentPrimary);
+        document.documentElement.style.setProperty('--theme-accent-primary', appSettings.accentPrimary);
+    } else {
+        document.body.style.removeProperty('--theme-accent-primary');
+        document.documentElement.style.removeProperty('--theme-accent-primary');
+    }
+    
+    if (appSettings.textSecondary) {
+        document.body.style.setProperty('--theme-text-secondary', appSettings.textSecondary);
+        document.documentElement.style.setProperty('--theme-text-secondary', appSettings.textSecondary);
+    } else {
+        document.body.style.removeProperty('--theme-text-secondary');
+        document.documentElement.style.removeProperty('--theme-text-secondary');
+    }
+    
+    if (appSettings.borderColor) {
+        document.body.style.setProperty('--theme-border-color', appSettings.borderColor);
+        document.documentElement.style.setProperty('--theme-border-color', appSettings.borderColor);
+    } else {
+        document.body.style.removeProperty('--theme-border-color');
+        document.documentElement.style.removeProperty('--theme-border-color');
+    }
 
-        
+    if (appSettings.theme === 'mts-new') {
         const baseColor = appSettings.accentPrimary || '#2be19b';
         const bgPrimaryRgb = getDarkTintRgb(baseColor, 0.08, 12, 12, 14);
         const bgPrimary = rgbToString(bgPrimaryRgb);
@@ -239,15 +325,19 @@ function applySettings() {
         document.body.style.setProperty('--glass-tint', `${bgPrimaryRgb.r}, ${bgPrimaryRgb.g}, ${bgPrimaryRgb.b}`);
         document.documentElement.style.setProperty('--glass-tint', `${bgPrimaryRgb.r}, ${bgPrimaryRgb.g}, ${bgPrimaryRgb.b}`);
     } else {
-        document.body.style.removeProperty('--theme-text-primary');
-        document.body.style.removeProperty('--theme-accent-primary');
-        document.body.style.removeProperty('--theme-text-secondary');
-        document.body.style.removeProperty('--theme-border-color');
         document.body.style.removeProperty('--theme-bg-primary');
         document.body.style.removeProperty('--theme-bg-secondary');
         document.body.style.removeProperty('--theme-bg-tertiary');
         document.body.style.removeProperty('--glass-tint');
         document.documentElement.style.removeProperty('--glass-tint');
+    }
+
+    if (appSettings.startMenuTextBold) {
+        document.body.style.setProperty('--start-menu-font-weight', 'bold');
+        document.documentElement.style.setProperty('--start-menu-font-weight', 'bold');
+    } else {
+        document.body.style.removeProperty('--start-menu-font-weight');
+        document.documentElement.style.removeProperty('--start-menu-font-weight');
     }
 
     
@@ -277,9 +367,47 @@ function applySettings() {
 
     
     
+    if (appSettings.windowCornerRadius !== null && appSettings.windowCornerRadius !== undefined) {
+        document.body.style.setProperty('--window-border-radius', `${appSettings.windowCornerRadius}px`);
+        document.documentElement.style.setProperty('--window-border-radius', `${appSettings.windowCornerRadius}px`);
+    } else {
+        document.body.style.removeProperty('--window-border-radius');
+        document.documentElement.style.removeProperty('--window-border-radius');
+    }
+
+    if (appSettings.windowBorderWidth !== null && appSettings.windowBorderWidth !== undefined) {
+        document.body.style.setProperty('--window-border-width', `${appSettings.windowBorderWidth}px`);
+        document.documentElement.style.setProperty('--window-border-width', `${appSettings.windowBorderWidth}px`);
+    } else {
+        document.body.style.removeProperty('--window-border-width');
+        document.documentElement.style.removeProperty('--window-border-width');
+    }
+
+    if (appSettings.glassBlur !== null && appSettings.glassBlur !== undefined) {
+        document.body.style.setProperty('--glass-blur', `${appSettings.glassBlur}px`);
+        document.documentElement.style.setProperty('--glass-blur', `${appSettings.glassBlur}px`);
+    } else {
+        document.body.style.removeProperty('--glass-blur');
+        document.documentElement.style.removeProperty('--glass-blur');
+    }
+
+    if (appSettings.systemFont && appSettings.systemFont !== 'default') {
+        let fontVal = 'var(--font-sans)';
+        if (appSettings.systemFont === 'mono') fontVal = 'var(--font-mono)';
+        if (appSettings.systemFont === 'serif') fontVal = 'Georgia, serif';
+        document.body.style.setProperty('--theme-font-body', fontVal);
+        document.documentElement.style.setProperty('--theme-font-body', fontVal);
+    } else {
+        document.body.style.removeProperty('--theme-font-body');
+        document.documentElement.style.removeProperty('--theme-font-body');
+    }
+
     const opacity = appSettings.windowOpacity !== undefined ? appSettings.windowOpacity : 0.1;
     document.body.style.setProperty('--window-opacity', opacity);
     document.documentElement.style.setProperty('--window-opacity', opacity);
+
+    document.body.style.setProperty('--content-opacity', contentOp);
+    document.documentElement.style.setProperty('--content-opacity', contentOp);
 
     
     if (appSettings.glassTint) {
@@ -383,7 +511,7 @@ function applySettings() {
             break;
         case 'default':
         default:
-            desktop.style.backgroundImage = 'url("windows_vista_49.jpg")';
+            desktop.style.backgroundImage = 'url("../media/windows_vista_49.jpg")';
             applyWallpaperStyle(desktop, appSettings.wallpaperStyle);
             break;
     }
@@ -391,17 +519,63 @@ function applySettings() {
     const taskbar = document.querySelector('.taskbar');
     const container = document.getElementById('desktop-icon-container');
     
-    taskbar.className = 'taskbar';
-    container.style.top = ''; container.style.left = ''; container.style.width = ''; container.style.height = '';
-    body.classList.remove('taskbar-top', 'taskbar-left', 'taskbar-bottom', 'taskbar-autohide'); 
-    
-    taskbar.classList.add(`taskbar-${appSettings.taskbarPosition}`);
-    body.classList.add(`taskbar-${appSettings.taskbarPosition}`); 
-    
-    if (appSettings.taskbarAutohide) {
-        body.classList.add('taskbar-autohide');
+    if (taskbar) {
+        taskbar.className = 'taskbar';
+        body.classList.remove('taskbar-top', 'taskbar-left', 'taskbar-bottom', 'taskbar-autohide', 'taskbar-align-left', 'taskbar-align-center', 'taskbar-align-right'); 
+        
+        taskbar.classList.add(`taskbar-${appSettings.taskbarPosition}`);
+        body.classList.add(`taskbar-${appSettings.taskbarPosition}`); 
+        
+        const align = appSettings.taskbarAlignment || 'left';
+        taskbar.classList.add(`taskbar-align-${align}`);
+        body.classList.add(`taskbar-align-${align}`);
+
+        if (appSettings.taskbarAutohide) {
+            body.classList.add('taskbar-autohide');
+        }
+        
+        const tbHeight = appSettings.taskbarHeight || appSettings.taskbarSize || 36;
+        document.body.style.setProperty('--taskbar-height', `${tbHeight}px`);
+        document.documentElement.style.setProperty('--taskbar-height', `${tbHeight}px`);
+
+        const tbOpacity = appSettings.taskbarOpacity !== undefined ? appSettings.taskbarOpacity : 0.85;
+        document.body.style.setProperty('--taskbar-opacity', tbOpacity);
+
+        if (appSettings.taskbarCustomBg) {
+            let bgVal = appSettings.taskbarCustomBg;
+            if (bgVal.startsWith('#')) {
+                const rgb = hexToRgb(bgVal);
+                if (rgb) {
+                    bgVal = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${tbOpacity})`;
+                }
+            }
+            taskbar.style.setProperty('background', bgVal, 'important');
+            document.body.style.setProperty('--taskbar-custom-bg', bgVal);
+        } else {
+            taskbar.style.removeProperty('background');
+            document.body.style.removeProperty('--taskbar-custom-bg');
+        }
+
+        if (appSettings.taskbarTextColor) {
+            document.body.style.setProperty('--taskbar-text-color', appSettings.taskbarTextColor);
+            document.documentElement.style.setProperty('--taskbar-text-color', appSettings.taskbarTextColor);
+        } else {
+            document.body.style.removeProperty('--taskbar-text-color');
+            document.documentElement.style.removeProperty('--taskbar-text-color');
+        }
+
+        if (appSettings.taskbarClockColor) {
+            document.body.style.setProperty('--clock-text-color', appSettings.taskbarClockColor);
+            document.documentElement.style.setProperty('--clock-text-color', appSettings.taskbarClockColor);
+        } else {
+            document.body.style.removeProperty('--clock-text-color');
+            document.documentElement.style.removeProperty('--clock-text-color');
+        }
     }
     
+    if (container) {
+        container.style.top = ''; container.style.left = ''; container.style.width = ''; container.style.height = '';
+    }
     
     const iconContainers = [container, document.getElementById('mobile-icon-pages')];
     iconContainers.forEach(cont => {
@@ -410,29 +584,18 @@ function applySettings() {
         cont.classList.add(`icon-size-${appSettings.iconSize}`);
     });
 
-    
     if (isMobile()) {
         renderMobileIcons();
     } else {
         renderDesktopIcons(); 
     }
     
-    
-    document.querySelectorAll('.task-item').forEach(item => {
-        
-        const title = item.getAttribute('title') || item.textContent;
-        if (appSettings.taskbarMode === 'compact') {
-            item.textContent = ''; 
-            item.title = title; 
-            item.style.width = '40px'; 
-            item.style.justifyContent = 'center';
-        } else {
-            item.textContent = title; 
-            item.removeAttribute('title');
-            item.style.width = ''; 
-            item.style.justifyContent = '';
-        }
-    });
+    if (typeof renderQuickLaunchBar === 'function') {
+        renderQuickLaunchBar();
+    }
+    if (typeof renderTaskbarItems === 'function') {
+        renderTaskbarItems();
+    }
 
     let clockBgColor = '#000000';
     if (appSettings.windowBgType === 'solid' && appSettings.windowBgSolid) {
@@ -813,33 +976,19 @@ async function initializeDesktop() {
         class: "locked-folder",
         passwordHash: "4033079d33b678f4f66d37b9557df43aa629a83ab00ff5f1dc68b8182b089225",
         contents: [
-            { "name": "Bliss_(Windows_XP).png", "type": "file", "class": "image" },
-            { "name": "Caligula.webm", "type": "file", "class": "video" },
-            { "name": "Grain (1).mp3", "type": "file", "class": "audio" },
-            { "name": "Really joke m.mp3", "type": "file", "class": "audio" },
-            { "name": "Your'e Note Reale.mp3", "type": "file", "class": "audio" },
-            { "name": "craft.mp4", "type": "file", "class": "video" },
-            { "name": "gONEW.mp3", "type": "file", "class": "audio" },
-            { "name": "minecraft.ogg", "type": "file", "class": "audio" },
-            { "name": "smile sower.ogg", "type": "file", "class": "audio" },
-            { "name": "sunflowers_puresky_4k.hdr", "type": "file", "class": "image" },
-            { "name": "the brown lane.ogg", "type": "file", "class": "audio" },
+            { "name": "media/Bliss_(Windows_XP).png", "type": "file", "class": "image" },
+            { "name": "media/Caligula.webm", "type": "file", "class": "video" },
+            { "name": "media/Grain (1).mp3", "type": "file", "class": "audio" },
+            { "name": "media/Really joke m.mp3", "type": "file", "class": "audio" },
+            { "name": "media/Your'e Note Reale.mp3", "type": "file", "class": "audio" },
+            { "name": "media/craft.mp4", "type": "file", "class": "video" },
+            { "name": "media/gONEW.mp3", "type": "file", "class": "audio" },
+            { "name": "media/minecraft.ogg", "type": "file", "class": "audio" },
+            { "name": "media/smile sower.ogg", "type": "file", "class": "audio" },
+            { "name": "media/sunflowers_puresky_4k.hdr", "type": "file", "class": "image" },
+            { "name": "media/the brown lane.ogg", "type": "file", "class": "audio" },
         ]
     };
-
-    const systemApps = [
-        { name: 'Calculator', type: 'system_app', class: 'webapp-calculator', action: 'openCalculator' },
-        { name: 'Clock', type: 'system_app', class: 'webapp-clock', action: 'openClock' },
-        { name: 'About', type: 'system_app', class: 'webapp-about', action: 'openAbout' },
-        { name: 'Notepad', type: 'system_app', class: 'webapp-notepad', action: 'openNotepad' },
-        { name: 'Settings', type: 'system_app', class: 'webapp-settings', action: 'openSettings' },
-        { name: 'Browser', type: 'system_app', class: 'webapp-browser', action: 'openBrowser' },
-        { name: 'File Explorer', type: 'system_app', class: 'webapp-explorer', action: 'openExplorer' },
-        { name: 'Terminal', type: 'system_app', class: 'webapp-terminal', action: 'openTerminal' },
-        { name: 'Theme studio', type: 'system_app', class: 'webapp-themes', action: 'openThemeApp' },
-        { name: 'Video Player', type: 'system_app', class: 'webapp-video', action: 'openVideoPlayer' }, 
-        { name: 'Meaty Player', type: 'system_app', class: 'webapp-meaty', action: 'openMeatyPlayer' }, 
-    ];
 
     desktopItems = [...filteredDesktopItems, LOCKED_FOLDER, ...systemApps, ...customDesktopItems];
 

@@ -280,6 +280,22 @@ function openSettingsApp() {
             </div>
             
             <div class="setting-group">
+                <label for="taskbar-align-select">Taskbar Alignment</label>
+                <select id="taskbar-align-select">
+                    <option value="left">Left Aligned</option>
+                    <option value="center">Centered (Modern)</option>
+                    <option value="right">Right Aligned</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                 <div class="setting-group-row">
+                    <input type="checkbox" id="taskbar-group-check">
+                    <label for="taskbar-group-check">Group window buttons</label>
+                </div>
+            </div>
+
+            <div class="setting-group">
                  <div class="setting-group-row">
                     <input type="checkbox" id="taskbar-autohide-check">
                     <label for="taskbar-autohide-check">Auto-hide taskbar</label>
@@ -334,10 +350,15 @@ function openSettingsApp() {
     const iconSizeSelect = win.querySelector('#icon-size-select');
     const alwaysOpenCheck = win.querySelector('#always-open-in-window-check');
 
+    const taskbarAlignSelect = win.querySelector('#taskbar-align-select');
+    const taskbarGroupCheck = win.querySelector('#taskbar-group-check');
+
     glassCheck.checked = appSettings.graphicsGlass;
     threeDCheck.checked = appSettings.graphics3d;
     taskbarSelect.value = appSettings.taskbarPosition;
     taskbarModeSelect.value = appSettings.taskbarMode || 'standard';
+    if (taskbarAlignSelect) taskbarAlignSelect.value = appSettings.taskbarAlignment || 'left';
+    if (taskbarGroupCheck) taskbarGroupCheck.checked = appSettings.taskbarGroupWindows !== false;
     taskbarAutohideCheck.checked = appSettings.taskbarAutohide;
     iconSizeSelect.value = appSettings.iconSize;
     alwaysOpenCheck.checked = appSettings.alwaysOpenInWindow;
@@ -365,6 +386,22 @@ function openSettingsApp() {
         applySettings();
         saveSettings();
     });
+
+    if (taskbarAlignSelect) {
+        taskbarAlignSelect.addEventListener('change', (e) => {
+            appSettings.taskbarAlignment = e.target.value;
+            applySettings();
+            saveSettings();
+        });
+    }
+
+    if (taskbarGroupCheck) {
+        taskbarGroupCheck.addEventListener('change', (e) => {
+            appSettings.taskbarGroupWindows = e.target.checked;
+            applySettings();
+            saveSettings();
+        });
+    }
 
     taskbarAutohideCheck.addEventListener('change', (e) => {
         appSettings.taskbarAutohide = e.target.checked;
@@ -1031,9 +1068,9 @@ function openThemeApp() {
                 </div>
             </div>
             
-            <div id="mts-new-customizers" class="setting-group" style="display: none;">
-                <label>Mts new colors</label>
-                <small>Customize the default colors for the Mts new theme.</small>
+            <div id="mts-new-customizers" class="setting-group">
+                <label>Theme color overrides</label>
+                <small>Customize primary, secondary, accent, and border colors across any theme.</small>
                 <div class="setting-group-row" style="margin-top: 5px; gap: 10px; flex-wrap: wrap;">
                     <div style="display: flex; align-items: center; gap: 5px;">
                         <input type="color" id="color-text-primary" value="#8daef2">
@@ -1052,7 +1089,7 @@ function openThemeApp() {
                         <label for="color-border" style="font-size: 11px;">Border</label>
                     </div>
                 </div>
-                <button id="reset-mts-colors-btn" style="margin-top: 10px;">Reset Mts colors</button>
+                <button id="reset-mts-colors-btn" style="margin-top: 10px;">Reset color overrides</button>
             </div>
 
             <div class="setting-group">
@@ -1149,11 +1186,140 @@ function openThemeApp() {
             </div>
 
             <div class="setting-group">
-                <label>Window transparency</label>
-                <small>Adjust how transparent the background and title bars are.</small>
+                <label>Window frame transparency</label>
+                <small>Adjust how transparent title bars and outer window frames are.</small>
                 <div class="setting-group-row" style="margin-top: 5px;">
                     <input type="range" id="window-opacity-slider" min="0.1" max="1.0" step="0.05" style="flex-grow: 1;">
                     <span id="window-opacity-value" style="min-width: 40px; text-align: right;">25%</span>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label>Window content transparency</label>
+                <small>Adjust transparency for the inner app content area with glass blur.</small>
+                <div class="setting-group-row" style="margin-top: 5px;">
+                    <input type="range" id="content-opacity-slider" min="0.05" max="1.0" step="0.05" style="flex-grow: 1;">
+                    <span id="content-opacity-value" style="min-width: 40px; text-align: right;">35%</span>
+                </div>
+            </div>
+            <div class="setting-group" style="border-top: 1px solid var(--theme-border-color); padding-top: 10px;">
+                <label style="color: var(--theme-accent-primary); font-weight: bold;">Preset Savefile & Management</label>
+                <small>Export current theme config to site savefile or import JSON preset.</small>
+                <div class="setting-group-row" style="margin-top: 8px; gap: 8px;">
+                    <button id="export-theme-preset-btn" style="flex:1;">💾 Download Savefile</button>
+                    <button id="import-theme-preset-btn" style="flex:1;">📂 Import Preset</button>
+                    <input type="file" id="import-theme-file-input" accept=".json" style="display:none;">
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label>Window corner radius</label>
+                <small>Adjust roundness of window frames.</small>
+                <div class="setting-group-row" style="margin-top: 5px;">
+                    <input type="range" id="window-corner-slider" min="0" max="24" step="1" style="flex-grow: 1;">
+                    <span id="window-corner-value" style="min-width: 40px; text-align: right;">12px</span>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label>Window border width</label>
+                <small>Adjust thickness of window outline borders.</small>
+                <div class="setting-group-row" style="margin-top: 5px;">
+                    <input type="range" id="window-border-slider" min="1" max="6" step="1" style="flex-grow: 1;">
+                    <span id="window-border-value" style="min-width: 40px; text-align: right;">1.5px</span>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label>Glass backdrop blur</label>
+                <small>Adjust blur intensity for glass transparent elements.</small>
+                <div class="setting-group-row" style="margin-top: 5px;">
+                    <input type="range" id="glass-blur-slider" min="0" max="35" step="1" style="flex-grow: 1;">
+                    <span id="glass-blur-value" style="min-width: 40px; text-align: right;">25px</span>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label>System font family</label>
+                <small>Choose default font for user interface and applications.</small>
+                <select id="system-font-select" style="width: 100%; margin-top: 5px; background: rgba(0,0,0,0.2); color: var(--theme-text-primary); border: 1px solid var(--theme-border-color); padding: 5px; border-radius: 4px; outline: none; font-family: var(--theme-font-body);">
+                    <option value="default">Theme Default</option>
+                    <option value="mono">Share Tech Mono (Code / Retro)</option>
+                    <option value="sans">Outfit (Modern Sans-Serif)</option>
+                    <option value="serif">Georgia (Classic Serif)</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <label style="color: var(--theme-accent-primary); font-weight: bold;">Taskbar config</label>
+                <small>Customize panel size, task alignment, window grouping, and clock format.</small>
+
+                <div class="setting-group-row" style="margin-top: 8px; justify-content: space-between;">
+                    <label style="font-size: 12px;">Taskbar Height / Size:</label>
+                    <input type="range" id="tb-height-slider" min="28" max="64" step="2" style="width: 140px;">
+                    <span id="tb-height-val" style="font-size: 12px;">36px</span>
+                </div>
+
+                <div class="setting-group-row" style="margin-top: 8px; justify-content: space-between;">
+                    <label style="font-size: 12px;">Task Alignment:</label>
+                    <select id="tb-align-select" style="padding: 4px; font-size: 12px; background: rgba(0,0,0,0.2); color: var(--theme-text-primary); border: 1px solid var(--theme-border-color); border-radius: 4px;">
+                        <option value="left">Left Aligned</option>
+                        <option value="center">Centered (Modern)</option>
+                        <option value="right">Right Aligned</option>
+                    </select>
+                </div>
+
+                <div class="setting-group-row" style="margin-top: 8px;">
+                    <input type="checkbox" id="tb-group-check">
+                    <label for="tb-group-check" style="font-size: 12px;">Group window buttons by application</label>
+                </div>
+
+                <div class="setting-group-row" style="margin-top: 8px;">
+                    <input type="checkbox" id="start-bold-check">
+                    <label for="start-bold-check" style="font-size: 12px;">Make start menu text bold</label>
+                </div>
+
+                <div class="setting-group-row" style="margin-top: 8px; justify-content: space-between;">
+                    <label style="font-size: 12px;">Taskbar Opacity:</label>
+                    <input type="range" id="tb-opacity-slider" min="0.1" max="1.0" step="0.05" style="width: 140px;">
+                    <span id="tb-opacity-val" style="font-size: 12px;">85%</span>
+                </div>
+
+                <div class="setting-group-row" style="margin-top: 8px; justify-content: space-between;">
+                    <label style="font-size: 12px;">Clock Time Format:</label>
+                    <select id="tb-clock-format-select" style="padding: 4px; font-size: 12px; background: rgba(0,0,0,0.2); color: var(--theme-text-primary); border: 1px solid var(--theme-border-color); border-radius: 4px;">
+                        <option value="12h">12-hour (AM/PM)</option>
+                        <option value="24h">24-hour</option>
+                    </select>
+                </div>
+
+                <div class="setting-group-row" style="margin-top: 8px;">
+                    <input type="checkbox" id="tb-clock-seconds-check">
+                    <label for="tb-clock-seconds-check" style="font-size: 12px;">Show seconds in clock</label>
+                </div>
+
+                <div class="setting-group-row" style="margin-top: 8px; justify-content: space-between; align-items: center;">
+                    <label style="font-size: 12px;">Custom Taskbar Color:</label>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <input type="color" id="tb-custom-bg-picker" value="#000000">
+                        <button id="tb-reset-bg-btn" style="font-size: 11px; padding: 2px 6px;">Reset</button>
+                    </div>
+                </div>
+
+                <div class="setting-group-row" style="margin-top: 8px; justify-content: space-between; align-items: center;">
+                    <label style="font-size: 12px;">Taskbar Text Color:</label>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <input type="color" id="tb-text-color-picker" value="#ffffff">
+                        <button id="tb-reset-text-btn" style="font-size: 11px; padding: 2px 6px;">Reset</button>
+                    </div>
+                </div>
+
+                <div class="setting-group-row" style="margin-top: 8px; justify-content: space-between; align-items: center;">
+                    <label style="font-size: 12px;">Tray Clock Color:</label>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <input type="color" id="tb-clock-color-picker" value="#ffffff">
+                        <button id="tb-reset-clock-btn" style="font-size: 11px; padding: 2px 6px;">Reset</button>
+                    </div>
                 </div>
             </div>
 
@@ -1211,7 +1377,7 @@ function openThemeApp() {
     const win = openWindow('Theme studio', themeHTML, { width: '450px', height: '650px' });
 
     const wpStyles = {
-        'default': 'url("windows_vista_49.jpg") center/cover no-repeat',
+        'default': 'url("media/windows_vista_49.jpg") center/cover no-repeat',
         'glassy-gradient': 'radial-gradient(ellipse at top left, #2b4c7e 0%, #152238 60%, #0a0f1d 100%)',
         'ocean': 'radial-gradient(circle at 80% 80%, #a2d2ff 0%, #3a86ff 50%, #003566 100%)',
         'solid': '#4a5759',
@@ -1231,11 +1397,7 @@ function openThemeApp() {
     const resetMtsBtn = win.querySelector('#reset-mts-colors-btn');
 
     function updateMtsPickerVisibility() {
-        if (appSettings.theme === 'mts-new') {
-            mtsCustomizers.style.display = 'block';
-        } else {
-            mtsCustomizers.style.display = 'none';
-        }
+        mtsCustomizers.style.display = 'block';
     }
     updateMtsPickerVisibility();
 
@@ -1486,6 +1648,222 @@ function openThemeApp() {
         saveSettings();
     });
 
+    const contentOpacitySlider = win.querySelector('#content-opacity-slider');
+    const contentOpacityDisplay = win.querySelector('#content-opacity-value');
+
+    const currentContentOpacity = appSettings.contentOpacity !== null && appSettings.contentOpacity !== undefined ? appSettings.contentOpacity : currentOpacity;
+    if (contentOpacitySlider) {
+        contentOpacitySlider.value = currentContentOpacity;
+        contentOpacityDisplay.textContent = Math.round(currentContentOpacity * 100) + '%';
+        contentOpacitySlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            appSettings.contentOpacity = val;
+            contentOpacityDisplay.textContent = Math.round(val * 100) + '%';
+            applySettings();
+            saveSettings();
+        });
+    }
+
+    const windowCornerSlider = win.querySelector('#window-corner-slider');
+    const windowCornerValue = win.querySelector('#window-corner-value');
+    const windowBorderSlider = win.querySelector('#window-border-slider');
+    const windowBorderValue = win.querySelector('#window-border-value');
+    const glassBlurSlider = win.querySelector('#glass-blur-slider');
+    const glassBlurValue = win.querySelector('#glass-blur-value');
+    const systemFontSelect = win.querySelector('#system-font-select');
+    const startBoldCheck = win.querySelector('#start-bold-check');
+    const tbClockFormatSelect = win.querySelector('#tb-clock-format-select');
+    const tbClockSecondsCheck = win.querySelector('#tb-clock-seconds-check');
+
+    if (startBoldCheck) {
+        startBoldCheck.checked = !!appSettings.startMenuTextBold;
+        startBoldCheck.addEventListener('change', (e) => {
+            appSettings.startMenuTextBold = e.target.checked;
+            applySettings();
+            saveSettings();
+        });
+    }
+
+    if (windowCornerSlider) {
+        const cornerVal = appSettings.windowCornerRadius !== null && appSettings.windowCornerRadius !== undefined ? appSettings.windowCornerRadius : 12;
+        windowCornerSlider.value = cornerVal;
+        windowCornerValue.textContent = `${cornerVal}px`;
+        windowCornerSlider.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            appSettings.windowCornerRadius = val;
+            windowCornerValue.textContent = `${val}px`;
+            applySettings();
+            saveSettings();
+        });
+    }
+
+    if (windowBorderSlider) {
+        const borderVal = appSettings.windowBorderWidth !== null && appSettings.windowBorderWidth !== undefined ? appSettings.windowBorderWidth : 1.5;
+        windowBorderSlider.value = borderVal;
+        windowBorderValue.textContent = `${borderVal}px`;
+        windowBorderSlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            appSettings.windowBorderWidth = val;
+            windowBorderValue.textContent = `${val}px`;
+            applySettings();
+            saveSettings();
+        });
+    }
+
+    if (glassBlurSlider) {
+        const blurVal = appSettings.glassBlur !== null && appSettings.glassBlur !== undefined ? appSettings.glassBlur : 25;
+        glassBlurSlider.value = blurVal;
+        glassBlurValue.textContent = `${blurVal}px`;
+        glassBlurSlider.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            appSettings.glassBlur = val;
+            glassBlurValue.textContent = `${val}px`;
+            applySettings();
+            saveSettings();
+        });
+    }
+
+    if (systemFontSelect) {
+        systemFontSelect.value = appSettings.systemFont || 'default';
+        systemFontSelect.addEventListener('change', (e) => {
+            appSettings.systemFont = e.target.value;
+            applySettings();
+            saveSettings();
+        });
+    }
+
+    if (tbClockFormatSelect) {
+        tbClockFormatSelect.value = appSettings.taskbarClockFormat || '12h';
+        tbClockFormatSelect.addEventListener('change', (e) => {
+            appSettings.taskbarClockFormat = e.target.value;
+            applySettings();
+            saveSettings();
+        });
+    }
+
+    if (tbClockSecondsCheck) {
+        tbClockSecondsCheck.checked = appSettings.taskbarShowClockSeconds !== false;
+        tbClockSecondsCheck.addEventListener('change', (e) => {
+            appSettings.taskbarShowClockSeconds = e.target.checked;
+            applySettings();
+            saveSettings();
+        });
+    }
+    const tbHeightSlider = win.querySelector('#tb-height-slider');
+    const tbHeightVal = win.querySelector('#tb-height-val');
+    const tbAlignSelect = win.querySelector('#tb-align-select');
+    const tbGroupCheck = win.querySelector('#tb-group-check');
+    const tbOpacitySlider = win.querySelector('#tb-opacity-slider');
+    const tbOpacityVal = win.querySelector('#tb-opacity-val');
+    const tbBgPicker = win.querySelector('#tb-custom-bg-picker');
+    const tbResetBgBtn = win.querySelector('#tb-reset-bg-btn');
+
+    if (tbHeightSlider) {
+        tbHeightSlider.value = appSettings.taskbarHeight || appSettings.taskbarSize || 36;
+        tbHeightVal.textContent = `${tbHeightSlider.value}px`;
+        tbHeightSlider.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            appSettings.taskbarHeight = val;
+            appSettings.taskbarSize = val;
+            tbHeightVal.textContent = `${val}px`;
+            applySettings();
+            saveSettings();
+        });
+    }
+
+    if (tbAlignSelect) {
+        tbAlignSelect.value = appSettings.taskbarAlignment || 'left';
+        tbAlignSelect.addEventListener('change', (e) => {
+            appSettings.taskbarAlignment = e.target.value;
+            applySettings();
+            saveSettings();
+        });
+    }
+
+    if (tbGroupCheck) {
+        tbGroupCheck.checked = appSettings.taskbarGroupWindows !== false;
+        tbGroupCheck.addEventListener('change', (e) => {
+            appSettings.taskbarGroupWindows = e.target.checked;
+            applySettings();
+            saveSettings();
+        });
+    }
+
+    if (tbOpacitySlider) {
+        const op = appSettings.taskbarOpacity !== undefined ? appSettings.taskbarOpacity : 0.85;
+        tbOpacitySlider.value = op;
+        tbOpacityVal.textContent = `${Math.round(op * 100)}%`;
+        tbOpacitySlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            appSettings.taskbarOpacity = val;
+            tbOpacityVal.textContent = `${Math.round(val * 100)}%`;
+            applySettings();
+            saveSettings();
+        });
+    }
+
+    const tbTextColorPicker = win.querySelector('#tb-text-color-picker');
+    const tbResetTextBtn = win.querySelector('#tb-reset-text-btn');
+    const tbClockColorPicker = win.querySelector('#tb-clock-color-picker');
+    const tbResetClockBtn = win.querySelector('#tb-reset-clock-btn');
+
+    if (tbBgPicker) {
+        if (appSettings.taskbarCustomBg && appSettings.taskbarCustomBg.startsWith('#')) {
+            tbBgPicker.value = appSettings.taskbarCustomBg;
+        }
+        tbBgPicker.addEventListener('input', (e) => {
+            appSettings.taskbarCustomBg = e.target.value;
+            applySettings();
+            saveSettings();
+        });
+    }
+
+    if (tbResetBgBtn) {
+        tbResetBgBtn.addEventListener('click', () => {
+            appSettings.taskbarCustomBg = '';
+            applySettings();
+            saveSettings();
+        });
+    }
+
+    if (tbTextColorPicker) {
+        if (appSettings.taskbarTextColor && appSettings.taskbarTextColor.startsWith('#')) {
+            tbTextColorPicker.value = appSettings.taskbarTextColor;
+        }
+        tbTextColorPicker.addEventListener('input', (e) => {
+            appSettings.taskbarTextColor = e.target.value;
+            applySettings();
+            saveSettings();
+        });
+    }
+
+    if (tbResetTextBtn) {
+        tbResetTextBtn.addEventListener('click', () => {
+            appSettings.taskbarTextColor = '';
+            applySettings();
+            saveSettings();
+        });
+    }
+
+    if (tbClockColorPicker) {
+        if (appSettings.taskbarClockColor && appSettings.taskbarClockColor.startsWith('#')) {
+            tbClockColorPicker.value = appSettings.taskbarClockColor;
+        }
+        tbClockColorPicker.addEventListener('input', (e) => {
+            appSettings.taskbarClockColor = e.target.value;
+            applySettings();
+            saveSettings();
+        });
+    }
+
+    if (tbResetClockBtn) {
+        tbResetClockBtn.addEventListener('click', () => {
+            appSettings.taskbarClockColor = '';
+            applySettings();
+            saveSettings();
+        });
+    }
+
 
     const styleGroup = win.querySelector('#wallpaper-style-group');
     const styleSelect = win.querySelector('#wallpaper-style-select');
@@ -1558,6 +1936,43 @@ function openThemeApp() {
         win.querySelectorAll('.wallpaper-preview.active').forEach(d => d.classList.remove('active'));
         updateStyleGroupVisibility();
     });
+
+    const exportBtn = win.querySelector('#export-theme-preset-btn');
+    const importBtn = win.querySelector('#import-theme-preset-btn');
+    const importInput = win.querySelector('#import-theme-file-input');
+
+    if (exportBtn) {
+        exportBtn.addEventListener('click', () => {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appSettings, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "default-theme.json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        });
+    }
+
+    if (importBtn && importInput) {
+        importBtn.addEventListener('click', () => importInput.click());
+        importInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const preset = JSON.parse(event.target.result);
+                    appSettings = { ...appSettings, ...preset };
+                    applySettings();
+                    saveSettings();
+                    alert('Theme preset imported successfully!');
+                } catch (err) {
+                    alert('Failed to parse theme preset JSON file.');
+                }
+            };
+            reader.readAsText(file);
+        });
+    }
 }
 
 function openSoundSettings() {

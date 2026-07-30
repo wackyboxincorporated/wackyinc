@@ -396,9 +396,15 @@ function openDesktopWindow(windowId, title, contentHTML, options = {}) {
     }
 
     dragElement(windowDiv);
-    add_taskbar_item(windowId, title);
-    openWindows[windowId] = windowDiv;
+    
+    openWindows[windowId] = {
+        id: windowId,
+        title: title,
+        element: windowDiv,
+        iconClass: options.iconClass || getIconClassForTitle(title)
+    };
 
+    add_taskbar_item(windowId, title);
     bringWindowToFront(windowId);
 
     return windowDiv;
@@ -444,10 +450,26 @@ function openMobileWindow(windowId, title, contentHTML, options = {}) {
     return appPage;
 }
 
+function getIconClassForTitle(title) {
+    const t = title.toLowerCase();
+    if (t.includes('calculator')) return 'webapp-calculator';
+    if (t.includes('clock')) return 'webapp-clock';
+    if (t.includes('notepad')) return 'webapp-notepad';
+    if (t.includes('settings') || t.includes('theme')) return 'webapp-settings';
+    if (t.includes('browser')) return 'webapp-browser';
+    if (t.includes('explorer') || t.includes('file')) return 'webapp-explorer';
+    if (t.includes('terminal')) return 'webapp-terminal';
+    if (t.includes('image')) return 'image';
+    if (t.includes('video') || t.includes('player')) return 'video';
+    if (t.includes('audio') || t.includes('meaty')) return 'audio';
+    return 'folder';
+}
+
 function closeWindow(windowId, isMobileBack = false) {
     playUISound('windowClose');
-    const win = openWindows[windowId];
-    if (!win) return;
+    const winObj = openWindows[windowId];
+    if (!winObj) return;
+    const win = winObj.element || winObj;
 
     if (isMobile()) {
         const appIndex = openMobileAppOrder.indexOf(windowId);
@@ -460,6 +482,7 @@ function closeWindow(windowId, isMobileBack = false) {
             win.remove();
             delete openWindows[windowId];
             updateMobileTaskList();
+            renderTaskbarItems();
         }, { once: true });
 
         const nextAppId = openMobileAppOrder[openMobileAppOrder.length - 1];
@@ -479,45 +502,48 @@ function closeWindow(windowId, isMobileBack = false) {
         win.addEventListener('transitionend', () => {
             win.remove();
             delete openWindows[windowId];
-            remove_taskbar_item(windowId);
+            renderTaskbarItems();
         }, { once: true });
     }
 }
 
 function minimizeWindow(windowId) {
+    const winObj = openWindows[windowId];
+    if (!winObj) return;
+    const win = winObj.element || winObj;
+
     if (isMobile()) {
-        const win = openWindows[windowId];
-        if (win) {
-            win.classList.remove('active', 'inactive-behind');
-            win.classList.add('minimized');
-        }
+        win.classList.remove('active', 'inactive-behind');
+        win.classList.add('minimized');
         showMobileHome(true);
     } else {
-        const win = document.getElementById(windowId);
         if (win) {
             if (appSettings.graphicsGlass) {
                 win.classList.add('minimizing');
                 win.addEventListener('transitionend', () => {
                     win.classList.add('minimized');
                     win.classList.remove('minimizing');
+                    renderTaskbarItems();
                 }, { once: true });
             } else {
                 win.classList.add('minimized');
+                renderTaskbarItems();
             }
-            document.querySelector(`.task-item[data-window-id="${windowId}"]`).classList.remove('active');
         }
     }
 }
 
 function maximizeWindow(windowId) {
     if (isMobile()) return;
-    const win = document.getElementById(windowId);
+    const winObj = openWindows[windowId];
+    const win = winObj ? (winObj.element || winObj) : document.getElementById(windowId);
     win?.classList.toggle('maximized');
 }
 
 function bringWindowToFront(windowId, skipMobileAnimation = false) {
-    const win = openWindows[windowId];
-    if (!win) return;
+    const winObj = openWindows[windowId];
+    if (!winObj) return;
+    const win = winObj.element || winObj;
 
     if (isMobile()) {
         document.getElementById('mobile-homescreen').style.display = 'none';
@@ -529,13 +555,14 @@ function bringWindowToFront(windowId, skipMobileAnimation = false) {
         }
         openMobileAppOrder.push(windowId);
 
-        Object.values(openWindows).forEach(appPage => {
-            if (appPage.id === windowId) {
-                appPage.classList.remove('inactive-behind', 'minimized');
-                appPage.classList.add('active');
+        Object.values(openWindows).forEach(appItem => {
+            const page = appItem.element || appItem;
+            if (appItem.id === windowId || page.id === windowId) {
+                page.classList.remove('inactive-behind', 'minimized');
+                page.classList.add('active');
             } else {
-                appPage.classList.remove('active', 'inactive-behind');
-                appPage.classList.add('minimized');
+                page.classList.remove('active', 'inactive-behind');
+                page.classList.add('minimized');
             }
         });
 
@@ -549,10 +576,7 @@ function bringWindowToFront(windowId, skipMobileAnimation = false) {
         highestZIndex++;
         win.style.zIndex = highestZIndex;
         win.classList.remove('minimized', 'minimizing');
-
-        document.querySelectorAll('.task-item').forEach(item => item.classList.remove('active'));
-        const taskItem = document.querySelector(`.task-item[data-window-id="${windowId}"]`);
-        if (taskItem) taskItem.classList.add('active');
+        renderTaskbarItems();
     }
 }
 
@@ -618,41 +642,246 @@ function dragElement(elmnt) {
     }
 }
 
-function add_taskbar_item(windowId, title) {
+function renderQuickLaunchBar() {
+    const qlBar = document.getElementById('quick-launch-bar');
+    if (!qlBar) return;
+    qlBar.innerHTML = '';
+    
+    if (!appSettings.quickLaunchApps || appSettings.quickLaunchApps.length === 0) {
+        qlBar.style.display = 'none';
+        return;
+    }
+    qlBar.style.display = 'flex';
+
+    appSettings.quickLaunchApps.forEach(appName => {
+        const appObj = systemApps.find(a => a.name === appName) || desktopItems.find(i => i.name === appName);
+        if (!appObj) return;
+
+        const btn = document.createElement('div');
+        btn.className = 'quick-launch-btn';
+        btn.title = appObj.name;
+        btn.innerHTML = `<div class="icon-img ${appObj.class || 'unknown'}" style="width:20px; height:20px; background-size:contain;"></div>`;
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            launchItem(appObj);
+        };
+        btn.oncontextmenu = (e) => {
+            e.preventDefault();
+            if (confirm(`Unpin "${appObj.name}" from Quick Launch?`)) {
+                appSettings.quickLaunchApps = appSettings.quickLaunchApps.filter(n => n !== appName);
+                saveSettings();
+                renderQuickLaunchBar();
+            }
+        };
+        qlBar.appendChild(btn);
+    });
+}
+
+function renderTaskbarItems() {
     if (isMobile()) return;
+    const taskContainer = document.getElementById('task-items');
+    if (!taskContainer) return;
+    taskContainer.innerHTML = '';
+
+    const openWins = Object.values(openWindows).filter(w => w && document.getElementById(w.id));
+
+    if (appSettings.taskbarGroupWindows) {
+        const groups = {};
+        openWins.forEach(winObj => {
+            const groupKey = winObj.title.split(' - ')[0] || winObj.title;
+            if (!groups[groupKey]) groups[groupKey] = [];
+            groups[groupKey].push(winObj);
+        });
+
+        Object.keys(groups).forEach(groupTitle => {
+            const wins = groups[groupTitle];
+            if (wins.length === 1) {
+                createSingleTaskItem(taskContainer, wins[0]);
+            } else {
+                createGroupedTaskItem(taskContainer, groupTitle, wins);
+            }
+        });
+    } else {
+        openWins.forEach(winObj => {
+            createSingleTaskItem(taskContainer, winObj);
+        });
+    }
+}
+
+function createSingleTaskItem(container, winObj) {
     const item = document.createElement('div');
     item.className = 'task-item';
+    if (winObj.element.classList.contains('active') && !winObj.element.classList.contains('minimized')) {
+        item.classList.add('active');
+    }
+    item.setAttribute('data-window-id', winObj.id);
 
+    const iconClass = winObj.iconClass || 'folder';
+    const iconSpan = `<span class="task-item-icon icon-img ${iconClass}"></span>`;
     
     if (appSettings.taskbarMode === 'compact') {
-        item.title = title; 
-        item.style.width = '40px';
+        item.innerHTML = iconSpan;
+        item.title = winObj.title;
+        item.style.width = '38px';
         item.style.justifyContent = 'center';
-        
-        
     } else {
-        item.textContent = title;
+        item.innerHTML = `${iconSpan}<span class="task-item-label">${winObj.title}</span>`;
+        item.title = winObj.title;
+        item.style.width = '';
     }
 
-    item.setAttribute('data-window-id', windowId);
     item.onclick = () => {
-        const win = document.getElementById(windowId);
-        if (win.classList.contains('minimized') || !win.classList.contains('active')) {
-            bringWindowToFront(windowId);
+        if (winObj.element.classList.contains('minimized') || !winObj.element.classList.contains('active')) {
+            bringWindowToFront(winObj.id);
         } else {
-            minimizeWindow(windowId);
+            minimizeWindow(winObj.id);
+        }
+        renderTaskbarItems();
+    };
+
+    item.oncontextmenu = (e) => {
+        e.preventDefault();
+        showTaskbarContextMenu(e.clientX, e.clientY, winObj);
+    };
+
+    container.appendChild(item);
+}
+
+function createGroupedTaskItem(container, groupTitle, wins) {
+    const item = document.createElement('div');
+    item.className = 'task-item task-item-grouped';
+    const hasActive = wins.some(w => w.element.classList.contains('active') && !w.element.classList.contains('minimized'));
+    if (hasActive) item.classList.add('active');
+
+    const iconClass = wins[0].iconClass || 'folder';
+    const iconSpan = `<span class="task-item-icon icon-img ${iconClass}"></span>`;
+
+    if (appSettings.taskbarMode === 'compact') {
+        item.innerHTML = `${iconSpan}<span class="group-count-badge">${wins.length}</span>`;
+        item.title = `${groupTitle} (${wins.length} open)`;
+        item.style.width = '42px';
+        item.style.justifyContent = 'center';
+    } else {
+        item.innerHTML = `${iconSpan}<span class="task-item-label">${groupTitle}</span><span class="group-count-badge">${wins.length}</span>`;
+        item.title = `${groupTitle} (${wins.length} windows)`;
+        item.style.width = '';
+    }
+
+    item.onclick = (e) => {
+        const unminimized = wins.filter(w => !w.element.classList.contains('minimized'));
+        if (unminimized.length === 0) {
+            wins.forEach(w => bringWindowToFront(w.id));
+        } else {
+            const nextIndex = wins.findIndex(w => w.element.classList.contains('active'));
+            const targetWin = wins[(nextIndex + 1) % wins.length];
+            bringWindowToFront(targetWin.id);
+        }
+        renderTaskbarItems();
+    };
+
+    item.oncontextmenu = (e) => {
+        e.preventDefault();
+        showGroupContextMenu(e.clientX, e.clientY, groupTitle, wins);
+    };
+
+    container.appendChild(item);
+}
+
+function showTaskbarContextMenu(x, y, winObj) {
+    document.querySelectorAll('.taskbar-context-menu').forEach(m => m.remove());
+    const menu = document.createElement('div');
+    menu.className = 'taskbar-context-menu';
+    menu.style.left = `${x}px`;
+    menu.style.top = `${y - 80}px`;
+
+    const appName = winObj.title.split(' - ')[0] || winObj.title;
+    const isPinned = appSettings.quickLaunchApps.includes(appName);
+
+    menu.innerHTML = `
+        <div class="menu-item" id="tb-ctx-pin">${isPinned ? '📌 Unpin from Quick Launch' : '📌 Pin to Quick Launch'}</div>
+        <div class="menu-item" id="tb-ctx-min">${winObj.element.classList.contains('minimized') ? 'Restore Window' : 'Minimize Window'}</div>
+        <div class="menu-item" id="tb-ctx-close" style="color:#ff6b6b;">Close Window</div>
+    `;
+    document.body.appendChild(menu);
+
+    menu.querySelector('#tb-ctx-pin').onclick = () => {
+        if (isPinned) {
+            appSettings.quickLaunchApps = appSettings.quickLaunchApps.filter(a => a !== appName);
+        } else {
+            appSettings.quickLaunchApps.push(appName);
+        }
+        saveSettings();
+        renderQuickLaunchBar();
+        menu.remove();
+    };
+    menu.querySelector('#tb-ctx-min').onclick = () => {
+        if (winObj.element.classList.contains('minimized')) {
+            bringWindowToFront(winObj.id);
+        } else {
+            minimizeWindow(winObj.id);
+        }
+        renderTaskbarItems();
+        menu.remove();
+    };
+    menu.querySelector('#tb-ctx-close').onclick = () => {
+        closeWindow(winObj.id);
+        menu.remove();
+    };
+
+    const removeMenu = (e) => {
+        if (!menu.contains(e.target)) {
+            menu.remove();
+            document.removeEventListener('click', removeMenu);
         }
     };
-    document.getElementById('task-items').appendChild(item);
+    setTimeout(() => document.addEventListener('click', removeMenu), 10);
+}
+
+function showGroupContextMenu(x, y, groupTitle, wins) {
+    document.querySelectorAll('.taskbar-context-menu').forEach(m => m.remove());
+    const menu = document.createElement('div');
+    menu.className = 'taskbar-context-menu';
+    menu.style.left = `${x}px`;
+    menu.style.top = `${y - 100}px`;
+
+    let winItemsHtml = wins.map(w => `<div class="menu-item win-subitem" data-id="${w.id}">• ${w.title}</div>`).join('');
+
+    menu.innerHTML = `
+        <div class="menu-header" style="padding:4px 8px; font-weight:bold; font-size:11px; opacity:0.7;">${groupTitle} (${wins.length})</div>
+        ${winItemsHtml}
+        <div class="right-link-separator" style="height:1px; background:rgba(255,255,255,0.1); margin:4px 0;"></div>
+        <div class="menu-item" id="tb-ctx-close-all" style="color:#ff6b6b;">Close All Windows</div>
+    `;
+    document.body.appendChild(menu);
+
+    menu.querySelectorAll('.win-subitem').forEach(el => {
+        el.onclick = () => {
+            const wId = el.getAttribute('data-id');
+            bringWindowToFront(wId);
+            renderTaskbarItems();
+            menu.remove();
+        };
+    });
+    menu.querySelector('#tb-ctx-close-all').onclick = () => {
+        wins.forEach(w => closeWindow(w.id));
+        menu.remove();
+    };
+
+    const removeMenu = (e) => {
+        if (!menu.contains(e.target)) {
+            menu.remove();
+            document.removeEventListener('click', removeMenu);
+        }
+    };
+    setTimeout(() => document.addEventListener('click', removeMenu), 10);
+}
+
+function add_taskbar_item(windowId, title) {
+    renderTaskbarItems();
 }
 
 function remove_taskbar_item(windowId) {
-    if (isMobile()) return;
-    const item = document.querySelector(`.task-item[data-window-id="${windowId}"]`);
-    if (item) {
-        item.classList.add('closing');
-        setTimeout(() => item.remove(), 250);
-    }
+    renderTaskbarItems();
 }
 
 function setupStartMenu() {
@@ -995,12 +1224,51 @@ function performStartSearch(query) {
 
 function setupMobileControls() {
     const clockEl = document.getElementById('mobile-clock');
+    const trayClockEl = document.getElementById('system-clock-applet');
+    const showDesktopBtn = document.getElementById('show-desktop-button');
+
     function updateClock() {
         const now = new Date();
-        clockEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const use24h = appSettings.taskbarClockFormat === '24h';
+        const showSec = appSettings.taskbarShowClockSeconds !== false;
+        
+        const timeOptions = {
+            hour12: !use24h,
+            hour: '2-digit',
+            minute: '2-digit',
+            ...(showSec ? { second: '2-digit' } : {})
+        };
+
+        const timeStr = now.toLocaleTimeString([], timeOptions);
+
+        if (clockEl) clockEl.textContent = timeStr;
+        if (trayClockEl) {
+            const dateStr = now.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+            trayClockEl.innerHTML = `<span class="tray-time">${timeStr}</span><span class="tray-date">${dateStr}</span>`;
+        }
     }
     updateClock();
     setInterval(updateClock, 1000);
+
+    if (trayClockEl) {
+        trayClockEl.onclick = (e) => {
+            e.stopPropagation();
+            openClockApp();
+        };
+    }
+
+    if (showDesktopBtn) {
+        showDesktopBtn.onclick = (e) => {
+            e.stopPropagation();
+            const openWins = Object.values(openWindows).filter(w => w && w.element);
+            const allMinimized = openWins.every(w => w.element.classList.contains('minimized'));
+            if (allMinimized) {
+                openWins.forEach(w => bringWindowToFront(w.id));
+            } else {
+                openWins.forEach(w => minimizeWindow(w.id));
+            }
+        };
+    }
 
     const menuBtn = document.getElementById('mobile-menu-btn');
     const homeBtn = document.getElementById('mobile-home-btn');
