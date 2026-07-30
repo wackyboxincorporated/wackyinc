@@ -280,47 +280,21 @@ function renderTopBar() {
   const topBar = document.getElementById('top-bar');
   if (!topBar) return;
   topBar.classList.add('visible');
-  const isPortraitMobile = window.innerWidth <= 600 && (window.matchMedia('(orientation: portrait)').matches || window.innerHeight > window.innerWidth);
-  let taskSwitcherHTML = '';
-  if (isPortraitMobile) {
-    if (typeof openTiles !== 'undefined' && openTiles.length > 0) {
-      const activeTile = openTiles.find(t => t.id == activeTileId) || openTiles[0];
-      const activeTitle = activeTile ? activeTile.title.toLowerCase() : 'tasks';
-      taskSwitcherHTML = `
-        <div class="mobile-task-switcher">
-          <button class="mobile-task-btn" id="mobile-task-dropdown-toggle" title="open tasks menu">
-            <span>⊞</span>
-            <span class="active-task-label">${activeTitle}</span>
-            <span class="dropdown-arrow">▾</span>
-          </button>
-          <div class="mobile-task-dropdown-menu" id="mobile-task-menu" style="display:none;">
-            ${openTiles.map(t => `
-              <div class="mobile-task-item ${t.id == activeTileId ? 'active' : ''} ${t.minimized ? 'minimized' : ''}" data-id="${t.id}">
-                <span class="item-title">${t.icon || '■'} ${t.title.toLowerCase()} ${t.minimized ? '[_]' : ''}</span>
-                <span class="item-close" data-close-id="${t.id}" title="close">✕</span>
-              </div>
-            `).join('')}
-          </div>
+  let tileIndicatorsHTML = '';
+  if (typeof openTiles !== 'undefined' && openTiles.length > 0) {
+    openTiles.forEach(tile => {
+      const isActive = typeof activeTileId !== 'undefined' && activeTileId == tile.id;
+      const icon = tile.icon || (tile.isFloat ? '⊡' : '■');
+      tileIndicatorsHTML += `
+        <div class="top-bar-tile-tab ${isActive ? 'active' : ''} ${tile.minimized ? 'minimized' : ''}" data-id="${tile.id}" title="${tile.title}">
+          <span>${icon}</span>
+          <span class="tab-title">${tile.title.toLowerCase()} ${tile.minimized ? '[_]' : ''}</span>
+          <span class="tab-close-btn" data-close-id="${tile.id}" title="close">✕</span>
         </div>
       `;
-    }
-  } else {
-    let tileIndicatorsHTML = '';
-    if (typeof openTiles !== 'undefined' && openTiles.length > 0) {
-      openTiles.forEach(tile => {
-        const isActive = typeof activeTileId !== 'undefined' && activeTileId == tile.id;
-        const icon = tile.icon || (tile.isFloat ? '⊡' : '■');
-        tileIndicatorsHTML += `
-          <div class="top-bar-tile-tab ${isActive ? 'active' : ''} ${tile.minimized ? 'minimized' : ''}" data-id="${tile.id}" title="${tile.title}">
-            <span>${icon}</span>
-            <span class="tab-title">${tile.title.toLowerCase()} ${tile.minimized ? '[_]' : ''}</span>
-            <span class="tab-close-btn" data-close-id="${tile.id}" title="close">✕</span>
-          </div>
-        `;
-      });
-    }
-    taskSwitcherHTML = `<div class="top-bar-tiles">${tileIndicatorsHTML}</div>`;
+    });
   }
+  const taskSwitcherHTML = `<div class="top-bar-tiles">${tileIndicatorsHTML}</div>`;
   let compactPlayerHTML = '';
   if (typeof kPlayer !== 'undefined' && kPlayer.playlist && kPlayer.playlist.length > 0) {
     const trackName = kPlayer.getTrackName ? kPlayer.getTrackName() : 'unknown track';
@@ -365,44 +339,18 @@ function renderTopBar() {
       if (typeof launchApp === 'function') launchApp('settings');
     });
   }
-  if (isPortraitMobile) {
-    const toggleBtn = topBar.querySelector('#mobile-task-dropdown-toggle');
-    const menuEl = topBar.querySelector('#mobile-task-menu');
-    if (toggleBtn && menuEl) {
-      toggleBtn.addEventListener('click', (e) => {
+  const tabs = topBar.querySelectorAll('.top-bar-tile-tab');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', (e) => {
+      const closeBtn = e.target.closest('.tab-close-btn');
+      if (closeBtn) {
         e.stopPropagation();
-        menuEl.style.display = menuEl.style.display === 'none' ? 'flex' : 'none';
-      });
-      document.addEventListener('click', () => {
-        menuEl.style.display = 'none';
-      });
-    }
-    const items = topBar.querySelectorAll('.mobile-task-item');
-    items.forEach(item => {
-      item.addEventListener('click', (e) => {
-        const closeBtn = e.target.closest('.item-close');
-        if (closeBtn) {
-          e.stopPropagation();
-          if (typeof closeTile === 'function') closeTile(closeBtn.dataset.closeId);
-          return;
-        }
-        if (typeof focusTile === 'function') focusTile(item.dataset.id);
-      });
+        if (typeof closeTile === 'function') closeTile(closeBtn.dataset.closeId);
+        return;
+      }
+      if (typeof focusTile === 'function') focusTile(tab.dataset.id);
     });
-  } else {
-    const tabs = topBar.querySelectorAll('.top-bar-tile-tab');
-    tabs.forEach(tab => {
-      tab.addEventListener('click', (e) => {
-        const closeBtn = e.target.closest('.tab-close-btn');
-        if (closeBtn) {
-          e.stopPropagation();
-          if (typeof closeTile === 'function') closeTile(closeBtn.dataset.closeId);
-          return;
-        }
-        if (typeof focusTile === 'function') focusTile(tab.dataset.id);
-      });
-    });
-  }
+  });
   const topPlayer = topBar.querySelector('.top-bar-player');
   if (topPlayer) {
     const prevBtn = topPlayer.querySelector('.prev-btn');

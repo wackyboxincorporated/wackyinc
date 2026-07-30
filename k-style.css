@@ -111,8 +111,16 @@ input:focus {
     align-items: center;
     gap: 4px;
     overflow-x: auto;
+    overflow-y: hidden;
     max-width: 100%;
     scrollbar-width: none;
+    -ms-overflow-style: none;
+    touch-action: pan-x;
+    -webkit-overflow-scrolling: touch;
+    flex: 1;
+}
+.top-bar-tiles::-webkit-scrollbar {
+    display: none;
 }
 .top-bar-tile-tab {
     display: inline-flex;
@@ -129,6 +137,7 @@ input:focus {
     transition: background-color 0.2s, border-color 0.2s, color 0.2s;
     user-select: none;
     max-width: 160px;
+    flex-shrink: 0;
 }
 .top-bar-tile-tab:hover {
     border-color: #666666;
