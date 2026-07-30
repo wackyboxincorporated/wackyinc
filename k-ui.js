@@ -45,11 +45,85 @@ function renderMenuContent(tab) {
   if (!contentArea) return;
   contentArea.innerHTML = '';
   if (tab === 'files') {
+    let currentSortMode = (typeof kSettings !== 'undefined' && kSettings.fileSortMode) ? kSettings.fileSortMode : 'name-asc';
+    const sortBar = document.createElement('div');
+    sortBar.className = 'file-sort-bar';
+    sortBar.style.display = 'flex';
+    sortBar.style.alignItems = 'center';
+    sortBar.style.gap = '8px';
+    sortBar.style.marginBottom = '12px';
+    sortBar.style.paddingBottom = '8px';
+    sortBar.style.borderBottom = '1px solid #222';
+    sortBar.style.fontSize = '11px';
+    sortBar.style.color = '#888';
+    const sortLabel = document.createElement('span');
+    sortLabel.textContent = 'sort by:';
+    const sortSelect = document.createElement('select');
+    sortSelect.className = 'file-sort-select';
+    sortSelect.style.background = '#050505';
+    sortSelect.style.color = '#fff';
+    sortSelect.style.border = '1px solid #333';
+    sortSelect.style.padding = '3px 8px';
+    sortSelect.style.fontFamily = 'inherit';
+    sortSelect.style.fontSize = '11px';
+    sortSelect.style.cursor = 'pointer';
+    sortSelect.style.textTransform = 'lowercase';
+    const options = [
+      { value: 'name-asc', label: 'name (a-z)' },
+      { value: 'name-desc', label: 'name (z-a)' },
+      { value: 'category', label: 'category / type' },
+      { value: 'size-desc', label: 'size (largest)' },
+      { value: 'size-asc', label: 'size (smallest)' }
+    ];
+    options.forEach(opt => {
+      const el = document.createElement('option');
+      el.value = opt.value;
+      el.textContent = opt.label;
+      if (opt.value === currentSortMode) el.selected = true;
+      sortSelect.appendChild(el);
+    });
+    sortSelect.addEventListener('change', () => {
+      if (typeof kSettings !== 'undefined') {
+        kSettings.fileSortMode = sortSelect.value;
+        if (typeof saveSettings === 'function') saveSettings();
+      }
+      renderMenuContent('files');
+    });
+    sortBar.appendChild(sortLabel);
+    sortBar.appendChild(sortSelect);
+    contentArea.appendChild(sortBar);
     const fileTree = document.createElement('div');
     fileTree.className = 'file-tree';
+    function sortTreeNodes(nodes, sortMode) {
+      if (!nodes || !Array.isArray(nodes)) return [];
+      const copy = [...nodes];
+      copy.sort((a, b) => {
+        const isAFolder = a.type === 'folder' || !!a.items;
+        const isBFolder = b.type === 'folder' || !!b.items;
+        if (sortMode === 'name-asc') {
+          if (isAFolder !== isBFolder) return isAFolder ? -1 : 1;
+          return (a.name || '').localeCompare(b.name || '');
+        } else if (sortMode === 'name-desc') {
+          if (isAFolder !== isBFolder) return isAFolder ? -1 : 1;
+          return (b.name || '').localeCompare(a.name || '');
+        } else if (sortMode === 'category') {
+          const catA = a.category || a.type || 'file';
+          const catB = b.category || b.type || 'file';
+          if (catA !== catB) return catA.localeCompare(catB);
+          return (a.name || '').localeCompare(b.name || '');
+        } else if (sortMode === 'size-desc') {
+          return (b.size || 0) - (a.size || 0);
+        } else if (sortMode === 'size-asc') {
+          return (a.size || 0) - (b.size || 0);
+        }
+        return 0;
+      });
+      return copy;
+    }
     function renderTreeNodes(nodes, containerEl) {
       if (!nodes) return;
-      nodes.forEach(item => {
+      const sorted = sortTreeNodes(nodes, currentSortMode);
+      sorted.forEach(item => {
         const itemEl = document.createElement('div');
         if (item.type === 'folder' || item.items) {
           itemEl.className = 'file-tree-folder';
@@ -349,10 +423,78 @@ function renderFileNavigator(items, breadcrumb) {
       breadcrumbEl.appendChild(sep);
     }
   });
+  const sortBar = document.createElement('div');
+  sortBar.className = 'file-nav-sort-bar';
+  sortBar.style.padding = '6px 12px';
+  sortBar.style.borderBottom = '1px solid #222';
+  sortBar.style.display = 'flex';
+  sortBar.style.alignItems = 'center';
+  sortBar.style.gap = '8px';
+  sortBar.style.fontSize = '11px';
+  sortBar.style.color = '#888';
+  const sortLabel = document.createElement('span');
+  sortLabel.textContent = 'sort:';
+  const sortSelect = document.createElement('select');
+  sortSelect.style.background = '#050505';
+  sortSelect.style.color = '#fff';
+  sortSelect.style.border = '1px solid #333';
+  sortSelect.style.padding = '2px 6px';
+  sortSelect.style.fontFamily = 'inherit';
+  sortSelect.style.fontSize = '10px';
+  sortSelect.style.cursor = 'pointer';
+  let currentSortMode = (typeof kSettings !== 'undefined' && kSettings.fileSortMode) ? kSettings.fileSortMode : 'name-asc';
+  const options = [
+    { value: 'name-asc', label: 'name (a-z)' },
+    { value: 'name-desc', label: 'name (z-a)' },
+    { value: 'category', label: 'category' },
+    { value: 'size-desc', label: 'size (desc)' },
+    { value: 'size-asc', label: 'size (asc)' }
+  ];
+  options.forEach(opt => {
+    const el = document.createElement('option');
+    el.value = opt.value;
+    el.textContent = opt.label;
+    if (opt.value === currentSortMode) el.selected = true;
+    sortSelect.appendChild(el);
+  });
+  sortSelect.addEventListener('change', () => {
+    if (typeof kSettings !== 'undefined') {
+      kSettings.fileSortMode = sortSelect.value;
+      if (typeof saveSettings === 'function') saveSettings();
+    }
+    const newContainer = renderFileNavigator(items, crumbs);
+    if (container.parentNode) {
+      container.parentNode.replaceChild(newContainer, container);
+    }
+  });
+  sortBar.appendChild(sortLabel);
+  sortBar.appendChild(sortSelect);
   const itemsList = document.createElement('div');
   itemsList.className = 'file-nav-items';
   if (items && items.length > 0) {
-    items.forEach(item => {
+    const copy = [...items];
+    copy.sort((a, b) => {
+      const isAFolder = a.type === 'folder' || !!a.items;
+      const isBFolder = b.type === 'folder' || !!b.items;
+      if (currentSortMode === 'name-asc') {
+        if (isAFolder !== isBFolder) return isAFolder ? -1 : 1;
+        return (a.name || '').localeCompare(b.name || '');
+      } else if (currentSortMode === 'name-desc') {
+        if (isAFolder !== isBFolder) return isAFolder ? -1 : 1;
+        return (b.name || '').localeCompare(a.name || '');
+      } else if (currentSortMode === 'category') {
+        const catA = a.category || a.type || 'file';
+        const catB = b.category || b.type || 'file';
+        if (catA !== catB) return catA.localeCompare(catB);
+        return (a.name || '').localeCompare(b.name || '');
+      } else if (currentSortMode === 'size-desc') {
+        return (b.size || 0) - (a.size || 0);
+      } else if (currentSortMode === 'size-asc') {
+        return (a.size || 0) - (b.size || 0);
+      }
+      return 0;
+    });
+    copy.forEach(item => {
       const itemEl = document.createElement('div');
       itemEl.className = 'file-nav-item';
       let icon = '■';
