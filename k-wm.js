@@ -87,12 +87,13 @@ function makeDraggable(tile) {
         }
         currentTargetTile = foundTarget;
         if (currentTargetTile) {
+            const scale = getScaleFactor();
             const rect = currentTargetTile.element.getBoundingClientRect();
             indicator.style.display = 'block';
-            indicator.style.left = `${rect.left}px`;
-            indicator.style.top = `${rect.top}px`;
-            indicator.style.width = `${rect.width}px`;
-            indicator.style.height = `${rect.height}px`;
+            indicator.style.left = `${rect.left / scale}px`;
+            indicator.style.top = `${rect.top / scale}px`;
+            indicator.style.width = `${rect.width / scale}px`;
+            indicator.style.height = `${rect.height / scale}px`;
         } else {
             indicator.style.display = 'none';
         }
@@ -116,7 +117,16 @@ function makeDraggable(tile) {
             }
             const container = document.getElementById('tile-container');
             if (container && tile.element && currentTargetTile.element) {
-                container.insertBefore(tile.element, currentTargetTile.element);
+                const next0 = tile.element.nextSibling;
+                const next1 = currentTargetTile.element.nextSibling;
+                if (next0 === currentTargetTile.element) {
+                    container.insertBefore(currentTargetTile.element, tile.element);
+                } else if (next1 === tile.element) {
+                    container.insertBefore(tile.element, currentTargetTile.element);
+                } else {
+                    container.insertBefore(tile.element, next1);
+                    container.insertBefore(currentTargetTile.element, next0);
+                }
             }
             retile();
             if (typeof renderTopBar === 'function') renderTopBar();
