@@ -735,6 +735,7 @@ function showFirstStartPrompt() {
     kSettings.firstRunHandled = true;
     if (typeof saveSettings === 'function') saveSettings();
     overlay.remove();
+    showHelpPromptModal();
   };
   btnTakeBack.onclick = () => {
     kSettings.firstRunHandled = true;
@@ -746,6 +747,56 @@ function showFirstStartPrompt() {
     kSettings.alwaysRedirectToOs = true;
     if (typeof saveSettings === 'function') saveSettings();
     window.location.href = (typeof BASE_URL !== 'undefined' ? BASE_URL : '') + 'os/';
+  };
+}
+function showHelpPromptModal() {
+  const existing = document.getElementById('help-prompt-overlay');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'help-prompt-overlay';
+  overlay.style.position = 'fixed';
+  overlay.style.inset = '0';
+  overlay.style.zIndex = '100000';
+  overlay.style.background = '#000000';
+  overlay.style.display = 'flex';
+  overlay.style.flexDirection = 'column';
+  overlay.style.justifyContent = 'center';
+  overlay.style.alignItems = 'center';
+  overlay.style.padding = '20px';
+  overlay.style.boxSizing = 'border-box';
+  overlay.style.fontFamily = 'inherit';
+  overlay.style.textTransform = 'lowercase';
+  overlay.innerHTML = `
+    <div style="max-width: 400px; width: 100%; border: 1px solid #ffffff; padding: 28px 24px; background: #050505; text-align: center; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; box-shadow: 0 8px 32px rgba(0,0,0,1);">
+      <div style="font-size: 16px; color: #ffffff; margin-bottom: 8px; font-weight: bold; line-height: 1.3;">
+        would you like to read the help document?
+      </div>
+      <div style="font-size: 12px; color: #888888; margin-bottom: 20px;">
+        learn about navigation, tiling windows, and shortcuts.
+      </div>
+      <div style="display: flex; gap: 12px; width: 100%;">
+        <button id="help-prompt-yes" style="flex: 1; padding: 10px 14px; border: 1px solid #ffffff; background: #111111; color: #ffffff; font-family: inherit; font-size: 12px; cursor: pointer; text-transform: lowercase; transition: all 0.2s ease;">yes, show help!</button>
+        <button id="help-prompt-no" style="flex: 1; padding: 10px 14px; border: 1px solid #333333; background: #111111; color: #888888; font-family: inherit; font-size: 12px; cursor: pointer; text-transform: lowercase; transition: all 0.2s ease;">no thanks</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const btnYes = overlay.querySelector('#help-prompt-yes');
+  const btnNo = overlay.querySelector('#help-prompt-no');
+  btnYes.onmouseenter = () => { btnYes.style.background = '#222222'; };
+  btnYes.onmouseleave = () => { btnYes.style.background = '#111111'; };
+  btnNo.onmouseenter = () => { btnNo.style.borderColor = '#ffffff'; btnNo.style.color = '#ffffff'; btnNo.style.background = '#222222'; };
+  btnNo.onmouseleave = () => { btnNo.style.borderColor = '#333333'; btnNo.style.color = '#888888'; btnNo.style.background = '#111111'; };
+  btnYes.onclick = () => {
+    overlay.remove();
+    if (typeof openHelpWindow === 'function') {
+      openHelpWindow();
+    } else if (typeof launchApp === 'function') {
+      launchApp('help');
+    }
+  };
+  btnNo.onclick = () => {
+    overlay.remove();
   };
 }
 let wanderingBtnTimer = null;
