@@ -410,7 +410,7 @@ function renderSplitHandle(container, visibleTiles) {
             <button id="split-handle-trigger" title="split options">⋮</button>
             <div id="split-popup-menu" style="display:none;">
                 <button class="split-popup-btn" id="split-btn-swap">⇄ swap tiles</button>
-                <button class="split-popup-btn" id="split-btn-change">⇇ change app</button>
+                <button class="split-popup-btn" id="split-btn-change">quickL</button>
             </div>
         `;
         document.body.appendChild(handle);
@@ -453,7 +453,7 @@ function renderSplitHandle(container, visibleTiles) {
         const currentVisible = openTiles.filter(t => !t.isFloat && t.visible !== false);
         showAppSelectorModal(currentVisible);
     };
-    if (visibleTiles.length === 2) {
+    if (isMobilePhone() && visibleTiles.length === 2) {
         handle.style.display = 'flex';
         if (!handle.dataset.userMoved) {
             const scale = getScaleFactor();
@@ -520,7 +520,7 @@ function showAppSelectorModal(visibleTiles) {
     }
     overlay.innerHTML = `
         <div style="background:#000; border:1px solid #333; padding:20px; width:340px; max-width:90vw; max-height:80vh; display:flex; flex-direction:column; box-sizing:border-box;">
-            <div style="font-size:14px; color:#fff; margin-bottom:12px;">select app to display:</div>
+            <div style="font-size:14px; color:#fff; margin-bottom:12px;">quickL - select app to display:</div>
             <div style="font-size:11px; color:#888; margin-bottom:10px;">replace target tile slot:</div>
             <div style="display:flex; gap:8px; margin-bottom:14px;">
                 <button class="target-slot-btn" data-slot="0" style="flex:1; padding:6px; border:1px solid #fff; background:#111; color:#fff; cursor:pointer; font-family:inherit;">1: ${tile0Title}</button>

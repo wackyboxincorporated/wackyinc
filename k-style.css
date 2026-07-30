@@ -1089,6 +1089,11 @@ input:focus {
         gap: 16px;
     }
 }
+@media (min-width: 601px) {
+    #split-handle-overlay {
+        display: none !important;
+    }
+}
 #split-handle-overlay {
     position: fixed;
     z-index: 9999 !important;
