@@ -194,6 +194,11 @@ input:focus {
     text-overflow: ellipsis;
     max-width: 110px;
     margin-left: 2px;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+.top-bar-track-name:hover {
+    color: #ffffff;
 }
 #main-menu {
     position: fixed;

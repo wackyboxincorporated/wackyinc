@@ -360,6 +360,16 @@ function renderTopBar() {
       renderMainMenu();
     });
     topPlayer.querySelector('.next-btn').addEventListener('click', () => kPlayer.next());
+    const trackNameEl = topPlayer.querySelector('.top-bar-track-name');
+    if (trackNameEl) {
+      trackNameEl.style.cursor = 'pointer';
+      trackNameEl.title = 'open media player';
+      trackNameEl.addEventListener('click', () => {
+        if (typeof launchApp === 'function') {
+          launchApp('media player');
+        }
+      });
+    }
   }
   updateClock();
 }
