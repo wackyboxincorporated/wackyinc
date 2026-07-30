@@ -284,6 +284,7 @@ input:focus {
     font-size: 11px;
     color: #888888;
     margin-top: 2px;
+    margin-left: 6px;
     white-space: nowrap;
 }
 .os-link, a.os-link, a.os-link:visited {
