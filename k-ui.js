@@ -45,134 +45,50 @@ function renderMenuContent(tab) {
   if (!contentArea) return;
   contentArea.innerHTML = '';
   if (tab === 'apps' || tab === 'files') {
-    let currentSortMode = (typeof kSettings !== 'undefined' && kSettings.fileSortMode) ? kSettings.fileSortMode : 'name-asc';
-    const sortBar = document.createElement('div');
-    sortBar.className = 'file-sort-bar';
-    sortBar.style.display = 'flex';
-    sortBar.style.alignItems = 'center';
-    sortBar.style.gap = '8px';
-    sortBar.style.marginBottom = '12px';
-    sortBar.style.paddingBottom = '8px';
-    sortBar.style.borderBottom = '1px solid #222';
-    sortBar.style.fontSize = '11px';
-    sortBar.style.color = '#888';
-    const sortLabel = document.createElement('span');
-    sortLabel.textContent = 'sort by:';
-    const sortSelect = document.createElement('select');
-    sortSelect.className = 'file-sort-select';
-    sortSelect.style.background = '#050505';
-    sortSelect.style.color = '#fff';
-    sortSelect.style.border = '1px solid #333';
-    sortSelect.style.padding = '3px 8px';
-    sortSelect.style.fontFamily = 'inherit';
-    sortSelect.style.fontSize = '11px';
-    sortSelect.style.cursor = 'pointer';
-    sortSelect.style.textTransform = 'lowercase';
-    const options = [
-      { value: 'name-asc', label: 'name (a-z)' },
-      { value: 'name-desc', label: 'name (z-a)' },
-      { value: 'category', label: 'category / type' },
-      { value: 'size-desc', label: 'size (largest)' },
-      { value: 'size-asc', label: 'size (smallest)' }
-    ];
-    options.forEach(opt => {
-      const el = document.createElement('option');
-      el.value = opt.value;
-      el.textContent = opt.label;
-      if (opt.value === currentSortMode) el.selected = true;
-      sortSelect.appendChild(el);
-    });
-    sortSelect.addEventListener('change', () => {
-      if (typeof kSettings !== 'undefined') {
-        kSettings.fileSortMode = sortSelect.value;
-        if (typeof saveSettings === 'function') saveSettings();
-      }
-      renderMenuContent('apps');
-    });
-    sortBar.appendChild(sortLabel);
-    sortBar.appendChild(sortSelect);
-    contentArea.appendChild(sortBar);
-    const fileTree = document.createElement('div');
-    fileTree.className = 'file-tree';
-    function sortTreeNodes(nodes, sortMode) {
-      if (!nodes || !Array.isArray(nodes)) return [];
-      const copy = [...nodes];
-      copy.sort((a, b) => {
-        const isAFolder = a.type === 'folder' || !!a.items;
-        const isBFolder = b.type === 'folder' || !!b.items;
-        if (sortMode === 'name-asc') {
-          if (isAFolder !== isBFolder) return isAFolder ? -1 : 1;
-          return (a.name || '').localeCompare(b.name || '');
-        } else if (sortMode === 'name-desc') {
-          if (isAFolder !== isBFolder) return isAFolder ? -1 : 1;
-          return (b.name || '').localeCompare(a.name || '');
-        } else if (sortMode === 'category') {
-          const catA = a.category || a.type || 'file';
-          const catB = b.category || b.type || 'file';
-          if (catA !== catB) return catA.localeCompare(catB);
-          return (a.name || '').localeCompare(b.name || '');
-        } else if (sortMode === 'size-desc') {
-          return (b.size || 0) - (a.size || 0);
-        } else if (sortMode === 'size-asc') {
-          return (a.size || 0) - (b.size || 0);
-        }
-        return 0;
-      });
-      return copy;
-    }
-    function renderTreeNodes(nodes, containerEl) {
-      if (!nodes) return;
-      const sorted = sortTreeNodes(nodes, currentSortMode);
-      sorted.forEach(item => {
-        const itemEl = document.createElement('div');
-        if (item.type === 'folder' || item.items) {
-          itemEl.className = 'file-tree-folder';
-          const header = document.createElement('div');
-          header.className = 'file-tree-folder-header';
-          const isLink = !!item.url;
-          const isGameOrWebApp = item.category === 'game' || item.category === 'website' || isLink;
-          if (isGameOrWebApp) {
-            header.classList.add('is-game-app');
-          }
-          const icon = isLink ? '⬡' : '□';
-          header.innerHTML = `<span class="icon">${icon}</span> ${item.name}`;
-          const itemsContainer = document.createElement('div');
-          itemsContainer.className = 'file-tree-children';
-          itemsContainer.style.display = 'none';
-          if (item.items && item.items.length > 0) {
-            renderTreeNodes(item.items, itemsContainer);
-          }
-          header.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (typeof openFile === 'function') {
-              openFile(item);
-            }
-          });
-          itemEl.appendChild(header);
-          if (item.items && item.items.length > 0) {
-            itemEl.appendChild(itemsContainer);
-          }
-        } else {
-          itemEl.className = 'file-tree-item';
-          let icon = '■';
-          if (item.type === 'audio') icon = '♫';
+    const appsContainer = document.createElement('div');
+    appsContainer.className = 'apps-menu-container';
+    appsContainer.style.display = 'flex';
+    appsContainer.style.flexDirection = 'column';
+    appsContainer.style.gap = '20px';
+    appsContainer.style.overflowY = 'auto';
+    appsContainer.style.maxHeight = '100%';
+    appsContainer.style.paddingBottom = '24px';
+    if (typeof desktopItems !== 'undefined' && Array.isArray(desktopItems)) {
+      desktopItems.forEach(section => {
+        const sectionEl = document.createElement('div');
+        sectionEl.className = 'apps-section';
+        const sectionHeader = document.createElement('div');
+        sectionHeader.className = 'apps-section-header';
+        sectionHeader.textContent = section.name ? section.name.toLowerCase() : 'apps';
+        sectionEl.appendChild(sectionHeader);
+        const appGrid = document.createElement('div');
+        appGrid.className = 'app-grid';
+        const items = section.contents || section.items || [section];
+        items.forEach(item => {
+          const appItem = document.createElement('div');
+          appItem.className = 'app-grid-item';
+          let icon = '⬡';
+          if (section.name && section.name.toLowerCase().includes('game')) icon = '🎮';
+          else if (item.type === 'audio') icon = '♫';
           else if (item.type === 'video') icon = '▶';
           else if (item.type === 'image') icon = '▣';
           else if (item.type === 'code') icon = '◇';
           else if (item.type === 'document') icon = '▢';
-          itemEl.innerHTML = `<span class="icon">${icon}</span> ${item.name}`;
-          itemEl.addEventListener('click', (e) => {
-            e.stopPropagation();
+          else if (item.type === 'folder') icon = '□';
+          appItem.innerHTML = `
+            <div class="app-icon">${icon}</div>
+            <div class="app-name">${item.name}</div>
+          `;
+          appItem.addEventListener('click', () => {
             if (typeof openFile === 'function') openFile(item);
           });
-        }
-        containerEl.appendChild(itemEl);
+          appGrid.appendChild(appItem);
+        });
+        sectionEl.appendChild(appGrid);
+        appsContainer.appendChild(sectionEl);
       });
     }
-    if (typeof desktopItems !== 'undefined') {
-      renderTreeNodes(desktopItems, fileTree);
-    }
-    contentArea.appendChild(fileTree);
+    contentArea.appendChild(appsContainer);
   } else if (tab === 'tools') {
     const appGrid = document.createElement('div');
     appGrid.className = 'app-grid';
