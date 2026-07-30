@@ -285,12 +285,22 @@ input:focus {
     padding: 0;
     margin: 0;
 }
-@media (min-width: 768px) {
+@media (min-width: 650px) {
     .file-tree {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
-        gap: 12px 24px;
+        gap: 12px 20px;
         align-items: start;
+    }
+}
+@media (min-width: 1050px) {
+    .file-tree {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+@media (min-width: 1450px) {
+    .file-tree {
+        grid-template-columns: repeat(4, 1fr);
     }
 }
 .file-tree-item {
