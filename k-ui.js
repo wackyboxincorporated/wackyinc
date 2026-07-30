@@ -1,11 +1,58 @@
+let openCategoryFolder = null;
+function categorizeAllItems() {
+  const categories = {
+    games: [],
+    tools: [],
+    apps: [],
+    documents: [],
+    videos: [],
+    audio: [],
+    misc: []
+  };
+  if (typeof systemApps !== 'undefined' && Array.isArray(systemApps)) {
+    systemApps.forEach(app => {
+      categories.tools.push({ ...app, isApp: true, category: 'tools' });
+    });
+  }
+  function collectItems(list) {
+    if (!list) return;
+    list.forEach(item => {
+      const cat = (item.category || '').toLowerCase();
+      const type = (item.type || '').toLowerCase();
+      const name = (item.name || '').toLowerCase();
+      if (cat === 'game' || type === 'game' || name.includes('game')) {
+        categories.games.push(item);
+      } else if (cat === 'tool' || type === 'tool') {
+        categories.tools.push(item);
+      } else if (cat === 'website' || cat === 'app' || type === 'app' || (item.url && !item.items && !item.contents)) {
+        categories.apps.push(item);
+      } else if (type === 'document' || type === 'code' || name.endsWith('.txt') || name.endsWith('.md') || name.endsWith('.json') || name.endsWith('.js') || name.endsWith('.html') || name.endsWith('.css')) {
+        categories.documents.push(item);
+      } else if (type === 'video' || name.endsWith('.mp4') || name.endsWith('.webm') || name.endsWith('.ogv')) {
+        categories.videos.push(item);
+      } else if (type === 'audio' || name.endsWith('.mp3') || name.endsWith('.wav') || name.endsWith('.ogg') || name.endsWith('.m4a') || name.endsWith('.flac')) {
+        categories.audio.push(item);
+      } else {
+        categories.misc.push(item);
+      }
+      if (item.items && item.items.length > 0) {
+        collectItems(item.items);
+      } else if (item.contents && item.contents.length > 0) {
+        collectItems(item.contents);
+      }
+    });
+  }
+  if (typeof desktopItems !== 'undefined' && Array.isArray(desktopItems)) {
+    collectItems(desktopItems);
+  }
+  return categories;
+}
 function renderMainMenu() {
   const mainMenu = document.getElementById('main-menu');
   if (!mainMenu) return;
-  const activeTab = (mainMenu.dataset.activeTab === 'tools') ? 'apps' : (mainMenu.dataset.activeTab || 'apps');
   mainMenu.innerHTML = `
     <div class="menu-tab-bar">
-      <div class="menu-tab ${activeTab === 'apps' ? 'active' : ''}" data-tab="apps">apps</div>
-      <div class="menu-tab ${activeTab === 'search' ? 'active' : ''}" data-tab="search">search</div>
+      <div class="menu-tab active" data-tab="home">home</div>
     </div>
     <div class="menu-content" id="menu-content-area"></div>
     <div class="k-player-bar-container" id="menu-player-container"></div>
@@ -22,16 +69,7 @@ function renderMainMenu() {
   } else {
     mainMenu.classList.remove('collapsed');
   }
-  const tabs = mainMenu.querySelectorAll('.menu-tab');
-  tabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      tabs.forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      mainMenu.dataset.activeTab = tab.dataset.tab;
-      renderMenuContent(tab.dataset.tab);
-    });
-  });
-  renderMenuContent(activeTab);
+  renderMenuContent('home');
   const playerContainer = document.getElementById('menu-player-container');
   if (playerContainer && typeof renderPlayerBar === 'function') {
     playerContainer.innerHTML = '';
@@ -43,200 +81,201 @@ function renderMenuContent(tab) {
   const contentArea = document.getElementById('menu-content-area');
   if (!contentArea) return;
   contentArea.innerHTML = '';
-  if (tab === 'apps' || tab === 'files') {
-    const appGrid = document.createElement('div');
-    appGrid.className = 'app-grid';
-    appGrid.style.overflowY = 'auto';
-    appGrid.style.maxHeight = '100%';
-    appGrid.style.paddingBottom = '24px';
-    if (typeof desktopItems !== 'undefined' && Array.isArray(desktopItems)) {
-      desktopItems.forEach(item => {
-        const appItem = document.createElement('div');
-        appItem.className = 'app-grid-item';
-        const isGameOrWebApp = item.category === 'game' || item.category === 'website' || !!item.url;
-        if (isGameOrWebApp) {
-          appItem.classList.add('is-game-app');
-        }
-        let icon = '□';
-        const nameLower = (item.name || '').toLowerCase();
-        if (item.category === 'game' || nameLower.includes('game')) icon = '🎮';
-        else if (nameLower.includes('website') || nameLower.includes('project')) icon = '🌐';
-        else if (nameLower.includes('doc') || nameLower.includes('code')) icon = '▢';
-        else if (nameLower.includes('media') || nameLower.includes('file')) icon = '♫';
-        else if (item.url) icon = '⬡';
-        appItem.innerHTML = `
-          <div class="app-icon">${icon}</div>
-          <div class="app-name">${item.name}</div>
-        `;
-        appItem.addEventListener('click', () => {
-          if (typeof openFile === 'function') {
-            openFile(item);
-          }
-        });
-        appGrid.appendChild(appItem);
+  const homeContainer = document.createElement('div');
+  homeContainer.className = 'home-menu-container';
+  homeContainer.style.display = 'flex';
+  homeContainer.style.flexDirection = 'column';
+  homeContainer.style.height = '100%';
+  homeContainer.style.position = 'relative';
+  const searchContainer = document.createElement('div');
+  searchContainer.className = 'home-search-bar';
+  searchContainer.style.padding = '8px 12px 12px 12px';
+  searchContainer.style.flexShrink = '0';
+  searchContainer.style.borderBottom = '1px solid #222';
+  const searchInput = document.createElement('input');
+  searchInput.className = 'search-input';
+  searchInput.type = 'text';
+  searchInput.placeholder = 'search apps, games, documents, tools...';
+  searchInput.style.width = '100%';
+  searchInput.style.padding = '8px 12px';
+  searchContainer.appendChild(searchInput);
+  const resultsContainer = document.createElement('div');
+  resultsContainer.className = 'search-results-overlay';
+  resultsContainer.style.display = 'none';
+  resultsContainer.style.overflowY = 'auto';
+  resultsContainer.style.flex = '1';
+  resultsContainer.style.padding = '8px 12px';
+  const mainViewArea = document.createElement('div');
+  mainViewArea.className = 'home-main-view';
+  mainViewArea.style.flex = '1';
+  mainViewArea.style.overflowY = 'auto';
+  mainViewArea.style.padding = '8px 12px';
+  const categories = categorizeAllItems();
+  function renderCategoryFoldersView() {
+    mainViewArea.innerHTML = '';
+    const folderGrid = document.createElement('div');
+    folderGrid.className = 'app-grid';
+    const categorySpecs = [
+      { id: 'games', name: 'games', icon: '🎮', items: categories.games },
+      { id: 'tools', name: 'tools', icon: '⚙', items: categories.tools },
+      { id: 'apps', name: 'apps', icon: '🌐', items: categories.apps },
+      { id: 'documents', name: 'documents', icon: '▢', items: categories.documents },
+      { id: 'videos', name: 'videos', icon: '▶', items: categories.videos },
+      { id: 'audio', name: 'audio', icon: '♫', items: categories.audio },
+      { id: 'misc', name: 'misc', icon: '⬡', items: categories.misc }
+    ];
+    categorySpecs.forEach(cat => {
+      const folderCard = document.createElement('div');
+      folderCard.className = 'app-grid-item folder-category-card';
+      folderCard.innerHTML = `
+        <div class="app-icon" style="border-color: #555;">${cat.icon}</div>
+        <div class="app-name" style="font-weight: bold; color: #fff;">${cat.name}</div>
+        <div style="font-size: 10px; color: #888;">${cat.items.length} items</div>
+      `;
+      folderCard.addEventListener('click', () => {
+        openCategoryFolder = cat.id;
+        renderUnrolledFolderView(cat);
       });
+      folderGrid.appendChild(folderCard);
+    });
+    mainViewArea.appendChild(folderGrid);
+  }
+  function renderUnrolledFolderView(catSpec) {
+    mainViewArea.innerHTML = '';
+    const header = document.createElement('div');
+    header.className = 'unrolled-folder-header';
+    header.style.position = 'sticky';
+    header.style.top = '0';
+    header.style.zIndex = '20';
+    header.style.background = '#000';
+    header.style.padding = '8px 0';
+    header.style.borderBottom = '1px solid #333';
+    header.style.marginBottom = '12px';
+    header.style.display = 'flex';
+    header.style.alignItems = 'center';
+    header.style.justifyContent = 'space-between';
+    header.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 16px;">${catSpec.icon}</span>
+        <span style="font-size: 13px; font-weight: bold; color: #fff; text-transform: lowercase;">${catSpec.name} (${catSpec.items.length})</span>
+      </div>
+      <button class="close-unrolled-btn" style="background: transparent; color: #ff3333; border: 1px solid #ff3333; padding: 4px 10px; font-family: inherit; font-size: 11px; cursor: pointer;">✕ close folder</button>
+    `;
+    header.querySelector('.close-unrolled-btn').addEventListener('click', () => {
+      openCategoryFolder = null;
+      renderCategoryFoldersView();
+    });
+    mainViewArea.appendChild(header);
+    if (catSpec.items.length === 0) {
+      const emptyEl = document.createElement('div');
+      emptyEl.style.color = '#666';
+      emptyEl.style.padding = '16px 0';
+      emptyEl.style.fontSize = '12px';
+      emptyEl.textContent = 'no items in this folder';
+      mainViewArea.appendChild(emptyEl);
+      return;
     }
-    contentArea.appendChild(appGrid);
-  } else if (tab === 'search') {
-    const searchContainer = document.createElement('div');
-    searchContainer.className = 'search-container';
-    const searchInput = document.createElement('input');
-    searchInput.className = 'search-input';
-    searchInput.type = 'text';
-    searchInput.placeholder = 'search apps, games, documents, tools, sites...';
-    const resultsContainer = document.createElement('div');
-    resultsContainer.className = 'search-results';
-    function collectAllItems(list, category = '') {
-      let collected = [];
-      if (!list) return collected;
-      list.forEach(i => {
-        const cat = category || (i.type === 'folder' ? 'folder' : (i.type || 'file'));
-        collected.push({ ...i, searchCategory: cat });
-        if (i.items && i.items.length > 0) {
-          collected = collected.concat(collectAllItems(i.items, i.name.toLowerCase()));
-        } else if (i.contents && i.contents.length > 0) {
-          collected = collected.concat(collectAllItems(i.contents, i.name.toLowerCase()));
+    const itemsGrid = document.createElement('div');
+    itemsGrid.className = 'app-grid';
+    catSpec.items.forEach(item => {
+      const appItem = document.createElement('div');
+      appItem.className = 'app-grid-item';
+      let icon = item.icon || catSpec.icon;
+      appItem.innerHTML = `<div class="app-icon">${icon}</div><div class="app-name">${item.name}</div>`;
+      appItem.addEventListener('click', () => {
+        if (item.isApp) {
+          if (typeof launchApp === 'function') launchApp(item.name);
+        } else {
+          if (typeof openFile === 'function') openFile(item);
         }
       });
-      return collected;
+      itemsGrid.appendChild(appItem);
+    });
+    mainViewArea.appendChild(itemsGrid);
+  }
+  function updateSearchState() {
+    const q = searchInput.value.toLowerCase().trim();
+    const isSearchActive = document.activeElement === searchInput || q.length > 0;
+    if (!isSearchActive && !q) {
+      resultsContainer.style.display = 'none';
+      mainViewArea.style.display = 'block';
+      return;
     }
-    function getItemIcon(item) {
-      if (item.icon) return item.icon;
-      const cat = (item.category || item.searchCategory || '').toLowerCase();
-      const type = (item.type || '').toLowerCase();
-      const name = (item.name || '').toLowerCase();
-      if (cat === 'game' || name.includes('game')) return '🎮';
-      if (type === 'audio') return '♫';
-      if (type === 'video') return '▶';
-      if (type === 'image') return '▣';
-      if (type === 'code') return '◇';
-      if (type === 'document') return '▢';
-      if (type === 'folder' || item.items) return '□';
-      if (item.url) return '⬡';
-      return '◈';
-    }
-    function renderDefaultSearchTab() {
-      resultsContainer.innerHTML = '';
-      const recentSection = document.createElement('div');
-      recentSection.className = 'search-default-section';
-      recentSection.style.marginBottom = '20px';
+    resultsContainer.style.display = 'block';
+    mainViewArea.style.display = 'none';
+    resultsContainer.innerHTML = '';
+    const recents = (typeof kSettings !== 'undefined' && kSettings.recentApps) ? kSettings.recentApps : [];
+    if (recents.length > 0) {
       const recentHeader = document.createElement('div');
-      recentHeader.className = 'search-section-header';
       recentHeader.style.fontSize = '12px';
       recentHeader.style.color = '#888';
-      recentHeader.style.textTransform = 'lowercase';
-      recentHeader.style.letterSpacing = '1.5px';
-      recentHeader.style.marginBottom = '10px';
-      recentHeader.style.paddingBottom = '4px';
+      recentHeader.style.padding = '4px 0 8px 0';
       recentHeader.style.borderBottom = '1px solid #222';
-      recentHeader.style.fontWeight = '600';
+      recentHeader.style.marginBottom = '8px';
+      recentHeader.style.fontWeight = 'bold';
       recentHeader.textContent = 'recent apps';
-      recentSection.appendChild(recentHeader);
-      const recents = (typeof kSettings !== 'undefined' && kSettings.recentApps) ? kSettings.recentApps : [];
-      if (recents.length > 0) {
-        const recentGrid = document.createElement('div');
-        recentGrid.className = 'app-grid';
-        recents.slice(0, 6).forEach(item => {
-          const appItem = document.createElement('div');
-          appItem.className = 'app-grid-item';
-          const icon = getItemIcon(item);
-          appItem.innerHTML = `<div class="app-icon">${icon}</div><div class="app-name">${item.name}</div>`;
-          appItem.addEventListener('click', () => {
-            if (item.isApp) {
-              if (typeof launchApp === 'function') launchApp(item.name);
-            } else {
-              if (typeof openFile === 'function') openFile(item);
-            }
-          });
-          recentGrid.appendChild(appItem);
+      resultsContainer.appendChild(recentHeader);
+      const recentGrid = document.createElement('div');
+      recentGrid.className = 'app-grid';
+      recentGrid.style.marginBottom = '16px';
+      recents.slice(0, 6).forEach(item => {
+        const appItem = document.createElement('div');
+        appItem.className = 'app-grid-item';
+        appItem.innerHTML = `<div class="app-icon">${item.icon || '⬡'}</div><div class="app-name">${item.name}</div>`;
+        appItem.addEventListener('click', () => {
+          if (item.isApp) {
+            if (typeof launchApp === 'function') launchApp(item.name);
+          } else {
+            if (typeof openFile === 'function') openFile(item);
+          }
         });
-        recentSection.appendChild(recentGrid);
-      } else {
-        const emptyEl = document.createElement('div');
-        emptyEl.style.fontSize = '12px';
-        emptyEl.style.color = '#666';
-        emptyEl.style.padding = '6px 0';
-        emptyEl.textContent = 'no recent apps yet';
-        recentSection.appendChild(emptyEl);
-      }
-      resultsContainer.appendChild(recentSection);
-      const toolsSection = document.createElement('div');
-      toolsSection.className = 'search-default-section';
-      const toolsHeader = document.createElement('div');
-      toolsHeader.className = 'search-section-header';
-      toolsHeader.style.fontSize = '12px';
-      toolsHeader.style.color = '#888';
-      toolsHeader.style.textTransform = 'lowercase';
-      toolsHeader.style.letterSpacing = '1.5px';
-      toolsHeader.style.marginBottom = '10px';
-      toolsHeader.style.paddingBottom = '4px';
-      toolsHeader.style.borderBottom = '1px solid #222';
-      toolsHeader.style.fontWeight = '600';
-      toolsHeader.textContent = 'tools';
-      toolsSection.appendChild(toolsHeader);
-      if (typeof systemApps !== 'undefined' && Array.isArray(systemApps)) {
-        const toolsGrid = document.createElement('div');
-        toolsGrid.className = 'app-grid';
-        systemApps.forEach(app => {
-          const appItem = document.createElement('div');
-          appItem.className = 'app-grid-item';
-          appItem.innerHTML = `<div class="app-icon">${app.icon}</div><div class="app-name">${app.name}</div>`;
-          appItem.addEventListener('click', () => {
-            if (typeof launchApp === 'function') launchApp(app.name);
-          });
-          toolsGrid.appendChild(appItem);
-        });
-        toolsSection.appendChild(toolsGrid);
-      }
-      resultsContainer.appendChild(toolsSection);
+        recentGrid.appendChild(appItem);
+      });
+      resultsContainer.appendChild(recentGrid);
     }
-    renderDefaultSearchTab();
-    searchInput.addEventListener('input', (e) => {
-      const q = e.target.value.toLowerCase().trim();
-      if (!q) {
-        renderDefaultSearchTab();
-        return;
-      }
-      resultsContainer.innerHTML = '';
+    if (q) {
+      const searchResultsHeader = document.createElement('div');
+      searchResultsHeader.style.fontSize = '12px';
+      searchResultsHeader.style.color = '#888';
+      searchResultsHeader.style.padding = '4px 0 8px 0';
+      searchResultsHeader.style.borderBottom = '1px solid #222';
+      searchResultsHeader.style.marginBottom = '8px';
+      searchResultsHeader.style.fontWeight = 'bold';
+      searchResultsHeader.textContent = 'search results';
+      resultsContainer.appendChild(searchResultsHeader);
       const results = [];
-      if (typeof systemApps !== 'undefined') {
-        systemApps.forEach(app => {
-          if (app.name.toLowerCase().includes(q) || (app.description && app.description.toLowerCase().includes(q))) {
-            results.push({ ...app, isApp: true, searchCategory: 'tool' });
-          }
-        });
-      }
-      if (typeof desktopItems !== 'undefined') {
-        const allFiles = collectAllItems(desktopItems);
-        allFiles.forEach(item => {
-          const matchName = item.name && item.name.toLowerCase().includes(q);
-          const matchUrl = item.url && item.url.toLowerCase().includes(q);
-          const matchType = item.type && item.type.toLowerCase().includes(q);
-          const matchCat = item.searchCategory && item.searchCategory.toLowerCase().includes(q);
-          if (matchName || matchUrl || matchType || matchCat) {
-            results.push(item);
-          }
-        });
-      }
+      let allItems = [];
+      Object.values(categories).forEach(arr => { allItems = allItems.concat(arr); });
+      const seen = new Set();
+      allItems.forEach(item => {
+        if (!item || !item.name) return;
+        if (seen.has(item.name.toLowerCase())) return;
+        seen.add(item.name.toLowerCase());
+        const matchName = item.name && item.name.toLowerCase().includes(q);
+        const matchUrl = item.url && item.url.toLowerCase().includes(q);
+        if (matchName || matchUrl) results.push(item);
+      });
       if (results.length === 0) {
-        resultsContainer.innerHTML = '<div class="empty-state" style="padding: 12px; color: #666;">no matching items found</div>';
+        const noRes = document.createElement('div');
+        noRes.style.padding = '12px 0';
+        noRes.style.color = '#666';
+        noRes.style.fontSize = '12px';
+        noRes.textContent = 'no matching items found';
+        resultsContainer.appendChild(noRes);
         return;
       }
       results.forEach(res => {
         const resEl = document.createElement('div');
-        const isGameOrWebApp = res.category === 'game' || res.category === 'website' || !!res.url || (res.searchCategory && (res.searchCategory === 'game' || res.searchCategory === 'website'));
-        resEl.className = 'search-result-item' + (isGameOrWebApp ? ' is-game-app' : '');
+        resEl.className = 'search-result-item';
         resEl.style.display = 'flex';
         resEl.style.alignItems = 'center';
         resEl.style.justifyContent = 'space-between';
         resEl.style.padding = '8px 12px';
         resEl.style.borderBottom = '1px solid #111';
         resEl.style.cursor = 'pointer';
-        let icon = getItemIcon(res);
-        const categoryTag = res.searchCategory ? `[${res.searchCategory}]` : '';
         resEl.innerHTML = `
-          <div><span class="icon">${icon}</span> <span class="name">${res.name}</span></div>
-          <span style="font-size:10px; color:#666;">${categoryTag}</span>
+          <div><span class="icon">${res.icon || '◈'}</span> <span class="name">${res.name}</span></div>
+          <span style="font-size:10px; color:#666;">[${res.category || 'item'}]</span>
         `;
         resEl.addEventListener('click', () => {
           if (res.isApp) {
@@ -247,12 +286,36 @@ function renderMenuContent(tab) {
         });
         resultsContainer.appendChild(resEl);
       });
-    });
-    searchContainer.appendChild(searchInput);
-    searchContainer.appendChild(resultsContainer);
-    contentArea.appendChild(searchContainer);
-    setTimeout(() => searchInput.focus(), 50);
+    }
   }
+  searchInput.addEventListener('focus', updateSearchState);
+  searchInput.addEventListener('input', updateSearchState);
+  searchInput.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (!searchInput.value.trim()) {
+        resultsContainer.style.display = 'none';
+        mainViewArea.style.display = 'block';
+      }
+    }, 200);
+  });
+  const specMap = {
+    games: { id: 'games', name: 'games', icon: '🎮', items: categories.games },
+    tools: { id: 'tools', name: 'tools', icon: '⚙', items: categories.tools },
+    apps: { id: 'apps', name: 'apps', icon: '🌐', items: categories.apps },
+    documents: { id: 'documents', name: 'documents', icon: '▢', items: categories.documents },
+    videos: { id: 'videos', name: 'videos', icon: '▶', items: categories.videos },
+    audio: { id: 'audio', name: 'audio', icon: '♫', items: categories.audio },
+    misc: { id: 'misc', name: 'misc', icon: '⬡', items: categories.misc }
+  };
+  if (openCategoryFolder && specMap[openCategoryFolder]) {
+    renderUnrolledFolderView(specMap[openCategoryFolder]);
+  } else {
+    renderCategoryFoldersView();
+  }
+  homeContainer.appendChild(searchContainer);
+  homeContainer.appendChild(resultsContainer);
+  homeContainer.appendChild(mainViewArea);
+  contentArea.appendChild(homeContainer);
 }
 function renderTopBar() {
   const topBar = document.getElementById('top-bar');
