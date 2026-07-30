@@ -147,10 +147,9 @@ function openTile(title, contentEl, opts = {}) {
             container.appendChild(el);
         }
     }
-    const isFirstTile = openTiles.length === 0;
     openTiles.push(tile);
     focusTile(id);
-    if (isFirstTile && typeof collapseMenu === 'function') {
+    if (typeof collapseMenu === 'function') {
         collapseMenu();
     }
     retile();
