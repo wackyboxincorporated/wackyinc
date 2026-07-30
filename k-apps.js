@@ -1,5 +1,8 @@
 function launchApp(name, ...args) {
   name = name.toLowerCase();
+  if (typeof recordRecentApp === 'function') {
+    recordRecentApp({ name: name, isApp: true });
+  }
   switch (name) {
     case 'calculator': {
       const calcEl = document.createElement('div');
@@ -561,6 +564,9 @@ function showFolderPrompt(item) {
   };
 }
 function openFile(item) {
+  if (typeof recordRecentApp === 'function') {
+    recordRecentApp(item);
+  }
   let url = item.url || item.path || '';
   if (url && !url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('blob:') && !url.startsWith('data:')) {
     url = BASE_URL + (url.startsWith('/') ? url.substring(1) : url);

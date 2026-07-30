@@ -1,3 +1,24 @@
+@font-face {
+    font-family: 'Akatab';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('fonts/akatab-regular-latin.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'Akatab';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('fonts/akatab-bold-latin.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'Akatab';
+    font-style: normal;
+    font-weight: 800;
+    font-display: swap;
+    src: url('fonts/akatab-extrabold-latin.woff2') format('woff2');
+}
 *, *::before, *::after {
     box-sizing: border-box;
     border-radius: 0;
@@ -13,7 +34,7 @@ body {
     padding: 0;
     background-color: #000000;
     color: #ffffff;
-    font-family: 'Share Tech Mono', monospace;
+    font-family: 'Akatab', 'Share Tech Mono', monospace;
     width: calc(100vw / var(--k-ui-scale, 1));
     height: calc(100vh / var(--k-ui-scale, 1));
     max-width: calc(100vw / var(--k-ui-scale, 1));

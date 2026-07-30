@@ -110,14 +110,124 @@ function renderMenuContent(tab) {
         collected.push({ ...i, searchCategory: cat });
         if (i.items && i.items.length > 0) {
           collected = collected.concat(collectAllItems(i.items, i.name.toLowerCase()));
+        } else if (i.contents && i.contents.length > 0) {
+          collected = collected.concat(collectAllItems(i.contents, i.name.toLowerCase()));
         }
       });
       return collected;
     }
+    function getItemIcon(item) {
+      if (item.icon) return item.icon;
+      const cat = (item.category || item.searchCategory || '').toLowerCase();
+      const type = (item.type || '').toLowerCase();
+      const name = (item.name || '').toLowerCase();
+      if (cat === 'game' || name.includes('game')) return '🎮';
+      if (type === 'audio') return '♫';
+      if (type === 'video') return '▶';
+      if (type === 'image') return '▣';
+      if (type === 'code') return '◇';
+      if (type === 'document') return '▢';
+      if (type === 'folder' || item.items) return '□';
+      if (item.url) return '⬡';
+      return '◈';
+    }
+    function renderDefaultSearchTab() {
+      resultsContainer.innerHTML = '';
+      const recentSection = document.createElement('div');
+      recentSection.className = 'search-default-section';
+      recentSection.style.marginBottom = '20px';
+      const recentHeader = document.createElement('div');
+      recentHeader.className = 'search-section-header';
+      recentHeader.style.fontSize = '12px';
+      recentHeader.style.color = '#888';
+      recentHeader.style.textTransform = 'lowercase';
+      recentHeader.style.letterSpacing = '1.5px';
+      recentHeader.style.marginBottom = '10px';
+      recentHeader.style.paddingBottom = '4px';
+      recentHeader.style.borderBottom = '1px solid #222';
+      recentHeader.style.fontWeight = '600';
+      recentHeader.textContent = 'recent apps';
+      recentSection.appendChild(recentHeader);
+      const recents = (typeof kSettings !== 'undefined' && kSettings.recentApps) ? kSettings.recentApps : [];
+      if (recents.length > 0) {
+        const recentGrid = document.createElement('div');
+        recentGrid.className = 'app-grid';
+        recents.slice(0, 6).forEach(item => {
+          const appItem = document.createElement('div');
+          appItem.className = 'app-grid-item';
+          const icon = getItemIcon(item);
+          appItem.innerHTML = `<div class="app-icon">${icon}</div><div class="app-name">${item.name}</div>`;
+          appItem.addEventListener('click', () => {
+            if (item.isApp) {
+              if (typeof launchApp === 'function') launchApp(item.name);
+            } else {
+              if (typeof openFile === 'function') openFile(item);
+            }
+          });
+          recentGrid.appendChild(appItem);
+        });
+        recentSection.appendChild(recentGrid);
+      } else {
+        const emptyEl = document.createElement('div');
+        emptyEl.style.fontSize = '12px';
+        emptyEl.style.color = '#666';
+        emptyEl.style.padding = '6px 0';
+        emptyEl.textContent = 'no recent apps yet';
+        recentSection.appendChild(emptyEl);
+      }
+      resultsContainer.appendChild(recentSection);
+      const randomSection = document.createElement('div');
+      randomSection.className = 'search-default-section';
+      const randomHeader = document.createElement('div');
+      randomHeader.className = 'search-section-header';
+      randomHeader.style.fontSize = '12px';
+      randomHeader.style.color = '#888';
+      randomHeader.style.textTransform = 'lowercase';
+      randomHeader.style.letterSpacing = '1.5px';
+      randomHeader.style.marginBottom = '10px';
+      randomHeader.style.paddingBottom = '4px';
+      randomHeader.style.borderBottom = '1px solid #222';
+      randomHeader.style.fontWeight = '600';
+      randomHeader.textContent = 'random shortcuts';
+      randomSection.appendChild(randomHeader);
+      let pool = [];
+      if (typeof systemApps !== 'undefined') {
+        systemApps.forEach(sa => pool.push({ ...sa, isApp: true }));
+      }
+      if (typeof desktopItems !== 'undefined') {
+        desktopItems.forEach(f => pool.push(f));
+      }
+      const shuffled = [...pool].sort(() => 0.5 - Math.random());
+      const randomPicks = shuffled.slice(0, 6);
+      if (randomPicks.length > 0) {
+        const randomGrid = document.createElement('div');
+        randomGrid.className = 'app-grid';
+        randomPicks.forEach(item => {
+          const appItem = document.createElement('div');
+          appItem.className = 'app-grid-item';
+          const icon = getItemIcon(item);
+          appItem.innerHTML = `<div class="app-icon">${icon}</div><div class="app-name">${item.name}</div>`;
+          appItem.addEventListener('click', () => {
+            if (item.isApp) {
+              if (typeof launchApp === 'function') launchApp(item.name);
+            } else {
+              if (typeof openFile === 'function') openFile(item);
+            }
+          });
+          randomGrid.appendChild(appItem);
+        });
+        randomSection.appendChild(randomGrid);
+      }
+      resultsContainer.appendChild(randomSection);
+    }
+    renderDefaultSearchTab();
     searchInput.addEventListener('input', (e) => {
       const q = e.target.value.toLowerCase().trim();
+      if (!q) {
+        renderDefaultSearchTab();
+        return;
+      }
       resultsContainer.innerHTML = '';
-      if (!q) return;
       const results = [];
       if (typeof systemApps !== 'undefined') {
         systemApps.forEach(app => {
@@ -152,14 +262,7 @@ function renderMenuContent(tab) {
         resEl.style.padding = '8px 12px';
         resEl.style.borderBottom = '1px solid #111';
         resEl.style.cursor = 'pointer';
-        let icon = '■';
-        if (res.isApp) icon = res.icon || '◈';
-        else if (res.type === 'folder' || res.isFolder) icon = '□';
-        else if (res.type === 'audio') icon = '♫';
-        else if (res.type === 'video') icon = '▶';
-        else if (res.type === 'image') icon = '▣';
-        else if (res.type === 'code') icon = '◇';
-        else if (res.type === 'document') icon = '▢';
+        let icon = getItemIcon(res);
         const categoryTag = res.searchCategory ? `[${res.searchCategory}]` : '';
         resEl.innerHTML = `
           <div><span class="icon">${icon}</span> <span class="name">${res.name}</span></div>

@@ -24,9 +24,28 @@ const defaultSettings = {
   tileGap: 1,
   menuOpen: true,
   firstRunHandled: false,
-  alwaysRedirectToOs: false
+  alwaysRedirectToOs: false,
+  recentApps: []
 };
 let kSettings = { ...defaultSettings };
+function recordRecentApp(item) {
+  if (!item || !item.name) return;
+  if (!kSettings.recentApps) kSettings.recentApps = [];
+  const entry = {
+    name: item.name,
+    icon: item.icon || '',
+    type: item.type || (item.isApp ? 'tool' : 'file'),
+    url: item.url || '',
+    category: item.category || '',
+    isApp: !!item.isApp
+  };
+  kSettings.recentApps = kSettings.recentApps.filter(r => r.name.toLowerCase() !== item.name.toLowerCase());
+  kSettings.recentApps.unshift(entry);
+  if (kSettings.recentApps.length > 6) {
+    kSettings.recentApps = kSettings.recentApps.slice(0, 6);
+  }
+  saveSettings();
+}
 function applyContentScale() {
   const scale = (kSettings && kSettings.contentScale) ? kSettings.contentScale : 1.0;
   document.documentElement.style.setProperty('--k-ui-scale', scale);

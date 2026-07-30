@@ -711,8 +711,17 @@ function toggleFloat(id) {
     }
     retile();
 }
+function isEditableTarget(target) {
+    if (!target) return false;
+    const tagName = target.tagName ? target.tagName.toUpperCase() : '';
+    if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT') return true;
+    if (target.isContentEditable) return true;
+    return false;
+}
 document.addEventListener('keydown', (e) => {
-    if ((e.altKey && e.key.toLowerCase() === 'q') || (e.ctrlKey && e.key.toLowerCase() === 'w')) {
+    if (isEditableTarget(e.target)) return;
+    const key = e.key ? e.key.toLowerCase() : '';
+    if (e.altKey && key === 'q') {
         if (activeTileId !== null) {
             closeTile(activeTileId);
             e.preventDefault();
@@ -725,13 +734,13 @@ document.addEventListener('keydown', (e) => {
             e.preventDefault();
         }
     }
-    if (e.altKey && e.key.toLowerCase() === 'f') {
+    if (e.altKey && key === 'f') {
         if (activeTileId !== null) {
             toggleFloat(activeTileId);
             e.preventDefault();
         }
     }
-    if (e.altKey && e.key.toLowerCase() === 'm') {
+    if (e.altKey && key === 'm') {
         const menu = document.getElementById('main-menu');
         if (menu) {
             if (menu.classList.contains('collapsed')) {
@@ -740,6 +749,24 @@ document.addEventListener('keydown', (e) => {
                 if (typeof collapseMenu === 'function') collapseMenu();
             }
         }
+        e.preventDefault();
+    }
+    if (e.altKey && key === 's') {
+        if (typeof expandMenu === 'function') expandMenu();
+        const searchTab = document.querySelector('.menu-tab[data-tab="search"]');
+        if (searchTab) searchTab.click();
+        e.preventDefault();
+    }
+    if (e.altKey && key === 't') {
+        if (typeof expandMenu === 'function') expandMenu();
+        const toolsTab = document.querySelector('.menu-tab[data-tab="tools"]');
+        if (toolsTab) toolsTab.click();
+        e.preventDefault();
+    }
+    if (e.altKey && key === 'a') {
+        if (typeof expandMenu === 'function') expandMenu();
+        const appsTab = document.querySelector('.menu-tab[data-tab="apps"]');
+        if (appsTab) appsTab.click();
         e.preventDefault();
     }
 });
