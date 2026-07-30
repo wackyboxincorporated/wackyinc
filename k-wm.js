@@ -285,12 +285,14 @@ function retile() {
         tiledTiles[0].element.style.gridRow = '1 / 3';
     } else if (tiledTiles.length === 4) {
         container.style.gridTemplateColumns = '1fr 1fr';
-        container.style.gridTemplateRows = '1fr 1fr';
     } else {
         container.style.gridTemplateColumns = 'repeat(auto-fit, minmax(300px, 1fr))';
         container.style.gridTemplateRows = 'auto';
     }
     renderSplitHandle(container, tiledTiles);
+}
+function getScaleFactor() {
+    return (typeof kSettings !== 'undefined' && kSettings.contentScale) ? kSettings.contentScale : 1.0;
 }
 function makeHandleDraggable(handle) {
     const trigger = handle.querySelector('#split-handle-trigger');
@@ -309,14 +311,17 @@ function makeHandleDraggable(handle) {
     };
     const onMove = (clientX, clientY) => {
         if (!isDragging) return;
-        const dx = clientX - startX;
-        const dy = clientY - startY;
+        const scale = getScaleFactor();
+        const dx = (clientX - startX) / scale;
+        const dy = (clientY - startY) / scale;
         if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
             hasMoved = true;
             handle.dataset.userMoved = 'true';
         }
-        const newLeft = Math.max(0, Math.min(window.innerWidth - 36, initialLeft + dx));
-        const newTop = Math.max(32, Math.min(window.innerHeight - 36, initialTop + dy));
+        const boundsW = window.innerWidth / scale;
+        const boundsH = window.innerHeight / scale;
+        const newLeft = Math.max(0, Math.min(boundsW - 36, initialLeft + dx));
+        const newTop = Math.max(32 / scale, Math.min(boundsH - 36, initialTop + dy));
         handle.style.left = `${newLeft}px`;
         handle.style.top = `${newTop}px`;
     };
@@ -381,15 +386,22 @@ function renderSplitHandle(container, visibleTiles) {
         });
         swapBtn.addEventListener('click', () => {
             popup.style.display = 'none';
-            if (openTiles.length >= 2 && visibleTiles.length === 2) {
-                const idx0 = openTiles.indexOf(visibleTiles[0]);
-                const idx1 = openTiles.indexOf(visibleTiles[1]);
+            if (visibleTiles.length === 2) {
+                const t0 = visibleTiles[0];
+                const t1 = visibleTiles[1];
+                const idx0 = openTiles.indexOf(t0);
+                const idx1 = openTiles.indexOf(t1);
                 if (idx0 !== -1 && idx1 !== -1) {
-                    const temp = openTiles[idx0];
-                    openTiles[idx0] = openTiles[idx1];
-                    openTiles[idx1] = temp;
-                    retile();
+                    openTiles[idx0] = t1;
+                    openTiles[idx1] = t0;
                 }
+                const c = document.getElementById('tile-container');
+                if (c && t0.element && t1.element) {
+                    c.insertBefore(t1.element, t0.element);
+                }
+                delete handle.dataset.userMoved;
+                retile();
+                if (typeof renderTopBar === 'function') renderTopBar();
             }
         });
         changeBtn.addEventListener('click', () => {
@@ -400,20 +412,20 @@ function renderSplitHandle(container, visibleTiles) {
     if (visibleTiles.length === 2) {
         handle.style.display = 'flex';
         if (!handle.dataset.userMoved) {
+            const scale = getScaleFactor();
             const rect0 = visibleTiles[0].element.getBoundingClientRect();
             const rect1 = visibleTiles[1].element.getBoundingClientRect();
             const isVert = Math.abs(rect0.top - rect1.top) > 50;
+            let midX, midY;
             if (isVert) {
-                const midY = (rect0.bottom + rect1.top) / 2;
-                const midX = (rect0.left + rect0.right) / 2;
-                handle.style.top = `${midY - 16}px`;
-                handle.style.left = `${midX - 16}px`;
+                midY = ((rect0.bottom + rect1.top) / 2) / scale;
+                midX = ((rect0.left + rect0.right) / 2) / scale;
             } else {
-                const midX = (rect0.right + rect1.left) / 2;
-                const midY = (rect0.top + rect0.bottom) / 2;
-                handle.style.left = `${midX - 16}px`;
-                handle.style.top = `${midY - 16}px`;
+                midX = ((rect0.right + rect1.left) / 2) / scale;
+                midY = ((rect0.top + rect0.bottom) / 2) / scale;
             }
+            handle.style.left = `${midX - 16}px`;
+            handle.style.top = `${midY - 16}px`;
         }
     } else {
         handle.style.display = 'none';
@@ -443,12 +455,25 @@ function showAppSelectorModal(visibleTiles) {
     openTiles.forEach(tile => {
         const isVisible = visibleTiles.includes(tile);
         appListHTML += `
-            <div class="change-app-item" data-id="${tile.id}" style="display:flex; justify-space-between; align-items:center; padding:10px; border-bottom:1px solid #111; cursor:pointer; color:${isVisible ? '#888' : '#fff'};">
+            <div class="change-app-item" data-id="${tile.id}" style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #111; cursor:pointer; color:${isVisible ? '#888' : '#fff'};">
                 <span>${tile.icon || '■'} ${tile.title.toLowerCase()}</span>
-                <span style="font-size:10px; color:${isVisible ? '#666' : '#3399ff'};">${isVisible ? '[visible]' : '[background]'}</span>
+                <span style="font-size:10px; color:${isVisible ? '#666' : '#3399ff'};">${isVisible ? '[visible]' : '[open background]'}</span>
             </div>
         `;
     });
+    if (typeof systemApps !== 'undefined' && Array.isArray(systemApps)) {
+        systemApps.forEach(sysApp => {
+            const alreadyOpen = openTiles.some(t => t.title.toLowerCase() === sysApp.name.toLowerCase());
+            if (!alreadyOpen) {
+                appListHTML += `
+                    <div class="change-app-system-item" data-appname="${sysApp.name}" style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #111; cursor:pointer; color:#fff;">
+                        <span>${sysApp.icon || '⊞'} ${sysApp.name.toLowerCase()}</span>
+                        <span style="font-size:10px; color:#888;">[launch new]</span>
+                    </div>
+                `;
+            }
+        });
+    }
     overlay.innerHTML = `
         <div style="background:#000; border:1px solid #333; padding:20px; width:340px; max-width:90vw; max-height:80vh; display:flex; flex-direction:column; box-sizing:border-box;">
             <div style="font-size:14px; color:#fff; margin-bottom:12px;">select app to display:</div>
@@ -478,18 +503,48 @@ function showAppSelectorModal(visibleTiles) {
             selectedTargetIdx = parseInt(btn.dataset.slot, 10);
         };
     });
+    const handleTileReplace = (chosenTile) => {
+        if (!chosenTile || !visibleTiles[selectedTargetIdx]) return;
+        const targetOldTile = visibleTiles[selectedTargetIdx];
+        targetOldTile.lastFocused = 0;
+        chosenTile.lastFocused = Date.now();
+        const idxOld = openTiles.indexOf(targetOldTile);
+        const idxChosen = openTiles.indexOf(chosenTile);
+        if (idxOld !== -1 && idxChosen !== -1) {
+            openTiles[idxOld] = chosenTile;
+            openTiles[idxChosen] = targetOldTile;
+        }
+        const container = document.getElementById('tile-container');
+        if (container && targetOldTile.element && chosenTile.element) {
+            if (targetOldTile.element.parentNode === container) {
+                container.insertBefore(chosenTile.element, targetOldTile.element);
+            }
+        }
+        const handle = document.getElementById('split-handle-overlay');
+        if (handle) delete handle.dataset.userMoved;
+        focusTile(chosenTile.id);
+    };
     const appItems = overlay.querySelectorAll('.change-app-item');
     appItems.forEach(item => {
         item.onclick = () => {
             const chosenId = item.dataset.id;
             const chosenTile = getTileById(chosenId);
-            if (chosenTile && visibleTiles[selectedTargetIdx]) {
-                const oldTile = visibleTiles[selectedTargetIdx];
-                oldTile.visible = false;
-                chosenTile.visible = true;
-                focusTile(chosenTile.id);
-            }
+            handleTileReplace(chosenTile);
             overlay.style.display = 'none';
+        };
+    });
+    const sysItems = overlay.querySelectorAll('.change-app-system-item');
+    sysItems.forEach(item => {
+        item.onclick = () => {
+            const appName = item.dataset.appname;
+            overlay.style.display = 'none';
+            if (typeof launchApp === 'function') {
+                const newId = launchApp(appName);
+                const newTile = getTileById(newId);
+                if (newTile) {
+                    handleTileReplace(newTile);
+                }
+            }
         };
     });
     overlay.querySelector('#close-change-app-btn').onclick = () => {
