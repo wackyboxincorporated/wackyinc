@@ -473,12 +473,36 @@ function launchApp(name, ...args) {
       });
       gGap.appendChild(gapInput);
       settingsEl.appendChild(gGap);
+      const gHelp = createGroup('help');
+      const helpBtn = document.createElement('button');
+      helpBtn.textContent = 'help!';
+      helpBtn.style.width = '100%';
+      helpBtn.style.padding = '10px';
+      helpBtn.style.background = '#111';
+      helpBtn.style.color = '#fff';
+      helpBtn.style.border = '1px solid #333';
+      helpBtn.style.cursor = 'pointer';
+      helpBtn.style.fontFamily = 'inherit';
+      helpBtn.style.fontSize = '13px';
+      helpBtn.style.textTransform = 'lowercase';
+      helpBtn.style.transition = 'all 0.2s ease';
+      helpBtn.onmouseenter = () => { helpBtn.style.borderColor = '#fff'; helpBtn.style.background = '#222'; };
+      helpBtn.onmouseleave = () => { helpBtn.style.borderColor = '#333'; helpBtn.style.background = '#111'; };
+      helpBtn.addEventListener('click', () => {
+        openHelpWindow();
+      });
+      gHelp.appendChild(helpBtn);
+      settingsEl.appendChild(gHelp);
       const gAbout = createGroup('about');
       const aboutTxt = document.createElement('div');
       aboutTxt.textContent = 'wbosk v1';
       gAbout.appendChild(aboutTxt);
       settingsEl.appendChild(gAbout);
       openTile('settings', settingsEl);
+      break;
+    }
+    case 'help': {
+      openHelpWindow();
       break;
     }
     case 'video player': {
@@ -507,6 +531,49 @@ function launchApp(name, ...args) {
       break;
     }
   }
+}
+function openHelpWindow() {
+  const helpEl = document.createElement('div');
+  helpEl.className = 'help-app';
+  helpEl.style.padding = '16px';
+  helpEl.style.height = '100%';
+  helpEl.style.overflowY = 'auto';
+  helpEl.style.boxSizing = 'border-box';
+  helpEl.style.fontSize = '12px';
+  helpEl.style.lineHeight = '1.6';
+  helpEl.style.color = '#ffffff';
+  helpEl.style.textTransform = 'lowercase';
+  helpEl.innerHTML = `
+    <div style="font-size: 14px; font-weight: bold; margin-bottom: 12px; border-bottom: 1px solid #333; padding-bottom: 6px; color: #fff;">
+      how things work:
+    </div>
+    <div style="margin-bottom: 16px;">
+      <div style="color: #888; margin-bottom: 4px; font-weight: bold;">menu & navigation</div>
+      <div>• apps tab: browse apps, games & content</div>
+      <div>• tools tab: system utilities & tools</div>
+      <div>• search tab: search apps, recent apps & random shortcuts</div>
+      <div>• top taskbar: toggle menu, playback controls & open app tabs</div>
+    </div>
+    <div style="margin-bottom: 16px;">
+      <div style="color: #888; margin-bottom: 4px; font-weight: bold;">tiling window manager</div>
+      <div>• drag window headers to reorder or snap grid slots</div>
+      <div>• click [_] to minimize window</div>
+      <div>• click [⊡] to toggle floating mode</div>
+      <div>• click [✕] to close window</div>
+      <div>• mobile portrait: max 2 active visible tiles with scrollable taskbar</div>
+    </div>
+    <div style="margin-bottom: 16px;">
+      <div style="color: #888; margin-bottom: 4px; font-weight: bold;">keyboard shortcuts</div>
+      <div>• alt + m : toggle main menu</div>
+      <div>• alt + q : close active window</div>
+      <div>• alt + f : toggle window float mode</div>
+      <div>• alt + 1-9 : switch window tile</div>
+      <div>• alt + s : open search tab</div>
+      <div>• alt + t : open tools tab</div>
+      <div>• alt + a : open apps tab</div>
+    </div>
+  `;
+  openTile('help', helpEl);
 }
 function showFolderPrompt(item) {
   let overlay = document.getElementById('prompt-overlay');
