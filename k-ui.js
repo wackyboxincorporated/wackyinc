@@ -476,12 +476,71 @@ function renderFileNavigator(items, breadcrumb) {
 function checkStartupRedirectPrompt() {
   if (typeof kSettings === 'undefined') return;
   if (kSettings.alwaysRedirectToOs) {
-    window.location.href = (typeof BASE_URL !== 'undefined' ? BASE_URL : '') + 'os/';
+    showStartupRedirectCountdown();
     return;
   }
   if (!kSettings.firstRunHandled) {
     showFirstStartPrompt();
   }
+}
+function showStartupRedirectCountdown() {
+  const existing = document.getElementById('startup-redirect-overlay');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'startup-redirect-overlay';
+  overlay.style.position = 'fixed';
+  overlay.style.inset = '0';
+  overlay.style.zIndex = '100000';
+  overlay.style.background = '#000000';
+  overlay.style.display = 'flex';
+  overlay.style.flexDirection = 'column';
+  overlay.style.justifyContent = 'center';
+  overlay.style.alignItems = 'center';
+  overlay.style.padding = '20px';
+  overlay.style.boxSizing = 'border-box';
+  overlay.style.fontFamily = "'Share Tech Mono', monospace";
+  overlay.style.textTransform = 'lowercase';
+  let secondsLeft = 5;
+  overlay.innerHTML = `
+    <div style="max-width: 480px; width: 100%; border: 1px solid #333333; padding: 32px 24px; background: #050505; text-align: center; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; box-shadow: 0 8px 32px rgba(0,0,0,1);">
+      <div id="redirect-counter-text" style="font-size: 18px; color: #ffffff; margin-bottom: 24px; line-height: 1.4;">
+        directing you to wbos in ${secondsLeft} seconds.
+      </div>
+      <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; width: 100%;">
+        <button id="redirect-use-k-btn" style="flex: 1; min-width: 120px; padding: 10px 16px; border: 1px solid #333333; background: #111111; color: #ffffff; font-family: inherit; font-size: 13px; cursor: pointer; text-transform: lowercase; transition: all 0.2s ease;">use K</button>
+        <button id="redirect-disable-btn" style="flex: 1; min-width: 140px; padding: 10px 16px; border: 1px solid #ff3333; background: #111111; color: #ff3333; font-family: inherit; font-size: 13px; cursor: pointer; text-transform: lowercase; transition: all 0.2s ease;">disable redirect</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const counterEl = overlay.querySelector('#redirect-counter-text');
+  const useKBtn = overlay.querySelector('#redirect-use-k-btn');
+  const disableBtn = overlay.querySelector('#redirect-disable-btn');
+  useKBtn.onmouseenter = () => { useKBtn.style.borderColor = '#ffffff'; useKBtn.style.background = '#222222'; };
+  useKBtn.onmouseleave = () => { useKBtn.style.borderColor = '#333333'; useKBtn.style.background = '#111111'; };
+  disableBtn.onmouseenter = () => { disableBtn.style.borderColor = '#ff0000'; disableBtn.style.background = '#330000'; disableBtn.style.color = '#ffffff'; };
+  disableBtn.onmouseleave = () => { disableBtn.style.borderColor = '#ff3333'; disableBtn.style.background = '#111111'; disableBtn.style.color = '#ff3333'; };
+  const timerId = setInterval(() => {
+    secondsLeft--;
+    if (secondsLeft > 0) {
+      if (counterEl) counterEl.textContent = `directing you to wbos in ${secondsLeft} seconds.`;
+    } else {
+      clearInterval(timerId);
+      window.location.href = (typeof BASE_URL !== 'undefined' ? BASE_URL : '') + 'os/';
+    }
+  }, 1000);
+  useKBtn.onclick = () => {
+    clearInterval(timerId);
+    overlay.remove();
+  };
+  disableBtn.onclick = () => {
+    clearInterval(timerId);
+    if (typeof kSettings !== 'undefined') {
+      kSettings.alwaysRedirectToOs = false;
+      if (typeof saveSettings === 'function') saveSettings();
+    }
+    overlay.remove();
+  };
 }
 function showFirstStartPrompt() {
   const existing = document.getElementById('first-start-overlay');
