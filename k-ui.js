@@ -113,8 +113,6 @@ function renderMenuContent(tab) {
   const categories = categorizeAllItems();
   function renderCategoryFoldersView() {
     mainViewArea.innerHTML = '';
-    const folderGrid = document.createElement('div');
-    folderGrid.className = 'app-grid';
     const categorySpecs = [
       { id: 'games', name: 'games', icon: '🎮', items: categories.games },
       { id: 'tools', name: 'tools', icon: '⚙', items: categories.tools },
@@ -124,6 +122,69 @@ function renderMenuContent(tab) {
       { id: 'audio', name: 'audio', icon: '♫', items: categories.audio },
       { id: 'misc', name: 'misc', icon: '⬡', items: categories.misc }
     ];
+    if (openCategoryFolder) {
+      const activeSpec = categorySpecs.find(c => c.id === openCategoryFolder);
+      if (activeSpec) {
+        mainViewArea.scrollTop = 0;
+        const unrolledContainer = document.createElement('div');
+        unrolledContainer.className = 'unrolled-folder-wrapper';
+        const header = document.createElement('div');
+        header.className = 'unrolled-folder-header';
+        header.style.position = 'sticky';
+        header.style.top = '0';
+        header.style.zIndex = '20';
+        header.style.background = '#000';
+        header.style.padding = '8px 0 12px 0';
+        header.style.borderBottom = '1px solid #333';
+        header.style.marginBottom = '12px';
+        header.style.display = 'flex';
+        header.style.alignItems = 'center';
+        header.style.justifyContent = 'space-between';
+        header.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 16px;">${activeSpec.icon}</span>
+            <span style="font-size: 13px; font-weight: bold; color: #fff;">${activeSpec.name} (${activeSpec.items.length})</span>
+          </div>
+          <button class="close-unrolled-btn" style="background: #111; color: #ff3333; border: 1px solid #ff3333; padding: 6px 12px; font-family: inherit; font-size: 11px; cursor: pointer; border-radius: 0;">✕ close folder</button>
+        `;
+        header.querySelector('.close-unrolled-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          openCategoryFolder = null;
+          renderCategoryFoldersView();
+        });
+        unrolledContainer.appendChild(header);
+        if (activeSpec.items.length === 0) {
+          const emptyEl = document.createElement('div');
+          emptyEl.style.color = '#666';
+          emptyEl.style.padding = '12px 0';
+          emptyEl.style.fontSize = '12px';
+          emptyEl.textContent = 'no items in this folder';
+          unrolledContainer.appendChild(emptyEl);
+        } else {
+          const itemsGrid = document.createElement('div');
+          itemsGrid.className = 'app-grid';
+          activeSpec.items.forEach(item => {
+            const appItem = document.createElement('div');
+            appItem.className = 'app-grid-item';
+            let icon = item.icon || activeSpec.icon;
+            appItem.innerHTML = `<div class="app-icon">${icon}</div><div class="app-name">${item.name}</div>`;
+            appItem.addEventListener('click', () => {
+              if (item.isApp) {
+                if (typeof launchApp === 'function') launchApp(item.name);
+              } else {
+                if (typeof openFile === 'function') openFile(item);
+              }
+            });
+            itemsGrid.appendChild(appItem);
+          });
+          unrolledContainer.appendChild(itemsGrid);
+        }
+        mainViewArea.appendChild(unrolledContainer);
+        return;
+      }
+    }
+    const folderGrid = document.createElement('div');
+    folderGrid.className = 'app-grid';
     categorySpecs.forEach(cat => {
       const folderCard = document.createElement('div');
       folderCard.className = 'app-grid-item folder-category-card';
@@ -134,64 +195,11 @@ function renderMenuContent(tab) {
       `;
       folderCard.addEventListener('click', () => {
         openCategoryFolder = cat.id;
-        renderUnrolledFolderView(cat);
+        renderCategoryFoldersView();
       });
       folderGrid.appendChild(folderCard);
     });
     mainViewArea.appendChild(folderGrid);
-  }
-  function renderUnrolledFolderView(catSpec) {
-    mainViewArea.innerHTML = '';
-    const header = document.createElement('div');
-    header.className = 'unrolled-folder-header';
-    header.style.position = 'sticky';
-    header.style.top = '0';
-    header.style.zIndex = '20';
-    header.style.background = '#000';
-    header.style.padding = '8px 0';
-    header.style.borderBottom = '1px solid #333';
-    header.style.marginBottom = '12px';
-    header.style.display = 'flex';
-    header.style.alignItems = 'center';
-    header.style.justifyContent = 'space-between';
-    header.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <span style="font-size: 16px;">${catSpec.icon}</span>
-        <span style="font-size: 13px; font-weight: bold; color: #fff; text-transform: lowercase;">${catSpec.name} (${catSpec.items.length})</span>
-      </div>
-      <button class="close-unrolled-btn" style="background: transparent; color: #ff3333; border: 1px solid #ff3333; padding: 4px 10px; font-family: inherit; font-size: 11px; cursor: pointer;">✕ close folder</button>
-    `;
-    header.querySelector('.close-unrolled-btn').addEventListener('click', () => {
-      openCategoryFolder = null;
-      renderCategoryFoldersView();
-    });
-    mainViewArea.appendChild(header);
-    if (catSpec.items.length === 0) {
-      const emptyEl = document.createElement('div');
-      emptyEl.style.color = '#666';
-      emptyEl.style.padding = '16px 0';
-      emptyEl.style.fontSize = '12px';
-      emptyEl.textContent = 'no items in this folder';
-      mainViewArea.appendChild(emptyEl);
-      return;
-    }
-    const itemsGrid = document.createElement('div');
-    itemsGrid.className = 'app-grid';
-    catSpec.items.forEach(item => {
-      const appItem = document.createElement('div');
-      appItem.className = 'app-grid-item';
-      let icon = item.icon || catSpec.icon;
-      appItem.innerHTML = `<div class="app-icon">${icon}</div><div class="app-name">${item.name}</div>`;
-      appItem.addEventListener('click', () => {
-        if (item.isApp) {
-          if (typeof launchApp === 'function') launchApp(item.name);
-        } else {
-          if (typeof openFile === 'function') openFile(item);
-        }
-      });
-      itemsGrid.appendChild(appItem);
-    });
-    mainViewArea.appendChild(itemsGrid);
   }
   function updateSearchState() {
     const q = searchInput.value.toLowerCase().trim();
