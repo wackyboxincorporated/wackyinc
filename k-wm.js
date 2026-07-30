@@ -9,41 +9,119 @@ function makeDraggable(tile) {
     let isDragging = false;
     let startX = 0, startY = 0;
     let initialX = 0, initialY = 0;
+    let currentTargetTile = null;
     header.addEventListener('mousedown', (e) => {
-        if (!tile.isFloat) return;
         if (e.target.closest('.tile-controls')) return;
-        isDragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-        initialX = tile.element.offsetLeft;
-        initialY = tile.element.offsetTop;
-        focusTile(tile.id);
-        e.preventDefault();
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
+        if (tile.isFloat) {
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            initialX = tile.element.offsetLeft;
+            initialY = tile.element.offsetTop;
+            focusTile(tile.id);
+            e.preventDefault();
+            document.addEventListener('mousemove', onMouseMoveFloat);
+            document.addEventListener('mouseup', onMouseUpFloat);
+        } else if (!isMobilePhone()) {
+            isDragging = true;
+            currentTargetTile = null;
+            focusTile(tile.id);
+            tile.element.style.opacity = '0.75';
+            tile.element.style.transform = 'scale(0.98)';
+            tile.element.style.zIndex = '5000';
+            tile.element.style.transition = 'transform 0.1s ease, opacity 0.1s ease';
+            e.preventDefault();
+            document.addEventListener('mousemove', onMouseMoveTiled);
+            document.addEventListener('mouseup', onMouseUpTiled);
+        }
     });
-    function getViewportBounds() {
-        const scale = (typeof kSettings !== 'undefined' && kSettings.contentScale) ? kSettings.contentScale : 1.0;
-        return {
-            w: window.innerWidth / scale,
-            h: window.innerHeight / scale,
-            scale: scale
-        };
+    function getScaleFactor() {
+        return (typeof kSettings !== 'undefined' && kSettings.contentScale) ? kSettings.contentScale : 1.0;
     }
-    function onMouseMove(e) {
+    function onMouseMoveFloat(e) {
         if (!isDragging) return;
-        const bounds = getViewportBounds();
-        const dx = (e.clientX - startX) / bounds.scale;
-        const dy = (e.clientY - startY) / bounds.scale;
-        tile.x = Math.max(0, Math.min(initialX + dx, bounds.w - 50));
-        tile.y = Math.max(32, Math.min(initialY + dy, bounds.h - 32));
+        const scale = getScaleFactor();
+        const dx = (e.clientX - startX) / scale;
+        const dy = (e.clientY - startY) / scale;
+        const boundsW = window.innerWidth / scale;
+        const boundsH = window.innerHeight / scale;
+        tile.x = Math.max(0, Math.min(initialX + dx, boundsW - 50));
+        tile.y = Math.max(32 / scale, Math.min(initialY + dy, boundsH - 32));
         tile.element.style.left = `${tile.x}px`;
         tile.element.style.top = `${tile.y}px`;
     }
-    function onMouseUp() {
+    function onMouseUpFloat() {
         isDragging = false;
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
+        document.removeEventListener('mousemove', onMouseMoveFloat);
+        document.removeEventListener('mouseup', onMouseUpFloat);
+    }
+    function getOrCreateDropIndicator() {
+        let indicator = document.getElementById('tile-drop-indicator');
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.id = 'tile-drop-indicator';
+            indicator.style.position = 'fixed';
+            indicator.style.pointerEvents = 'none';
+            indicator.style.border = '2px dashed #ffffff';
+            indicator.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
+            indicator.style.zIndex = '9000';
+            indicator.style.boxShadow = '0 0 16px rgba(255, 255, 255, 0.25)';
+            indicator.style.transition = 'all 0.1s ease';
+            indicator.style.display = 'none';
+            document.body.appendChild(indicator);
+        }
+        return indicator;
+    }
+    function onMouseMoveTiled(e) {
+        if (!isDragging) return;
+        const activeTiled = openTiles.filter(t => !t.isFloat && !t.minimized && t.visible !== false);
+        const indicator = getOrCreateDropIndicator();
+        let foundTarget = null;
+        for (const other of activeTiled) {
+            if (other.id === tile.id) continue;
+            const rect = other.element.getBoundingClientRect();
+            if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                foundTarget = other;
+                break;
+            }
+        }
+        currentTargetTile = foundTarget;
+        if (currentTargetTile) {
+            const rect = currentTargetTile.element.getBoundingClientRect();
+            indicator.style.display = 'block';
+            indicator.style.left = `${rect.left}px`;
+            indicator.style.top = `${rect.top}px`;
+            indicator.style.width = `${rect.width}px`;
+            indicator.style.height = `${rect.height}px`;
+        } else {
+            indicator.style.display = 'none';
+        }
+    }
+    function onMouseUpTiled() {
+        isDragging = false;
+        document.removeEventListener('mousemove', onMouseMoveTiled);
+        document.removeEventListener('mouseup', onMouseUpTiled);
+        const indicator = document.getElementById('tile-drop-indicator');
+        if (indicator) indicator.style.display = 'none';
+        tile.element.style.opacity = '';
+        tile.element.style.transform = '';
+        tile.element.style.zIndex = '';
+        tile.element.style.transition = '';
+        if (currentTargetTile && currentTargetTile.id !== tile.id) {
+            const idx0 = openTiles.indexOf(tile);
+            const idx1 = openTiles.indexOf(currentTargetTile);
+            if (idx0 !== -1 && idx1 !== -1) {
+                openTiles[idx0] = currentTargetTile;
+                openTiles[idx1] = tile;
+            }
+            const container = document.getElementById('tile-container');
+            if (container && tile.element && currentTargetTile.element) {
+                container.insertBefore(tile.element, currentTargetTile.element);
+            }
+            retile();
+            if (typeof renderTopBar === 'function') renderTopBar();
+        }
+        currentTargetTile = null;
     }
     header.addEventListener('touchstart', (e) => {
         if (!tile.isFloat) return;
