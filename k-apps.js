@@ -215,12 +215,13 @@ function launchApp(name, ...args) {
       openTile('browser', browserEl);
       break;
     }
+    case 'apps':
     case 'file explorer': {
       const items = args[0] || desktopItems;
       const breadcrumbs = args[1] || ['root'];
       if (typeof renderFileNavigator === 'function') {
         const navEl = renderFileNavigator(items, breadcrumbs);
-        openTile('file explorer', navEl);
+        openTile('apps', navEl);
       }
       break;
     }

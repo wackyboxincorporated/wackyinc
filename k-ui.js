@@ -1,11 +1,11 @@
 function renderMainMenu() {
   const mainMenu = document.getElementById('main-menu');
   if (!mainMenu) return;
-  const activeTab = mainMenu.dataset.activeTab || 'files';
+  const activeTab = mainMenu.dataset.activeTab || 'apps';
   mainMenu.innerHTML = `
     <div class="menu-tab-bar">
-      <div class="menu-tab ${activeTab === 'files' ? 'active' : ''}" data-tab="files">files</div>
       <div class="menu-tab ${activeTab === 'apps' ? 'active' : ''}" data-tab="apps">apps</div>
+      <div class="menu-tab ${activeTab === 'tools' ? 'active' : ''}" data-tab="tools">tools</div>
       <div class="menu-tab ${activeTab === 'search' ? 'active' : ''}" data-tab="search">search</div>
     </div>
     <div class="menu-content" id="menu-content-area"></div>
@@ -44,7 +44,7 @@ function renderMenuContent(tab) {
   const contentArea = document.getElementById('menu-content-area');
   if (!contentArea) return;
   contentArea.innerHTML = '';
-  if (tab === 'files') {
+  if (tab === 'apps' || tab === 'files') {
     let currentSortMode = (typeof kSettings !== 'undefined' && kSettings.fileSortMode) ? kSettings.fileSortMode : 'name-asc';
     const sortBar = document.createElement('div');
     sortBar.className = 'file-sort-bar';
@@ -87,7 +87,7 @@ function renderMenuContent(tab) {
         kSettings.fileSortMode = sortSelect.value;
         if (typeof saveSettings === 'function') saveSettings();
       }
-      renderMenuContent('files');
+      renderMenuContent('apps');
     });
     sortBar.appendChild(sortLabel);
     sortBar.appendChild(sortSelect);
@@ -173,7 +173,7 @@ function renderMenuContent(tab) {
       renderTreeNodes(desktopItems, fileTree);
     }
     contentArea.appendChild(fileTree);
-  } else if (tab === 'apps') {
+  } else if (tab === 'tools') {
     const appGrid = document.createElement('div');
     appGrid.className = 'app-grid';
     if (typeof systemApps !== 'undefined') {
@@ -217,7 +217,7 @@ function renderMenuContent(tab) {
       if (typeof systemApps !== 'undefined') {
         systemApps.forEach(app => {
           if (app.name.toLowerCase().includes(q) || (app.description && app.description.toLowerCase().includes(q))) {
-            results.push({ ...app, isApp: true, searchCategory: 'app' });
+            results.push({ ...app, isApp: true, searchCategory: 'tool' });
           }
         });
       }
@@ -299,12 +299,18 @@ function renderTopBar() {
   if (typeof kPlayer !== 'undefined' && kPlayer.playlist && kPlayer.playlist.length > 0) {
     const trackName = kPlayer.getTrackName ? kPlayer.getTrackName() : 'unknown track';
     const isPlaying = kPlayer.isPlaying;
+    const isOpen = topBar.dataset.mediaPopupOpen === 'true';
     compactPlayerHTML = `
-      <div class="top-bar-player">
-        <button class="top-bar-btn prev-btn">⏮</button>
-        <button class="top-bar-btn play-btn">${isPlaying ? '⏸' : '▶'}</button>
-        <button class="top-bar-btn next-btn">⏭</button>
-        <span class="top-bar-track-name">${trackName}</span>
+      <div class="top-bar-media-container" style="position:relative; display:inline-flex; align-items:center;">
+        <button class="top-bar-btn top-bar-media-toggle ${isOpen ? 'open' : ''}" id="top-bar-media-triangle" title="media playback">▶</button>
+        <div class="top-bar-media-popup" id="top-bar-media-popup" style="display: ${isOpen ? 'flex' : 'none'};">
+          <div class="top-bar-media-track-title" id="media-popup-track-title" title="open media player">♫ ${trackName}</div>
+          <div class="top-bar-media-controls">
+            <button class="top-bar-btn prev-btn" title="previous">⏮</button>
+            <button class="top-bar-btn play-btn" title="play/pause">${isPlaying ? '⏸' : '▶'}</button>
+            <button class="top-bar-btn next-btn" title="next">⏭</button>
+          </div>
+        </div>
       </div>
     `;
   }
@@ -351,29 +357,42 @@ function renderTopBar() {
       if (typeof focusTile === 'function') focusTile(tab.dataset.id);
     });
   });
-  const topPlayer = topBar.querySelector('.top-bar-player');
-  if (topPlayer) {
-    const prevBtn = topPlayer.querySelector('.prev-btn');
-    if (prevBtn) prevBtn.addEventListener('click', () => kPlayer.prev());
-    const playBtn = topPlayer.querySelector('.play-btn');
-    if (playBtn) playBtn.addEventListener('click', () => {
-      if (kPlayer.isPlaying) kPlayer.pause();
-      else kPlayer.play();
-      renderTopBar();
-      renderMainMenu();
+  const mediaTriangleBtn = topBar.querySelector('#top-bar-media-triangle');
+  const mediaPopup = topBar.querySelector('#top-bar-media-popup');
+  if (mediaTriangleBtn && mediaPopup) {
+    mediaTriangleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = topBar.dataset.mediaPopupOpen === 'true';
+      topBar.dataset.mediaPopupOpen = (!isOpen).toString();
+      if (!isOpen) {
+        mediaTriangleBtn.classList.add('open');
+        mediaPopup.style.display = 'flex';
+      } else {
+        mediaTriangleBtn.classList.remove('open');
+        mediaPopup.style.display = 'none';
+      }
     });
-    const nextBtn = topPlayer.querySelector('.next-btn');
-    if (nextBtn) nextBtn.addEventListener('click', () => kPlayer.next());
-    const trackNameEl = topPlayer.querySelector('.top-bar-track-name');
-    if (trackNameEl) {
-      trackNameEl.style.cursor = 'pointer';
-      trackNameEl.title = 'open media player';
-      trackNameEl.addEventListener('click', () => {
+    const trackTitleEl = mediaPopup.querySelector('#media-popup-track-title');
+    if (trackTitleEl) {
+      trackTitleEl.addEventListener('click', (e) => {
+        e.stopPropagation();
         if (typeof launchApp === 'function') {
           launchApp('media player');
         }
       });
     }
+    const prevBtn = mediaPopup.querySelector('.prev-btn');
+    if (prevBtn) prevBtn.addEventListener('click', (e) => { e.stopPropagation(); kPlayer.prev(); renderTopBar(); });
+    const playBtn = mediaPopup.querySelector('.play-btn');
+    if (playBtn) playBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (kPlayer.isPlaying) kPlayer.pause();
+      else kPlayer.play();
+      renderTopBar();
+      renderMainMenu();
+    });
+    const nextBtn = mediaPopup.querySelector('.next-btn');
+    if (nextBtn) nextBtn.addEventListener('click', (e) => { e.stopPropagation(); kPlayer.next(); renderTopBar(); });
   }
   updateClock();
 }

@@ -5,15 +5,15 @@ const MEDIA_PLAYER_APP_URL = `${BASE_URL}media?=`;
 let desktopItems = [];
 let siteIndex = { tree: [], all: [] };
 let systemApps = [
-  { name: 'calculator', icon: '⊞', description: 'basic calculator' },
-  { name: 'clock', icon: '◷', description: 'current time' },
-  { name: 'notepad', icon: '☰', description: 'text editor' },
-  { name: 'browser', icon: '◎', description: 'web browser' },
-  { name: 'file explorer', icon: '⊟', description: 'browse files' },
-  { name: 'terminal', icon: '▬', description: 'command line' },
-  { name: 'settings', icon: '⚙', description: 'preferences' },
-  { name: 'video player', icon: '▶', description: 'play videos' },
-  { name: 'media player', icon: '♫', description: 'play music' }
+  { name: 'calculator', icon: '⊞', description: 'basic calculator tool' },
+  { name: 'clock', icon: '◷', description: 'current time tool' },
+  { name: 'notepad', icon: '☰', description: 'text editor tool' },
+  { name: 'browser', icon: '◎', description: 'web browser tool' },
+  { name: 'apps', icon: '⊟', description: 'apps navigator tool' },
+  { name: 'terminal', icon: '▬', description: 'command line tool' },
+  { name: 'settings', icon: '⚙', description: 'preferences tool' },
+  { name: 'video player', icon: '▶', description: 'play videos tool' },
+  { name: 'media player', icon: '♫', description: 'play music tool' }
 ];
 const defaultSettings = {
   playerMode: 'integrated',
