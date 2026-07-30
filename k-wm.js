@@ -377,38 +377,43 @@ function renderSplitHandle(container, visibleTiles) {
         document.body.appendChild(handle);
         makeHandleDraggable(handle);
         const popup = handle.querySelector('#split-popup-menu');
-        const swapBtn = handle.querySelector('#split-btn-swap');
-        const changeBtn = handle.querySelector('#split-btn-change');
         document.addEventListener('click', (e) => {
             if (!handle.contains(e.target)) {
                 popup.style.display = 'none';
             }
         });
-        swapBtn.addEventListener('click', () => {
-            popup.style.display = 'none';
-            if (visibleTiles.length === 2) {
-                const t0 = visibleTiles[0];
-                const t1 = visibleTiles[1];
-                const idx0 = openTiles.indexOf(t0);
-                const idx1 = openTiles.indexOf(t1);
-                if (idx0 !== -1 && idx1 !== -1) {
-                    openTiles[idx0] = t1;
-                    openTiles[idx1] = t0;
-                }
-                const c = document.getElementById('tile-container');
-                if (c && t0.element && t1.element) {
-                    c.insertBefore(t1.element, t0.element);
-                }
-                delete handle.dataset.userMoved;
-                retile();
-                if (typeof renderTopBar === 'function') renderTopBar();
-            }
-        });
-        changeBtn.addEventListener('click', () => {
-            popup.style.display = 'none';
-            showAppSelectorModal(visibleTiles);
-        });
     }
+    const popup = handle.querySelector('#split-popup-menu');
+    const swapBtn = handle.querySelector('#split-btn-swap');
+    const changeBtn = handle.querySelector('#split-btn-change');
+    swapBtn.onclick = (e) => {
+        e.stopPropagation();
+        popup.style.display = 'none';
+        const currentVisible = openTiles.filter(t => !t.isFloat && t.visible !== false);
+        if (currentVisible.length === 2) {
+            const t0 = currentVisible[0];
+            const t1 = currentVisible[1];
+            const idx0 = openTiles.indexOf(t0);
+            const idx1 = openTiles.indexOf(t1);
+            if (idx0 !== -1 && idx1 !== -1) {
+                openTiles[idx0] = t1;
+                openTiles[idx1] = t0;
+            }
+            const c = document.getElementById('tile-container');
+            if (c && t0.element && t1.element) {
+                c.insertBefore(t1.element, t0.element);
+            }
+            delete handle.dataset.userMoved;
+            retile();
+            if (typeof renderTopBar === 'function') renderTopBar();
+        }
+    };
+    changeBtn.onclick = (e) => {
+        e.stopPropagation();
+        popup.style.display = 'none';
+        const currentVisible = openTiles.filter(t => !t.isFloat && t.visible !== false);
+        showAppSelectorModal(currentVisible);
+    };
     if (visibleTiles.length === 2) {
         handle.style.display = 'flex';
         if (!handle.dataset.userMoved) {
@@ -506,7 +511,9 @@ function showAppSelectorModal(visibleTiles) {
     const handleTileReplace = (chosenTile) => {
         if (!chosenTile || !visibleTiles[selectedTargetIdx]) return;
         const targetOldTile = visibleTiles[selectedTargetIdx];
+        targetOldTile.visible = false;
         targetOldTile.lastFocused = 0;
+        chosenTile.visible = true;
         chosenTile.lastFocused = Date.now();
         const idxOld = openTiles.indexOf(targetOldTile);
         const idxChosen = openTiles.indexOf(chosenTile);
@@ -523,6 +530,8 @@ function showAppSelectorModal(visibleTiles) {
         const handle = document.getElementById('split-handle-overlay');
         if (handle) delete handle.dataset.userMoved;
         focusTile(chosenTile.id);
+        retile();
+        if (typeof renderTopBar === 'function') renderTopBar();
     };
     const appItems = overlay.querySelectorAll('.change-app-item');
     appItems.forEach(item => {
