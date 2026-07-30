@@ -133,6 +133,7 @@ input:focus {
     color: #ffffff;
 }
 .top-bar-tile-tab .tab-title {
+    color: #3399ff !important;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -284,6 +285,14 @@ input:focus {
     padding: 0;
     margin: 0;
 }
+@media (min-width: 768px) {
+    .file-tree {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px 24px;
+        align-items: start;
+    }
+}
 .file-tree-item {
     padding: 8px 12px;
     border-bottom: 1px solid #111111;
@@ -350,9 +359,9 @@ input:focus {
     justify-content: center;
     font-size: 18px;
 }
-.app-grid-item .app-name {
+.app-name, .app-grid-item .app-name {
     font-size: 11px;
-    color: #888888;
+    color: #3399ff !important;
 }
 .search-container {
     padding: 16px;
