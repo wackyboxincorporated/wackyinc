@@ -14,31 +14,48 @@ function categorizeAllItems() {
       categories.tools.push({ ...app, isApp: true, category: 'tools' });
     });
   }
-  function collectItems(list) {
+  if (typeof kPlayer !== 'undefined' && kPlayer.playlist && Array.isArray(kPlayer.playlist)) {
+    kPlayer.playlist.forEach(track => {
+      categories.audio.push({
+        name: track.name || track.title || 'audio track',
+        url: track.url || track.src || '',
+        type: 'audio',
+        icon: '♫'
+      });
+    });
+  }
+  function collectItems(list, parentName = '') {
     if (!list) return;
     list.forEach(item => {
       const cat = (item.category || '').toLowerCase();
       const type = (item.type || '').toLowerCase();
+      const cls = (item.class || '').toLowerCase();
       const name = (item.name || '').toLowerCase();
-      if (cat === 'game' || type === 'game' || name.includes('game')) {
+      const parent = (parentName || '').toLowerCase();
+      const isAudio = cls === 'audio' || type === 'audio' || name.endsWith('.mp3') || name.endsWith('.wav') || name.endsWith('.ogg') || name.endsWith('.m4a') || name.endsWith('.flac') || name.endsWith('.aac');
+      const isVideo = cls === 'video' || type === 'video' || name.endsWith('.mp4') || name.endsWith('.webm') || name.endsWith('.ogv') || name.endsWith('.mkv') || name.endsWith('.avi');
+      const isDoc = cls === 'document' || cls === 'code' || cls === 'image' || cls === 'zip' || type === 'document' || type === 'code' || type === 'image' || name.endsWith('.txt') || name.endsWith('.md') || name.endsWith('.json') || name.endsWith('.js') || name.endsWith('.html') || name.endsWith('.css') || name.endsWith('.pmp') || name.endsWith('.png') || name.endsWith('.jpg') || name.endsWith('.hdr') || name.endsWith('.zip');
+      const isGame = parent.includes('game') || cat === 'game' || type === 'game' || name.includes('game');
+      const isApp = parent.includes('website') || parent.includes('project') || cat === 'website' || cat === 'app' || type === 'app';
+      if (isAudio) {
+        categories.audio.push(item);
+      } else if (isVideo) {
+        categories.videos.push(item);
+      } else if (isDoc) {
+        categories.documents.push(item);
+      } else if (isGame) {
         categories.games.push(item);
       } else if (cat === 'tool' || type === 'tool') {
         categories.tools.push(item);
-      } else if (cat === 'website' || cat === 'app' || type === 'app' || (item.url && !item.items && !item.contents)) {
+      } else if (isApp || (item.url && !item.items && !item.contents)) {
         categories.apps.push(item);
-      } else if (type === 'document' || type === 'code' || name.endsWith('.txt') || name.endsWith('.md') || name.endsWith('.json') || name.endsWith('.js') || name.endsWith('.html') || name.endsWith('.css')) {
-        categories.documents.push(item);
-      } else if (type === 'video' || name.endsWith('.mp4') || name.endsWith('.webm') || name.endsWith('.ogv')) {
-        categories.videos.push(item);
-      } else if (type === 'audio' || name.endsWith('.mp3') || name.endsWith('.wav') || name.endsWith('.ogg') || name.endsWith('.m4a') || name.endsWith('.flac')) {
-        categories.audio.push(item);
       } else {
         categories.misc.push(item);
       }
       if (item.items && item.items.length > 0) {
-        collectItems(item.items);
+        collectItems(item.items, item.name);
       } else if (item.contents && item.contents.length > 0) {
-        collectItems(item.contents);
+        collectItems(item.contents, item.name);
       }
     });
   }
