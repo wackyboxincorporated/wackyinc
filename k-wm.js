@@ -231,10 +231,11 @@ function retile() {
     if (!container) return;
     const isMobile = isMobilePhone();
     const isPortrait = isPortraitMode();
-    if (!isMobile) {
+    if (tiledTiles.length === 2) {
+        container.style.gap = '16px';
+    } else if (!isMobile) {
         let autoGap = 8;
         if (tiledTiles.length === 1) autoGap = 0;
-        else if (tiledTiles.length === 2) autoGap = 8;
         else if (tiledTiles.length === 3) autoGap = 4;
         else if (tiledTiles.length === 4) autoGap = 2;
         else if (tiledTiles.length >= 5) autoGap = 1;
@@ -291,6 +292,71 @@ function retile() {
     }
     renderSplitHandle(container, tiledTiles);
 }
+function makeHandleDraggable(handle) {
+    const trigger = handle.querySelector('#split-handle-trigger');
+    const popup = handle.querySelector('#split-popup-menu');
+    let isDragging = false;
+    let hasMoved = false;
+    let startX = 0, startY = 0;
+    let initialLeft = 0, initialTop = 0;
+    const onStart = (clientX, clientY) => {
+        isDragging = true;
+        hasMoved = false;
+        startX = clientX;
+        startY = clientY;
+        initialLeft = handle.offsetLeft;
+        initialTop = handle.offsetTop;
+    };
+    const onMove = (clientX, clientY) => {
+        if (!isDragging) return;
+        const dx = clientX - startX;
+        const dy = clientY - startY;
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+            hasMoved = true;
+            handle.dataset.userMoved = 'true';
+        }
+        const newLeft = Math.max(0, Math.min(window.innerWidth - 36, initialLeft + dx));
+        const newTop = Math.max(32, Math.min(window.innerHeight - 36, initialTop + dy));
+        handle.style.left = `${newLeft}px`;
+        handle.style.top = `${newTop}px`;
+    };
+    const onEnd = () => {
+        isDragging = false;
+    };
+    trigger.addEventListener('mousedown', (e) => {
+        onStart(e.clientX, e.clientY);
+        const moveHandler = (ev) => onMove(ev.clientX, ev.clientY);
+        const upHandler = () => {
+            onEnd();
+            document.removeEventListener('mousemove', moveHandler);
+            document.removeEventListener('mouseup', upHandler);
+        };
+        document.addEventListener('mousemove', moveHandler);
+        document.addEventListener('mouseup', upHandler);
+    });
+    trigger.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) return;
+        onStart(e.touches[0].clientX, e.touches[0].clientY);
+        const touchMoveHandler = (ev) => {
+            if (ev.touches.length === 1) {
+                onMove(ev.touches[0].clientX, ev.touches[0].clientY);
+                ev.preventDefault();
+            }
+        };
+        const touchEndHandler = () => {
+            onEnd();
+            document.removeEventListener('touchmove', touchMoveHandler);
+            document.removeEventListener('touchend', touchEndHandler);
+        };
+        document.addEventListener('touchmove', touchMoveHandler, { passive: false });
+        document.addEventListener('touchend', touchEndHandler);
+    });
+    trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (hasMoved) return;
+        popup.style.display = popup.style.display === 'none' ? 'flex' : 'none';
+    });
+}
 function renderSplitHandle(container, visibleTiles) {
     let handle = document.getElementById('split-handle-overlay');
     if (!handle) {
@@ -304,14 +370,10 @@ function renderSplitHandle(container, visibleTiles) {
             </div>
         `;
         document.body.appendChild(handle);
-        const trigger = handle.querySelector('#split-handle-trigger');
+        makeHandleDraggable(handle);
         const popup = handle.querySelector('#split-popup-menu');
         const swapBtn = handle.querySelector('#split-btn-swap');
         const changeBtn = handle.querySelector('#split-btn-change');
-        trigger.addEventListener('click', (e) => {
-            e.stopPropagation();
-            popup.style.display = popup.style.display === 'none' ? 'flex' : 'none';
-        });
         document.addEventListener('click', (e) => {
             if (!handle.contains(e.target)) {
                 popup.style.display = 'none';
@@ -337,22 +399,25 @@ function renderSplitHandle(container, visibleTiles) {
     }
     if (visibleTiles.length === 2) {
         handle.style.display = 'flex';
-        const rect0 = visibleTiles[0].element.getBoundingClientRect();
-        const rect1 = visibleTiles[1].element.getBoundingClientRect();
-        const isVert = Math.abs(rect0.top - rect1.top) > 50;
-        if (isVert) {
-            const midY = (rect0.bottom + rect1.top) / 2;
-            const midX = (rect0.left + rect0.right) / 2;
-            handle.style.top = `${midY - 14}px`;
-            handle.style.left = `${midX - 14}px`;
-        } else {
-            const midX = (rect0.right + rect1.left) / 2;
-            const midY = (rect0.top + rect0.bottom) / 2;
-            handle.style.left = `${midX - 14}px`;
-            handle.style.top = `${midY - 14}px`;
+        if (!handle.dataset.userMoved) {
+            const rect0 = visibleTiles[0].element.getBoundingClientRect();
+            const rect1 = visibleTiles[1].element.getBoundingClientRect();
+            const isVert = Math.abs(rect0.top - rect1.top) > 50;
+            if (isVert) {
+                const midY = (rect0.bottom + rect1.top) / 2;
+                const midX = (rect0.left + rect0.right) / 2;
+                handle.style.top = `${midY - 16}px`;
+                handle.style.left = `${midX - 16}px`;
+            } else {
+                const midX = (rect0.right + rect1.left) / 2;
+                const midY = (rect0.top + rect0.bottom) / 2;
+                handle.style.left = `${midX - 16}px`;
+                handle.style.top = `${midY - 16}px`;
+            }
         }
     } else {
         handle.style.display = 'none';
+        delete handle.dataset.userMoved;
     }
 }
 function showAppSelectorModal(visibleTiles) {

@@ -1082,45 +1082,48 @@ input:focus {
 }
 #split-handle-overlay {
     position: fixed;
-    z-index: 9500;
+    z-index: 9999 !important;
     display: none;
     align-items: center;
     justify-content: center;
+    touch-action: none;
 }
 #split-handle-trigger {
-    width: 28px;
-    height: 28px;
-    border-radius: 14px;
+    width: 32px;
+    height: 32px;
+    border-radius: 16px;
     background-color: #000000;
-    border: 1px solid #ffffff;
-    color: #ffffff;
-    font-size: 14px;
-    cursor: pointer;
+    border: 2px solid #3399ff !important;
+    color: #ffffff !important;
+    font-size: 16px;
+    cursor: grab;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    box-shadow: 0 0 10px rgba(0,0,0,0.9), 0 0 6px rgba(51,153,255,0.8);
     font-family: inherit;
-    transition: border-color 0.2s, background-color 0.2s;
+    touch-action: none;
+    user-select: none;
 }
-#split-handle-trigger:hover {
+#split-handle-trigger:active {
+    cursor: grabbing;
     background-color: #111111;
-    border-color: #3399ff;
+    border-color: #ffffff !important;
 }
 #split-popup-menu {
     position: absolute;
-    top: 34px;
+    top: 38px;
     left: 50%;
     transform: translateX(-50%);
     background-color: #000000;
-    border: 1px solid #333333;
+    border: 1px solid #ffffff;
     padding: 6px;
     display: flex;
     flex-direction: column;
     gap: 4px;
-    z-index: 9600;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.9);
-    min-width: 130px;
+    z-index: 10000;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.95);
+    min-width: 140px;
     font-family: 'Share Tech Mono', monospace;
 }
 .split-popup-btn {
