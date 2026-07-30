@@ -115,19 +115,6 @@ function makeDraggable(tile) {
                 openTiles[idx0] = currentTargetTile;
                 openTiles[idx1] = tile;
             }
-            const container = document.getElementById('tile-container');
-            if (container && tile.element && currentTargetTile.element) {
-                const next0 = tile.element.nextSibling;
-                const next1 = currentTargetTile.element.nextSibling;
-                if (next0 === currentTargetTile.element) {
-                    container.insertBefore(currentTargetTile.element, tile.element);
-                } else if (next1 === tile.element) {
-                    container.insertBefore(tile.element, currentTargetTile.element);
-                } else {
-                    container.insertBefore(tile.element, next1);
-                    container.insertBefore(currentTargetTile.element, next0);
-                }
-            }
             retile();
             if (typeof renderTopBar === 'function') renderTopBar();
         }
@@ -380,7 +367,8 @@ function retile() {
     if (topBar) {
         topBar.style.display = 'flex';
     }
-    tiledTiles.forEach(tile => {
+    tiledTiles.forEach((tile, index) => {
+        tile.element.style.order = index;
         tile.element.style.gridRow = '';
         tile.element.style.gridColumn = '';
         tile.element.style.display = 'flex';
@@ -526,10 +514,6 @@ function renderSplitHandle(container, visibleTiles) {
                 openTiles[idx0] = t1;
                 openTiles[idx1] = t0;
             }
-            const c = document.getElementById('tile-container');
-            if (c && t0.element && t1.element) {
-                c.insertBefore(t1.element, t0.element);
-            }
             delete handle.dataset.userMoved;
             retile();
             if (typeof renderTopBar === 'function') renderTopBar();
@@ -647,12 +631,6 @@ function showAppSelectorModal(visibleTiles) {
         if (idxOld !== -1 && idxChosen !== -1) {
             openTiles[idxOld] = chosenTile;
             openTiles[idxChosen] = targetOldTile;
-        }
-        const container = document.getElementById('tile-container');
-        if (container && targetOldTile.element && chosenTile.element) {
-            if (targetOldTile.element.parentNode === container) {
-                container.insertBefore(chosenTile.element, targetOldTile.element);
-            }
         }
         const handle = document.getElementById('split-handle-overlay');
         if (handle) delete handle.dataset.userMoved;
