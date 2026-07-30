@@ -920,6 +920,83 @@ input:focus {
         height: 34px;
         font-size: 14px;
     }
+    .top-bar-player {
+        max-width: 85px;
+        padding: 0 4px;
+        gap: 2px;
+        height: 22px;
+        font-size: 10px;
+    }
+    .top-bar-player .prev-btn, .top-bar-player .next-btn {
+        display: none;
+    }
+    .top-bar-track-name {
+        max-width: 50px;
+        font-size: 9px;
+    }
+    .mobile-task-switcher {
+        position: relative;
+        display: inline-block;
+    }
+    .mobile-task-btn {
+        background-color: #050505;
+        border: 1px solid #333333;
+        color: #ffffff;
+        font-family: inherit;
+        font-size: 10px;
+        padding: 2px 6px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        cursor: pointer;
+        max-width: 110px;
+        white-space: nowrap;
+        box-sizing: border-box;
+    }
+    .mobile-task-btn .active-task-label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: #3399ff;
+    }
+    .mobile-task-dropdown-menu {
+        position: absolute;
+        top: 28px;
+        left: 0;
+        background-color: #050505;
+        border: 1px solid #333333;
+        min-width: 140px;
+        z-index: 2000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.9);
+        display: flex;
+        flex-direction: column;
+    }
+    .mobile-task-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 10px;
+        border-bottom: 1px solid #111111;
+        font-size: 11px;
+        color: #888888;
+        cursor: pointer;
+    }
+    .mobile-task-item.active {
+        color: #ffffff;
+        background-color: #111111;
+        border-left: 2px solid #ff3333;
+    }
+    .mobile-task-item .item-close {
+        color: #666666;
+        padding: 2px 4px;
+    }
+    .mobile-task-item .item-close:hover {
+        color: #ff3333;
+    }
+    .tile-control-btn.float {
+        display: none !important;
+    }
     .top-bar-clock {
         font-size: 12px;
     }

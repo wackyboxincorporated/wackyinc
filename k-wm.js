@@ -79,9 +79,24 @@ function makeDraggable(tile) {
         document.removeEventListener('touchcancel', onTouchEnd);
     }
 }
+function isMobilePhone() {
+    return window.innerWidth <= 600 || window.matchMedia('(max-width: 600px)').matches || ('ontouchstart' in window && window.innerWidth <= 768);
+}
+function isPortraitMode() {
+    return window.matchMedia('(orientation: portrait)').matches || (window.innerHeight > window.innerWidth && window.innerWidth <= 800);
+}
 function openTile(title, contentEl, opts = {}) {
     const defaultOpts = { float: false, width: 400, height: 300, icon: '' };
     const options = { ...defaultOpts, ...opts };
+    if (isMobilePhone()) {
+        options.float = false;
+    }
+    if (isMobilePhone() && isPortraitMode() && openTiles.length >= 2) {
+        const oldestTile = openTiles.find(t => t.id != activeTileId) || openTiles[0];
+        if (oldestTile) {
+            closeTile(oldestTile.id);
+        }
+    }
     const id = ++tileIdCounter;
     const el = document.createElement('div');
     el.className = 'tile-window';
@@ -100,23 +115,16 @@ function openTile(title, contentEl, opts = {}) {
     if (contentEl) {
         contentContainer.appendChild(contentEl);
     }
-    let calcWidth = options.width;
-    let calcHeight = options.height;
-    if (window.innerWidth <= 600) {
-        calcWidth = Math.min(options.width, window.innerWidth - 24);
-        calcHeight = Math.min(options.height, window.innerHeight - 80);
-    }
     const tile = {
-        id: id,
-        title: title,
+        id,
+        title,
         element: el,
-        contentEl: contentEl,
         isFloat: options.float,
-        icon: options.icon,
-        x: Math.max(12, Math.floor(window.innerWidth / 2 - calcWidth / 2)),
-        y: Math.max(42, Math.floor(window.innerHeight / 2 - calcHeight / 2)),
-        width: calcWidth,
-        height: calcHeight
+        width: options.width,
+        height: options.height,
+        x: options.x || 50,
+        y: options.y || 50,
+        icon: options.icon || ''
     };
     const closeBtn = el.querySelector('.tile-control-btn.close');
     closeBtn.addEventListener('click', (e) => {
@@ -133,7 +141,7 @@ function openTile(title, contentEl, opts = {}) {
         focusTile(id);
     });
     makeDraggable(tile);
-    if (tile.isFloat) {
+    if (tile.isFloat && !isMobilePhone()) {
         el.classList.add('floating');
         el.style.width = `${tile.width}px`;
         el.style.height = `${tile.height}px`;
@@ -142,6 +150,7 @@ function openTile(title, contentEl, opts = {}) {
         el.style.position = 'absolute';
         document.body.appendChild(el);
     } else {
+        tile.isFloat = false;
         const container = document.getElementById('tile-container');
         if (container) {
             container.appendChild(el);
@@ -219,6 +228,22 @@ function retile() {
         tile.element.style.gridRow = '';
         tile.element.style.gridColumn = '';
     });
+    const isMobile = isMobilePhone();
+    const isPortrait = isPortraitMode();
+    if (isMobile) {
+        if (isPortrait) {
+            container.style.gridTemplateColumns = '1fr';
+            if (tiledTiles.length === 1) {
+                container.style.gridTemplateRows = '1fr';
+            } else {
+                container.style.gridTemplateRows = 'repeat(' + tiledTiles.length + ', 1fr)';
+            }
+        } else {
+            container.style.gridTemplateRows = '1fr';
+            container.style.gridTemplateColumns = 'repeat(' + tiledTiles.length + ', 1fr)';
+        }
+        return;
+    }
     if (tiledTiles.length === 1) {
         container.style.gridTemplateColumns = '1fr';
         container.style.gridTemplateRows = '1fr';
@@ -240,6 +265,12 @@ function retile() {
 function toggleFloat(id) {
     const tile = getTileById(id);
     if (!tile) return;
+    if (isMobilePhone()) {
+        tile.isFloat = false;
+        tile.element.classList.remove('floating');
+        retile();
+        return;
+    }
     tile.isFloat = !tile.isFloat;
     if (tile.isFloat) {
         if (tile.element.parentNode) {
@@ -308,4 +339,14 @@ document.addEventListener('keydown', (e) => {
         }
         e.preventDefault();
     }
+});
+window.addEventListener('resize', () => {
+    retile();
+    if (typeof renderTopBar === 'function') renderTopBar();
+});
+window.addEventListener('orientationchange', () => {
+    setTimeout(() => {
+        retile();
+        if (typeof renderTopBar === 'function') renderTopBar();
+    }, 100);
 });

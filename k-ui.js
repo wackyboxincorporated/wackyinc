@@ -280,19 +280,46 @@ function renderTopBar() {
   const topBar = document.getElementById('top-bar');
   if (!topBar) return;
   topBar.classList.add('visible');
-  let tileIndicatorsHTML = '';
-  if (typeof openTiles !== 'undefined' && openTiles.length > 0) {
-    openTiles.forEach(tile => {
-      const isActive = typeof activeTileId !== 'undefined' && activeTileId == tile.id;
-      const icon = tile.icon || (tile.isFloat ? '⊡' : '■');
-      tileIndicatorsHTML += `
-        <div class="top-bar-tile-tab ${isActive ? 'active' : ''}" data-id="${tile.id}" title="${tile.title}">
-          <span>${icon}</span>
-          <span class="tab-title">${tile.title.toLowerCase()}</span>
-          <span class="tab-close-btn" data-close-id="${tile.id}" title="close">✕</span>
+  const isPortraitMobile = window.innerWidth <= 600 && (window.matchMedia('(orientation: portrait)').matches || window.innerHeight > window.innerWidth);
+  let taskSwitcherHTML = '';
+  if (isPortraitMobile) {
+    if (typeof openTiles !== 'undefined' && openTiles.length > 0) {
+      const activeTile = openTiles.find(t => t.id == activeTileId) || openTiles[0];
+      const activeTitle = activeTile ? activeTile.title.toLowerCase() : 'tasks';
+      taskSwitcherHTML = `
+        <div class="mobile-task-switcher">
+          <button class="mobile-task-btn" id="mobile-task-dropdown-toggle" title="open tasks menu">
+            <span>⊞</span>
+            <span class="active-task-label">${activeTitle}</span>
+            <span class="dropdown-arrow">▾</span>
+          </button>
+          <div class="mobile-task-dropdown-menu" id="mobile-task-menu" style="display:none;">
+            ${openTiles.map(t => `
+              <div class="mobile-task-item ${t.id == activeTileId ? 'active' : ''}" data-id="${t.id}">
+                <span class="item-title">${t.icon || '■'} ${t.title.toLowerCase()}</span>
+                <span class="item-close" data-close-id="${t.id}" title="close">✕</span>
+              </div>
+            `).join('')}
+          </div>
         </div>
       `;
-    });
+    }
+  } else {
+    let tileIndicatorsHTML = '';
+    if (typeof openTiles !== 'undefined' && openTiles.length > 0) {
+      openTiles.forEach(tile => {
+        const isActive = typeof activeTileId !== 'undefined' && activeTileId == tile.id;
+        const icon = tile.icon || (tile.isFloat ? '⊡' : '■');
+        tileIndicatorsHTML += `
+          <div class="top-bar-tile-tab ${isActive ? 'active' : ''}" data-id="${tile.id}" title="${tile.title}">
+            <span>${icon}</span>
+            <span class="tab-title">${tile.title.toLowerCase()}</span>
+            <span class="tab-close-btn" data-close-id="${tile.id}" title="close">✕</span>
+          </div>
+        `;
+      });
+    }
+    taskSwitcherHTML = `<div class="top-bar-tiles">${tileIndicatorsHTML}</div>`;
   }
   let compactPlayerHTML = '';
   if (typeof kPlayer !== 'undefined' && kPlayer.playlist && kPlayer.playlist.length > 0) {
@@ -315,7 +342,7 @@ function renderTopBar() {
       ${compactPlayerHTML}
     </div>
     <div class="top-bar-section tiles-container">
-      <div class="top-bar-tiles">${tileIndicatorsHTML}</div>
+      ${taskSwitcherHTML}
     </div>
     <div class="top-bar-section center">
       <span class="top-bar-clock" id="top-bar-clock"></span>
@@ -338,28 +365,57 @@ function renderTopBar() {
       if (typeof launchApp === 'function') launchApp('settings');
     });
   }
-  const tabs = topBar.querySelectorAll('.top-bar-tile-tab');
-  tabs.forEach(tab => {
-    tab.addEventListener('click', (e) => {
-      const closeBtn = e.target.closest('.tab-close-btn');
-      if (closeBtn) {
+  if (isPortraitMobile) {
+    const toggleBtn = topBar.querySelector('#mobile-task-dropdown-toggle');
+    const menuEl = topBar.querySelector('#mobile-task-menu');
+    if (toggleBtn && menuEl) {
+      toggleBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (typeof closeTile === 'function') closeTile(closeBtn.dataset.closeId);
-        return;
-      }
-      if (typeof focusTile === 'function') focusTile(tab.dataset.id);
+        menuEl.style.display = menuEl.style.display === 'none' ? 'flex' : 'none';
+      });
+      document.addEventListener('click', () => {
+        menuEl.style.display = 'none';
+      });
+    }
+    const items = topBar.querySelectorAll('.mobile-task-item');
+    items.forEach(item => {
+      item.addEventListener('click', (e) => {
+        const closeBtn = e.target.closest('.item-close');
+        if (closeBtn) {
+          e.stopPropagation();
+          if (typeof closeTile === 'function') closeTile(closeBtn.dataset.closeId);
+          return;
+        }
+        if (typeof focusTile === 'function') focusTile(item.dataset.id);
+      });
     });
-  });
+  } else {
+    const tabs = topBar.querySelectorAll('.top-bar-tile-tab');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        const closeBtn = e.target.closest('.tab-close-btn');
+        if (closeBtn) {
+          e.stopPropagation();
+          if (typeof closeTile === 'function') closeTile(closeBtn.dataset.closeId);
+          return;
+        }
+        if (typeof focusTile === 'function') focusTile(tab.dataset.id);
+      });
+    });
+  }
   const topPlayer = topBar.querySelector('.top-bar-player');
   if (topPlayer) {
-    topPlayer.querySelector('.prev-btn').addEventListener('click', () => kPlayer.prev());
-    topPlayer.querySelector('.play-btn').addEventListener('click', () => {
+    const prevBtn = topPlayer.querySelector('.prev-btn');
+    if (prevBtn) prevBtn.addEventListener('click', () => kPlayer.prev());
+    const playBtn = topPlayer.querySelector('.play-btn');
+    if (playBtn) playBtn.addEventListener('click', () => {
       if (kPlayer.isPlaying) kPlayer.pause();
       else kPlayer.play();
       renderTopBar();
       renderMainMenu();
     });
-    topPlayer.querySelector('.next-btn').addEventListener('click', () => kPlayer.next());
+    const nextBtn = topPlayer.querySelector('.next-btn');
+    if (nextBtn) nextBtn.addEventListener('click', () => kPlayer.next());
     const trackNameEl = topPlayer.querySelector('.top-bar-track-name');
     if (trackNameEl) {
       trackNameEl.style.cursor = 'pointer';
