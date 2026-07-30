@@ -418,6 +418,23 @@ function launchApp(name, ...args) {
       boldLabel.appendChild(document.createTextNode('bold text'));
       gBold.appendChild(boldLabel);
       settingsEl.appendChild(gBold);
+      const gRedirect = createGroup('');
+      const redirectLabel = document.createElement('label');
+      redirectLabel.style.display = 'flex';
+      redirectLabel.style.alignItems = 'center';
+      redirectLabel.style.cursor = 'pointer';
+      const redirectCb = document.createElement('input');
+      redirectCb.type = 'checkbox';
+      redirectCb.checked = !!kSettings.autoRedirectToWbOS;
+      redirectCb.style.marginRight = '10px';
+      redirectCb.addEventListener('change', () => {
+        kSettings.autoRedirectToWbOS = redirectCb.checked;
+        saveSettings();
+      });
+      redirectLabel.appendChild(redirectCb);
+      redirectLabel.appendChild(document.createTextNode('redirect to wbos on startup'));
+      gRedirect.appendChild(redirectLabel);
+      settingsEl.appendChild(gRedirect);
       const currentScalePct = Math.round((kSettings.contentScale || 1.0) * 100);
       const gScale = createGroup(`content scale (${currentScalePct}%)`);
       const scaleInput = document.createElement('input');

@@ -540,4 +540,58 @@ function renderFileNavigator(items, breadcrumb) {
   container.appendChild(itemsList);
   return container;
 }
+function checkStartupRedirectPrompt() {
+  if (typeof kSettings === 'undefined' || !kSettings.autoRedirectToWbOS) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'startup-redirect-overlay';
+  overlay.style.position = 'fixed';
+  overlay.style.inset = '0';
+  overlay.style.zIndex = '10000';
+  overlay.style.background = '#000000';
+  overlay.style.display = 'flex';
+  overlay.style.flexDirection = 'column';
+  overlay.style.justifyContent = 'center';
+  overlay.style.alignItems = 'center';
+  overlay.style.padding = '20px';
+  overlay.style.boxSizing = 'border-box';
+  overlay.style.fontFamily = "'Share Tech Mono', monospace";
+  overlay.style.textTransform = 'lowercase';
+  let secondsLeft = 5;
+  overlay.innerHTML = `
+    <div style="max-width: 480px; width: 100%; border: 1px solid #333; padding: 32px 24px; background: #050505; text-align: center; box-sizing: border-box; display: flex; flex-direction: column; align-items: center;">
+      <div id="redirect-counter-text" style="font-size: 18px; color: #ffffff; margin-bottom: 24px; line-height: 1.4;">
+        directing you to wbos in ${secondsLeft} seconds.
+      </div>
+      <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; width: 100%;">
+        <button id="redirect-use-k-btn" style="flex: 1; min-width: 120px; padding: 10px 16px; border: 1px solid #333; background: #111; color: #ffffff; font-family: inherit; font-size: 13px; cursor: pointer; text-transform: lowercase;">use K</button>
+        <button id="redirect-disable-btn" style="flex: 1; min-width: 140px; padding: 10px 16px; border: 1px solid #ff3333; background: #111; color: #ff3333; font-family: inherit; font-size: 13px; cursor: pointer; text-transform: lowercase;">disable redirect</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const counterEl = overlay.querySelector('#redirect-counter-text');
+  const useKBtn = overlay.querySelector('#redirect-use-k-btn');
+  const disableBtn = overlay.querySelector('#redirect-disable-btn');
+  const timerId = setInterval(() => {
+    secondsLeft--;
+    if (secondsLeft > 0) {
+      if (counterEl) counterEl.textContent = `directing you to wbos in ${secondsLeft} seconds.`;
+    } else {
+      clearInterval(timerId);
+      window.location.href = (typeof BASE_URL !== 'undefined' ? BASE_URL : '') + 'os/';
+    }
+  }, 1000);
+  useKBtn.onclick = () => {
+    clearInterval(timerId);
+    overlay.remove();
+  };
+  disableBtn.onclick = () => {
+    clearInterval(timerId);
+    if (typeof kSettings !== 'undefined') {
+      kSettings.autoRedirectToWbOS = false;
+      if (typeof saveSettings === 'function') saveSettings();
+    }
+    overlay.remove();
+  };
+}
 setInterval(updateClock, 1000);

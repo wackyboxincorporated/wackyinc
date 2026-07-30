@@ -22,7 +22,8 @@ const defaultSettings = {
   boldText: false,
   contentScale: 1.0,
   tileGap: 1,
-  menuOpen: true
+  menuOpen: true,
+  autoRedirectToWbOS: false
 };
 let kSettings = { ...defaultSettings };
 function applyContentScale() {
@@ -127,6 +128,9 @@ async function initWbOSk() {
   if (typeof updateClock === 'function') {
     updateClock();
     setInterval(updateClock, 1000);
+  }
+  if (typeof checkStartupRedirectPrompt === 'function') {
+    checkStartupRedirectPrompt();
   }
 }
 document.addEventListener('DOMContentLoaded', initWbOSk);

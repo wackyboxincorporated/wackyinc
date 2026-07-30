@@ -67,13 +67,45 @@ const kPlayer = {
   pause() {
     this.audioEl.pause();
   },
-  togglePlay() {
-    if (this.isPlaying) this.pause();
-    else this.play();
+  isShuffle: false,
+  isRepeat: 'none',
+  toggleShuffle() {
+    this.isShuffle = !this.isShuffle;
+    this.updateUIs();
+  },
+  toggleRepeat() {
+    if (this.isRepeat === 'none') this.isRepeat = 'all';
+    else if (this.isRepeat === 'all') this.isRepeat = 'one';
+    else this.isRepeat = 'none';
+    this.updateUIs();
   },
   next() {
     if (this.playlist.length === 0) return;
-    this.currentIndex = (this.currentIndex + 1) % this.playlist.length;
+    if (this.isRepeat === 'one') {
+      this.audioEl.currentTime = 0;
+      this.play();
+      return;
+    }
+    if (this.isShuffle) {
+      if (this.playlist.length > 1) {
+        let newIdx = this.currentIndex;
+        while (newIdx === this.currentIndex) {
+          newIdx = Math.floor(Math.random() * this.playlist.length);
+        }
+        this.currentIndex = newIdx;
+      }
+    } else {
+      if (this.currentIndex >= this.playlist.length - 1) {
+        if (this.isRepeat === 'all') {
+          this.currentIndex = 0;
+        } else {
+          this.pause();
+          return;
+        }
+      } else {
+        this.currentIndex++;
+      }
+    }
     const track = this.playlist[this.currentIndex];
     this.loadTrackInternal(track.url, track.name);
   },
@@ -150,6 +182,35 @@ const kPlayer = {
     this.uiElements.apps.forEach(ui => {
       ui.playBtn.textContent = playIcon;
       ui.trackNameEl.textContent = trackName;
+      if (ui.shuffleBtn) {
+        if (this.isShuffle) {
+          ui.shuffleBtn.style.borderColor = '#ffffff';
+          ui.shuffleBtn.style.color = '#ffffff';
+          ui.shuffleBtn.style.background = '#1a1a1a';
+        } else {
+          ui.shuffleBtn.style.borderColor = '#333333';
+          ui.shuffleBtn.style.color = '#666666';
+          ui.shuffleBtn.style.background = 'none';
+        }
+      }
+      if (ui.repeatBtn) {
+        if (this.isRepeat === 'all') {
+          ui.repeatBtn.textContent = '🔁';
+          ui.repeatBtn.style.borderColor = '#ffffff';
+          ui.repeatBtn.style.color = '#ffffff';
+          ui.repeatBtn.style.background = '#1a1a1a';
+        } else if (this.isRepeat === 'one') {
+          ui.repeatBtn.textContent = '🔂';
+          ui.repeatBtn.style.borderColor = '#ffffff';
+          ui.repeatBtn.style.color = '#ff3333';
+          ui.repeatBtn.style.background = '#1a1a1a';
+        } else {
+          ui.repeatBtn.textContent = '🔁';
+          ui.repeatBtn.style.borderColor = '#333333';
+          ui.repeatBtn.style.color = '#666666';
+          ui.repeatBtn.style.background = 'none';
+        }
+      }
       this.renderPlaylist(ui);
     });
   },
@@ -415,6 +476,40 @@ function renderPlayerApp() {
   nextBtn.textContent = '▸▸';
   nextBtn.style.cssText = btnStyle;
   nextBtn.onclick = () => kPlayer.next();
+  const shuffleBtn = document.createElement('button');
+  shuffleBtn.textContent = '🔀';
+  shuffleBtn.title = 'toggle shuffle';
+  shuffleBtn.style.cssText = btnStyle;
+  if (kPlayer.isShuffle) {
+    shuffleBtn.style.borderColor = '#ffffff';
+    shuffleBtn.style.color = '#ffffff';
+    shuffleBtn.style.background = '#1a1a1a';
+  } else {
+    shuffleBtn.style.borderColor = '#333333';
+    shuffleBtn.style.color = '#666666';
+    shuffleBtn.style.background = 'none';
+  }
+  shuffleBtn.onclick = () => kPlayer.toggleShuffle();
+  const repeatBtn = document.createElement('button');
+  repeatBtn.title = 'toggle repeat mode';
+  repeatBtn.style.cssText = btnStyle;
+  if (kPlayer.isRepeat === 'all') {
+    repeatBtn.textContent = '🔁';
+    repeatBtn.style.borderColor = '#ffffff';
+    repeatBtn.style.color = '#ffffff';
+    repeatBtn.style.background = '#1a1a1a';
+  } else if (kPlayer.isRepeat === 'one') {
+    repeatBtn.textContent = '🔂';
+    repeatBtn.style.borderColor = '#ffffff';
+    repeatBtn.style.color = '#ff3333';
+    repeatBtn.style.background = '#1a1a1a';
+  } else {
+    repeatBtn.textContent = '🔁';
+    repeatBtn.style.borderColor = '#333333';
+    repeatBtn.style.color = '#666666';
+    repeatBtn.style.background = 'none';
+  }
+  repeatBtn.onclick = () => kPlayer.toggleRepeat();
   const volContainer = document.createElement('div');
   volContainer.style.display = 'flex';
   volContainer.style.alignItems = 'center';
@@ -436,6 +531,8 @@ function renderPlayerApp() {
   controlsRow.appendChild(prevBtn);
   controlsRow.appendChild(playBtn);
   controlsRow.appendChild(nextBtn);
+  controlsRow.appendChild(shuffleBtn);
+  controlsRow.appendChild(repeatBtn);
   controlsRow.appendChild(volContainer);
   const canvas = document.createElement('canvas');
   canvas.className = 'player-visualizer';
@@ -454,6 +551,8 @@ function renderPlayerApp() {
   app.appendChild(bottomEl);
   const ui = {
     playBtn,
+    shuffleBtn,
+    repeatBtn,
     trackNameEl,
     timeEl,
     fillEl: progressFill,
