@@ -330,6 +330,9 @@ input:focus {
 .file-tree-folder.open::before {
     content: '▾ ';
 }
+.file-tree-folder-header.is-game-app, .is-game-app, .is-game-app .name, .file-nav-item.is-game-app .name {
+    color: #ff3333 !important;
+}
 .file-tree-children {
     padding-left: 16px;
     border-left: 1px solid #222222;

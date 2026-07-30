@@ -130,6 +130,10 @@ function renderMenuContent(tab) {
           const header = document.createElement('div');
           header.className = 'file-tree-folder-header';
           const isLink = !!item.url;
+          const isGameOrWebApp = item.category === 'game' || item.category === 'website' || isLink;
+          if (isGameOrWebApp) {
+            header.classList.add('is-game-app');
+          }
           const icon = isLink ? '⬡' : '□';
           header.innerHTML = `<span class="icon">${icon}</span> ${item.name}`;
           const itemsContainer = document.createElement('div');
@@ -239,7 +243,8 @@ function renderMenuContent(tab) {
       }
       results.forEach(res => {
         const resEl = document.createElement('div');
-        resEl.className = 'search-result-item';
+        const isGameOrWebApp = res.category === 'game' || res.category === 'website' || !!res.url || (res.searchCategory && (res.searchCategory === 'game' || res.searchCategory === 'website'));
+        resEl.className = 'search-result-item' + (isGameOrWebApp ? ' is-game-app' : '');
         resEl.style.display = 'flex';
         resEl.style.alignItems = 'center';
         resEl.style.justifyContent = 'space-between';
