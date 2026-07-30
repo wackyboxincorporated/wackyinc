@@ -23,7 +23,8 @@ const defaultSettings = {
   contentScale: 1.0,
   tileGap: 1,
   menuOpen: true,
-  autoRedirectToWbOS: false
+  firstRunHandled: false,
+  alwaysRedirectToOs: false
 };
 let kSettings = { ...defaultSettings };
 function applyContentScale() {

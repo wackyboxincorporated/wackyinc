@@ -474,12 +474,23 @@ function renderFileNavigator(items, breadcrumb) {
   return container;
 }
 function checkStartupRedirectPrompt() {
-  if (typeof kSettings === 'undefined' || !kSettings.autoRedirectToWbOS) return;
+  if (typeof kSettings === 'undefined') return;
+  if (kSettings.alwaysRedirectToOs) {
+    window.location.href = (typeof BASE_URL !== 'undefined' ? BASE_URL : '') + 'os/';
+    return;
+  }
+  if (!kSettings.firstRunHandled) {
+    showFirstStartPrompt();
+  }
+}
+function showFirstStartPrompt() {
+  const existing = document.getElementById('first-start-overlay');
+  if (existing) existing.remove();
   const overlay = document.createElement('div');
-  overlay.id = 'startup-redirect-overlay';
+  overlay.id = 'first-start-overlay';
   overlay.style.position = 'fixed';
   overlay.style.inset = '0';
-  overlay.style.zIndex = '10000';
+  overlay.style.zIndex = '100000';
   overlay.style.background = '#000000';
   overlay.style.display = 'flex';
   overlay.style.flexDirection = 'column';
@@ -489,42 +500,46 @@ function checkStartupRedirectPrompt() {
   overlay.style.boxSizing = 'border-box';
   overlay.style.fontFamily = "'Share Tech Mono', monospace";
   overlay.style.textTransform = 'lowercase';
-  let secondsLeft = 5;
   overlay.innerHTML = `
-    <div style="max-width: 480px; width: 100%; border: 1px solid #333; padding: 32px 24px; background: #050505; text-align: center; box-sizing: border-box; display: flex; flex-direction: column; align-items: center;">
-      <div id="redirect-counter-text" style="font-size: 18px; color: #ffffff; margin-bottom: 24px; line-height: 1.4;">
-        directing you to wbos in ${secondsLeft} seconds.
+    <div style="max-width: 440px; width: 100%; border: 1px solid #ffffff; padding: 32px 24px; background: #050505; text-align: center; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; box-shadow: 0 8px 32px rgba(0,0,0,1);">
+      <div style="font-size: 18px; color: #ffffff; margin-bottom: 8px; font-weight: bold; line-height: 1.3;">
+        hi! wbOS... has changed.
       </div>
-      <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; width: 100%;">
-        <button id="redirect-use-k-btn" style="flex: 1; min-width: 120px; padding: 10px 16px; border: 1px solid #333; background: #111; color: #ffffff; font-family: inherit; font-size: 13px; cursor: pointer; text-transform: lowercase;">use K</button>
-        <button id="redirect-disable-btn" style="flex: 1; min-width: 140px; padding: 10px 16px; border: 1px solid #ff3333; background: #111; color: #ff3333; font-family: inherit; font-size: 13px; cursor: pointer; text-transform: lowercase;">disable redirect</button>
+      <div style="font-size: 13px; color: #888888; margin-bottom: 24px;">
+        choose what to do:
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px; width: 100%;">
+        <button id="first-start-look-around" style="padding: 12px 16px; border: 1px solid #333333; background: #111111; color: #ffffff; font-family: inherit; font-size: 13px; cursor: pointer; text-transform: lowercase; transition: all 0.2s ease;">take a look around</button>
+        <button id="first-start-take-back" style="padding: 12px 16px; border: 1px solid #333333; background: #111111; color: #ffffff; font-family: inherit; font-size: 13px; cursor: pointer; text-transform: lowercase; transition: all 0.2s ease;">take me back this time!</button>
+        <button id="first-start-never" style="padding: 12px 16px; border: 1px solid #ff3333; background: #111111; color: #ff3333; font-family: inherit; font-size: 13px; cursor: pointer; text-transform: lowercase; transition: all 0.2s ease;">NEVER BRING ME HERE AGAIN!</button>
       </div>
     </div>
   `;
   document.body.appendChild(overlay);
-  const counterEl = overlay.querySelector('#redirect-counter-text');
-  const useKBtn = overlay.querySelector('#redirect-use-k-btn');
-  const disableBtn = overlay.querySelector('#redirect-disable-btn');
-  const timerId = setInterval(() => {
-    secondsLeft--;
-    if (secondsLeft > 0) {
-      if (counterEl) counterEl.textContent = `directing you to wbos in ${secondsLeft} seconds.`;
-    } else {
-      clearInterval(timerId);
-      window.location.href = (typeof BASE_URL !== 'undefined' ? BASE_URL : '') + 'os/';
-    }
-  }, 1000);
-  useKBtn.onclick = () => {
-    clearInterval(timerId);
+  const btnLookAround = overlay.querySelector('#first-start-look-around');
+  const btnTakeBack = overlay.querySelector('#first-start-take-back');
+  const btnNever = overlay.querySelector('#first-start-never');
+  btnLookAround.onmouseenter = () => { btnLookAround.style.borderColor = '#ffffff'; btnLookAround.style.background = '#222222'; };
+  btnLookAround.onmouseleave = () => { btnLookAround.style.borderColor = '#333333'; btnLookAround.style.background = '#111111'; };
+  btnTakeBack.onmouseenter = () => { btnTakeBack.style.borderColor = '#ffffff'; btnTakeBack.style.background = '#222222'; };
+  btnTakeBack.onmouseleave = () => { btnTakeBack.style.borderColor = '#333333'; btnTakeBack.style.background = '#111111'; };
+  btnNever.onmouseenter = () => { btnNever.style.borderColor = '#ff0000'; btnNever.style.background = '#330000'; btnNever.style.color = '#ffffff'; };
+  btnNever.onmouseleave = () => { btnNever.style.borderColor = '#ff3333'; btnNever.style.background = '#111111'; btnNever.style.color = '#ff3333'; };
+  btnLookAround.onclick = () => {
+    kSettings.firstRunHandled = true;
+    if (typeof saveSettings === 'function') saveSettings();
     overlay.remove();
   };
-  disableBtn.onclick = () => {
-    clearInterval(timerId);
-    if (typeof kSettings !== 'undefined') {
-      kSettings.autoRedirectToWbOS = false;
-      if (typeof saveSettings === 'function') saveSettings();
-    }
-    overlay.remove();
+  btnTakeBack.onclick = () => {
+    kSettings.firstRunHandled = true;
+    if (typeof saveSettings === 'function') saveSettings();
+    window.location.href = (typeof BASE_URL !== 'undefined' ? BASE_URL : '') + 'os/';
+  };
+  btnNever.onclick = () => {
+    kSettings.firstRunHandled = true;
+    kSettings.alwaysRedirectToOs = true;
+    if (typeof saveSettings === 'function') saveSettings();
+    window.location.href = (typeof BASE_URL !== 'undefined' ? BASE_URL : '') + 'os/';
   };
 }
 setInterval(updateClock, 1000);
