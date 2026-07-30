@@ -93,11 +93,18 @@ input:focus {
 .top-bar-btn:hover {
     border-color: #ffffff;
 }
-.top-bar-clock, .top-bar-date {
+.top-bar-clock {
     font-size: 12px;
     letter-spacing: 1px;
     font-weight: normal;
     color: #ffffff;
+}
+.top-bar-date {
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    font-weight: normal;
+    color: #aaaaaa;
+    margin-left: 3px;
 }
 .top-bar-tiles {
     display: flex;
@@ -909,7 +916,10 @@ input:focus {
         font-size: 14px;
     }
     .top-bar-clock {
-        font-size: 13px;
+        font-size: 12px;
+    }
+    .top-bar-date {
+        font-size: 9.5px;
     }
     .menu-tab-bar {
         height: 44px;
