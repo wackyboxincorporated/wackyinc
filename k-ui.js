@@ -417,6 +417,7 @@ function collapseMenu() {
   kSettings.menuOpen = false;
   if (typeof saveSettings === 'function') saveSettings();
   renderTopBar();
+  if (typeof checkWanderingBtnState === 'function') checkWanderingBtnState();
 }
 function expandMenu() {
   const mainMenu = document.getElementById('main-menu');
@@ -425,6 +426,7 @@ function expandMenu() {
   if (typeof saveSettings === 'function') saveSettings();
   renderMainMenu();
   renderTopBar();
+  if (typeof checkWanderingBtnState === 'function') checkWanderingBtnState();
 }
 function updateClock() {
   const now = new Date();
@@ -704,4 +706,81 @@ function showFirstStartPrompt() {
     window.location.href = (typeof BASE_URL !== 'undefined' ? BASE_URL : '') + 'os/';
   };
 }
+let wanderingBtnTimer = null;
+let wanderingState = 'hidden';
+let wanderingPauseTimer = null;
+let mouseStopTimer = null;
+function checkWanderingBtnState() {
+  const isDesktopEmpty = (typeof openTiles !== 'undefined' && openTiles.length === 0);
+  const isMenuClosed = (typeof kSettings !== 'undefined' && !kSettings.menuOpen);
+  const shouldBeActive = isDesktopEmpty && isMenuClosed;
+  let btn = document.getElementById('wandering-menu-btn');
+  if (!shouldBeActive) {
+    if (btn) {
+      btn.style.display = 'none';
+      btn.classList.remove('visible');
+    }
+    clearTimeout(wanderingBtnTimer);
+    clearTimeout(wanderingPauseTimer);
+    clearTimeout(mouseStopTimer);
+    wanderingState = 'hidden';
+    return;
+  }
+  if (wanderingState === 'hidden') {
+    wanderingState = 'waiting';
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.id = 'wandering-menu-btn';
+      btn.className = 'wandering-menu-btn';
+      btn.innerHTML = '<span>menu</span> <span>☰</span>';
+      document.body.appendChild(btn);
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (typeof expandMenu === 'function') {
+          expandMenu();
+        }
+        checkWanderingBtnState();
+      });
+    }
+    btn.style.display = 'none';
+    btn.classList.remove('visible');
+    clearTimeout(wanderingBtnTimer);
+    wanderingBtnTimer = setTimeout(() => {
+      const emptyNow = (typeof openTiles !== 'undefined' && openTiles.length === 0);
+      const closedNow = (typeof kSettings !== 'undefined' && !kSettings.menuOpen);
+      if (wanderingState === 'waiting' && emptyNow && closedNow) {
+        btn.style.display = 'flex';
+        btn.classList.add('visible');
+        wanderingState = 'following';
+      }
+    }, 3000);
+  }
+}
+window.addEventListener('mousemove', (e) => {
+  const btn = document.getElementById('wandering-menu-btn');
+  if (!btn || wanderingState === 'hidden' || wanderingState === 'waiting') return;
+  if (wanderingState === 'paused') {
+    return;
+  }
+  wanderingState = 'following';
+  const scale = (typeof kSettings !== 'undefined' && kSettings.contentScale) ? kSettings.contentScale : 1.0;
+  const btnW = btn.offsetWidth || 80;
+  const btnH = btn.offsetHeight || 32;
+  const targetX = Math.max(10, Math.min((window.innerWidth / scale) - btnW - 10, (e.clientX / scale) + 15));
+  const targetY = Math.max(40, Math.min((window.innerHeight / scale) - btnH - 10, (e.clientY / scale) + 15));
+  btn.style.left = `${targetX}px`;
+  btn.style.top = `${targetY}px`;
+  clearTimeout(mouseStopTimer);
+  mouseStopTimer = setTimeout(() => {
+    if (wanderingState === 'following') {
+      wanderingState = 'paused';
+      clearTimeout(wanderingPauseTimer);
+      wanderingPauseTimer = setTimeout(() => {
+        if (wanderingState === 'paused') {
+          wanderingState = 'following';
+        }
+      }, 3000);
+    }
+  }, 250);
+});
 setInterval(updateClock, 1000);

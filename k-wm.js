@@ -410,6 +410,7 @@ function retile() {
         container.style.gridTemplateRows = 'auto';
     }
     renderSplitHandle(container, tiledTiles);
+    if (typeof checkWanderingBtnState === 'function') checkWanderingBtnState();
 }
 function getScaleFactor() {
     return (typeof kSettings !== 'undefined' && kSettings.contentScale) ? kSettings.contentScale : 1.0;

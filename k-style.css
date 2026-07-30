@@ -323,6 +323,36 @@ input:focus {
     border-color: #ffffff !important;
     background-color: #111111 !important;
 }
+.wandering-menu-btn {
+    position: fixed;
+    z-index: 99999;
+    padding: 8px 14px;
+    background-color: #000000;
+    color: #ffffff;
+    border: 1px solid #ffffff;
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    text-transform: lowercase;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.95);
+    transition: transform 0.15s ease-out, border-color 0.2s ease, background-color 0.2s ease, opacity 0.3s ease;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    opacity: 0;
+    pointer-events: none;
+}
+.wandering-menu-btn.visible {
+    display: flex;
+    opacity: 1;
+    pointer-events: auto;
+}
+.wandering-menu-btn:hover {
+    background-color: #111111;
+    border-color: #ff3333;
+    color: #ff3333;
+}
 .file-tree {
     list-style: none;
     padding: 0;
