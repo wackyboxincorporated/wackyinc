@@ -358,6 +358,15 @@ input:focus {
     gap: 8px;
     min-width: 180px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.9);
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.top-bar-media-popup.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
 }
 .top-bar-media-track-title {
     font-size: 12px;

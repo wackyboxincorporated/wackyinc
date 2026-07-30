@@ -303,7 +303,7 @@ function renderTopBar() {
     compactPlayerHTML = `
       <div class="top-bar-media-container" style="position:relative; display:inline-flex; align-items:center;">
         <button class="top-bar-btn top-bar-media-toggle ${isOpen ? 'open' : ''}" id="top-bar-media-triangle" title="media playback">▶</button>
-        <div class="top-bar-media-popup" id="top-bar-media-popup" style="display: ${isOpen ? 'flex' : 'none'};">
+        <div class="top-bar-media-popup ${isOpen ? 'visible' : ''}" id="top-bar-media-popup">
           <div class="top-bar-media-track-title" id="media-popup-track-title" title="open media player">♫ ${trackName}</div>
           <div class="top-bar-media-controls">
             <button class="top-bar-btn prev-btn" title="previous">⏮</button>
@@ -362,14 +362,15 @@ function renderTopBar() {
   if (mediaTriangleBtn && mediaPopup) {
     mediaTriangleBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const isOpen = topBar.dataset.mediaPopupOpen === 'true';
-      topBar.dataset.mediaPopupOpen = (!isOpen).toString();
+      const isOpen = mediaPopup.classList.contains('visible');
       if (!isOpen) {
         mediaTriangleBtn.classList.add('open');
-        mediaPopup.style.display = 'flex';
+        mediaPopup.classList.add('visible');
+        topBar.dataset.mediaPopupOpen = 'true';
       } else {
         mediaTriangleBtn.classList.remove('open');
-        mediaPopup.style.display = 'none';
+        mediaPopup.classList.remove('visible');
+        topBar.dataset.mediaPopupOpen = 'false';
       }
     });
     const trackTitleEl = mediaPopup.querySelector('#media-popup-track-title');
@@ -382,17 +383,21 @@ function renderTopBar() {
       });
     }
     const prevBtn = mediaPopup.querySelector('.prev-btn');
-    if (prevBtn) prevBtn.addEventListener('click', (e) => { e.stopPropagation(); kPlayer.prev(); renderTopBar(); });
+    if (prevBtn) prevBtn.addEventListener('click', (e) => { e.stopPropagation(); kPlayer.prev(); });
     const playBtn = mediaPopup.querySelector('.play-btn');
     if (playBtn) playBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (kPlayer.isPlaying) kPlayer.pause();
-      else kPlayer.play();
-      renderTopBar();
-      renderMainMenu();
+      kPlayer.togglePlay();
     });
     const nextBtn = mediaPopup.querySelector('.next-btn');
-    if (nextBtn) nextBtn.addEventListener('click', (e) => { e.stopPropagation(); kPlayer.next(); renderTopBar(); });
+    if (nextBtn) nextBtn.addEventListener('click', (e) => { e.stopPropagation(); kPlayer.next(); });
+    document.addEventListener('click', (e) => {
+      if (!mediaPopup.contains(e.target) && e.target !== mediaTriangleBtn) {
+        mediaTriangleBtn.classList.remove('open');
+        mediaPopup.classList.remove('visible');
+        topBar.dataset.mediaPopupOpen = 'false';
+      }
+    });
   }
   updateClock();
 }

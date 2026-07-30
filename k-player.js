@@ -184,11 +184,18 @@ const kPlayer = {
   },
   updateUIs() {
     const trackName = this.getTrackName();
-    const playIcon = this.isPlaying ? '❙❙' : '▶';
+    const playIcon = this.isPlaying ? '⏸' : '▶';
     this.uiElements.bars.forEach(ui => {
       ui.playBtn.textContent = playIcon;
       ui.trackNameEl.textContent = trackName;
     });
+    const topBarPopup = document.getElementById('top-bar-media-popup');
+    if (topBarPopup) {
+      const pBtn = topBarPopup.querySelector('.play-btn');
+      if (pBtn) pBtn.textContent = playIcon;
+      const titleEl = topBarPopup.querySelector('#media-popup-track-title');
+      if (titleEl) titleEl.textContent = '♫ ' + trackName;
+    }
     this.uiElements.apps.forEach(ui => {
       ui.playBtn.textContent = playIcon;
       ui.trackNameEl.textContent = trackName;
