@@ -623,14 +623,14 @@ function showPrompt(title, url) {
     });
   }
   overlay.innerHTML = `
-    <div class="prompt-dialog" style="background:#000;border:1px solid #fff;padding:20px;width:300px;font-family:'Share Tech Mono', monospace;display:flex;flex-direction:column;">
-      <div class="prompt-title" style="color:#fff;font-size:16px;margin-bottom:10px;text-transform:lowercase;">${title}</div>
-      <div class="prompt-url" style="font-size:10px;color:#888;margin-bottom:12px;word-break:break-all;">${url}</div>
+    <div class="prompt-dialog" style="background:#000;border:1px solid #fff;padding:20px;width:320px;font-family:'Share Tech Mono', monospace;display:flex;flex-direction:column;text-transform:lowercase;">
+      <div class="prompt-title" style="color:#fff;font-size:15px;margin-bottom:8px;text-transform:lowercase;">app: <span style="color:#ff3333">${title}</span></div>
+      <div style="font-size:11px;color:#888;margin-bottom:12px;">choose launch target:</div>
       <div class="prompt-buttons" style="display:flex;gap:10px;margin-bottom:10px;">
-        <button class="prompt-btn" id="prompt-panel" style="flex:1;background:transparent;color:#fff;border:1px solid #333;padding:5px;cursor:pointer;font-family:inherit;">open in panel</button>
-        <button class="prompt-btn" id="prompt-tab" style="flex:1;background:transparent;color:#fff;border:1px solid #333;padding:5px;cursor:pointer;font-family:inherit;">open in new tab</button>
+        <button class="prompt-btn" id="prompt-panel" style="flex:1;background:transparent;color:#fff;border:1px solid #333;padding:8px;cursor:pointer;font-family:inherit;">open in tile</button>
+        <button class="prompt-btn" id="prompt-tab" style="flex:1;background:transparent;color:#fff;border:1px solid #333;padding:8px;cursor:pointer;font-family:inherit;">open in new tab</button>
       </div>
-      <button class="prompt-btn" style="margin-top:8px;width:100%;background:transparent;color:#fff;border:1px solid #333;padding:5px;cursor:pointer;font-family:inherit;" id="prompt-cancel">cancel</button>
+      <button class="prompt-btn" style="margin-top:4px;width:100%;background:transparent;color:#888;border:1px solid #222;padding:6px;cursor:pointer;font-family:inherit;" id="prompt-cancel">cancel</button>
     </div>
   `;
   const hideOverlay = () => {
