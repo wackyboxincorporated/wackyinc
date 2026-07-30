@@ -45,50 +45,39 @@ function renderMenuContent(tab) {
   if (!contentArea) return;
   contentArea.innerHTML = '';
   if (tab === 'apps' || tab === 'files') {
-    const appsContainer = document.createElement('div');
-    appsContainer.className = 'apps-menu-container';
-    appsContainer.style.display = 'flex';
-    appsContainer.style.flexDirection = 'column';
-    appsContainer.style.gap = '20px';
-    appsContainer.style.overflowY = 'auto';
-    appsContainer.style.maxHeight = '100%';
-    appsContainer.style.paddingBottom = '24px';
+    const appGrid = document.createElement('div');
+    appGrid.className = 'app-grid';
+    appGrid.style.overflowY = 'auto';
+    appGrid.style.maxHeight = '100%';
+    appGrid.style.paddingBottom = '24px';
     if (typeof desktopItems !== 'undefined' && Array.isArray(desktopItems)) {
-      desktopItems.forEach(section => {
-        const sectionEl = document.createElement('div');
-        sectionEl.className = 'apps-section';
-        const sectionHeader = document.createElement('div');
-        sectionHeader.className = 'apps-section-header';
-        sectionHeader.textContent = section.name ? section.name.toLowerCase() : 'apps';
-        sectionEl.appendChild(sectionHeader);
-        const appGrid = document.createElement('div');
-        appGrid.className = 'app-grid';
-        const items = section.contents || section.items || [section];
-        items.forEach(item => {
-          const appItem = document.createElement('div');
-          appItem.className = 'app-grid-item';
-          let icon = '⬡';
-          if (section.name && section.name.toLowerCase().includes('game')) icon = '🎮';
-          else if (item.type === 'audio') icon = '♫';
-          else if (item.type === 'video') icon = '▶';
-          else if (item.type === 'image') icon = '▣';
-          else if (item.type === 'code') icon = '◇';
-          else if (item.type === 'document') icon = '▢';
-          else if (item.type === 'folder') icon = '□';
-          appItem.innerHTML = `
-            <div class="app-icon">${icon}</div>
-            <div class="app-name">${item.name}</div>
-          `;
-          appItem.addEventListener('click', () => {
-            if (typeof openFile === 'function') openFile(item);
-          });
-          appGrid.appendChild(appItem);
+      desktopItems.forEach(item => {
+        const appItem = document.createElement('div');
+        appItem.className = 'app-grid-item';
+        const isGameOrWebApp = item.category === 'game' || item.category === 'website' || !!item.url;
+        if (isGameOrWebApp) {
+          appItem.classList.add('is-game-app');
+        }
+        let icon = '□';
+        const nameLower = (item.name || '').toLowerCase();
+        if (item.category === 'game' || nameLower.includes('game')) icon = '🎮';
+        else if (nameLower.includes('website') || nameLower.includes('project')) icon = '🌐';
+        else if (nameLower.includes('doc') || nameLower.includes('code')) icon = '▢';
+        else if (nameLower.includes('media') || nameLower.includes('file')) icon = '♫';
+        else if (item.url) icon = '⬡';
+        appItem.innerHTML = `
+          <div class="app-icon">${icon}</div>
+          <div class="app-name">${item.name}</div>
+        `;
+        appItem.addEventListener('click', () => {
+          if (typeof openFile === 'function') {
+            openFile(item);
+          }
         });
-        sectionEl.appendChild(appGrid);
-        appsContainer.appendChild(sectionEl);
+        appGrid.appendChild(appItem);
       });
     }
-    contentArea.appendChild(appsContainer);
+    contentArea.appendChild(appGrid);
   } else if (tab === 'tools') {
     const appGrid = document.createElement('div');
     appGrid.className = 'app-grid';
