@@ -139,13 +139,14 @@ function renderMenuContent(tab) {
         header.style.marginBottom = '12px';
         header.style.display = 'flex';
         header.style.alignItems = 'center';
-        header.style.justifyContent = 'space-between';
+        header.style.justifyContent = 'flex-start';
+        header.style.gap = '12px';
         header.innerHTML = `
           <div style="display: flex; align-items: center; gap: 8px;">
             <span style="font-size: 16px;">${activeSpec.icon}</span>
             <span style="font-size: 13px; font-weight: bold; color: #fff;">${activeSpec.name} (${activeSpec.items.length})</span>
           </div>
-          <button class="close-unrolled-btn" style="background: #111; color: #ff3333; border: 1px solid #ff3333; padding: 6px 12px; font-family: inherit; font-size: 11px; cursor: pointer; border-radius: 0;">✕ close folder</button>
+          <button class="close-unrolled-btn" style="background: #111; color: #ff3333; border: 1px solid #ff3333; padding: 4px 12px; font-family: inherit; font-size: 11px; cursor: pointer; border-radius: 0;">✕ close folder</button>
         `;
         header.querySelector('.close-unrolled-btn').addEventListener('click', (e) => {
           e.stopPropagation();
