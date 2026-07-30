@@ -550,8 +550,7 @@ function openHelpWindow() {
     <div style="margin-bottom: 16px;">
       <div style="color: #888; margin-bottom: 4px; font-weight: bold;">menu & navigation</div>
       <div>• apps tab: browse apps, games & content</div>
-      <div>• tools tab: system utilities & tools</div>
-      <div>• search tab: search apps, recent apps & random shortcuts</div>
+      <div>• search tab: search apps, recent apps & system tools</div>
       <div>• top taskbar: toggle menu, playback controls & open app tabs</div>
     </div>
     <div style="margin-bottom: 16px;">
@@ -569,7 +568,6 @@ function openHelpWindow() {
       <div>• alt + f : toggle window float mode</div>
       <div>• alt + 1-9 : switch window tile</div>
       <div>• alt + s : open search tab</div>
-      <div>• alt + t : open tools tab</div>
       <div>• alt + a : open apps tab</div>
     </div>
   `;

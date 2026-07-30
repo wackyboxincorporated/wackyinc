@@ -1,11 +1,10 @@
 function renderMainMenu() {
   const mainMenu = document.getElementById('main-menu');
   if (!mainMenu) return;
-  const activeTab = mainMenu.dataset.activeTab || 'apps';
+  const activeTab = (mainMenu.dataset.activeTab === 'tools') ? 'apps' : (mainMenu.dataset.activeTab || 'apps');
   mainMenu.innerHTML = `
     <div class="menu-tab-bar">
       <div class="menu-tab ${activeTab === 'apps' ? 'active' : ''}" data-tab="apps">apps</div>
-      <div class="menu-tab ${activeTab === 'tools' ? 'active' : ''}" data-tab="tools">tools</div>
       <div class="menu-tab ${activeTab === 'search' ? 'active' : ''}" data-tab="search">search</div>
     </div>
     <div class="menu-content" id="menu-content-area"></div>
@@ -73,21 +72,6 @@ function renderMenuContent(tab) {
           if (typeof openFile === 'function') {
             openFile(item);
           }
-        });
-        appGrid.appendChild(appItem);
-      });
-    }
-    contentArea.appendChild(appGrid);
-  } else if (tab === 'tools') {
-    const appGrid = document.createElement('div');
-    appGrid.className = 'app-grid';
-    if (typeof systemApps !== 'undefined') {
-      systemApps.forEach(app => {
-        const appItem = document.createElement('div');
-        appItem.className = 'app-grid-item';
-        appItem.innerHTML = `<div class="app-icon">${app.icon}</div><div class="app-name">${app.name}</div>`;
-        appItem.addEventListener('click', () => {
-          if (typeof launchApp === 'function') launchApp(app.name);
         });
         appGrid.appendChild(appItem);
       });
@@ -176,49 +160,35 @@ function renderMenuContent(tab) {
         recentSection.appendChild(emptyEl);
       }
       resultsContainer.appendChild(recentSection);
-      const randomSection = document.createElement('div');
-      randomSection.className = 'search-default-section';
-      const randomHeader = document.createElement('div');
-      randomHeader.className = 'search-section-header';
-      randomHeader.style.fontSize = '12px';
-      randomHeader.style.color = '#888';
-      randomHeader.style.textTransform = 'lowercase';
-      randomHeader.style.letterSpacing = '1.5px';
-      randomHeader.style.marginBottom = '10px';
-      randomHeader.style.paddingBottom = '4px';
-      randomHeader.style.borderBottom = '1px solid #222';
-      randomHeader.style.fontWeight = '600';
-      randomHeader.textContent = 'random shortcuts';
-      randomSection.appendChild(randomHeader);
-      let pool = [];
-      if (typeof systemApps !== 'undefined') {
-        systemApps.forEach(sa => pool.push({ ...sa, isApp: true }));
-      }
-      if (typeof desktopItems !== 'undefined') {
-        desktopItems.forEach(f => pool.push(f));
-      }
-      const shuffled = [...pool].sort(() => 0.5 - Math.random());
-      const randomPicks = shuffled.slice(0, 6);
-      if (randomPicks.length > 0) {
-        const randomGrid = document.createElement('div');
-        randomGrid.className = 'app-grid';
-        randomPicks.forEach(item => {
+      const toolsSection = document.createElement('div');
+      toolsSection.className = 'search-default-section';
+      const toolsHeader = document.createElement('div');
+      toolsHeader.className = 'search-section-header';
+      toolsHeader.style.fontSize = '12px';
+      toolsHeader.style.color = '#888';
+      toolsHeader.style.textTransform = 'lowercase';
+      toolsHeader.style.letterSpacing = '1.5px';
+      toolsHeader.style.marginBottom = '10px';
+      toolsHeader.style.paddingBottom = '4px';
+      toolsHeader.style.borderBottom = '1px solid #222';
+      toolsHeader.style.fontWeight = '600';
+      toolsHeader.textContent = 'tools';
+      toolsSection.appendChild(toolsHeader);
+      if (typeof systemApps !== 'undefined' && Array.isArray(systemApps)) {
+        const toolsGrid = document.createElement('div');
+        toolsGrid.className = 'app-grid';
+        systemApps.forEach(app => {
           const appItem = document.createElement('div');
           appItem.className = 'app-grid-item';
-          const icon = getItemIcon(item);
-          appItem.innerHTML = `<div class="app-icon">${icon}</div><div class="app-name">${item.name}</div>`;
+          appItem.innerHTML = `<div class="app-icon">${app.icon}</div><div class="app-name">${app.name}</div>`;
           appItem.addEventListener('click', () => {
-            if (item.isApp) {
-              if (typeof launchApp === 'function') launchApp(item.name);
-            } else {
-              if (typeof openFile === 'function') openFile(item);
-            }
+            if (typeof launchApp === 'function') launchApp(app.name);
           });
-          randomGrid.appendChild(appItem);
+          toolsGrid.appendChild(appItem);
         });
-        randomSection.appendChild(randomGrid);
+        toolsSection.appendChild(toolsGrid);
       }
-      resultsContainer.appendChild(randomSection);
+      resultsContainer.appendChild(toolsSection);
     }
     renderDefaultSearchTab();
     searchInput.addEventListener('input', (e) => {
