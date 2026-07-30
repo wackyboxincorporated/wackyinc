@@ -184,6 +184,11 @@ function openTile(title, contentEl, opts = {}) {
     const contentContainer = el.querySelector('.tile-content');
     if (contentEl) {
         contentContainer.appendChild(contentEl);
+        const iframes = contentContainer.querySelectorAll('iframe');
+        iframes.forEach(iframe => bindIframeShortcutListener(iframe));
+        if (contentEl.tagName === 'IFRAME') {
+            bindIframeShortcutListener(contentEl);
+        }
     }
     const tile = {
         id,
@@ -711,36 +716,59 @@ function toggleFloat(id) {
     }
     retile();
 }
-function isEditableTarget(target) {
-    if (!target) return false;
-    const tagName = target.tagName ? target.tagName.toUpperCase() : '';
-    if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT') return true;
-    if (target.isContentEditable) return true;
-    return false;
+function bindIframeShortcutListener(iframe) {
+    if (!iframe) return;
+    const bind = () => {
+        try {
+            const win = iframe.contentWindow;
+            if (win) {
+                win.addEventListener('keydown', (e) => {
+                    if (e.altKey) {
+                        const key = e.key ? e.key.toLowerCase() : '';
+                        if (['m', 'q', 'f', 's', 't', 'a', '1', '2', '3', '4', '5', '6', '7', '8', '9'].includes(key)) {
+                            window.dispatchEvent(new KeyboardEvent('keydown', {
+                                key: e.key,
+                                altKey: true,
+                                ctrlKey: e.ctrlKey,
+                                shiftKey: e.shiftKey,
+                                bubbles: true
+                            }));
+                            e.preventDefault();
+                        }
+                    }
+                }, true);
+            }
+        } catch (err) {}
+    };
+    iframe.addEventListener('load', bind);
+    bind();
 }
-document.addEventListener('keydown', (e) => {
-    if (isEditableTarget(e.target)) return;
+window.addEventListener('keydown', (e) => {
+    if (!e.altKey) return;
     const key = e.key ? e.key.toLowerCase() : '';
-    if (e.altKey && key === 'q') {
+    if (key === 'q') {
         if (activeTileId !== null) {
             closeTile(activeTileId);
             e.preventDefault();
+            e.stopPropagation();
         }
     }
-    if (e.altKey && e.key >= '1' && e.key <= '9') {
+    if (e.key >= '1' && e.key <= '9') {
         const index = parseInt(e.key) - 1;
         if (index >= 0 && index < openTiles.length) {
             focusTile(openTiles[index].id);
             e.preventDefault();
+            e.stopPropagation();
         }
     }
-    if (e.altKey && key === 'f') {
+    if (key === 'f') {
         if (activeTileId !== null) {
             toggleFloat(activeTileId);
             e.preventDefault();
+            e.stopPropagation();
         }
     }
-    if (e.altKey && key === 'm') {
+    if (key === 'm') {
         const menu = document.getElementById('main-menu');
         if (menu) {
             if (menu.classList.contains('collapsed')) {
@@ -750,26 +778,30 @@ document.addEventListener('keydown', (e) => {
             }
         }
         e.preventDefault();
+        e.stopPropagation();
     }
-    if (e.altKey && key === 's') {
+    if (key === 's') {
         if (typeof expandMenu === 'function') expandMenu();
         const searchTab = document.querySelector('.menu-tab[data-tab="search"]');
         if (searchTab) searchTab.click();
         e.preventDefault();
+        e.stopPropagation();
     }
-    if (e.altKey && key === 't') {
+    if (key === 't') {
         if (typeof expandMenu === 'function') expandMenu();
         const toolsTab = document.querySelector('.menu-tab[data-tab="tools"]');
         if (toolsTab) toolsTab.click();
         e.preventDefault();
+        e.stopPropagation();
     }
-    if (e.altKey && key === 'a') {
+    if (key === 'a') {
         if (typeof expandMenu === 'function') expandMenu();
         const appsTab = document.querySelector('.menu-tab[data-tab="apps"]');
         if (appsTab) appsTab.click();
         e.preventDefault();
+        e.stopPropagation();
     }
-});
+}, true);
 window.addEventListener('resize', () => {
     retile();
     if (typeof renderTopBar === 'function') renderTopBar();
