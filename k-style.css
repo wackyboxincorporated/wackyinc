@@ -963,25 +963,103 @@ input:focus {
 }
 @media (max-width: 600px) {
     #top-bar {
-        height: 38px;
-        padding: 0 8px;
+        height: 34px;
+        padding: 0 4px;
+        gap: 4px;
     }
     #main-menu {
-        top: 38px;
-        height: calc(100% - 38px);
-        max-height: calc(100% - 38px);
+        top: 34px;
+        height: calc(100% - 34px);
+        max-height: calc(100% - 34px);
+    }
+    .top-bar-section {
+        gap: 3px;
+    }
+    .top-bar-btn {
+        width: 26px;
+        height: 26px;
+        font-size: 11px;
+    }
+    .top-bar-clock {
+        font-size: 11px;
+        letter-spacing: 0;
+    }
+    .top-bar-date {
+        font-size: 9px;
+        margin-left: 2px;
+    }
+    .top-bar-tiles {
+        gap: 3px;
+        max-width: 100%;
+    }
+    .top-bar-tile-tab {
+        max-width: 105px;
+        padding: 2px 5px;
+        font-size: 10px;
+        height: 22px;
+        gap: 4px;
+    }
+    .menu-content {
+        padding: 8px 6px;
+    }
+    .app-grid {
+        grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+        gap: 6px;
+        padding: 4px 0;
+        width: 100%;
+    }
+    .app-grid-item {
+        padding: 14px 6px;
+        gap: 8px;
+    }
+    .app-grid-item .app-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 18px;
+    }
+    .app-name, .app-grid-item .app-name {
+        font-size: 11px;
+        line-height: 1.2;
+    }
+    .file-tree-item {
+        padding: 10px 8px;
+        gap: 8px;
+        font-size: 12px;
+    }
+    .file-tree-folder {
+        padding: 10px 6px 4px;
+        font-size: 11px;
+    }
+    .file-tree-children {
+        padding-left: 8px;
+    }
+    #tile-container {
+        top: 34px !important;
+        padding: 0 !important;
+    }
+    .tile-header {
+        height: 26px;
+        padding: 0 4px;
+    }
+    .tile-title {
+        font-size: 10px;
+    }
+    .tile-control-btn {
+        width: 22px;
+        height: 22px;
+        font-size: 10px;
     }
     .menu-footer {
-        padding: 8px 12px;
+        padding: 8px 10px;
         flex-direction: row;
         justify-content: space-between;
         align-items: center;
         width: 100%;
-        gap: 8px;
+        gap: 6px;
         flex-wrap: nowrap;
     }
     .menu-clock {
-        font-size: clamp(16px, 5vw, 24px);
+        font-size: clamp(16px, 5vw, 22px);
         letter-spacing: 0.5px;
     }
     .menu-clock-date {
@@ -989,22 +1067,9 @@ input:focus {
     }
     .os-link {
         align-self: center;
-        padding: 5px 10px;
-        font-size: 11px;
-        margin-left: auto;
-    }
-    .k-player-bar {
-        padding: 6px 8px;
-        gap: 6px;
-    }
-    .player-track-name {
-        max-width: 100px;
+        padding: 4px 8px;
         font-size: 10px;
-    }
-    .top-bar-btn {
-        width: 34px;
-        height: 34px;
-        font-size: 14px;
+        margin-left: auto;
     }
     .top-bar-player {
         max-width: 85px;
