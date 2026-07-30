@@ -144,13 +144,9 @@ function renderMenuContent(tab) {
           }
           header.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (item.url && (!item.items || item.items.length === 0)) {
-              if (typeof openFile === 'function') openFile(item);
-              return;
+            if (typeof openFile === 'function') {
+              openFile(item);
             }
-            const isCollapsed = itemsContainer.style.display === 'none';
-            itemsContainer.style.display = isCollapsed ? 'block' : 'none';
-            header.classList.toggle('open', isCollapsed);
           });
           itemEl.appendChild(header);
           if (item.items && item.items.length > 0) {

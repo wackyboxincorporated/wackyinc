@@ -487,6 +487,61 @@ function launchApp(name, ...args) {
     }
   }
 }
+function showFolderPrompt(item) {
+  let overlay = document.getElementById('prompt-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'prompt-overlay';
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100vw';
+    overlay.style.height = '100vh';
+    overlay.style.background = 'rgba(0,0,0,0.85)';
+    overlay.style.display = 'none';
+    overlay.style.justifyContent = 'center';
+    overlay.style.alignItems = 'center';
+    overlay.style.zIndex = '9999';
+    document.body.appendChild(overlay);
+  }
+  const name = (item.name || 'folder').toLowerCase();
+  let folderUrl = item.url || item.path || '';
+  if (folderUrl && !folderUrl.startsWith('http://') && !folderUrl.startsWith('https://') && !folderUrl.startsWith('blob:')) {
+    if (!folderUrl.endsWith('/') && !folderUrl.includes('.')) folderUrl += '/';
+    folderUrl = BASE_URL + (folderUrl.startsWith('/') ? folderUrl.substring(1) : folderUrl);
+  }
+  overlay.innerHTML = `
+    <div class="prompt-dialog" style="border: 1px solid #333; background: #000; padding: 24px; min-width: 300px; max-width: 420px; font-family: 'Share Tech Mono', monospace; text-transform: lowercase;">
+      <div class="prompt-title" style="font-size: 15px; margin-bottom: 12px; color: #fff;">folder: <span style="color:#ff3333">${name}</span></div>
+      <div style="font-size: 12px; color: #888; margin-bottom: 20px;">choose how to open this subfolder:</div>
+      <div class="prompt-buttons" style="display: flex; gap: 10px;">
+        <button class="prompt-btn view-contents-btn" style="flex: 1; padding: 10px; text-align: center; border: 1px solid #333; background: transparent; color: #fff; cursor: pointer; font-family: inherit;">view contents</button>
+        <button class="prompt-btn launch-app-btn" style="flex: 1; padding: 10px; text-align: center; border: 1px solid #ff3333; background: transparent; color: #ff3333; cursor: pointer; font-family: inherit;">launch as app</button>
+      </div>
+    </div>
+  `;
+  overlay.style.display = 'flex';
+  overlay.classList.add('visible');
+  const closePrompt = () => {
+    overlay.classList.remove('visible');
+    overlay.style.display = 'none';
+  };
+  overlay.onclick = (e) => {
+    if (e.target === overlay) closePrompt();
+  };
+  const viewBtn = overlay.querySelector('.view-contents-btn');
+  const launchBtn = overlay.querySelector('.launch-app-btn');
+  viewBtn.onclick = () => {
+    closePrompt();
+    const subItems = item.items || [];
+    launchApp('file explorer', subItems, ['root', name]);
+  };
+  launchBtn.onclick = () => {
+    closePrompt();
+    const appUrl = folderUrl || (BASE_URL + name + '/');
+    showPrompt(name, appUrl);
+  };
+}
 function openFile(item) {
   let url = item.url || item.path || '';
   if (url && !url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('blob:') && !url.startsWith('data:')) {
@@ -494,12 +549,8 @@ function openFile(item) {
   }
   const name = (item.name || '').toLowerCase();
   const type = (item.type || '').toLowerCase();
-  if (type === 'folder') {
-    if (url) {
-      showPrompt(name, url);
-    } else if (item.items) {
-      launchApp('file explorer', item.items, ['root', name]);
-    }
+  if (type === 'folder' || item.items || item.isFolder) {
+    showFolderPrompt(item);
     return;
   }
   const isAudio = type === 'audio' || name.endsWith('.mp3') || name.endsWith('.wav') || name.endsWith('.ogg') || name.endsWith('.m4a') || name.endsWith('.flac');
