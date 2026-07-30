@@ -1080,3 +1080,61 @@ input:focus {
         gap: 16px;
     }
 }
+#split-handle-overlay {
+    position: fixed;
+    z-index: 9500;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+#split-handle-trigger {
+    width: 28px;
+    height: 28px;
+    border-radius: 14px;
+    background-color: #000000;
+    border: 1px solid #ffffff;
+    color: #ffffff;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    font-family: inherit;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+#split-handle-trigger:hover {
+    background-color: #111111;
+    border-color: #3399ff;
+}
+#split-popup-menu {
+    position: absolute;
+    top: 34px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #000000;
+    border: 1px solid #333333;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 9600;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.9);
+    min-width: 130px;
+    font-family: 'Share Tech Mono', monospace;
+}
+.split-popup-btn {
+    background-color: #050505;
+    border: 1px solid #222222;
+    color: #ffffff;
+    padding: 8px 10px;
+    font-family: inherit;
+    font-size: 11px;
+    cursor: pointer;
+    text-align: left;
+    text-transform: lowercase;
+}
+.split-popup-btn:hover {
+    border-color: #ffffff;
+    background-color: #111111;
+}

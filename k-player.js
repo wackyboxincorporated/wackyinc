@@ -67,6 +67,16 @@ const kPlayer = {
   pause() {
     this.audioEl.pause();
   },
+  togglePlay() {
+    if (!this.audioEl.src && this.playlist.length > 0) {
+      this.currentIndex = 0;
+      const track = this.playlist[0];
+      this.loadTrackInternal(track.url, track.name);
+      return;
+    }
+    if (this.isPlaying) this.pause();
+    else this.play();
+  },
   isShuffle: false,
   isRepeat: 'none',
   toggleShuffle() {
