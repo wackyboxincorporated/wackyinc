@@ -609,6 +609,15 @@ function openHelpWindow() {
       <div>• alt + s : open search tab</div>
       <div>• alt + a : open apps tab</div>
     </div>
+    <div style="margin-bottom: 16px;">
+      <div style="color: #888; margin-bottom: 4px; font-weight: bold;">media player shortcuts</div>
+      <div>• alt + p / alt + space : play / pause media</div>
+      <div>• alt + n / alt + → : next track</div>
+      <div>• alt + b / alt + ← : previous track</div>
+      <div>• alt + ↑ / alt + ↓ : volume up / down</div>
+      <div>• alt + z : toggle shuffle</div>
+      <div>• alt + r : toggle repeat mode</div>
+    </div>
   `;
   openTile('help', helpEl);
 }

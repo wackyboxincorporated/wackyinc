@@ -802,6 +802,43 @@ window.addEventListener('keydown', (e) => {
         e.preventDefault();
         e.stopPropagation();
     }
+    if (typeof kPlayer !== 'undefined') {
+        if (key === 'p' || e.code === 'Space') {
+            kPlayer.togglePlay();
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        if (key === 'n' || e.key === 'ArrowRight') {
+            kPlayer.next();
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        if (key === 'b' || e.key === 'ArrowLeft') {
+            kPlayer.prev();
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        if (e.key === 'ArrowUp') {
+            kPlayer.setVolume(Math.min(1, (kPlayer.volume || 0.8) + 0.1));
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        if (e.key === 'ArrowDown') {
+            kPlayer.setVolume(Math.max(0, (kPlayer.volume || 0.8) - 0.1));
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        if (key === 'z') {
+            kPlayer.toggleShuffle();
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        if (key === 'r') {
+            kPlayer.toggleRepeat();
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    }
 }, true);
 window.addEventListener('resize', () => {
     retile();
