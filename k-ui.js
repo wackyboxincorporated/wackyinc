@@ -333,23 +333,11 @@ function renderMenuContent(tab) {
       if (!searchInput.value.trim()) {
         resultsContainer.style.display = 'none';
         mainViewArea.style.display = 'block';
+        renderCategoryFoldersView();
       }
     }, 200);
   });
-  const specMap = {
-    games: { id: 'games', name: 'games', icon: '🎮', items: categories.games },
-    tools: { id: 'tools', name: 'tools', icon: '⚙', items: categories.tools },
-    apps: { id: 'apps', name: 'apps', icon: '🌐', items: categories.apps },
-    documents: { id: 'documents', name: 'documents', icon: '▢', items: categories.documents },
-    videos: { id: 'videos', name: 'videos', icon: '▶', items: categories.videos },
-    audio: { id: 'audio', name: 'audio', icon: '♫', items: categories.audio },
-    misc: { id: 'misc', name: 'misc', icon: '⬡', items: categories.misc }
-  };
-  if (openCategoryFolder && specMap[openCategoryFolder]) {
-    renderUnrolledFolderView(specMap[openCategoryFolder]);
-  } else {
-    renderCategoryFoldersView();
-  }
+  renderCategoryFoldersView();
   homeContainer.appendChild(searchContainer);
   homeContainer.appendChild(resultsContainer);
   homeContainer.appendChild(mainViewArea);
