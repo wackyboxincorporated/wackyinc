@@ -200,6 +200,7 @@ function launchApp(name, ...args) {
       frameEl.style.flex = '1';
       frameEl.style.border = 'none';
       frameEl.style.width = '100%';
+      frameEl.allow = 'autoplay; fullscreen';
       frameEl.src = inputEl.value;
       const navigate = () => {
         let url = inputEl.value;

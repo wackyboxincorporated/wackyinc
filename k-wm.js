@@ -227,51 +227,54 @@ function openTile(title, contentEl, opts = {}) {
     });
     const muteBtn = el.querySelector('.tile-control-btn.mute');
     let tileMuted = false;
+    const mutedIcon = `<svg width="11" height="11" viewBox="0 0 11 11" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="1,3 4,3 7,0.5 7,10.5 4,8 1,8" fill="currentColor"/><line x1="8" y1="3" x2="11" y2="6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="11" y1="3" x2="8" y2="6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`;
+    const unmutedIcon = `<svg width="11" height="11" viewBox="0 0 11 11" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="1,3 4,3 7,0.5 7,10.5 4,8 1,8" fill="currentColor"/><path d="M8.5,3.5 Q10.5,5.5 8.5,7.5" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>`;
     muteBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         tileMuted = !tileMuted;
         const contentArea = el.querySelector('.tile-content');
-        const iframes = contentArea.querySelectorAll('iframe');
-        iframes.forEach(iframe => {
-            iframe.muted = tileMuted;
-            const win = iframe.contentWindow;
-            if (!win) return;
-            const doc = iframe.contentDocument || win.document;
-            if (doc) {
-                doc.querySelectorAll('audio, video').forEach(m => { m.muted = tileMuted; });
-            }
-            const AC = win.AudioContext || win.webkitAudioContext;
-            if (!AC) return;
-            const keys = Object.getOwnPropertyNames(win);
-            keys.forEach(key => {
+        contentArea.querySelectorAll('iframe').forEach(iframe => {
+            try {
+                iframe.muted = tileMuted;
+                const win = iframe.contentWindow;
+                if (!win) return;
                 try {
-                    const val = win[key];
-                    if (val && typeof val === 'object' && val instanceof AC
-                        && typeof val.suspend === 'function' && typeof val.resume === 'function') {
-                        tileMuted ? val.suspend() : val.resume();
+                    const doc = iframe.contentDocument || win.document;
+                    if (doc) {
+                        doc.querySelectorAll('audio, video').forEach(m => { m.muted = tileMuted; });
+                    }
+                    const AC = win.AudioContext || win.webkitAudioContext;
+                    if (AC) {
+                        Object.getOwnPropertyNames(win).forEach(key => {
+                            try {
+                                const val = win[key];
+                                if (val && typeof val === 'object' && val instanceof AC
+                                    && typeof val.suspend === 'function') {
+                                    tileMuted ? val.suspend() : val.resume();
+                                }
+                            } catch (_) {}
+                        });
+                        if (!win.__wbACPatched) {
+                            win.__wbACPatched = true;
+                            const OrigAC = AC;
+                            try {
+                                win.AudioContext = win.webkitAudioContext = class extends OrigAC {
+                                    constructor(...args) {
+                                        super(...args);
+                                        if (win.__wbMuted) try { this.suspend(); } catch (_) {}
+                                    }
+                                };
+                            } catch (_) {}
+                        }
+                        win.__wbMuted = tileMuted;
                     }
                 } catch (_) {}
-            });
-            if (!win.__wbACPatched) {
-                win.__wbACPatched = true;
-                const OrigAC = AC;
-                try {
-                    win.AudioContext = win.webkitAudioContext = class extends OrigAC {
-                        constructor(...args) {
-                            super(...args);
-                            if (win.__wbMuted) try { this.suspend(); } catch (_) {}
-                        }
-                    };
-                } catch (_) {}
-            }
-            win.__wbMuted = tileMuted;
+            } catch (_) {}
         });
         el.querySelectorAll('audio, video').forEach(m => { m.muted = tileMuted; });
         muteBtn.title = tileMuted ? 'unmute' : 'mute';
         muteBtn.style.color = tileMuted ? '#ff4444' : '';
-        muteBtn.innerHTML = tileMuted
-            ? `<svg width="11" height="11" viewBox="0 0 11 11" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="1,3 4,3 7,0.5 7,10.5 4,8 1,8" fill="currentColor"/><line x1="8" y1="3" x2="11" y2="6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="11" y1="3" x2="8" y2="6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`
-            : `<svg width="11" height="11" viewBox="0 0 11 11" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="1,3 4,3 7,0.5 7,10.5 4,8 1,8" fill="currentColor"/><path d="M8.5,3.5 Q10.5,5.5 8.5,7.5" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>`;
+        muteBtn.innerHTML = tileMuted ? mutedIcon : unmutedIcon;
     });
     const header = el.querySelector('.tile-header');
     header.addEventListener('mousedown', () => {
