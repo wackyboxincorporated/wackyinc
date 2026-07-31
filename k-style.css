@@ -621,12 +621,12 @@ input:focus {
 .app-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    gap: 10px;
+    gap: 12px;
     padding: 10px 0;
     width: 100%;
 }
 .app-grid-item {
-    padding: 22px 12px;
+    padding: 20px 12px;
     text-align: center;
     cursor: pointer;
     border: 1px solid #222222;
@@ -634,9 +634,11 @@ input:focus {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
-    transition: background-color 0.25s ease, border-color 0.25s ease, transform 0.2s ease;
+    justify-content: center;
+    gap: 10px;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
     box-sizing: border-box;
+    border-radius: 0;
 }
 .app-grid-item:hover {
     border-color: #ffffff;
@@ -650,15 +652,53 @@ input:focus {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 22px;
+    font-size: 20px;
+    flex-shrink: 0;
 }
 .app-name, .app-grid-item .app-name {
-    font-size: 13px;
-    line-height: 1.4;
+    font-size: 12px;
+    line-height: 1.3;
     color: #ffffff !important;
     font-weight: 500;
     word-break: break-word;
+    text-align: center;
 }
+@media (max-width: 768px) {
+    .app-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 6px 0;
+    }
+    .app-grid-item {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        text-align: left;
+        padding: 12px 14px;
+        gap: 12px;
+        border: 1px solid #1e1e1e;
+        border-bottom: 1px solid #282828;
+        background-color: #080808;
+        width: 100%;
+        min-height: 48px;
+    }
+    .app-grid-item:active {
+        background-color: #1a1a1a;
+        border-color: #ffffff;
+    }
+    .app-grid-item .app-icon {
+        width: 34px;
+        height: 34px;
+        font-size: 16px;
+        border: 1px solid #333333;
+        flex-shrink: 0;
+    }
+    .app-name, .app-grid-item .app-name {
+        text-align: left;
+        font-size: 13px;
+        flex: 1;
+    }
 }
 .search-container {
     padding: 16px;
