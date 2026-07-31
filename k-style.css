@@ -568,6 +568,7 @@ input:focus {
     height: 16px;
     display: inline-block;
     opacity: 0.6;
+}
 .player-controls-row {
     display: flex;
     align-items: center;
