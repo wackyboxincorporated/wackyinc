@@ -4,9 +4,9 @@ function getControlSVG(type) {
     pause: `<svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor" style="display:block;"><rect x="2" y="1" width="3" height="10"/><rect x="7" y="1" width="3" height="10"/></svg>`,
     prev: `<svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor" style="display:block;"><polygon points="6,1 1,6 6,11"/><polygon points="11,1 6,6 11,11"/></svg>`,
     next: `<svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor" style="display:block;"><polygon points="1,1 6,6 1,11"/><polygon points="6,1 11,6 6,11"/></svg>`,
-    shuffle: `<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" style="display:block;"><path d="M1 9l3-3 2 2 3-3h3M1 3l3 3M12 9h-3l-2-2"/></svg>`,
-    repeat: `<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" style="display:block;"><path d="M2 4h7a2 2 0 0 1 2 2v1M10 8H3a2 2 0 0 1-2-2V5"/><path d="M9 2l2 2-2 2M3 10l-2-2 2-2"/></svg>`,
-    repeatOne: `<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" style="display:block;"><path d="M2 4h7a2 2 0 0 1 2 2v1M10 8H3a2 2 0 0 1-2-2V5"/><path d="M9 2l2 2-2 2M3 10l-2-2 2-2"/><text x="4.5" y="7.5" font-size="5" font-family="monospace" fill="currentColor" stroke="none">1</text></svg>`
+    shuffle: `<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2" style="display:block;"><line x1="1" y1="3" x2="10" y2="9"/><polygon points="7,9 11,9 10,6" fill="currentColor" stroke="none"/><line x1="1" y1="9" x2="10" y2="3"/><polygon points="7,3 11,3 10,6" fill="currentColor" stroke="none"/></svg>`,
+    repeat: `<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2" style="display:block;"><path d="M2 4h8v3M10 8H2V5"/><polygon points="8,2 11,4 8,6" fill="currentColor" stroke="none"/><polygon points="4,10 1,8 4,6" fill="currentColor" stroke="none"/></svg>`,
+    repeatOne: `<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2" style="display:block;"><path d="M2 4h8v3M10 8H2V5"/><polygon points="8,2 11,4 8,6" fill="currentColor" stroke="none"/><polygon points="4,10 1,8 4,6" fill="currentColor" stroke="none"/><text x="4.5" y="7.5" font-size="5" font-family="monospace" fill="currentColor" stroke="none">1</text></svg>`
   };
   return svgs[type] || '';
 }
