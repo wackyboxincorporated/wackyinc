@@ -282,68 +282,92 @@ const kPlayer = {
     }
   },
   renderPlaylist(ui) {
+    if (!ui.playlistEl) return;
     ui.playlistEl.innerHTML = '';
-    if (!this.playlist || this.playlist.length === 0) {
-      const emptyBox = document.createElement('div');
-      emptyBox.style.padding = '20px';
-      emptyBox.style.color = '#666';
-      emptyBox.style.textAlign = 'center';
-      emptyBox.style.display = 'flex';
-      emptyBox.style.flexDirection = 'column';
-      emptyBox.style.alignItems = 'center';
-      emptyBox.style.gap = '10px';
-      const label = document.createElement('div');
-      label.textContent = 'drop audio files here or select from search / file explorer';
-      const fileInput = document.createElement('input');
-      fileInput.type = 'file';
-      fileInput.accept = 'audio/*';
-      fileInput.multiple = true;
-      fileInput.style.display = 'none';
-      const browseBtn = document.createElement('button');
-      browseBtn.textContent = 'browse local music';
-      browseBtn.style.padding = '6px 12px';
-      browseBtn.style.background = 'transparent';
-      browseBtn.style.color = '#fff';
-      browseBtn.style.border = '1px solid #333';
-      browseBtn.style.cursor = 'pointer';
-      browseBtn.onclick = () => fileInput.click();
-      fileInput.onchange = (e) => {
-        const files = e.target.files;
-        if (!files || files.length === 0) return;
-        const audioFiles = [];
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          const blobUrl = URL.createObjectURL(file);
-          audioFiles.push({ name: file.name.toLowerCase(), url: blobUrl });
-        }
-        if (audioFiles.length > 0) {
-          const startIndex = this.playlist.length;
-          this.playlist.push(...audioFiles);
-          this.currentIndex = startIndex;
-          this.loadTrackInternal(audioFiles[0].url, audioFiles[0].name);
-        }
-      };
-      emptyBox.appendChild(label);
-      emptyBox.appendChild(browseBtn);
-      emptyBox.appendChild(fileInput);
-      ui.playlistEl.appendChild(emptyBox);
-      return;
+    const uploadBox = document.createElement('div');
+    uploadBox.className = 'playlist-upload-box';
+    uploadBox.style.padding = '12px';
+    uploadBox.style.textAlign = 'center';
+    uploadBox.style.display = 'flex';
+    uploadBox.style.flexDirection = 'column';
+    uploadBox.style.alignItems = 'center';
+    uploadBox.style.gap = '8px';
+    uploadBox.style.borderBottom = '1px solid #222';
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'audio/*,video/*';
+    fileInput.multiple = true;
+    fileInput.style.display = 'none';
+    const browseBtn = document.createElement('button');
+    browseBtn.className = 'upload-media-btn';
+    browseBtn.textContent = '+ upload media';
+    browseBtn.style.padding = '6px 14px';
+    browseBtn.style.background = '#111111';
+    browseBtn.style.color = '#ffffff';
+    browseBtn.style.border = '1px solid #ffffff';
+    browseBtn.style.fontFamily = 'inherit';
+    browseBtn.style.fontSize = '12px';
+    browseBtn.style.cursor = 'pointer';
+    browseBtn.style.textTransform = 'lowercase';
+    browseBtn.style.transition = 'all 0.2s ease';
+    browseBtn.onmouseenter = () => { browseBtn.style.background = '#222222'; };
+    browseBtn.onmouseleave = () => { browseBtn.style.background = '#111111'; };
+    browseBtn.onclick = () => fileInput.click();
+    fileInput.onchange = (e) => {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+      const mediaFiles = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const blobUrl = URL.createObjectURL(file);
+        mediaFiles.push({ name: file.name.toLowerCase(), url: blobUrl });
+      }
+      if (mediaFiles.length > 0) {
+        const startIndex = this.playlist.length;
+        this.playlist.push(...mediaFiles);
+        this.currentIndex = startIndex;
+        this.loadTrackInternal(mediaFiles[0].url, mediaFiles[0].name);
+      }
+    };
+    const label = document.createElement('div');
+    label.className = 'upload-media-subtext';
+    label.style.fontSize = '11px';
+    label.style.color = '#666666';
+    label.textContent = 'drop audio/video files here or select from search / file explorer';
+    uploadBox.appendChild(browseBtn);
+    uploadBox.appendChild(label);
+    uploadBox.appendChild(fileInput);
+    if (this.playlist && this.playlist.length > 0) {
+      label.style.display = 'none';
+    } else {
+      label.style.display = 'block';
     }
-    this.playlist.forEach((track, index) => {
-      const item = document.createElement('div');
-      item.className = 'playlist-item' + (index === this.currentIndex ? ' playing' : '');
-      item.style.padding = '4px';
-      item.style.cursor = 'pointer';
-      item.style.borderBottom = '1px solid #333';
-      item.style.color = index === this.currentIndex ? '#fff' : '#888';
-      item.style.textTransform = 'lowercase';
-      item.textContent = track.name;
-      item.onclick = () => {
-        this.currentIndex = index;
-        this.loadTrackInternal(track.url, track.name);
-      };
-      ui.playlistEl.appendChild(item);
-    });
+    ui.playlistEl.appendChild(uploadBox);
+    if (this.playlist && this.playlist.length > 0) {
+      const listContainer = document.createElement('div');
+      listContainer.className = 'playlist-items-list';
+      this.playlist.forEach((track, index) => {
+        const item = document.createElement('div');
+        item.className = 'playlist-item' + (index === this.currentIndex ? ' playing' : '');
+        item.style.padding = '8px 12px';
+        item.style.cursor = 'pointer';
+        item.style.borderBottom = '1px solid #111';
+        item.style.color = index === this.currentIndex ? '#ffffff' : '#888888';
+        item.style.textTransform = 'lowercase';
+        item.style.display = 'flex';
+        item.style.alignItems = 'center';
+        item.style.justifyContent = 'space-between';
+        item.innerHTML = `
+          <div><span style="margin-right:8px; opacity:0.6;">${index === this.currentIndex ? '▶' : '♫'}</span>${track.name}</div>
+        `;
+        item.onclick = () => {
+          this.currentIndex = index;
+          this.loadTrackInternal(track.url, track.name);
+        };
+        listContainer.appendChild(item);
+      });
+      ui.playlistEl.appendChild(listContainer);
+    }
   }
 };
 kPlayer.init();
