@@ -240,31 +240,33 @@ function openTile(title, contentEl, opts = {}) {
             if (doc) {
                 doc.querySelectorAll('audio, video').forEach(m => { m.muted = tileMuted; });
             }
-            const script = doc ? doc.createElement('script') : null;
-            if (script) {
-                script.textContent = `(function(muted){
-                    var _AC = window.AudioContext || window.webkitAudioContext;
-                    if (!_AC) return;
-                    if (!window.__wbMuteCtxs) window.__wbMuteCtxs = [];
-                    window.__wbMuteCtxs.forEach(function(ctx){ try { muted ? ctx.suspend() : ctx.resume(); } catch(e){} });
-                    if (!window.__wbACPatched) {
-                        window.__wbACPatched = true;
-                        var OrigAC = _AC;
-                        window.AudioContext = window.webkitAudioContext = function() {
-                            var ctx = new OrigAC();
-                            window.__wbMuteCtxs.push(ctx);
-                            if (window.__wbMuted) { try { ctx.suspend(); } catch(e){} }
-                            return ctx;
-                        };
+            const AC = win.AudioContext || win.webkitAudioContext;
+            if (!AC) return;
+            const keys = Object.getOwnPropertyNames(win);
+            keys.forEach(key => {
+                try {
+                    const val = win[key];
+                    if (val && typeof val === 'object' && val instanceof AC
+                        && typeof val.suspend === 'function' && typeof val.resume === 'function') {
+                        tileMuted ? val.suspend() : val.resume();
                     }
-                    window.__wbMuted = muted;
-                })(${tileMuted});`;
-                doc.head.appendChild(script);
-                script.remove();
+                } catch (_) {}
+            });
+            if (!win.__wbACPatched) {
+                win.__wbACPatched = true;
+                const OrigAC = AC;
+                try {
+                    win.AudioContext = win.webkitAudioContext = class extends OrigAC {
+                        constructor(...args) {
+                            super(...args);
+                            if (win.__wbMuted) try { this.suspend(); } catch (_) {}
+                        }
+                    };
+                } catch (_) {}
             }
+            win.__wbMuted = tileMuted;
         });
-        const audioEls = el.querySelectorAll('audio, video');
-        audioEls.forEach(m => { m.muted = tileMuted; });
+        el.querySelectorAll('audio, video').forEach(m => { m.muted = tileMuted; });
         muteBtn.title = tileMuted ? 'unmute' : 'mute';
         muteBtn.style.color = tileMuted ? '#ff4444' : '';
         muteBtn.innerHTML = tileMuted
