@@ -505,6 +505,43 @@ function launchApp(name, ...args) {
       openHelpWindow();
       break;
     }
+    case 'about': {
+      const aboutEl = document.createElement('div');
+      aboutEl.className = 'about-app';
+      aboutEl.style.padding = '20px';
+      aboutEl.style.height = '100%';
+      aboutEl.style.overflowY = 'auto';
+      aboutEl.style.boxSizing = 'border-box';
+      aboutEl.style.fontSize = '12px';
+      aboutEl.style.lineHeight = '1.6';
+      aboutEl.style.color = '#ffffff';
+      aboutEl.style.textTransform = 'lowercase';
+      aboutEl.innerHTML = `
+        <div style="font-size: 16px; font-weight: bold; margin-bottom: 16px; border-bottom: 1px solid #333333; padding-bottom: 8px; color: #ffffff;">
+          about wbos!k
+        </div>
+        <p style="margin-bottom: 14px; color: #dddddd;">
+          wbOS was a project originally in the form of a LOT scratch-to-js things. but it kept growing. i'd add more little games, tools, and things to muck around with. and I had no way to help people navigate them all. it was just "remember the link or you don't get the thing!". so I wrote a little scratch interface with a bunch of hardcoded buttons to the current list of things, and that was that, for a while.
+        </p>
+        <p style="margin-bottom: 14px; color: #dddddd;">
+          fast forward months later, after much horrible webdev Bullshit, wbOS! 1 appeared. revolutionary. a useless start menu. a useless taskbar. little to no QoL. just a bunch of files and folders slapped on a background gradient. and then I added visual features, and theming, and a better start menu, and cool visual effects, and total customisation, and better organisation, etc., etc.
+        </p>
+        <p style="margin-bottom: 14px; color: #dddddd;">
+          but again. it kept growing, and eventually I realised just how much of a pain in the ass it had become to make simple changes to the code/design. and also noticed that it didn't look very good. I pushed wbOS!'s final major update yesterday, adding much better visual control.
+        </p>
+        <p style="margin-bottom: 16px; color: #dddddd;">
+          and now you're here. this is wbOS!k, the lighter and easier-to-navigate version of wbOS!. I will never take wbOS! or this down, and I won't say wbOS! is deprecated. It's just not at the top of my list.
+        </p>
+        <div style="font-weight: bold; color: #ffffff; margin-bottom: 16px; border-top: 1px solid #222222; padding-top: 12px;">
+          thanks for using my stupid joke software, and i do hope you enjoy!
+        </div>
+        <div style="font-size: 11px; color: #888888; font-style: italic;">
+          p.s.: this is actually version 3 of OS!k
+        </div>
+      `;
+      openTile('about', aboutEl);
+      break;
+    }
     case 'video player': {
       const vidEl = document.createElement('div');
       vidEl.className = 'video-player-container';

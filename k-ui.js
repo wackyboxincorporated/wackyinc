@@ -137,11 +137,12 @@ function renderMenuContent(tab) {
       { id: 'documents', name: 'documents', icon: '▢', items: categories.documents },
       { id: 'videos', name: 'videos', icon: '▶', items: categories.videos },
       { id: 'audio', name: 'audio', icon: '♫', items: categories.audio },
+      { id: 'about', name: 'about', icon: 'ⓘ', isDirectApp: true },
       { id: 'misc', name: 'misc', icon: '⬡', items: categories.misc }
     ];
     if (openCategoryFolder) {
       const activeSpec = categorySpecs.find(c => c.id === openCategoryFolder);
-      if (activeSpec) {
+      if (activeSpec && !activeSpec.isDirectApp) {
         mainViewArea.scrollTop = 0;
         const unrolledContainer = document.createElement('div');
         unrolledContainer.className = 'unrolled-folder-wrapper';
@@ -206,15 +207,26 @@ function renderMenuContent(tab) {
     categorySpecs.forEach(cat => {
       const folderCard = document.createElement('div');
       folderCard.className = 'app-grid-item folder-category-card';
-      folderCard.innerHTML = `
-        <div class="app-icon" style="border-color: #555;">${cat.icon}</div>
-        <div class="app-name" style="font-weight: bold; color: #fff;">${cat.name}</div>
-        <div style="font-size: 10px; color: #888;">${cat.items.length} items</div>
-      `;
-      folderCard.addEventListener('click', () => {
-        openCategoryFolder = cat.id;
-        renderCategoryFoldersView();
-      });
+      if (cat.isDirectApp) {
+        folderCard.innerHTML = `
+          <div class="app-icon" style="border-color: #555;">${cat.icon}</div>
+          <div class="app-name" style="font-weight: bold; color: #fff;">${cat.name}</div>
+          <div style="font-size: 10px; color: #888;">info & story</div>
+        `;
+        folderCard.addEventListener('click', () => {
+          if (typeof launchApp === 'function') launchApp('about');
+        });
+      } else {
+        folderCard.innerHTML = `
+          <div class="app-icon" style="border-color: #555;">${cat.icon}</div>
+          <div class="app-name" style="font-weight: bold; color: #fff;">${cat.name}</div>
+          <div style="font-size: 10px; color: #888;">${cat.items.length} items</div>
+        `;
+        folderCard.addEventListener('click', () => {
+          openCategoryFolder = cat.id;
+          renderCategoryFoldersView();
+        });
+      }
       folderGrid.appendChild(folderCard);
     });
     mainViewArea.appendChild(folderGrid);

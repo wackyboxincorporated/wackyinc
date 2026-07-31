@@ -13,7 +13,8 @@ let systemApps = [
   { name: 'terminal', icon: '▬', description: 'command line tool' },
   { name: 'settings', icon: '⚙', description: 'preferences tool' },
   { name: 'video player', icon: '▶', description: 'play videos tool' },
-  { name: 'media player', icon: '♫', description: 'play music tool' }
+  { name: 'media player', icon: '♫', description: 'play music tool' },
+  { name: 'about', icon: 'ⓘ', description: 'about wbos!k' }
 ];
 const defaultSettings = {
   playerMode: 'integrated',
