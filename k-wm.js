@@ -234,12 +234,34 @@ function openTile(title, contentEl, opts = {}) {
         const iframes = contentArea.querySelectorAll('iframe');
         iframes.forEach(iframe => {
             iframe.muted = tileMuted;
-            try {
-                const doc = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
-                if (doc) {
-                    doc.querySelectorAll('audio, video').forEach(m => { m.muted = tileMuted; });
-                }
-            } catch (_) {}
+            const win = iframe.contentWindow;
+            if (!win) return;
+            const doc = iframe.contentDocument || win.document;
+            if (doc) {
+                doc.querySelectorAll('audio, video').forEach(m => { m.muted = tileMuted; });
+            }
+            const script = doc ? doc.createElement('script') : null;
+            if (script) {
+                script.textContent = `(function(muted){
+                    var _AC = window.AudioContext || window.webkitAudioContext;
+                    if (!_AC) return;
+                    if (!window.__wbMuteCtxs) window.__wbMuteCtxs = [];
+                    window.__wbMuteCtxs.forEach(function(ctx){ try { muted ? ctx.suspend() : ctx.resume(); } catch(e){} });
+                    if (!window.__wbACPatched) {
+                        window.__wbACPatched = true;
+                        var OrigAC = _AC;
+                        window.AudioContext = window.webkitAudioContext = function() {
+                            var ctx = new OrigAC();
+                            window.__wbMuteCtxs.push(ctx);
+                            if (window.__wbMuted) { try { ctx.suspend(); } catch(e){} }
+                            return ctx;
+                        };
+                    }
+                    window.__wbMuted = muted;
+                })(${tileMuted});`;
+                doc.head.appendChild(script);
+                script.remove();
+            }
         });
         const audioEls = el.querySelectorAll('audio, video');
         audioEls.forEach(m => { m.muted = tileMuted; });

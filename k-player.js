@@ -34,19 +34,58 @@ const kPlayer = {
       this.updateUIs();
       this.startLoop();
       this.initAudioContext();
+      this.updateMediaSession();
     });
     this.audioEl.addEventListener('pause', () => {
       this.isPlaying = false;
       this.updateUIs();
+      this.updateMediaSession();
     });
     this.audioEl.addEventListener('timeupdate', () => {
       this.updateProgress();
     });
     this.audioEl.addEventListener('error', (e) => {
-      console.warn("Audio media error caught:", this.audioEl.error);
       this.isPlaying = false;
       this.updateUIs();
     });
+    this.initMediaSession();
+  },
+  initMediaSession() {
+    if (!('mediaSession' in navigator)) return;
+    navigator.mediaSession.setActionHandler('play', () => { this.play(); });
+    navigator.mediaSession.setActionHandler('pause', () => { this.pause(); });
+    navigator.mediaSession.setActionHandler('nexttrack', () => { this.next(); });
+    navigator.mediaSession.setActionHandler('previoustrack', () => { this.prev(); });
+    navigator.mediaSession.setActionHandler('seekto', (details) => {
+      if (details.seekTime !== undefined && !isNaN(this.audioEl.duration)) {
+        this.audioEl.currentTime = details.seekTime;
+      }
+    });
+    navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+      this.audioEl.currentTime = Math.max(0, this.audioEl.currentTime - (details.seekOffset || 10));
+    });
+    navigator.mediaSession.setActionHandler('seekforward', (details) => {
+      this.audioEl.currentTime = Math.min(this.audioEl.duration || 0, this.audioEl.currentTime + (details.seekOffset || 10));
+    });
+  },
+  updateMediaSession() {
+    if (!('mediaSession' in navigator)) return;
+    const name = this.getTrackName();
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: name,
+      artist: 'wackybox',
+      album: 'wbOSk'
+    });
+    navigator.mediaSession.playbackState = this.isPlaying ? 'playing' : 'paused';
+    if (!isNaN(this.audioEl.duration) && isFinite(this.audioEl.duration)) {
+      try {
+        navigator.mediaSession.setPositionState({
+          duration: this.audioEl.duration,
+          playbackRate: this.audioEl.playbackRate,
+          position: this.audioEl.currentTime
+        });
+      } catch (_) {}
+    }
   },
   initAudioContext() {
     if (!this.audioCtx) {
@@ -153,6 +192,7 @@ const kPlayer = {
     this.audioEl.src = url;
     this.play();
     this.updateUIs();
+    this.updateMediaSession();
   },
   loadTrack(url, name) {
     const existingIndex = this.playlist.findIndex(t => t.url === url);
