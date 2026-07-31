@@ -299,6 +299,47 @@ const kPlayer = {
       ctx.fillRect(x, h - barHeight, barWidth, barHeight);
     }
   },
+  removeTrack(index) {
+    if (index < 0 || index >= this.playlist.length) return;
+    const wasPlayingTrack = (index === this.currentIndex);
+    this.playlist.splice(index, 1);
+    if (this.playlist.length === 0) {
+      this.currentIndex = -1;
+      this.pause();
+      if (this.audioEl) this.audioEl.removeAttribute('src');
+    } else {
+      if (index < this.currentIndex) {
+        this.currentIndex--;
+      } else if (wasPlayingTrack) {
+        this.currentIndex = this.currentIndex % this.playlist.length;
+        const track = this.playlist[this.currentIndex];
+        this.loadTrackInternal(track.url, track.name);
+      }
+    }
+    this.updateUIs();
+  },
+  moveTrack(fromIndex, toIndex) {
+    if (fromIndex < 0 || fromIndex >= this.playlist.length) return;
+    if (toIndex < 0 || toIndex >= this.playlist.length) return;
+    if (fromIndex === toIndex) return;
+    const [movedTrack] = this.playlist.splice(fromIndex, 1);
+    this.playlist.splice(toIndex, 0, movedTrack);
+    if (this.currentIndex === fromIndex) {
+      this.currentIndex = toIndex;
+    } else if (fromIndex < this.currentIndex && toIndex >= this.currentIndex) {
+      this.currentIndex--;
+    } else if (fromIndex > this.currentIndex && toIndex <= this.currentIndex) {
+      this.currentIndex++;
+    }
+    this.updateUIs();
+  },
+  clearPlaylist() {
+    this.playlist = [];
+    this.currentIndex = -1;
+    this.pause();
+    if (this.audioEl) this.audioEl.removeAttribute('src');
+    this.updateUIs();
+  },
   renderPlaylist(ui) {
     if (!ui.playlistEl) return;
     ui.playlistEl.innerHTML = '';
@@ -316,6 +357,12 @@ const kPlayer = {
     fileInput.accept = 'audio/*,video/*';
     fileInput.multiple = true;
     fileInput.style.display = 'none';
+    const btnRow = document.createElement('div');
+    btnRow.style.display = 'flex';
+    btnRow.style.gap = '8px';
+    btnRow.style.alignItems = 'center';
+    btnRow.style.justifyContent = 'center';
+    btnRow.style.flexWrap = 'wrap';
     const browseBtn = document.createElement('button');
     browseBtn.className = 'upload-media-btn';
     browseBtn.textContent = '+ upload media';
@@ -347,12 +394,31 @@ const kPlayer = {
         this.loadTrackInternal(mediaFiles[0].url, mediaFiles[0].name);
       }
     };
+    btnRow.appendChild(browseBtn);
+    if (this.playlist && this.playlist.length > 0) {
+      const clearBtn = document.createElement('button');
+      clearBtn.className = 'clear-playlist-btn';
+      clearBtn.textContent = '✕ clear queue';
+      clearBtn.style.padding = '6px 14px';
+      clearBtn.style.background = '#111111';
+      clearBtn.style.color = '#ff4444';
+      clearBtn.style.border = '1px solid #ff4444';
+      clearBtn.style.fontFamily = 'inherit';
+      clearBtn.style.fontSize = '12px';
+      clearBtn.style.cursor = 'pointer';
+      clearBtn.style.textTransform = 'lowercase';
+      clearBtn.style.transition = 'all 0.2s ease';
+      clearBtn.onmouseenter = () => { clearBtn.style.background = '#331111'; };
+      clearBtn.onmouseleave = () => { clearBtn.style.background = '#111111'; };
+      clearBtn.onclick = () => this.clearPlaylist();
+      btnRow.appendChild(clearBtn);
+    }
     const label = document.createElement('div');
     label.className = 'upload-media-subtext';
     label.style.fontSize = '11px';
     label.style.color = '#666666';
     label.textContent = 'drop audio/video files here or select from search / file explorer';
-    uploadBox.appendChild(browseBtn);
+    uploadBox.appendChild(btnRow);
     uploadBox.appendChild(label);
     uploadBox.appendChild(fileInput);
     if (this.playlist && this.playlist.length > 0) {
@@ -368,20 +434,102 @@ const kPlayer = {
         const item = document.createElement('div');
         item.className = 'playlist-item' + (index === this.currentIndex ? ' playing' : '');
         item.style.padding = '8px 12px';
-        item.style.cursor = 'pointer';
+        item.style.cursor = 'grab';
         item.style.borderBottom = '1px solid #111';
         item.style.color = index === this.currentIndex ? '#ffffff' : '#888888';
         item.style.textTransform = 'lowercase';
         item.style.display = 'flex';
         item.style.alignItems = 'center';
         item.style.justifyContent = 'space-between';
-        item.innerHTML = `
-          <div><span style="margin-right:8px; opacity:0.6;">${index === this.currentIndex ? '▶' : '♫'}</span>${track.name}</div>
-        `;
-        item.onclick = () => {
+        item.style.gap = '8px';
+        item.draggable = true;
+        item.addEventListener('dragstart', (e) => {
+          e.dataTransfer.setData('text/plain', index.toString());
+          e.dataTransfer.effectAllowed = 'move';
+          item.style.opacity = '0.5';
+        });
+        item.addEventListener('dragend', () => {
+          item.style.opacity = '1';
+        });
+        item.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          item.style.borderTop = '2px solid #ffffff';
+        });
+        item.addEventListener('dragleave', () => {
+          item.style.borderTop = 'none';
+        });
+        item.addEventListener('drop', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          item.style.borderTop = 'none';
+          const fromIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
+          if (!isNaN(fromIndex)) {
+            this.moveTrack(fromIndex, index);
+          }
+        });
+        const trackInfo = document.createElement('div');
+        trackInfo.style.display = 'flex';
+        trackInfo.style.alignItems = 'center';
+        trackInfo.style.overflow = 'hidden';
+        trackInfo.style.whiteSpace = 'nowrap';
+        trackInfo.style.textOverflow = 'ellipsis';
+        trackInfo.style.flex = '1';
+        const iconSpan = document.createElement('span');
+        iconSpan.style.marginRight = '8px';
+        iconSpan.style.opacity = '0.6';
+        iconSpan.textContent = index === this.currentIndex ? '▶' : '♫';
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = track.name;
+        nameSpan.style.overflow = 'hidden';
+        nameSpan.style.textOverflow = 'ellipsis';
+        trackInfo.appendChild(iconSpan);
+        trackInfo.appendChild(nameSpan);
+        trackInfo.onclick = () => {
           this.currentIndex = index;
           this.loadTrackInternal(track.url, track.name);
         };
+        const actionBtns = document.createElement('div');
+        actionBtns.style.display = 'flex';
+        actionBtns.style.alignItems = 'center';
+        actionBtns.style.gap = '4px';
+        actionBtns.style.flexShrink = '0';
+        const actionBtnStyle = 'background:none; border:1px solid #333; color:#aaa; font-size:11px; padding:2px 6px; cursor:pointer; font-family:inherit; transition:all 0.15s ease;';
+        if (index > 0) {
+          const upBtn = document.createElement('button');
+          upBtn.textContent = '▲';
+          upBtn.title = 'move up';
+          upBtn.style.cssText = actionBtnStyle;
+          upBtn.onclick = (e) => {
+            e.stopPropagation();
+            this.moveTrack(index, index - 1);
+          };
+          actionBtns.appendChild(upBtn);
+        }
+        if (index < this.playlist.length - 1) {
+          const downBtn = document.createElement('button');
+          downBtn.textContent = '▼';
+          downBtn.title = 'move down';
+          downBtn.style.cssText = actionBtnStyle;
+          downBtn.onclick = (e) => {
+            e.stopPropagation();
+            this.moveTrack(index, index + 1);
+          };
+          actionBtns.appendChild(downBtn);
+        }
+        const removeBtn = document.createElement('button');
+        removeBtn.textContent = '✕';
+        removeBtn.title = 'remove track';
+        removeBtn.style.cssText = actionBtnStyle;
+        removeBtn.style.color = '#ff4444';
+        removeBtn.style.borderColor = '#442222';
+        removeBtn.onclick = (e) => {
+          e.stopPropagation();
+          this.removeTrack(index);
+        };
+        actionBtns.appendChild(removeBtn);
+        item.appendChild(trackInfo);
+        item.appendChild(actionBtns);
         listContainer.appendChild(item);
       });
       ui.playlistEl.appendChild(listContainer);
