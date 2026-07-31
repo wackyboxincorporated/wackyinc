@@ -1,3 +1,15 @@
+function getControlSVG(type) {
+  const svgs = {
+    play: `<svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor" style="display:block;"><polygon points="2,1 11,6 2,11"/></svg>`,
+    pause: `<svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor" style="display:block;"><rect x="2" y="1" width="3" height="10"/><rect x="7" y="1" width="3" height="10"/></svg>`,
+    prev: `<svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor" style="display:block;"><polygon points="6,1 1,6 6,11"/><polygon points="11,1 6,6 11,11"/></svg>`,
+    next: `<svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor" style="display:block;"><polygon points="1,1 6,6 1,11"/><polygon points="6,1 11,6 11,11"/></svg>`,
+    shuffle: `<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" style="display:block;"><path d="M1 9l3-3 2 2 3-3h3M1 3l3 3M12 9h-3l-2-2"/></svg>`,
+    repeat: `<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" style="display:block;"><path d="M2 4h7a2 2 0 0 1 2 2v1M10 8H3a2 2 0 0 1-2-2V5"/><path d="M9 2l2 2-2 2M3 10l-2-2 2-2"/></svg>`,
+    repeatOne: `<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" style="display:block;"><path d="M2 4h7a2 2 0 0 1 2 2v1M10 8H3a2 2 0 0 1-2-2V5"/><path d="M9 2l2 2-2 2M3 10l-2-2 2-2"/><text x="4.5" y="7.5" font-size="5" font-family="monospace" fill="currentColor" stroke="none">1</text></svg>`
+  };
+  return svgs[type] || '';
+}
 const kPlayer = {
   audioEl: null,
   playlist: [],
@@ -184,22 +196,23 @@ const kPlayer = {
   },
   updateUIs() {
     const trackName = this.getTrackName();
-    const playIcon = this.isPlaying ? '⏸' : '▶';
+    const playSVG = this.isPlaying ? getControlSVG('pause') : getControlSVG('play');
     this.uiElements.bars.forEach(ui => {
-      ui.playBtn.textContent = playIcon;
-      ui.trackNameEl.textContent = trackName;
+      if (ui.playBtn) ui.playBtn.innerHTML = playSVG;
+      if (ui.trackNameEl) ui.trackNameEl.textContent = trackName;
     });
     const topBarPopup = document.getElementById('top-bar-media-popup');
     if (topBarPopup) {
       const pBtn = topBarPopup.querySelector('.play-btn');
-      if (pBtn) pBtn.textContent = playIcon;
+      if (pBtn) pBtn.innerHTML = playSVG;
       const titleEl = topBarPopup.querySelector('#media-popup-track-title');
-      if (titleEl) titleEl.textContent = '♫ ' + trackName;
+      if (titleEl) titleEl.textContent = trackName;
     }
     this.uiElements.apps.forEach(ui => {
-      ui.playBtn.textContent = playIcon;
-      ui.trackNameEl.textContent = trackName;
+      if (ui.playBtn) ui.playBtn.innerHTML = playSVG;
+      if (ui.trackNameEl) ui.trackNameEl.textContent = trackName;
       if (ui.shuffleBtn) {
+        ui.shuffleBtn.innerHTML = getControlSVG('shuffle');
         if (this.isShuffle) {
           ui.shuffleBtn.style.borderColor = '#ffffff';
           ui.shuffleBtn.style.color = '#ffffff';
@@ -212,17 +225,17 @@ const kPlayer = {
       }
       if (ui.repeatBtn) {
         if (this.isRepeat === 'all') {
-          ui.repeatBtn.textContent = '🔁';
+          ui.repeatBtn.innerHTML = getControlSVG('repeat');
           ui.repeatBtn.style.borderColor = '#ffffff';
           ui.repeatBtn.style.color = '#ffffff';
           ui.repeatBtn.style.background = '#1a1a1a';
         } else if (this.isRepeat === 'one') {
-          ui.repeatBtn.textContent = '🔂';
+          ui.repeatBtn.innerHTML = getControlSVG('repeatOne');
           ui.repeatBtn.style.borderColor = '#ffffff';
           ui.repeatBtn.style.color = '#ff3333';
           ui.repeatBtn.style.background = '#1a1a1a';
         } else {
-          ui.repeatBtn.textContent = '🔁';
+          ui.repeatBtn.innerHTML = getControlSVG('repeat');
           ui.repeatBtn.style.borderColor = '#333333';
           ui.repeatBtn.style.color = '#666666';
           ui.repeatBtn.style.background = 'none';
@@ -235,12 +248,12 @@ const kPlayer = {
     const progress = this.getProgress();
     const timeStr = `${this.formatTrackTime(this.getCurrentTime())} / ${this.formatTrackTime(this.getDuration())}`;
     this.uiElements.bars.forEach(ui => {
-      ui.fillEl.style.width = `${progress * 100}%`;
-      ui.timeEl.textContent = timeStr;
+      if (ui.fillEl) ui.fillEl.style.width = `${progress * 100}%`;
+      if (ui.timeEl) ui.timeEl.textContent = timeStr;
     });
     this.uiElements.apps.forEach(ui => {
-      ui.fillEl.style.width = `${progress * 100}%`;
-      ui.timeEl.textContent = timeStr;
+      if (ui.fillEl) ui.fillEl.style.width = `${progress * 100}%`;
+      if (ui.timeEl) ui.timeEl.textContent = timeStr;
     });
   },
   startLoop() {
@@ -251,6 +264,11 @@ const kPlayer = {
           if (this.analyser && this.visualizerData) {
             this.analyser.getByteFrequencyData(this.visualizerData);
             this.uiElements.apps.forEach(ui => {
+              if (ui.canvasCtx && ui.canvas) {
+                this.drawVisualizer(ui.canvasCtx, ui.canvas);
+              }
+            });
+            this.uiElements.bars.forEach(ui => {
               if (ui.canvasCtx && ui.canvas) {
                 this.drawVisualizer(ui.canvasCtx, ui.canvas);
               }
@@ -402,26 +420,35 @@ function renderPlayerBar() {
   bar.style.alignItems = 'center';
   bar.style.height = '100%';
   bar.style.padding = '0 10px';
-  bar.style.gap = '10px';
-  bar.style.fontSize = '14px';
+  bar.style.gap = '8px';
+  bar.style.fontSize = '12px';
   bar.style.color = '#fff';
   bar.style.background = '#000';
   bar.style.border = '1px solid #333';
   bar.style.boxSizing = 'border-box';
   bar.style.textTransform = 'lowercase';
-  const btnStyle = 'cursor:pointer; background:none; border:none; color:#fff; font-family:inherit; padding:0 5px; font-size:14px;';
+  const btnStyle = 'cursor:pointer; background:none; border:none; color:#fff; font-family:inherit; padding:2px 4px; display:flex; align-items:center; justify-content:center;';
   const prevBtn = document.createElement('button');
-  prevBtn.textContent = '◂◂';
+  prevBtn.innerHTML = getControlSVG('prev');
   prevBtn.style.cssText = btnStyle;
   prevBtn.onclick = () => kPlayer.prev();
   const playBtn = document.createElement('button');
-  playBtn.textContent = kPlayer.isPlaying ? '❙❙' : '▶';
+  playBtn.innerHTML = kPlayer.isPlaying ? getControlSVG('pause') : getControlSVG('play');
   playBtn.style.cssText = btnStyle;
   playBtn.onclick = () => kPlayer.togglePlay();
   const nextBtn = document.createElement('button');
-  nextBtn.textContent = '▸▸';
+  nextBtn.innerHTML = getControlSVG('next');
   nextBtn.style.cssText = btnStyle;
   nextBtn.onclick = () => kPlayer.next();
+  const canvas = document.createElement('canvas');
+  canvas.width = 48;
+  canvas.height = 14;
+  canvas.style.width = '48px';
+  canvas.style.height = '14px';
+  canvas.style.border = '1px solid #222';
+  canvas.style.background = '#000';
+  canvas.style.flexShrink = '0';
+  const canvasCtx = canvas.getContext('2d');
   const trackNameEl = document.createElement('div');
   trackNameEl.textContent = kPlayer.getTrackName();
   trackNameEl.style.whiteSpace = 'nowrap';
@@ -434,12 +461,14 @@ function renderPlayerBar() {
   const timeEl = document.createElement('div');
   timeEl.textContent = '0:00 / 0:00';
   timeEl.style.whiteSpace = 'nowrap';
-  timeEl.style.minWidth = '80px';
+  timeEl.style.minWidth = '70px';
   timeEl.style.textAlign = 'right';
   timeEl.style.color = '#888';
+  timeEl.style.fontSize = '10px';
   bar.appendChild(prevBtn);
   bar.appendChild(playBtn);
   bar.appendChild(nextBtn);
+  bar.appendChild(canvas);
   bar.appendChild(trackNameEl);
   bar.appendChild(progressContainer);
   bar.appendChild(timeEl);
@@ -447,7 +476,9 @@ function renderPlayerBar() {
     playBtn,
     trackNameEl,
     fillEl: progressFill,
-    timeEl
+    timeEl,
+    canvas,
+    canvasCtx
   };
   kPlayer.uiElements.bars.push(ui);
   return bar;
@@ -468,7 +499,7 @@ function renderPlayerApp() {
   topEl.style.borderBottom = '1px solid #333';
   topEl.style.display = 'flex';
   topEl.style.flexDirection = 'column';
-  topEl.style.gap = '10px';
+  topEl.style.gap = '8px';
   const trackInfoRow = document.createElement('div');
   trackInfoRow.style.display = 'flex';
   trackInfoRow.style.justifyContent = 'space-between';
@@ -477,9 +508,11 @@ function renderPlayerApp() {
   trackNameEl.style.whiteSpace = 'nowrap';
   trackNameEl.style.overflow = 'hidden';
   trackNameEl.style.textOverflow = 'ellipsis';
+  trackNameEl.style.fontWeight = 'bold';
   const timeEl = document.createElement('div');
   timeEl.textContent = '0:00 / 0:00';
   timeEl.style.color = '#888';
+  timeEl.style.fontSize = '11px';
   trackInfoRow.appendChild(trackNameEl);
   trackInfoRow.appendChild(timeEl);
   const { container: progressContainer, fill: progressFill } = createProgressBar((fraction) => {
@@ -492,33 +525,30 @@ function renderPlayerApp() {
   playlistEl.className = 'player-playlist';
   playlistEl.style.flex = '1';
   playlistEl.style.overflowY = 'auto';
-  playlistEl.style.padding = '10px';
-  playlistEl.style.scrollbarWidth = 'none';
+  playlistEl.style.padding = '8px';
   const bottomEl = document.createElement('div');
-  bottomEl.style.padding = '10px';
+  bottomEl.style.padding = '8px 10px';
   bottomEl.style.borderTop = '1px solid #333';
-  bottomEl.style.display = 'flex';
-  bottomEl.style.flexDirection = 'column';
-  bottomEl.style.gap = '10px';
   const controlsRow = document.createElement('div');
   controlsRow.style.display = 'flex';
   controlsRow.style.alignItems = 'center';
-  controlsRow.style.gap = '15px';
-  const btnStyle = 'cursor:pointer; background:none; border:1px solid #333; color:#fff; font-family:inherit; padding:5px 10px; font-size:14px;';
+  controlsRow.style.gap = '8px';
+  controlsRow.style.flexWrap = 'wrap';
+  const btnStyle = 'cursor:pointer; background:none; border:1px solid #333; color:#fff; font-family:inherit; padding:5px 8px; display:flex; align-items:center; justify-content:center;';
   const prevBtn = document.createElement('button');
-  prevBtn.textContent = '◂◂';
+  prevBtn.innerHTML = getControlSVG('prev');
   prevBtn.style.cssText = btnStyle;
   prevBtn.onclick = () => kPlayer.prev();
   const playBtn = document.createElement('button');
-  playBtn.textContent = kPlayer.isPlaying ? '❙❙' : '▶';
+  playBtn.innerHTML = kPlayer.isPlaying ? getControlSVG('pause') : getControlSVG('play');
   playBtn.style.cssText = btnStyle;
   playBtn.onclick = () => kPlayer.togglePlay();
   const nextBtn = document.createElement('button');
-  nextBtn.textContent = '▸▸';
+  nextBtn.innerHTML = getControlSVG('next');
   nextBtn.style.cssText = btnStyle;
   nextBtn.onclick = () => kPlayer.next();
   const shuffleBtn = document.createElement('button');
-  shuffleBtn.textContent = '🔀';
+  shuffleBtn.innerHTML = getControlSVG('shuffle');
   shuffleBtn.title = 'toggle shuffle';
   shuffleBtn.style.cssText = btnStyle;
   if (kPlayer.isShuffle) {
@@ -535,37 +565,48 @@ function renderPlayerApp() {
   repeatBtn.title = 'toggle repeat mode';
   repeatBtn.style.cssText = btnStyle;
   if (kPlayer.isRepeat === 'all') {
-    repeatBtn.textContent = '🔁';
+    repeatBtn.innerHTML = getControlSVG('repeat');
     repeatBtn.style.borderColor = '#ffffff';
     repeatBtn.style.color = '#ffffff';
     repeatBtn.style.background = '#1a1a1a';
   } else if (kPlayer.isRepeat === 'one') {
-    repeatBtn.textContent = '🔂';
+    repeatBtn.innerHTML = getControlSVG('repeatOne');
     repeatBtn.style.borderColor = '#ffffff';
     repeatBtn.style.color = '#ff3333';
     repeatBtn.style.background = '#1a1a1a';
   } else {
-    repeatBtn.textContent = '🔁';
+    repeatBtn.innerHTML = getControlSVG('repeat');
     repeatBtn.style.borderColor = '#333333';
     repeatBtn.style.color = '#666666';
     repeatBtn.style.background = 'none';
   }
   repeatBtn.onclick = () => kPlayer.toggleRepeat();
+  const canvas = document.createElement('canvas');
+  canvas.className = 'player-visualizer';
+  canvas.width = 64;
+  canvas.height = 18;
+  canvas.style.width = '64px';
+  canvas.style.height = '18px';
+  canvas.style.border = '1px solid #333';
+  canvas.style.background = '#000';
+  canvas.style.flexShrink = '0';
+  const canvasCtx = canvas.getContext('2d');
   const volContainer = document.createElement('div');
   volContainer.style.display = 'flex';
   volContainer.style.alignItems = 'center';
-  volContainer.style.gap = '5px';
+  volContainer.style.gap = '6px';
   volContainer.style.marginLeft = 'auto';
   const volLabel = document.createElement('span');
   volLabel.textContent = 'vol';
   volLabel.style.color = '#888';
+  volLabel.style.fontSize = '10px';
   const volSlider = document.createElement('input');
   volSlider.type = 'range';
   volSlider.min = '0';
   volSlider.max = '1';
   volSlider.step = '0.01';
   volSlider.value = kPlayer.volume;
-  volSlider.style.width = '80px';
+  volSlider.style.width = '65px';
   volSlider.oninput = (e) => kPlayer.setVolume(parseFloat(e.target.value));
   volContainer.appendChild(volLabel);
   volContainer.appendChild(volSlider);
@@ -574,19 +615,9 @@ function renderPlayerApp() {
   controlsRow.appendChild(nextBtn);
   controlsRow.appendChild(shuffleBtn);
   controlsRow.appendChild(repeatBtn);
+  controlsRow.appendChild(canvas);
   controlsRow.appendChild(volContainer);
-  const canvas = document.createElement('canvas');
-  canvas.className = 'player-visualizer';
-  canvas.height = 60;
-  canvas.style.width = '100%';
-  canvas.style.display = 'block';
-  canvas.style.background = '#000';
-  canvas.style.border = '1px solid #333';
-  canvas.style.boxSizing = 'border-box';
-  canvas.width = 300;
-  const canvasCtx = canvas.getContext('2d');
   bottomEl.appendChild(controlsRow);
-  bottomEl.appendChild(canvas);
   app.appendChild(topEl);
   app.appendChild(playlistEl);
   app.appendChild(bottomEl);
@@ -601,14 +632,6 @@ function renderPlayerApp() {
     canvas,
     canvasCtx
   };
-  const resizeObserver = new ResizeObserver(entries => {
-    for (let entry of entries) {
-      if (entry.target === canvas) {
-        canvas.width = entry.contentRect.width;
-      }
-    }
-  });
-  resizeObserver.observe(canvas);
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -618,7 +641,7 @@ function renderPlayerApp() {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const ext = file.name.split('.').pop().toLowerCase();
-      if (file.type.startsWith('audio/') || ['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac', 'opus'].includes(ext)) {
+      if (file.type.startsWith('audio/') || file.type.startsWith('video/') || ['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac', 'opus', 'mp4', 'webm'].includes(ext)) {
         const blobUrl = URL.createObjectURL(file);
         audioFiles.push({ name: file.name.toLowerCase(), url: blobUrl });
       }

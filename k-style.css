@@ -64,14 +64,53 @@ button {
 button:hover {
     border-color: #ffffff;
 }
-input {
+input[type="text"], input[type="search"], input[type="password"], textarea, select {
     background-color: #111111;
     color: #ffffff;
     border: 1px solid #333333;
     font-family: inherit;
     outline: none;
-    text-transform: lowercase;
-    transition: border-color 0.25s ease;
+    padding: 6px 10px;
+    box-sizing: border-box;
+}
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    background: #111111;
+    border: 1px solid #333333;
+    outline: none;
+    cursor: pointer;
+    margin: 0;
+    vertical-align: middle;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+    height: 4px;
+    background: #222222;
+}
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 8px;
+    height: 12px;
+    background: #ffffff;
+    border: 1px solid #ffffff;
+    cursor: pointer;
+    margin-top: -4px;
+}
+input[type="range"]::-moz-range-track {
+    height: 4px;
+    background: #222222;
+}
+input[type="range"]::-moz-range-thumb {
+    width: 8px;
+    height: 12px;
+    background: #ffffff;
+    border: 1px solid #ffffff;
+    cursor: pointer;
+}
+input[type="range"]:focus {
+    border-color: #ffffff;
 }
 input:focus {
     border-color: #ffffff;
