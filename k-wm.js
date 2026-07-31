@@ -174,6 +174,12 @@ function openTile(title, contentEl, opts = {}) {
         <div class="tile-header">
             <span class="tile-title">${title}</span>
             <div class="tile-controls">
+                <button class="tile-control-btn mute" title="mute">
+                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <polygon points="1,3 4,3 7,0.5 7,10.5 4,8 1,8" fill="currentColor"/>
+                        <path d="M8.5,3.5 Q10.5,5.5 8.5,7.5" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+                    </svg>
+                </button>
                 <button class="tile-control-btn minimize" title="minimize">_</button>
                 <button class="tile-control-btn float" title="toggle float">⊡</button>
                 <button class="tile-control-btn close" title="close">✕</button>
@@ -218,6 +224,30 @@ function openTile(title, contentEl, opts = {}) {
     floatBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         toggleFloat(id);
+    });
+    const muteBtn = el.querySelector('.tile-control-btn.mute');
+    let tileMuted = false;
+    muteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        tileMuted = !tileMuted;
+        const contentArea = el.querySelector('.tile-content');
+        const iframes = contentArea.querySelectorAll('iframe');
+        iframes.forEach(iframe => {
+            iframe.muted = tileMuted;
+            try {
+                const doc = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
+                if (doc) {
+                    doc.querySelectorAll('audio, video').forEach(m => { m.muted = tileMuted; });
+                }
+            } catch (_) {}
+        });
+        const audioEls = el.querySelectorAll('audio, video');
+        audioEls.forEach(m => { m.muted = tileMuted; });
+        muteBtn.title = tileMuted ? 'unmute' : 'mute';
+        muteBtn.style.color = tileMuted ? '#ff4444' : '';
+        muteBtn.innerHTML = tileMuted
+            ? `<svg width="11" height="11" viewBox="0 0 11 11" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="1,3 4,3 7,0.5 7,10.5 4,8 1,8" fill="currentColor"/><line x1="8" y1="3" x2="11" y2="6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="11" y1="3" x2="8" y2="6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`
+            : `<svg width="11" height="11" viewBox="0 0 11 11" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="1,3 4,3 7,0.5 7,10.5 4,8 1,8" fill="currentColor"/><path d="M8.5,3.5 Q10.5,5.5 8.5,7.5" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>`;
     });
     const header = el.querySelector('.tile-header');
     header.addEventListener('mousedown', () => {
