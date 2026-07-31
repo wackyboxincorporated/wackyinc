@@ -18,7 +18,8 @@
       { "name": "tabletop", "type": "folder", "url": "https://wackybox.org/tabletop" },
       { "name": "tdb", "type": "folder", "url": "https://wackybox.org/tdb" },
       { "name": "w3d", "type": "folder", "url": "https://wackybox.org/w3d" },
-      { "name": "TTAB", "type": "folder", "url": "https://www.talktoabutt.site" }
+      { "name": "TTAB", "type": "folder", "url": "https://www.talktoabutt.site" },
+      { "name": "curl", "type": "folder", "class": "game", "category": "games", "url": "https://wackybox.org/curl" }
     ]
   },
   {
@@ -36,7 +37,6 @@
       { "name": "CHRIS", "type": "folder", "url": "https://wackybox.org/CHRIS" },
       { "name": "COLDSOREPRESENTATION", "type": "folder", "url": "https://wackybox.org/COLDSOREPRESENTATION" },
       { "name": "computer", "type": "folder", "url": "https://wackybox.org/computer" },
-      { "name": "curl", "type": "folder", "url": "https://wackybox.org/curl" },
       { "name": "D", "type": "folder", "url": "https://wackybox.org/D" },
       { "name": "draw", "type": "folder", "url": "https://wackybox.org/draw" },
       { "name": "E", "type": "folder", "url": "https://wackybox.org/E" },

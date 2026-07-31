@@ -35,7 +35,7 @@ function categorizeAllItems() {
       const isAudio = cls === 'audio' || type === 'audio' || name.endsWith('.mp3') || name.endsWith('.wav') || name.endsWith('.ogg') || name.endsWith('.m4a') || name.endsWith('.flac') || name.endsWith('.aac');
       const isVideo = cls === 'video' || type === 'video' || name.endsWith('.mp4') || name.endsWith('.webm') || name.endsWith('.ogv') || name.endsWith('.mkv') || name.endsWith('.avi');
       const isDoc = cls === 'document' || cls === 'code' || cls === 'image' || cls === 'zip' || type === 'document' || type === 'code' || type === 'image' || name.endsWith('.txt') || name.endsWith('.md') || name.endsWith('.json') || name.endsWith('.js') || name.endsWith('.html') || name.endsWith('.css') || name.endsWith('.pmp') || name.endsWith('.png') || name.endsWith('.jpg') || name.endsWith('.hdr') || name.endsWith('.zip');
-      const isGame = parent.includes('game') || cat === 'game' || type === 'game' || name.includes('game');
+      const isGame = parent.includes('game') || cat === 'game' || cat === 'games' || type === 'game' || cls === 'game' || name === 'curl' || name.includes('game');
       const isApp = parent.includes('website') || parent.includes('project') || cat === 'website' || cat === 'app' || type === 'app';
       if (isAudio) {
         categories.audio.push(item);
