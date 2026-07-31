@@ -318,9 +318,8 @@ function focusTile(id) {
         }
     } else {
         openTiles.forEach(t => {
-            if (t.id == activeTileId) {
+            if (!t.minimized) {
                 t.visible = true;
-                t.minimized = false;
             }
         });
     }
@@ -405,9 +404,10 @@ function retile() {
         tiledTiles[0].element.style.gridRow = '1 / 3';
     } else if (tiledTiles.length === 4) {
         container.style.gridTemplateColumns = '1fr 1fr';
+        container.style.gridTemplateRows = '1fr 1fr';
     } else {
         container.style.gridTemplateColumns = 'repeat(auto-fit, minmax(300px, 1fr))';
-        container.style.gridTemplateRows = 'auto';
+        container.style.gridTemplateRows = '1fr';
     }
     renderSplitHandle(container, tiledTiles);
     if (typeof checkWanderingBtnState === 'function') checkWanderingBtnState();
