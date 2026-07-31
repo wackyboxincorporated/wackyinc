@@ -508,36 +508,26 @@ function launchApp(name, ...args) {
     case 'about': {
       const aboutEl = document.createElement('div');
       aboutEl.className = 'about-app';
-      aboutEl.style.padding = '24px 28px';
-      aboutEl.style.maxWidth = '600px';
-      aboutEl.style.margin = '0 auto';
-      aboutEl.style.height = '100%';
-      aboutEl.style.overflowY = 'auto';
-      aboutEl.style.boxSizing = 'border-box';
-      aboutEl.style.fontSize = '14px';
-      aboutEl.style.lineHeight = '1.8';
-      aboutEl.style.color = '#eeeeee';
-      aboutEl.style.textTransform = 'lowercase';
       aboutEl.innerHTML = `
-        <div style="font-size: 18px; font-weight: bold; margin-bottom: 20px; border-bottom: 1px solid #444444; padding-bottom: 10px; color: #ffffff; letter-spacing: 1px;">
+        <div class="about-header">
           about wbos!k
         </div>
-        <div style="background: #0a0a0a; border: 1px solid #222222; padding: 16px; margin-bottom: 16px; border-left: 3px solid #666666;">
+        <div class="about-card card-1">
           wbOS was a project originally in the form of a LOT scratch-to-js things. but it kept growing. i'd add more little games, tools, and things to muck around with. and I had no way to help people navigate them all. it was just "remember the link or you don't get the thing!". so I wrote a little scratch interface with a bunch of hardcoded buttons to the current list of things, and that was that, for a while.
         </div>
-        <div style="background: #0a0a0a; border: 1px solid #222222; padding: 16px; margin-bottom: 16px; border-left: 3px solid #888888;">
+        <div class="about-card card-2">
           fast forward months later, after much horrible webdev Bullshit, wbOS! 1 appeared. revolutionary. a useless start menu. a useless taskbar. little to no QoL. just a bunch of files and folders slapped on a background gradient. and then I added visual features, and theming, and a better start menu, and cool visual effects, and total customisation, and better organisation, etc., etc.
         </div>
-        <div style="background: #0a0a0a; border: 1px solid #222222; padding: 16px; margin-bottom: 16px; border-left: 3px solid #aaaaaa;">
+        <div class="about-card card-3">
           but again. it kept growing, and eventually I realised just how much of a pain in the ass it had become to make simple changes to the code/design. and also noticed that it didn't look very good. I pushed wbOS!'s final major update yesterday, adding much better visual control.
         </div>
-        <div style="background: #0d0d0d; border: 1px solid #333333; padding: 16px; margin-bottom: 20px; border-left: 3px solid #ffffff;">
+        <div class="about-card card-4">
           and now you're here. this is wbOS!k, the lighter and easier-to-navigate version of wbOS!. I will never take wbOS! or this down, and I won't say wbOS! is deprecated. It's just not at the top of my list.
         </div>
-        <div style="font-size: 15px; font-weight: bold; color: #ffffff; background: #111111; border: 1px solid #444444; padding: 16px; text-align: center; margin-bottom: 16px;">
+        <div class="about-thanks-card">
           thanks for using my stupid joke software, and i do hope you enjoy!
         </div>
-        <div style="font-size: 12px; color: #888888; text-align: right; padding-top: 4px; font-style: italic;">
+        <div class="about-footer-note">
           p.s.: this is actually version 3 of OS!k
         </div>
       `;
