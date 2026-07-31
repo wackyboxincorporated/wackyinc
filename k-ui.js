@@ -373,9 +373,9 @@ function renderTopBar() {
         <div class="top-bar-media-popup ${isOpen ? 'visible' : ''}" id="top-bar-media-popup">
           <div class="top-bar-media-track-title" id="media-popup-track-title" title="open media player">♫ ${trackName}</div>
           <div class="top-bar-media-controls">
-            <button class="top-bar-btn prev-btn" title="previous">⏮</button>
-            <button class="top-bar-btn play-btn" title="play/pause">${isPlaying ? '⏸' : '▶'}</button>
-            <button class="top-bar-btn next-btn" title="next">⏭</button>
+            <button class="top-bar-btn prev-btn" title="previous">${typeof getControlSVG === 'function' ? getControlSVG('prev') : '⏮'}</button>
+            <button class="top-bar-btn play-btn" title="play/pause">${isPlaying ? (typeof getControlSVG === 'function' ? getControlSVG('pause') : '⏸') : (typeof getControlSVG === 'function' ? getControlSVG('play') : '▶')}</button>
+            <button class="top-bar-btn next-btn" title="next">${typeof getControlSVG === 'function' ? getControlSVG('next') : '⏭'}</button>
           </div>
         </div>
       </div>
