@@ -132,7 +132,63 @@ let worldTime = 0;
 let breakingMesh, breakingState = { active: false, time: 0 };
 let selectMesh;
 const keys = { w:false, a:false, s:false, d:false, space:false, shift:false, crouch:false, leftClick:false, rightClick:false };
+window.keys = keys;
+window.mobileMove = { x: 0, z: 0 };
 let isInvOpen = false;
+
+window.toggleInventoryUI = function() {
+    isInvOpen = !isInvOpen;
+    const invEl = document.getElementById('inventory-screen');
+    if (invEl) invEl.style.display = isInvOpen ? 'flex' : 'none';
+    if (isInvOpen) {
+        if (document.pointerLockElement) document.exitPointerLock();
+    } else {
+        const isTouch = ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+        if (!isTouch && document.body.requestPointerLock) document.body.requestPointerLock();
+    }
+};
+
+window.handleTouchLookDelta = function(dx, dy) {
+    if (isInvOpen || !camera) return;
+    camera.rotation.order = 'YXZ';
+    camera.rotation.y -= dx * 0.0035;
+    camera.rotation.x -= dy * 0.0035;
+    camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
+};
+
+window.triggerMobilePlaceOrEat = function() {
+    if (isInvOpen) return;
+    player.eat(); 
+    const ray = new THREE.Raycaster(); ray.setFromCamera(new THREE.Vector2(0,0), camera); ray.far = 6;
+    const meshes = Object.values(chunks).map(c=>c.mesh).filter(m=>m);
+    const hits = ray.intersectObjects(meshes);
+    if(hits.length > 0) {
+        const hit = hits[0];
+        const bx = Math.floor(hit.point.x - hit.face.normal.x * 0.1);
+        const by = Math.floor(hit.point.y - hit.face.normal.y * 0.1);
+        const bz = Math.floor(hit.point.z - hit.face.normal.z * 0.1);
+        const clickedId = getBlockGlobal(bx,by,bz);
+
+        if(clickedId === ITEMS.TNT) {
+            explode(bx, by, bz, 4);
+            return;
+        }
+
+        const p2 = hit.point.clone().add(hit.face.normal.clone().multiplyScalar(0.1));
+        const ax = Math.floor(p2.x), ay = Math.floor(p2.y), az = Math.floor(p2.z);
+        const pMin = new THREE.Vector3(player.pos.x-0.3, player.pos.y, player.pos.z-0.3);
+        const pMax = new THREE.Vector3(player.pos.x+0.3, player.pos.y+1.8, player.pos.z+0.3);
+        if(!(pMax.x < ax || pMin.x > ax+1 || pMax.y < ay || pMin.y > ay+1 || pMax.z < az || pMin.z > az+1)) return;
+
+        const slot = player.hotbar[player.selectedSlot];
+        if(slot.id && slot.count > 0 && BLOCK_PROPS[slot.id]) {
+            setBlockGlobal(ax, ay, az, slot.id);
+            if(slot.id !== 11) slot.count--; 
+            updateInventoryUI();
+        }
+    }
+};
+
 let dirLight, hemiLight;
 const particles = [];
 
@@ -252,8 +308,8 @@ function startGame() {
     scene.add(hemiLight);
     dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
     dirLight.castShadow = graphicsSettings.shadows; 
-    dirLight.shadow.mapSize.width = 4096;
-    dirLight.shadow.mapSize.height = 4096;
+    dirLight.shadow.mapSize.width = 2048;
+    dirLight.shadow.mapSize.height = 2048;
     dirLight.shadow.camera.left = -60; dirLight.shadow.camera.right = 60; 
     dirLight.shadow.camera.top = 60; dirLight.shadow.camera.bottom = -60;
     scene.add(dirLight);
@@ -299,9 +355,7 @@ function startGame() {
 
 function onKeyDown(e) {
     if(e.code === 'KeyE') {
-        isInvOpen = !isInvOpen;
-        document.getElementById('inventory-screen').style.display = isInvOpen ? 'flex' : 'none';
-        if(isInvOpen) document.exitPointerLock(); else document.body.requestPointerLock();
+        window.toggleInventoryUI();
         return;
     }
 
@@ -512,6 +566,10 @@ function animate() {
         const right = new THREE.Vector3().crossVectors(fwd, new THREE.Vector3(0,1,0)).normalize();
         const input = new THREE.Vector3();
         if(keys.w) input.add(fwd); if(keys.s) input.sub(fwd); if(keys.d) input.add(right); if(keys.a) input.sub(right);
+        if(window.mobileMove && (window.mobileMove.x !== 0 || window.mobileMove.z !== 0)) {
+            input.addScaledVector(right, window.mobileMove.x);
+            input.addScaledVector(fwd, -window.mobileMove.z);
+        }
         const isMoving = input.length() > 0;
         if(isMoving) { input.normalize().multiplyScalar(speed); if(player.isSprinting) player.hunger -= dt * 0.5; }
         
@@ -555,12 +613,18 @@ function animate() {
         updateHud(); updateBlockPhysics(); 
         
         mobs.forEach(mob => {
+            const dist = mob.pos.distanceTo(player.pos);
+            if (dist > 65) {
+                if (mob.mesh) mob.mesh.visible = false;
+                return;
+            }
             mob.update(dt, player.pos, camera);
             if (!mob.mesh) {
                 const geo = new THREE.BoxGeometry(mob.scale.x, mob.scale.y, mob.scale.z);
                 const mat = new THREE.MeshLambertMaterial({ color: mob.color });
                 mob.mesh = new THREE.Mesh(geo, mat); scene.add(mob.mesh);
             }
+            mob.mesh.visible = true;
             mob.mesh.position.copy(mob.pos);
             if(mob.type === 'wisp') mob.mesh.position.y += Math.sin(worldTime * 5) * 0.2;
         });

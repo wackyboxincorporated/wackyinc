@@ -62,6 +62,16 @@ const Network = {
                     const data = change.doc.data();
                     const [cx, cz] = change.doc.id.split(',').map(Number);
                     
+                    // Filter: Only process chunks within view distance to avoid wasteful mesh operations
+                    if (typeof playerRef !== 'undefined' && playerRef.pos) {
+                        const pcx = Math.floor(playerRef.pos.x / CHUNK_SIZE);
+                        const pcz = Math.floor(playerRef.pos.z / CHUNK_SIZE);
+                        const rd = (typeof RENDER_DISTANCE !== 'undefined') ? RENDER_DISTANCE : 5;
+                        if (Math.abs(cx - pcx) > rd + 1 || Math.abs(cz - pcz) > rd + 1) {
+                            return;
+                        }
+                    }
+
                     // Iterate through all modifications in this chunk
                     if (data.mods) {
                         for (const key in data.mods) {
@@ -132,16 +142,37 @@ const Network = {
         if(typeof startGame === "function") startGame();
     },
 
-    // Send My Position (Throttled to save writes)
+    // Send My Position (Throttled & delta-compressed to save Firestore writes & network bandwidth)
     updatePosition: function(pos, rotY) {
         const now = Date.now();
-        if (now - this.lastPosUpdate > 25) { 
-            db.collection('players').doc(this.id).update({
-                x: pos.x, y: pos.y, z: pos.z, ry: rotY,
-                lastSeen: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            this.lastPosUpdate = now;
+        if (now - this.lastPosUpdate < 120) return; // Throttle to max ~8 updates per sec
+        
+        if (!this.lastSentPos) {
+            this.lastSentPos = new THREE.Vector3();
+            this.lastSentRotY = 0;
         }
+
+        const distSq = this.lastSentPos.distanceToSquared(pos);
+        const rotDiff = Math.abs(rotY - this.lastSentRotY);
+
+        // Delta check: Skip send if movement < 0.05 units and rotation < 0.02 rad, unless 2.5s heartbeat passed
+        if (distSq < 0.0025 && rotDiff < 0.02 && (now - this.lastPosUpdate < 2500)) {
+            return;
+        }
+
+        const rx = Math.round(pos.x * 100) / 100;
+        const ry = Math.round(pos.y * 100) / 100;
+        const rz = Math.round(pos.z * 100) / 100;
+        const rRot = Math.round(rotY * 100) / 100;
+
+        db.collection('players').doc(this.id).update({
+            x: rx, y: ry, z: rz, ry: rRot,
+            lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        this.lastPosUpdate = now;
+        this.lastSentPos.copy(pos);
+        this.lastSentRotY = rotY;
     },
 
     // Send Block Change

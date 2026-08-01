@@ -86,8 +86,10 @@ class Mob {
     }
 
     update(dt, playerPos, playerCamera) {
-        this.timer += dt;
         const dist = this.pos.distanceTo(playerPos);
+        if (dist > 60) return; // Distance culling: skip updating mobs far away
+
+        this.timer += dt;
         const dir = new THREE.Vector3().subVectors(playerPos, this.pos).normalize();
 
         if (this.type === 'gloom') {

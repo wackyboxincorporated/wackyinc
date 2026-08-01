@@ -2,32 +2,38 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>mine craft game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>minecraft game</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', monospace; user-select: none; }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', monospace;
+            user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+            touch-action: none;
+        }
         
         /* HUD */
         #crosshair {
-            position: absolute; top: 50%; left: 50%; width: 20px; height: 20px;
-            background: transparent; border: 2px solid rgba(255, 255, 255, 0.8);
+            position: absolute; top: 50%; left: 50%; width: 16px; height: 16px;
+            background: transparent; border: 2px solid rgba(255, 255, 255, 0.85);
             transform: translate(-50%, -50%); pointer-events: none; mix-blend-mode: difference;
             border-radius: 50%; z-index: 10;
         }
         #hotbar {
-            position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 4px; background: rgba(0, 0, 0, 0.6); padding: 4px; border-radius: 4px;
-            border: 2px solid #333;
+            position: absolute; bottom: calc(10px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%);
+            display: flex; gap: 4px; background: rgba(0, 0, 0, 0.65); padding: 4px; border-radius: 6px;
+            border: 2px solid #333; max-width: 96vw; overflow-x: auto; z-index: 12;
+            backdrop-filter: blur(4px);
         }
         .slot {
-            width: 50px; height: 50px; border: 2px solid #555; background: #222;
-            position: relative; image-rendering: pixelated; cursor: pointer;
+            width: clamp(36px, 8.5vw, 48px); height: clamp(36px, 8.5vw, 48px); border: 2px solid #555; background: #222;
+            position: relative; image-rendering: pixelated; cursor: pointer; flex-shrink: 0; border-radius: 4px;
         }
-        .slot.active { border-color: white; background: #444; transform: scale(1.1); }
-        .slot.moving { border-color: yellow; background: #552200; }
-        .slot img { width: 100%; height: 100%; display: block; }
+        .slot.active { border-color: #ffffff; background: #444; transform: scale(1.06); }
+        .slot.moving { border-color: #ffff00; background: #552200; }
+        .slot img { width: 100%; height: 100%; display: block; object-fit: contain; }
         .slot .count {
-            position: absolute; bottom: 2px; right: 2px; color: white; font-size: 14px;
+            position: absolute; bottom: 2px; right: 2px; color: white; font-size: clamp(10px, 2.5vw, 13px);
             text-shadow: 1px 1px 0 #000; font-weight: bold;
         }
         .durability {
@@ -36,10 +42,11 @@
 
         /* STATUS BARS */
         #status-area {
-            position: absolute; bottom: 70px; left: 50%; transform: translateX(-50%);
-            width: 400px; display: flex; flex-direction: column; gap: 4px; pointer-events: none;
+            position: absolute; bottom: calc(clamp(52px, 12vh, 70px) + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%);
+            width: clamp(200px, 75vw, 380px); display: flex; flex-direction: column; gap: 3px; pointer-events: none;
+            z-index: 11;
         }
-        .bar-container { width: 100%; height: 10px; background: #333; border: 1px solid #000; position: relative; }
+        .bar-container { width: 100%; height: 8px; background: #333; border: 1px solid #000; position: relative; border-radius: 2px; overflow: hidden; }
         .bar-fill { height: 100%; width: 100%; transition: width 0.2s; }
         #health-bar { background: #ff3333; }
         #hunger-bar { background: #cc8800; }
@@ -48,12 +55,13 @@
         /* INVENTORY */
         #inventory-screen {
             display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); align-items: center; justify-content: center; z-index: 20;
-            flex-direction: column; color: white;
+            background: rgba(0,0,0,0.85); align-items: center; justify-content: center; z-index: 30;
+            flex-direction: column; color: white; padding: 10px; box-sizing: border-box; overflow-y: auto;
+            backdrop-filter: blur(6px);
         }
-        .inv-container { display: flex; gap: 20px; }
-        .inv-section { background: #333; padding: 20px; border-radius: 8px; border: 2px solid #555; }
-        .grid-4x9 { display: grid; grid-template-columns: repeat(9, 50px); gap: 4px; }
+        .inv-container { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; max-width: 1000px; width: 100%; }
+        .inv-section { background: #333; padding: 15px; border-radius: 8px; border: 2px solid #555; max-width: 100%; box-sizing: border-box; }
+        .grid-4x9 { display: grid; grid-template-columns: repeat(9, clamp(30px, 7vw, 44px)); gap: 3px; }
         
         .craft-btn {
             display: flex; align-items: center; gap: 10px; margin-bottom: 5px; 
@@ -64,32 +72,161 @@
         .craft-btn img { width: 32px; height: 32px; image-rendering: pixelated; }
 
         #debug {
-            position: absolute; top: 10px; left: 10px; color: white; text-shadow: 1px 1px 0 #000; pointer-events: none; font-size: 12px;
+            position: absolute; top: 10px; left: 10px; color: white; text-shadow: 1px 1px 0 #000; pointer-events: none; font-size: 11px;
+            background: rgba(0,0,0,0.45); padding: 4px 8px; border-radius: 4px; z-index: 12; backdrop-filter: blur(2px);
         }
         #vignette {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;
             background: radial-gradient(circle, transparent 50%, rgba(255,0,0,0) 100%);
-            transition: background 0.2s;
+            transition: background 0.2s; z-index: 8;
         }
 
         /* SETTINGS */
-        .settings-row { margin-bottom: 15px; }
-        .settings-row label { display: inline-block; width: 150px; }
-        .settings-row span { font-size: 0.8em; color: #aaa; margin-left: 10px; }
-        input[type="range"] { width: 150px; }
+        .settings-row { margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+        .settings-row label { display: inline-block; width: 130px; font-size: 0.9em; }
+        .settings-row span { font-size: 0.8em; color: #aaa; margin-left: 6px; }
+        input[type="range"] { width: 110px; }
 
         /* LOGIN SCREEN */
         #login-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #222; display: flex; flex-direction: column;
+            background: #1e1e1e; display: flex; flex-direction: column;
             align-items: center; justify-content: center; z-index: 100; color: white;
         }
         #login-box {
-            background: #333; padding: 30px; border: 2px solid #555; border-radius: 8px; text-align: center;
+            background: #2d2d2d; padding: 30px; border: 2px solid #555; border-radius: 12px; text-align: center;
+            max-width: 90vw; width: 320px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
         }
-        input { padding: 10px; font-family: inherit; margin-bottom: 10px; width: 200px; }
-        button { padding: 10px 20px; font-family: inherit; cursor: pointer; background: #4CAF50; color: white; border: none; }
+        input { padding: 10px; font-family: inherit; margin-bottom: 15px; width: 100%; box-sizing: border-box; border-radius: 6px; border: 1px solid #555; background: #111; color: white; }
+        button { padding: 12px 20px; font-family: inherit; cursor: pointer; background: #4CAF50; color: white; border: none; border-radius: 6px; font-weight: bold; width: 100%; }
         button:hover { background: #45a049; }
+
+        /* MOBILE TOUCH CONTROLS */
+        .mobile-ui { display: none; }
+        .mobile-active .mobile-ui { display: block; }
+
+        #joystick-zone {
+            position: absolute; bottom: calc(14px + env(safe-area-inset-bottom)); left: calc(14px + env(safe-area-inset-left));
+            width: 130px; height: 130px; border-radius: 50%; background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.45); touch-action: none; z-index: 20;
+        }
+        #joystick-knob {
+            position: absolute; top: 50%; left: 50%; width: 46px; height: 46px; border-radius: 50%;
+            background: rgba(255, 255, 255, 0.7); transform: translate(-50%, -50%); pointer-events: none;
+            box-shadow: 0 0 6px rgba(0,0,0,0.5);
+        }
+
+        #touch-look-zone {
+            position: absolute; top: 0; right: 0; width: 60vw; height: 75vh;
+            touch-action: none; z-index: 5;
+        }
+
+        .touch-btn {
+            position: absolute; border-radius: 50%; background: rgba(0, 0, 0, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.75); color: white; font-weight: bold;
+            display: flex; align-items: center; justify-content: center; z-index: 20;
+            user-select: none; -webkit-user-select: none; touch-action: none;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.4); font-family: sans-serif;
+            transition: background 0.1s, transform 0.1s;
+        }
+        .touch-btn:active, .touch-btn.active {
+            background: rgba(255, 255, 255, 0.7); color: #000; transform: scale(0.92);
+        }
+
+        /* Large Generous Non-Overlapping Control Grid */
+        #btn-jump { bottom: calc(14px + env(safe-area-inset-bottom)); right: calc(14px + env(safe-area-inset-right)); width: 64px; height: 64px; font-size: 24px; }
+        #btn-mine { bottom: calc(86px + env(safe-area-inset-bottom)); right: calc(14px + env(safe-area-inset-right)); width: 58px; height: 58px; font-size: 22px; }
+        #btn-place { bottom: calc(86px + env(safe-area-inset-bottom)); right: calc(80px + env(safe-area-inset-right)); width: 58px; height: 58px; font-size: 22px; }
+        #btn-crouch { bottom: calc(14px + env(safe-area-inset-bottom)); right: calc(86px + env(safe-area-inset-right)); width: 54px; height: 54px; font-size: 19px; }
+        #btn-sprint { bottom: calc(14px + env(safe-area-inset-bottom)); right: calc(148px + env(safe-area-inset-right)); width: 54px; height: 54px; font-size: 19px; }
+        
+        #btn-inventory-touch {
+            position: absolute; top: 12px; right: 12px; width: 44px; height: 44px;
+            border-radius: 8px; background: rgba(0,0,0,0.55); border: 2px solid rgba(255,255,255,0.7);
+            color: white; font-size: 20px; display: flex; align-items: center; justify-content: center;
+            z-index: 40; cursor: pointer; user-select: none;
+        }
+        #btn-toggle-touch {
+            position: absolute; top: 12px; right: 62px; width: 44px; height: 44px; padding: 0;
+            border-radius: 8px; background: rgba(0,0,0,0.55); border: 2px solid rgba(255,255,255,0.6);
+            color: white; font-size: 18px; display: flex; align-items: center; justify-content: center;
+            z-index: 40; cursor: pointer; font-family: inherit; user-select: none;
+        }
+
+        /* MOBILE RESPONSIVE OVERRIDES */
+        @media (max-width: 768px) {
+            #debug { font-size: 10px; padding: 2px 6px; top: 6px; left: 6px; }
+            #btn-toggle-touch { top: 8px; right: 54px; width: 40px; height: 40px; font-size: 16px; }
+            #btn-inventory-touch { top: 8px; right: 8px; width: 40px; height: 40px; font-size: 18px; }
+
+            #hotbar {
+                bottom: calc(4px + env(safe-area-inset-bottom));
+                gap: 2px; padding: 2px;
+                max-width: 98vw;
+            }
+            .slot {
+                width: clamp(26px, 9.2vw, 38px);
+                height: clamp(26px, 9.2vw, 38px);
+                border-width: 1px;
+            }
+            .slot .count {
+                font-size: 10px;
+                bottom: 1px; right: 1px;
+            }
+            #status-area {
+                bottom: calc(clamp(36px, 8vh, 48px) + env(safe-area-inset-bottom));
+                width: min(90vw, 240px);
+                gap: 2px;
+            }
+            .bar-container { height: 5px; }
+
+            #inventory-screen {
+                padding: 6px;
+                justify-content: flex-start;
+            }
+            .inv-container {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+                width: 100%;
+            }
+            .inv-section {
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 10px !important;
+                box-sizing: border-box;
+            }
+            .grid-4x9 {
+                grid-template-columns: repeat(9, minmax(0, 1fr)) !important;
+                gap: 2px !important;
+            }
+            .grid-4x9 .slot {
+                width: 100% !important;
+                height: auto !important;
+                aspect-ratio: 1;
+            }
+            
+            /* Large Finger-Friendly Mobile Touch Controls */
+            #joystick-zone {
+                width: clamp(100px, 28vw, 118px);
+                height: clamp(100px, 28vw, 118px);
+                bottom: calc(8px + env(safe-area-inset-bottom));
+                left: calc(8px + env(safe-area-inset-left));
+            }
+            #joystick-knob { width: 38px; height: 38px; }
+
+            #btn-jump { bottom: calc(10px + env(safe-area-inset-bottom)); right: calc(8px + env(safe-area-inset-right)); width: 56px; height: 56px; font-size: 22px; }
+            #btn-mine { bottom: calc(74px + env(safe-area-inset-bottom)); right: calc(8px + env(safe-area-inset-right)); width: 52px; height: 52px; font-size: 20px; }
+            #btn-place { bottom: calc(74px + env(safe-area-inset-bottom)); right: calc(70px + env(safe-area-inset-right)); width: 52px; height: 52px; font-size: 20px; }
+            #btn-crouch { bottom: calc(10px + env(safe-area-inset-bottom)); right: calc(74px + env(safe-area-inset-right)); width: 48px; height: 48px; font-size: 17px; }
+            #btn-sprint { bottom: calc(10px + env(safe-area-inset-bottom)); right: calc(128px + env(safe-area-inset-right)); width: 48px; height: 48px; font-size: 17px; }
+        }
+
+        @media (max-height: 500px) and (orientation: landscape) {
+            #status-area { bottom: 36px; width: 200px; }
+            .inv-container { flex-direction: row; flex-wrap: wrap; }
+            .inv-section { width: 48% !important; }
+        }
     </style>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -98,12 +235,12 @@
     <script>
         // --- PASTE YOUR FIREBASE CONFIG HERE ---
         const firebaseConfig = {
-             apiKey: "AIzaSyBXwE30tOkR3af5PxQFnxNsXW-242MWEfk",
-    authDomain: "minecrap-16d0f.firebaseapp.com",
-    projectId: "minecrap-16d0f",
-    storageBucket: "minecrap-16d0f.firebasestorage.app",
-    messagingSenderId: "1018277099100",
-    appId: "1:1018277099100:web:656e44b116fdbad81ed899"
+            apiKey: "AIzaSyBXwE30tOkR3af5PxQFnxNsXW-242MWEfk",
+            authDomain: "minecrap-16d0f.firebaseapp.com",
+            projectId: "minecrap-16d0f",
+            storageBucket: "minecrap-16d0f.firebasestorage.app",
+            messagingSenderId: "1018277099100",
+            appId: "1:1018277099100:web:656e44b116fdbad81ed899"
         };
         // ---------------------------------------
         
@@ -117,7 +254,7 @@
 
     <div id="login-screen">
         <div id="login-box">
-            <h1>minecraft game</h1>
+            <h1 style="margin-top:0;">minecraft game</h1>
             <p id="login-status">enter name</p>
             <input type="text" id="username-input" placeholder="Username">
             <br>
@@ -128,6 +265,23 @@
     <div id="vignette"></div>
     <div id="crosshair"></div>
     <div id="debug">loading,</div>
+
+    <button id="btn-toggle-touch" onclick="toggleMobileControls()" title="Toggle Mobile Controls">📱</button>
+    <button id="btn-inventory-touch" onclick="if(window.toggleInventoryUI) window.toggleInventoryUI();">🎒</button>
+    
+    <!-- Mobile Controls Overlay -->
+    <div class="mobile-ui">
+        <div id="joystick-zone">
+            <div id="joystick-knob"></div>
+        </div>
+        <div id="touch-look-zone"></div>
+
+        <div id="btn-jump" class="touch-btn">▲</div>
+        <div id="btn-mine" class="touch-btn">⛏️</div>
+        <div id="btn-place" class="touch-btn">➕</div>
+        <div id="btn-crouch" class="touch-btn">🧘</div>
+        <div id="btn-sprint" class="touch-btn">🏃</div>
+    </div>
     
     <div id="status-area">
         <div class="bar-container"><div id="health-bar" class="bar-fill"></div></div>
@@ -138,18 +292,21 @@
     <div id="hotbar"></div>
 
     <div id="inventory-screen">
-        <h2>inventoyr (e: Close | click item , then hit number ekey to move it to hotbar)</h2>
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; max-width: 1000px; padding: 0 10px 10px 10px; box-sizing: border-box;">
+            <h2 style="margin: 0; font-size: clamp(16px, 4vw, 24px);">Inventory & Settings</h2>
+            <button onclick="if(window.toggleInventoryUI) window.toggleInventoryUI();" style="width: auto; padding: 10px 20px; background: #e53935; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.4);">✖ Close</button>
+        </div>
         <div class="inv-container">
             <div class="inv-section">
-                <h3>Backpack</h3>
+                <h3 style="margin-top:0;">Backpack</h3>
                 <div class="grid-4x9" id="inv-grid"></div>
             </div>
-            <div class="inv-section" style="width: 300px; height: 400px; overflow-y: auto;">
-                <h3>Crafting</h3>
+            <div class="inv-section" style="max-height: 350px; overflow-y: auto;">
+                <h3 style="margin-top:0;">Crafting</h3>
                 <div id="crafting-list"></div>
             </div>
-            <div class="inv-section" style="width: 300px;">
-                <h3>Graphics Settings</h3>
+            <div class="inv-section">
+                <h3 style="margin-top:0;">Graphics Settings</h3>
                 <div class="settings-row">
                     <label>Render Distance</label>
                     <input type="range" min="1" max="12" step="0.25" value="5" oninput="updateSetting('distance', this.value); this.nextElementSibling.innerText=this.value">
@@ -169,6 +326,10 @@
                     <label>Shadows</label>
                     <input type="checkbox" checked onchange="updateSetting('shadows', this.checked)">
                 </div>
+                <div class="settings-row">
+                    <label>Touch Controls</label>
+                    <input type="checkbox" id="touch-checkbox" onchange="toggleMobileControls(this.checked)">
+                </div>
             </div>
         </div>
     </div>
@@ -183,6 +344,172 @@
                 window.applyGraphicsSettings({ [key]: val });
             }
         }
+
+        // --- MOBILE CONTROLS CONTROLLER ---
+        let isTouchControlsActive = false;
+
+        function toggleMobileControls(forceState) {
+            isTouchControlsActive = typeof forceState === 'boolean' ? forceState : !isTouchControlsActive;
+            if (isTouchControlsActive) {
+                document.body.classList.add('mobile-active');
+            } else {
+                document.body.classList.remove('mobile-active');
+            }
+            const btn = document.getElementById('btn-toggle-touch');
+            if (btn) btn.innerText = isTouchControlsActive ? '📱' : '💻';
+            const chk = document.getElementById('touch-checkbox');
+            if (chk) chk.checked = isTouchControlsActive;
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 768);
+            if (hasTouch) {
+                toggleMobileControls(true);
+            }
+
+            // Virtual Joystick
+            const joyZone = document.getElementById('joystick-zone');
+            const joyKnob = document.getElementById('joystick-knob');
+            let joyTouchId = null;
+            let joyCenter = { x: 0, y: 0 };
+            const joyRadius = 45;
+
+            if (joyZone) {
+                joyZone.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    if (joyTouchId !== null) return;
+                    const touch = e.changedTouches[0];
+                    joyTouchId = touch.identifier;
+                    const rect = joyZone.getBoundingClientRect();
+                    joyCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+                    updateJoystick(touch.clientX, touch.clientY);
+                }, { passive: false });
+
+                window.addEventListener('touchmove', (e) => {
+                    if (joyTouchId === null) return;
+                    for (let i = 0; i < e.changedTouches.length; i++) {
+                        const touch = e.changedTouches[i];
+                        if (touch.identifier === joyTouchId) {
+                            updateJoystick(touch.clientX, touch.clientY);
+                            break;
+                        }
+                    }
+                }, { passive: false });
+
+                const endJoystick = (e) => {
+                    if (joyTouchId === null) return;
+                    for (let i = 0; i < e.changedTouches.length; i++) {
+                        if (e.changedTouches[i].identifier === joyTouchId) {
+                            joyTouchId = null;
+                            joyKnob.style.transform = `translate(-50%, -50%)`;
+                            if (window.mobileMove) { window.mobileMove.x = 0; window.mobileMove.z = 0; }
+                            break;
+                        }
+                    }
+                };
+
+                window.addEventListener('touchend', endJoystick);
+                window.addEventListener('touchcancel', endJoystick);
+
+                function updateJoystick(clientX, clientY) {
+                    let dx = clientX - joyCenter.x;
+                    let dy = clientY - joyCenter.y;
+                    let dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist > joyRadius) {
+                        dx = (dx / dist) * joyRadius;
+                        dy = (dy / dist) * joyRadius;
+                        dist = joyRadius;
+                    }
+                    joyKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+                    
+                    if (window.mobileMove) {
+                        window.mobileMove.x = dx / joyRadius;
+                        window.mobileMove.z = dy / joyRadius;
+                    }
+                }
+            }
+
+            // Touch Look Zone
+            const lookZone = document.getElementById('touch-look-zone');
+            let lookTouchId = null;
+            let lastLookPos = { x: 0, y: 0 };
+
+            if (lookZone) {
+                lookZone.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    if (lookTouchId !== null) return;
+                    const touch = e.changedTouches[0];
+                    lookTouchId = touch.identifier;
+                    lastLookPos = { x: touch.clientX, y: touch.clientY };
+                }, { passive: false });
+
+                window.addEventListener('touchmove', (e) => {
+                    if (lookTouchId === null) return;
+                    for (let i = 0; i < e.changedTouches.length; i++) {
+                        const touch = e.changedTouches[i];
+                        if (touch.identifier === lookTouchId) {
+                            const dx = touch.clientX - lastLookPos.x;
+                            const dy = touch.clientY - lastLookPos.y;
+                            lastLookPos = { x: touch.clientX, y: touch.clientY };
+                            if (window.handleTouchLookDelta) {
+                                window.handleTouchLookDelta(dx, dy);
+                            }
+                            break;
+                        }
+                    }
+                }, { passive: false });
+
+                const endLook = (e) => {
+                    if (lookTouchId === null) return;
+                    for (let i = 0; i < e.changedTouches.length; i++) {
+                        if (e.changedTouches[i].identifier === lookTouchId) {
+                            lookTouchId = null;
+                            break;
+                        }
+                    }
+                };
+
+                window.addEventListener('touchend', endLook);
+                window.addEventListener('touchcancel', endLook);
+            }
+
+            // Setup Action Buttons
+            const setupButton = (id, onStart, onEnd) => {
+                const btn = document.getElementById(id);
+                if (!btn) return;
+                btn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    btn.classList.add('active');
+                    if (onStart) onStart();
+                }, { passive: false });
+                const handleEnd = (e) => {
+                    btn.classList.remove('active');
+                    if (onEnd) onEnd();
+                };
+                btn.addEventListener('touchend', handleEnd);
+                btn.addEventListener('touchcancel', handleEnd);
+            };
+
+            setupButton('btn-jump', () => { if (window.keys) window.keys.space = true; }, () => { if (window.keys) window.keys.space = false; });
+            setupButton('btn-mine', () => { if (window.keys) window.keys.leftClick = true; }, () => { if (window.keys) window.keys.leftClick = false; });
+            setupButton('btn-place', () => { if (window.triggerMobilePlaceOrEat) window.triggerMobilePlaceOrEat(); });
+            setupButton('btn-crouch', () => {
+                if (window.keys && window.playerRef) {
+                    window.keys.crouch = !window.keys.crouch;
+                    window.playerRef.isCrouching = window.keys.crouch;
+                    const btn = document.getElementById('btn-crouch');
+                    if (btn) btn.style.borderColor = window.keys.crouch ? '#ff0' : 'rgba(255,255,255,0.75)';
+                }
+            });
+            setupButton('btn-sprint', () => {
+                if (window.keys && window.playerRef) {
+                    window.keys.shift = !window.keys.shift;
+                    window.playerRef.isSprinting = window.keys.shift;
+                    const btn = document.getElementById('btn-sprint');
+                    if (btn) btn.style.borderColor = window.keys.shift ? '#0ff' : 'rgba(255,255,255,0.75)';
+                }
+            });
+        });
     </script>
 </body>
 </html>
