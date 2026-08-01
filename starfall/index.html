@@ -76,70 +76,81 @@
 
         .retro-panel {
             background: #000000;
-            border: 3px solid #00ff00;
-            padding: 8px 12px;
+            border: 2px solid #00ff00;
+            padding: 6px 10px;
         }
 
-        /* HUD Styling */
+        /* HUD Styling - Strict Non-Overlapping Boundaries */
         #hud {
+            position: absolute;
+            top: 0; left: 0;
             width: 100%;
             height: 100%;
             display: none;
-            padding: 10px;
+            pointer-events: none;
+            z-index: 10;
         }
 
         #top-left-hud {
-            top: 15px;
-            left: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        #top-right-hud {
-            top: 15px;
-            right: 15px;
-            text-align: right;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            align-items: flex-end;
-        }
-
-        #bottom-left-hud {
-            bottom: 15px;
-            left: 15px;
+            position: absolute;
+            top: 10px;
+            left: 10px;
             display: flex;
             flex-direction: column;
             gap: 6px;
+            z-index: 12;
+        }
+
+        #top-right-hud {
+            position: absolute;
+            top: 10px;
+            right: 60px; /* Clears mobile pause button */
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            align-items: flex-end;
+            z-index: 12;
+        }
+
+        #bottom-left-hud {
+            position: absolute;
+            bottom: 145px; /* Elevated above mobile joystick zone */
+            left: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            z-index: 12;
         }
 
         #top-center-hud {
-            top: 15px;
+            position: absolute;
+            top: 55px; /* Positioned cleanly below Boss HUD */
             left: 50%;
             transform: translateX(-50%);
             display: flex;
             flex-direction: column;
             align-items: center;
+            z-index: 12;
         }
 
         .stat-bar-container {
-            width: clamp(150px, 20vw, 220px);
+            width: clamp(120px, 18vw, 190px);
             border-color: #00ff00;
         }
 
         .stat-label {
             font-family: var(--font-pixel);
-            font-size: clamp(0.55rem, 0.9vw, 0.75rem);
+            font-size: clamp(0.5rem, 0.8vw, 0.65rem);
             display: flex;
             justify-content: space-between;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
             color: #fff;
         }
 
         .bar-bg {
             width: 100%;
-            height: 12px;
+            height: 10px;
             background: #222;
             border: 2px solid #fff;
             padding: 1px;
@@ -157,13 +168,13 @@
 
         .score-val {
             font-family: var(--font-pixel);
-            font-size: clamp(0.9rem, 1.5vw, 1.4rem);
+            font-size: clamp(0.8rem, 1.3vw, 1.2rem);
             color: #ffff00;
         }
 
         .stage-badge {
             font-family: var(--font-pixel);
-            font-size: clamp(0.65rem, 1vw, 0.85rem);
+            font-size: clamp(0.55rem, 0.9vw, 0.75rem);
             color: #00ff00;
         }
 
@@ -171,15 +182,15 @@
         #combo-container {
             display: none;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             background: #000;
-            border: 3px solid #ffff00;
-            padding: 6px 12px;
+            border: 2px solid #ffff00;
+            padding: 4px 8px;
         }
 
         #combo-count {
             font-family: var(--font-pixel);
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             color: #ffff00;
         }
 
@@ -193,25 +204,27 @@
 
         .powerup-badge {
             font-family: var(--font-pixel);
-            font-size: 0.55rem;
-            padding: 4px 8px;
+            font-size: 0.5rem;
+            padding: 3px 6px;
             background: #000;
             border: 2px solid #00ff00;
             color: #00ff00;
             display: flex;
             justify-content: space-between;
-            gap: 10px;
+            gap: 8px;
         }
 
         /* Boss Health Bar */
         #boss-hud {
-            top: 15px;
+            position: absolute;
+            top: 10px;
             left: 50%;
             transform: translateX(-50%);
-            width: clamp(240px, 50vw, 450px);
+            width: clamp(200px, 45vw, 400px);
             display: none;
             border-color: #ff0000;
             text-align: center;
+            z-index: 15;
         }
 
         #boss-fill { background: #ff0000; }
@@ -221,7 +234,7 @@
             position: absolute;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.85);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -230,38 +243,38 @@
             color: #fff;
             pointer-events: all;
             z-index: 100;
-            padding: 15px;
+            padding: 12px;
             overflow-y: auto;
         }
 
         .screen h1 {
             font-family: var(--font-pixel);
-            font-size: clamp(1.6rem, 4vw, 3rem);
+            font-size: clamp(1.4rem, 3.5vw, 2.5rem);
             color: #ffff00;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
             letter-spacing: 2px;
         }
 
         .screen p {
             font-family: var(--font-pixel);
-            font-size: clamp(0.55rem, 0.9vw, 0.75rem);
-            max-width: 600px;
-            line-height: 1.8;
+            font-size: clamp(0.5rem, 0.8vw, 0.7rem);
+            max-width: 550px;
+            line-height: 1.6;
             color: #00ff00;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
         }
 
         /* Buttons */
         .btn {
             font-family: var(--font-pixel);
-            font-size: clamp(0.6rem, 1vw, 0.8rem);
+            font-size: clamp(0.55rem, 0.9vw, 0.75rem);
             color: #000;
             background: #00ff00;
-            border: 3px solid #ffffff;
-            padding: 12px 20px;
-            margin: 6px;
+            border: 2px solid #ffffff;
+            padding: 10px 16px;
+            margin: 4px;
             cursor: pointer;
-            min-width: 180px;
+            min-width: 140px;
             display: inline-flex;
             justify-content: center;
             align-items: center;
@@ -288,18 +301,18 @@
         /* Ship Selection Grid */
         .ship-select-container {
             display: flex;
-            gap: 15px;
+            gap: 12px;
             flex-wrap: wrap;
             justify-content: center;
-            margin: 15px 0 25px 0;
-            max-width: 900px;
+            margin: 10px 0 18px 0;
+            max-width: 800px;
         }
 
         .ship-card {
             background: #000;
-            border: 3px solid #555;
-            padding: 15px;
-            width: clamp(180px, 24vw, 220px);
+            border: 2px solid #555;
+            padding: 10px;
+            width: clamp(130px, 20vw, 180px);
             cursor: pointer;
             text-align: center;
         }
@@ -315,16 +328,16 @@
 
         .ship-card h3 {
             font-family: var(--font-pixel);
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             color: #ffff00;
-            margin-bottom: 10px;
+            margin-bottom: 6px;
         }
 
         .ship-stat-tag {
-            font-size: 0.5rem;
+            font-size: 0.45rem;
             color: #000;
             background: #00ff00;
-            padding: 4px 6px;
+            padding: 3px 5px;
             display: inline-block;
             margin: 2px;
         }
@@ -332,17 +345,17 @@
         /* Upgrade Tree Grid */
         .upgrade-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 8px;
             width: 100%;
-            max-width: 850px;
-            margin: 12px 0;
+            max-width: 750px;
+            margin: 8px 0;
         }
 
         .upgrade-item {
             background: #000;
             border: 2px solid #00ff00;
-            padding: 10px;
+            padding: 8px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -351,29 +364,30 @@
 
         .upgrade-item h4 {
             font-family: var(--font-pixel);
-            font-size: 0.65rem;
+            font-size: 0.55rem;
             color: #ffff00;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .upgrade-btn {
             width: 100%;
-            padding: 8px;
-            font-size: 0.55rem;
+            padding: 6px;
+            font-size: 0.5rem;
             margin: 0;
+            min-width: unset;
         }
 
         /* Options / Settings Panel */
         .settings-group {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
             width: 100%;
-            max-width: 360px;
+            max-width: 320px;
             background: #000;
-            border: 3px solid #00ff00;
-            padding: 15px;
-            margin-bottom: 15px;
+            border: 2px solid #00ff00;
+            padding: 12px;
+            margin-bottom: 12px;
             text-align: left;
         }
 
@@ -385,16 +399,16 @@
 
         .setting-row label {
             font-family: var(--font-pixel);
-            font-size: 0.65rem;
+            font-size: 0.55rem;
             color: #ffff00;
         }
 
         .slider-input {
-            width: 120px;
+            width: 100px;
             accent-color: #00ff00;
         }
 
-        /* Mobile Touch Controls */
+        /* Mobile Touch Controls - Strict Layering & Placement */
         #touch-controls {
             position: absolute;
             top: 0;
@@ -402,30 +416,30 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
-            z-index: 20;
+            z-index: 25;
             display: none;
         }
 
         #joystick-zone {
             position: absolute;
-            bottom: 25px;
-            left: 25px;
-            width: 120px;
-            height: 120px;
+            bottom: 15px;
+            left: 15px;
+            width: 110px;
+            height: 110px;
             pointer-events: auto;
         }
 
         #joystick-base {
             width: 100%;
             height: 100%;
-            background: #000;
-            border: 3px solid #00ff00;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #00ff00;
             position: relative;
         }
 
         #joystick-stick {
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             background: #ffff00;
             border: 2px solid #000;
             position: absolute;
@@ -436,22 +450,22 @@
 
         #action-buttons {
             position: absolute;
-            bottom: 25px;
-            right: 25px;
+            bottom: 15px;
+            right: 15px;
             display: grid;
-            grid-template-columns: repeat(2, 60px);
-            gap: 10px;
+            grid-template-columns: repeat(2, 54px);
+            gap: 8px;
             pointer-events: auto;
         }
 
         .touch-btn {
-            width: 58px;
-            height: 58px;
-            background: #000;
-            border: 3px solid #00ff00;
+            width: 52px;
+            height: 52px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #00ff00;
             color: #00ff00;
             font-family: var(--font-pixel);
-            font-size: 0.5rem;
+            font-size: 0.45rem;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -468,12 +482,14 @@
 
         #mobile-pause-btn {
             position: absolute;
-            top: 15px;
-            right: 15px;
-            width: 40px;
-            height: 40px;
+            top: 10px;
+            right: 10px;
+            width: 42px;
+            height: 42px;
             pointer-events: auto;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
+            z-index: 30;
+            background: rgba(0, 0, 0, 0.7);
         }
 
         /* Screen Shake & Flash */
@@ -503,13 +519,36 @@
             z-index: 6;
         }
 
-        @media (max-width: 600px) {
-            .stat-bar-container { width: 120px; }
-            .screen h1 { font-size: 1.6rem; }
-            .upgrade-grid { grid-template-columns: 1fr 1fr; }
-            #joystick-zone { bottom: 15px; left: 15px; width: 100px; height: 100px; }
-            #action-buttons { bottom: 15px; right: 15px; grid-template-columns: repeat(2, 50px); gap: 6px; }
-            .touch-btn { width: 48px; height: 48px; font-size: 0.45rem; }
+        /* Responsive Compact Layout for Small Screens */
+        @media (max-width: 600px), (max-height: 500px) {
+            .stat-bar-container { width: 110px; }
+            .stat-label { font-size: 0.45rem; }
+            .bar-bg { height: 8px; }
+            .score-val { font-size: 0.75rem; }
+            .stage-badge { font-size: 0.5rem; }
+            
+            #top-right-hud { right: 54px; top: 8px; }
+            #top-left-hud { left: 8px; top: 8px; gap: 4px; }
+            #bottom-left-hud { bottom: 125px; left: 8px; }
+
+            .screen { padding: 8px; }
+            .screen h1 { font-size: 1.2rem; margin-bottom: 8px; }
+            .screen p { font-size: 0.45rem; margin-bottom: 8px; }
+            .ship-select-container { gap: 6px; margin: 6px 0 10px 0; }
+            .ship-card { padding: 6px; width: 95px; }
+            .ship-card h3 { font-size: 0.55rem; margin-bottom: 4px; }
+            .ship-stat-tag { font-size: 0.4rem; padding: 2px 4px; }
+            
+            .upgrade-grid { grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 4px 0; }
+            .upgrade-item { padding: 4px; }
+            .upgrade-item h4 { font-size: 0.45rem; margin-bottom: 3px; }
+            .upgrade-btn { padding: 4px; font-size: 0.42rem; }
+            
+            .btn { min-width: 110px; padding: 6px 10px; font-size: 0.5rem; margin: 2px; }
+            
+            #joystick-zone { bottom: 8px; left: 8px; width: 90px; height: 90px; }
+            #action-buttons { bottom: 8px; right: 8px; grid-template-columns: repeat(2, 44px); gap: 4px; }
+            .touch-btn { width: 42px; height: 42px; font-size: 0.4rem; }
         }
     </style>
 </head>
@@ -1842,3 +1881,4 @@
     </script>
 </body>
 </html>
+
