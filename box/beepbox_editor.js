@@ -11713,8 +11713,9 @@ li.select2-results__option[role=group] > strong:hover {
             }
         }
         writeLongTail(minValue, minBits, value) {
-            if (value < minValue)
+            if (value < minValue) {
                 throw new Error("value out of bounds");
+            }
             value -= minValue;
             let numBits = minBits;
             while (value >= (1 << numBits)) {
@@ -26702,8 +26703,10 @@ li.select2-results__option[role=group] > strong:hover {
             const pin = oldNote.pins[pinIndex];
             const newPinTime = pin.time + timeOffset;
             if (newPinTime < 0) {
-                if (pinIndex + 1 >= oldNote.pins.length)
-                    throw new Error("Error converting pins in note overflow.");
+                if (pinIndex + 1 >= oldNote.pins.length) {
+                    newNote.pins.push(makeNotePin(pin.interval, 0, pin.size));
+                    continue;
+                }
                 const nextPin = oldNote.pins[pinIndex + 1];
                 const nextPinTime = nextPin.time + timeOffset;
                 if (nextPinTime > 0) {
@@ -26722,6 +26725,19 @@ li.select2-results__option[role=group] > strong:hover {
                 if (prevPinTime < newNoteLength) {
                     const ratio = (newNoteLength - prevPinTime) / (newPinTime - prevPinTime);
                     newNote.pins.push(makeNotePin(Math.round(prevPin.interval + ratio * (pin.interval - prevPin.interval)), newNoteLength, Math.round(prevPin.size + ratio * (pin.size - prevPin.size))));
+                }
+            }
+        }
+        if (newNote.pins.length == 0) {
+            newNote.pins.push(makeNotePin(0, 0, Config.noteSizeMax));
+        }
+        else {
+            for (let i = 0; i < newNote.pins.length - 1;) {
+                if (newNote.pins[i].time >= newNote.pins[i + 1].time) {
+                    newNote.pins.splice(i, 1);
+                }
+                else {
+                    i++;
                 }
             }
         }
@@ -27001,6 +27017,14 @@ li.select2-results__option[role=group] > strong:hover {
                 }
             }
             removeRedundantPins(this._newPins);
+            if (this._newPins.length < 2) {
+                const lastTime = this._newPins.length == 0 ? 0 : this._newPins[this._newPins.length - 1].time;
+                const lastSize = this._newPins.length == 0 ? Config.noteSizeMax : this._newPins[this._newPins.length - 1].size;
+                const lastInterval = this._newPins.length == 0 ? 0 : this._newPins[this._newPins.length - 1].interval;
+                this._newPins.length = 0;
+                this._newPins.push(makeNotePin(0, 0, lastSize));
+                this._newPins.push(makeNotePin(lastInterval, Math.max(1, lastTime), lastSize));
+            }
             const firstInterval = this._newPins[0].interval;
             const firstTime = this._newPins[0].time;
             for (let i = 0; i < this._oldPitches.length; i++) {
@@ -31033,8 +31057,14 @@ li.select2-results__option[role=group] > strong:hover {
                     }
                 }
             }
-            if (pushLastPin)
-                this._newPins.push(makeNotePin(this._oldPins[i].interval, truncEnd, this._oldPins[i].size));
+            if (pushLastPin) {
+                const boundaryPinIndex = Math.min(i, this._oldPins.length - 1);
+                const boundaryPin = this._oldPins[boundaryPinIndex];
+                if (i >= this._oldPins.length && this._oldPins[this._oldPins.length - 1].time < truncStart) {
+                    this._newPins.push(makeNotePin(boundaryPin.interval, truncStart, boundaryPin.size));
+                }
+                this._newPins.push(makeNotePin(boundaryPin.interval, truncEnd, boundaryPin.size));
+            }
             this._finishSetup(continuesLastPattern);
         }
     }
@@ -31083,6 +31113,61 @@ li.select2-results__option[role=group] > strong:hover {
                         this.append(new ChangeNoteAdded(doc, pattern, note, i, true));
                     else
                         i++;
+                }
+            }
+        }
+    }
+    class ChangeSortNotes extends UndoableChange {
+        constructor(doc, pattern) {
+            super(false);
+            this._doc = doc;
+            this._pattern = pattern;
+            this._oldOrder = pattern.notes.concat();
+            this._newOrder = pattern.notes.concat();
+            this._newOrder.sort(function (a, b) {
+                return (a.start == b.start) ? a.pitches[0] - b.pitches[0] : a.start - b.start;
+            });
+            if (this._oldOrder.length == this._newOrder.length) {
+                let same = true;
+                for (let i = 0; i < this._oldOrder.length; i++) {
+                    if (this._oldOrder[i] != this._newOrder[i]) {
+                        same = false;
+                        break;
+                    }
+                }
+                if (same)
+                    return;
+            }
+            this._didSomething();
+            this.redo();
+        }
+        _doForwards() {
+            this._pattern.notes.length = 0;
+            for (const note of this._newOrder)
+                this._pattern.notes.push(note);
+            this._doc.notifier.changed();
+        }
+        _doBackwards() {
+            this._pattern.notes.length = 0;
+            for (const note of this._oldOrder)
+                this._pattern.notes.push(note);
+            this._doc.notifier.changed();
+        }
+    }
+    function clipOverlappingNotes(doc, pattern, sequence) {
+        if (doc.song.getChannelIsMod(doc.channel))
+            return;
+        for (let i = 1; i < pattern.notes.length; i++) {
+            const prevNote = pattern.notes[i - 1];
+            const note = pattern.notes[i];
+            if (note.start < prevNote.end) {
+                const clippedStart = prevNote.end;
+                if (clippedStart >= note.end) {
+                    sequence.append(new ChangeNoteAdded(doc, pattern, note, i, true));
+                    i--;
+                }
+                else {
+                    sequence.append(new ChangeNoteLength(doc, note, clippedStart, note.end));
                 }
             }
         }
@@ -31180,6 +31265,8 @@ li.select2-results__option[role=group] > strong:hover {
                     i++;
                 }
             }
+            this.append(new ChangeSortNotes(doc, pattern));
+            clipOverlappingNotes(doc, pattern, this);
         }
     }
     class ChangeStretchNotesAcrossBars extends ChangeGroup {
@@ -31299,6 +31386,51 @@ li.select2-results__option[role=group] > strong:hover {
                     if (newChannel.bars[bar] == undefined)
                         newChannel.bars[bar] = 0;
                 }
+                for (const sortedPattern of newChannel.patterns) {
+                    sortedPattern.notes.sort(function (a, b) {
+                        return (a.start == b.start) ? a.pitches[0] - b.pitches[0] : a.start - b.start;
+                    });
+                    for (let i = 1; i < sortedPattern.notes.length;) {
+                        const prevNote = sortedPattern.notes[i - 1];
+                        const note = sortedPattern.notes[i];
+                        if (note.start < prevNote.end) {
+                            const clippedStart = prevNote.end;
+                            if (clippedStart >= note.end) {
+                                sortedPattern.notes.splice(i, 1);
+                                continue;
+                            }
+                            const shift = clippedStart - note.start;
+                            note.start = clippedStart;
+                            const newPins = [];
+                            let lastSize = note.pins.length == 0 ? Config.noteSizeMax : note.pins[0].size;
+                            for (const pin of note.pins) {
+                                if (pin.time >= shift) {
+                                    newPins.push(makeNotePin(pin.interval, pin.time - shift, pin.size));
+                                    lastSize = pin.size;
+                                }
+                                else {
+                                    lastSize = pin.size;
+                                }
+                            }
+                            if (newPins.length < 2) {
+                                newPins.length = 0;
+                                newPins.push(makeNotePin(0, 0, lastSize));
+                                newPins.push(makeNotePin(0, Math.max(1, note.end - note.start), lastSize));
+                            }
+                            else {
+                                newPins[0].interval = 0;
+                                for (let j = 1; j < newPins.length;) {
+                                    if (newPins[j].time <= newPins[j - 1].time)
+                                        newPins.splice(j, 1);
+                                    else
+                                        j++;
+                                }
+                            }
+                            note.pins = newPins;
+                        }
+                        i++;
+                    }
+                }
                 if (channelIndex < doc.song.pitchChannelCount)
                     pitchChannels.push(newChannel);
                 else if (channelIndex < doc.song.pitchChannelCount + doc.song.noiseChannelCount)
@@ -31345,6 +31477,10 @@ li.select2-results__option[role=group] > strong:hover {
                     i++;
                 }
             }
+            if (horizontal) {
+                this.append(new ChangeSortNotes(doc, pattern));
+                clipOverlappingNotes(doc, pattern, this);
+            }
         }
     }
     class ChangeFlipNote extends ChangePins {
@@ -31375,13 +31511,29 @@ li.select2-results__option[role=group] > strong:hover {
                 this._newStart = this._oldStart;
                 this._newEnd = this._oldEnd;
             }
+            for (let i = 0; i < this._newPins.length - 1;) {
+                if (this._newPins[i].time >= this._newPins[i + 1].time) {
+                    this._newPins.splice(i, 1);
+                }
+                else {
+                    i++;
+                }
+            }
+            removeRedundantPins(this._newPins);
+            if (this._newPins.length == 0) {
+                this._newPins.push(makeNotePin(0, 0, Config.noteSizeMax));
+            }
             const firstInterval = this._newPins[0].interval;
+            const firstTime = this._newPins[0].time;
             if (firstInterval != 0) {
                 for (let i = 0; i < this._newPitches.length; i++)
                     this._newPitches[i] += firstInterval;
-                for (const pin of this._newPins)
-                    pin.interval -= firstInterval;
             }
+            for (const pin of this._newPins) {
+                pin.interval -= firstInterval;
+                pin.time -= firstTime;
+            }
+            this._newStart += firstTime;
             this._newContinuesLastPattern = false;
             this._doForwards();
             this._didSomething();

@@ -2784,8 +2784,9 @@ var beepbox = (function (exports) {
             }
         }
         writeLongTail(minValue, minBits, value) {
-            if (value < minValue)
+            if (value < minValue) {
                 throw new Error("value out of bounds");
+            }
             value -= minValue;
             let numBits = minBits;
             while (value >= (1 << numBits)) {
