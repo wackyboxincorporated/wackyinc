@@ -51906,6 +51906,8 @@ You should be redirected to the song at:<br /><br />
             this._modPitchFollowBoxes = [];
             this._modPitchInvertBoxes = [];
             this._modPitchRangeInputs = [];
+            this._modPitchRangeStartNotes = [];
+            this._modPitchRangeStartOctaves = [];
             this._modPitchEnvelopeBoxes = [];
             this._modPitchModValueBoxes = [];
             this._modPitchTransposeBoxes = [];
