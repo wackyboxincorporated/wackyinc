@@ -12854,6 +12854,8 @@ li.select2-results__option[role=group] > strong:hover {
             this.modPitchSmooths = [];
             this.modPitchInverts = [];
             this.modPitchEnvelopes = [];
+            this.modPitchTrackDetunes = [];
+            this.modPitchTrackPitchShifts = [];
             this.invalidModulators = [];
             this.isNoiseInstrument = false;
             if (isModChannel) {
@@ -12871,6 +12873,8 @@ li.select2-results__option[role=group] > strong:hover {
                     this.modPitchInverts.push(false);
                     this.modPitchEnvelopes.push(false);
                     this.modPitchModValues.push(false);
+                    this.modPitchTrackDetunes.push(false);
+                    this.modPitchTrackPitchShifts.push(false);
                 }
             }
             this.spectrumWave = new SpectrumWave(isNoiseChannel);
@@ -13058,6 +13062,8 @@ li.select2-results__option[role=group] > strong:hover {
                     this.modPitchInverts = [];
                     this.modPitchEnvelopes = [];
                     this.modPitchModValues = [];
+                    this.modPitchTrackDetunes = [];
+                    this.modPitchTrackPitchShifts = [];
                     for (let mod = 0; mod < Config.modCount; mod++) {
                         this.modChannels.push(-2);
                         this.modInstruments.push(0);
@@ -13072,6 +13078,8 @@ li.select2-results__option[role=group] > strong:hover {
                         this.modPitchInverts.push(false);
                         this.modPitchEnvelopes.push(false);
                         this.modPitchModValues.push(false);
+                        this.modPitchTrackDetunes.push(false);
+                        this.modPitchTrackPitchShifts.push(false);
                         this.invalidModulators[mod] = false;
                         this.modFilterTypes[mod] = 0;
                         this.modEnvelopeNumbers[mod] = 0;
@@ -13419,6 +13427,8 @@ li.select2-results__option[role=group] > strong:hover {
                 instrumentObject["modPitchInverts"] = [];
                 instrumentObject["modPitchEnvelopes"] = [];
                 instrumentObject["modPitchModValues"] = [];
+                instrumentObject["modPitchTrackDetunes"] = [];
+                instrumentObject["modPitchTrackPitchShifts"] = [];
                 for (let mod = 0; mod < Config.modCount; mod++) {
                     instrumentObject["modChannels"][mod] = this.modChannels[mod];
                     instrumentObject["modInstruments"][mod] = this.modInstruments[mod];
@@ -13435,6 +13445,8 @@ li.select2-results__option[role=group] > strong:hover {
                     instrumentObject["modPitchInverts"][mod] = this.modPitchInverts[mod];
                     instrumentObject["modPitchEnvelopes"][mod] = this.modPitchEnvelopes[mod];
                     instrumentObject["modPitchModValues"][mod] = this.modPitchModValues[mod];
+                    instrumentObject["modPitchTrackDetunes"][mod] = this.modPitchTrackDetunes[mod];
+                    instrumentObject["modPitchTrackPitchShifts"][mod] = this.modPitchTrackPitchShifts[mod];
                 }
             }
             else {
@@ -13986,6 +13998,10 @@ li.select2-results__option[role=group] > strong:hover {
                             this.modPitchEnvelopes[mod] = instrumentObject["modPitchEnvelopes"][mod];
                         if (instrumentObject["modPitchModValues"] != undefined)
                             this.modPitchModValues[mod] = instrumentObject["modPitchModValues"][mod];
+                        if (instrumentObject["modPitchTrackDetunes"] != undefined)
+                            this.modPitchTrackDetunes[mod] = instrumentObject["modPitchTrackDetunes"][mod];
+                        if (instrumentObject["modPitchTrackPitchShifts"] != undefined)
+                            this.modPitchTrackPitchShifts[mod] = instrumentObject["modPitchTrackPitchShifts"][mod];
                     }
                 }
             }
@@ -15053,7 +15069,7 @@ li.select2-results__option[role=group] > strong:hover {
                             }
                             if (Song._latestSlarmoosBoxVersion >= 7 && instrument.modPitchChannels[mod] >= 0) {
                                 const followModeFieldBits = Song._latestSlarmoosBoxVersion >= 9 ? 3 : 2;
-                                bits.write(followModeFieldBits, clamp(0, followModeFieldBits == 3 ? 6 : 4, instrument.modPitchFollowModes[mod]));
+                                bits.write(followModeFieldBits, clamp(0, followModeFieldBits == 3 ? 8 : 4, instrument.modPitchFollowModes[mod]));
                                 bits.write(3, clamp(0, Config.pitchFollowerRanges.length, instrument.modPitchRanges[mod]));
                                 bits.write(6, clamp(Config.pitchFollowerTransposeMin, Config.pitchFollowerTransposeMax + 1, instrument.modPitchTransposes[mod]) - Config.pitchFollowerTransposeMin);
                                 bits.write(7, clamp(0, Config.pitchFollowerPercentMax + 1, instrument.modPitchDetunes[mod]));
@@ -15062,6 +15078,10 @@ li.select2-results__option[role=group] > strong:hover {
                                 bits.write(1, instrument.modPitchEnvelopes[mod] ? 1 : 0);
                                 if (Song._latestSlarmoosBoxVersion >= 8) {
                                     bits.write(1, instrument.modPitchModValues[mod] ? 1 : 0);
+                                }
+                                if (Song._latestSlarmoosBoxVersion >= 10) {
+                                    bits.write(1, instrument.modPitchTrackDetunes[mod] ? 1 : 0);
+                                    bits.write(1, instrument.modPitchTrackPitchShifts[mod] ? 1 : 0);
                                 }
                             }
                         }
@@ -15305,6 +15325,7 @@ li.select2-results__option[role=group] > strong:hover {
             const beforeSeven = version < 7;
             const beforeEight = version < 8;
             const beforeNine = version < 9;
+            const beforeTen = version < 10;
             this.initToDefault((fromBeepBox && beforeNine) || ((fromJummBox && beforeFive) || (beforeFour && fromGoldBox)));
             const forceSimpleFilter = (fromBeepBox && beforeNine || fromJummBox && beforeFive);
             let willLoadLegacySamplesForOldSongs = false;
@@ -17091,7 +17112,7 @@ li.select2-results__option[role=group] > strong:hover {
                                                 instrument.modPitchChannels[mod] = bits.read(7) - 1;
                                                 instrument.modPitchVoices[mod] = bits.read(4) - 1;
                                                 if (!beforeSeven && instrument.modPitchChannels[mod] >= 0) {
-                                                    instrument.modPitchFollowModes[mod] = Math.min(5, beforeNine ? bits.read(2) : bits.read(3));
+                                                    instrument.modPitchFollowModes[mod] = Math.min(7, beforeNine ? bits.read(2) : bits.read(3));
                                                     instrument.modPitchRanges[mod] = Math.min(Config.pitchFollowerRanges.length - 1, bits.read(3));
                                                     instrument.modPitchTransposes[mod] = bits.read(6) + Config.pitchFollowerTransposeMin;
                                                     instrument.modPitchDetunes[mod] = bits.read(7);
@@ -17100,6 +17121,10 @@ li.select2-results__option[role=group] > strong:hover {
                                                     instrument.modPitchEnvelopes[mod] = bits.read(1) == 1;
                                                     if (!beforeEight) {
                                                         instrument.modPitchModValues[mod] = bits.read(1) == 1;
+                                                    }
+                                                    if (!beforeTen) {
+                                                        instrument.modPitchTrackDetunes[mod] = bits.read(1) == 1;
+                                                        instrument.modPitchTrackPitchShifts[mod] = bits.read(1) == 1;
                                                     }
                                                 }
                                             }
@@ -18363,7 +18388,7 @@ li.select2-results__option[role=group] > strong:hover {
     Song._oldestUltraBoxVersion = 1;
     Song._latestUltraBoxVersion = 5;
     Song._oldestSlarmoosBoxVersion = 1;
-    Song._latestSlarmoosBoxVersion = 9;
+    Song._latestSlarmoosBoxVersion = 10;
     Song._variant = 0x73;
     class PickedString {
         constructor() {
@@ -25093,17 +25118,16 @@ li.select2-results__option[role=group] > strong:hover {
             drumFunction(synth, bufferIndex, runLength, tone, instrumentState);
         }
         static isPitchFollowerCompatibleSetting(setting) {
-            return setting != Config.modulators.dictionary["song eq"].index
-                && setting != Config.modulators.dictionary["eq filter"].index
-                && setting != Config.modulators.dictionary["note filter"].index
-                && setting != Config.modulators.dictionary["reset arp"].index
+            return setting != Config.modulators.dictionary["reset arp"].index
                 && setting != Config.modulators.dictionary["reset envelope"].index
-                && setting != Config.modulators.dictionary["next bar"].index
-                && setting != Config.modulators.dictionary["individual envelope speed"].index
-                && setting != Config.modulators.dictionary["individual envelope lower bound"].index
-                && setting != Config.modulators.dictionary["individual envelope upper bound"].index;
+                && setting != Config.modulators.dictionary["next bar"].index;
         }
-        static getPitchModValue(synth, sourceChannel, voice, followMode = 0, detunePercent = 100, includeEnvelope = false) {
+        static isFilterModSetting(setting) {
+            return setting == Config.modulators.dictionary["song eq"].index
+                || setting == Config.modulators.dictionary["eq filter"].index
+                || setting == Config.modulators.dictionary["note filter"].index;
+        }
+        static getPitchModValue(synth, sourceChannel, voice, followMode = 0, detunePercent = 100, includeEnvelope = false, trackDetuneEffect = false, trackPitchShiftEffect = false) {
             if (synth.song == null || sourceChannel < 0 || synth.channels[sourceChannel] == null)
                 return -1;
             const getVoicePitchOffset = (tone) => {
@@ -25132,6 +25156,7 @@ li.select2-results__option[role=group] > strong:hover {
             let count = 0;
             let lowest = Number.MAX_SAFE_INTEGER;
             let highest = -Number.MAX_SAFE_INTEGER;
+            let loudestSize = 0;
             for (let instrumentIndex = 0; instrumentIndex < synth.channels[sourceChannel].instruments.length; instrumentIndex++) {
                 const instrumentState = synth.channels[sourceChannel].instruments[instrumentIndex];
                 for (let i = 0; i < instrumentState.activeTones.count(); i++) {
@@ -25152,21 +25177,62 @@ li.select2-results__option[role=group] > strong:hover {
                                 highest = basePitch;
                         }
                     }
+                    if (followMode == 7 && candidate.expression > loudestSize)
+                        loudestSize = candidate.expression;
                 }
             }
             if (latestTone == null)
                 return -1;
+            if (followMode == 6)
+                return latestTone.expression;
+            if (followMode == 7)
+                return loudestSize;
+            let pitch;
             switch (followMode) {
-                case 3: return highest;
-                case 4: return lowest;
-                case 5: return (count > 0) ? sum / count : 0;
+                case 3:
+                    pitch = highest;
+                    break;
+                case 4:
+                    pitch = lowest;
+                    break;
+                case 5:
+                    pitch = (count > 0) ? sum / count : 0;
+                    break;
+                default:
+                    pitch = latestTone.pitches[0] + getVoicePitchOffset(latestTone);
+                    if (followMode == 1)
+                        pitch += latestTone.lastInterval;
+                    else if (followMode == 2)
+                        return latestTone.lastInterval;
+                    break;
             }
-            let pitch = latestTone.pitches[0] + getVoicePitchOffset(latestTone);
-            if (followMode == 1) {
-                pitch += latestTone.lastInterval;
-            }
-            else if (followMode == 2) {
-                return latestTone.lastInterval;
+            if (trackDetuneEffect || trackPitchShiftEffect) {
+                const sourceInstrument = synth.song.channels[sourceChannel].instruments[latestTone.instrumentIndex];
+                const instrumentIndex = latestTone.instrumentIndex;
+                let extra = 0;
+                if (trackDetuneEffect && (effectsIncludeDetune(sourceInstrument.effects) || synth.isModActive(Config.modulators.dictionary["song detune"].index, sourceChannel, instrumentIndex))) {
+                    let detuneSetting = sourceInstrument.detune;
+                    if (synth.isModActive(Config.modulators.dictionary["detune"].index, sourceChannel, instrumentIndex)) {
+                        detuneSetting = synth.getModValue(Config.modulators.dictionary["detune"].index, sourceChannel, instrumentIndex, false) + Config.detuneCenter;
+                    }
+                    if (synth.isModActive(Config.modulators.dictionary["song detune"].index, sourceChannel, instrumentIndex)) {
+                        detuneSetting += 4 * synth.getModValue(Config.modulators.dictionary["song detune"].index, sourceChannel, instrumentIndex, false);
+                    }
+                    const detuneEnvelope = latestTone.envelopeComputer.envelopeStarts[19];
+                    extra += Synth.detuneToCents(detuneSetting) * ((detuneEnvelope != null && !Number.isNaN(detuneEnvelope)) ? detuneEnvelope : 1.0) * Config.pitchesPerOctave / (12.0 * 100.0);
+                }
+                if (trackPitchShiftEffect && effectsIncludePitchShift(sourceInstrument.effects)) {
+                    const pitchShiftSemitones = Config.justIntonationSemitones[sourceInstrument.pitchShift];
+                    let pitchShiftScalar = 1.0;
+                    if (synth.isModActive(Config.modulators.dictionary["pitch shift"].index, sourceChannel, instrumentIndex)) {
+                        pitchShiftScalar = synth.getModValue(Config.modulators.dictionary["pitch shift"].index, sourceChannel, instrumentIndex, false) / Config.pitchShiftCenter;
+                    }
+                    const pitchShiftEnvelope = latestTone.envelopeComputer.envelopeStarts[18];
+                    extra += pitchShiftSemitones * ((pitchShiftEnvelope != null && !Number.isNaN(pitchShiftEnvelope)) ? pitchShiftEnvelope : 1.0) * pitchShiftScalar;
+                }
+                if (detunePercent != 100)
+                    extra *= detunePercent / 100;
+                pitch += extra;
             }
             return pitch;
         }
@@ -25178,18 +25244,21 @@ li.select2-results__option[role=group] > strong:hover {
                 return;
             let setting = instrument.modulators[mod];
             const pitchSourceChannel = instrument.modPitchChannels[mod];
-            const usingPitchFollower = pitchSourceChannel >= 0 && Synth.isPitchFollowerCompatibleSetting(setting);
+            const usingPitchFollower = pitchSourceChannel >= 0
+                && Synth.isPitchFollowerCompatibleSetting(setting)
+                && !(Synth.isFilterModSetting(setting) && instrument.modFilterTypes[mod] == 0);
             let modValueStart = tone.expression;
             let modValueEnd = tone.expression + tone.expressionDelta;
             if (usingPitchFollower) {
-                const followMode = clamp(0, 6, instrument.modPitchFollowModes[mod]);
-                const pitch = Synth.getPitchModValue(synth, pitchSourceChannel, instrument.modPitchVoices[mod], followMode, clamp(0, Config.pitchFollowerPercentMax + 1, instrument.modPitchDetunes[mod]), instrument.modPitchEnvelopes[mod]);
+                const followMode = clamp(0, 8, instrument.modPitchFollowModes[mod]);
+                const sizeMode = followMode == 6 || followMode == 7;
+                const pitch = Synth.getPitchModValue(synth, pitchSourceChannel, instrument.modPitchVoices[mod], followMode, clamp(0, Config.pitchFollowerPercentMax + 1, instrument.modPitchDetunes[mod]), instrument.modPitchEnvelopes[mod], instrument.modPitchTrackDetunes[mod] == true, instrument.modPitchTrackPitchShifts[mod] == true);
                 if (pitch < 0)
                     return;
                 const maxRawVol = Config.modulators[setting].maxRawVol;
                 const rangeIndex = clamp(0, Config.pitchFollowerRanges.length, instrument.modPitchRanges[mod]);
-                const range = Config.pitchFollowerRanges[rangeIndex];
-                const sourcePitch = (followMode == 2) ? pitch : pitch + clamp(Config.pitchFollowerTransposeMin, Config.pitchFollowerTransposeMax + 1, instrument.modPitchTransposes[mod]);
+                const range = sizeMode ? Config.noteSizeMax : Config.pitchFollowerRanges[rangeIndex];
+                const sourcePitch = (sizeMode || followMode == 2) ? pitch : pitch + clamp(Config.pitchFollowerTransposeMin, Config.pitchFollowerTransposeMax + 1, instrument.modPitchTransposes[mod]);
                 let scaled = clamp(0, maxRawVol + 1, sourcePitch * maxRawVol / range);
                 if (instrument.modPitchInverts[mod])
                     scaled = maxRawVol - scaled;
@@ -25280,10 +25349,10 @@ li.select2-results__option[role=group] > strong:hover {
                         }
                         if (tgtSong.tmpEqFilterEnd.controlPointCount > Math.floor((dotTarget - 1) / 2)) {
                             if (dotTarget % 2) {
-                                tgtSong.tmpEqFilterEnd.controlPoints[Math.floor((dotTarget - 1) / 2)].freq = tone.expression + tone.expressionDelta;
+                                tgtSong.tmpEqFilterEnd.controlPoints[Math.floor((dotTarget - 1) / 2)].freq = modValueEnd;
                             }
                             else {
-                                tgtSong.tmpEqFilterEnd.controlPoints[Math.floor((dotTarget - 1) / 2)].gain = tone.expression + tone.expressionDelta;
+                                tgtSong.tmpEqFilterEnd.controlPoints[Math.floor((dotTarget - 1) / 2)].gain = modValueEnd;
                             }
                         }
                     }
@@ -25318,10 +25387,10 @@ li.select2-results__option[role=group] > strong:hover {
                             }
                             if (tgtInstrument.tmpEqFilterEnd.controlPointCount > Math.floor((dotTarget - 1) / 2)) {
                                 if (dotTarget % 2) {
-                                    tgtInstrument.tmpEqFilterEnd.controlPoints[Math.floor((dotTarget - 1) / 2)].freq = tone.expression + tone.expressionDelta;
+                                    tgtInstrument.tmpEqFilterEnd.controlPoints[Math.floor((dotTarget - 1) / 2)].freq = modValueEnd;
                                 }
                                 else {
-                                    tgtInstrument.tmpEqFilterEnd.controlPoints[Math.floor((dotTarget - 1) / 2)].gain = tone.expression + tone.expressionDelta;
+                                    tgtInstrument.tmpEqFilterEnd.controlPoints[Math.floor((dotTarget - 1) / 2)].gain = modValueEnd;
                                 }
                             }
                         }
@@ -25357,10 +25426,10 @@ li.select2-results__option[role=group] > strong:hover {
                             }
                             if (tgtInstrument.tmpNoteFilterEnd.controlPointCount > Math.floor((dotTarget - 1) / 2)) {
                                 if (dotTarget % 2) {
-                                    tgtInstrument.tmpNoteFilterEnd.controlPoints[Math.floor((dotTarget - 1) / 2)].freq = tone.expression + tone.expressionDelta;
+                                    tgtInstrument.tmpNoteFilterEnd.controlPoints[Math.floor((dotTarget - 1) / 2)].freq = modValueEnd;
                                 }
                                 else {
-                                    tgtInstrument.tmpNoteFilterEnd.controlPoints[Math.floor((dotTarget - 1) / 2)].gain = tone.expression + tone.expressionDelta;
+                                    tgtInstrument.tmpNoteFilterEnd.controlPoints[Math.floor((dotTarget - 1) / 2)].gain = modValueEnd;
                                 }
                             }
                         }
@@ -25369,7 +25438,7 @@ li.select2-results__option[role=group] > strong:hover {
                 else if (setting == Config.modulators.dictionary["individual envelope speed"].index) {
                     const tgtInstrument = synth.song.channels[instrument.modChannels[mod]].instruments[usedInstruments[instrumentIndex]];
                     let envelopeTarget = instrument.modEnvelopeNumbers[mod];
-                    let speed = tone.expression + tone.expressionDelta;
+                    let speed = modValueEnd;
                     if (tgtInstrument.envelopeCount > envelopeTarget) {
                         if (Number.isInteger(speed)) {
                             tgtInstrument.envelopes[envelopeTarget].tempEnvelopeSpeed = Config.perEnvelopeSpeedIndices[speed];
@@ -25383,7 +25452,7 @@ li.select2-results__option[role=group] > strong:hover {
                 else if (setting == Config.modulators.dictionary["individual envelope lower bound"].index) {
                     const tgtInstrument = synth.song.channels[instrument.modChannels[mod]].instruments[usedInstruments[instrumentIndex]];
                     let envelopeTarget = instrument.modEnvelopeNumbers[mod];
-                    let bound = tone.expression + tone.expressionDelta;
+                    let bound = modValueEnd;
                     if (tgtInstrument.envelopeCount > envelopeTarget) {
                         tgtInstrument.envelopes[envelopeTarget].tempEnvelopeLowerBound = bound / 10;
                     }
@@ -25391,7 +25460,7 @@ li.select2-results__option[role=group] > strong:hover {
                 else if (setting == Config.modulators.dictionary["individual envelope upper bound"].index) {
                     const tgtInstrument = synth.song.channels[instrument.modChannels[mod]].instruments[usedInstruments[instrumentIndex]];
                     let envelopeTarget = instrument.modEnvelopeNumbers[mod];
-                    let bound = tone.expression + tone.expressionDelta;
+                    let bound = modValueEnd;
                     if (tgtInstrument.envelopeCount > envelopeTarget) {
                         tgtInstrument.envelopes[envelopeTarget].tempEnvelopeUpperBound = bound / 10;
                     }
@@ -33432,6 +33501,12 @@ li.select2-results__option[role=group] > strong:hover {
         }
         setModPitchModValue(mod, value) {
             this._doc.record(new ChangeModPitchBooleanSetting(this._doc, mod, "modPitchModValues", value));
+        }
+        setModPitchTrackDetune(mod, value) {
+            this._doc.record(new ChangeModPitchBooleanSetting(this._doc, mod, "modPitchTrackDetunes", value));
+        }
+        setModPitchTrackPitchShift(mod, value) {
+            this._doc.record(new ChangeModPitchBooleanSetting(this._doc, mod, "modPitchTrackPitchShifts", value));
         }
         insertBars() {
             this._doc.record(new ChangeInsertBars(this._doc, this.boxSelectionBar + this.boxSelectionWidth, this.boxSelectionWidth));
@@ -44300,11 +44375,17 @@ You should be redirected to the song at:<br /><br />
                     noteFlashColor = ColorConfig.getComputed("--note-flash");
                 for (const note of this._pattern.notes) {
                     let disabled = false;
+                    let sizeInert = false;
                     if (this._doc.song.getChannelIsMod(this._doc.channel)) {
-                        const modIndex = instrument.modulators[Config.modCount - 1 - note.pitches[0]];
+                        const modSlot = Config.modCount - 1 - note.pitches[0];
+                        const modIndex = instrument.modulators[modSlot];
                         if ((modIndex == Config.modulators.dictionary["none"].index)
-                            || instrument.invalidModulators[Config.modCount - 1 - note.pitches[0]])
+                            || instrument.invalidModulators[modSlot])
                             disabled = true;
+                        const modSettingName = Config.modulators[modIndex].name;
+                        const filterTargetIsMorph = Synth.isFilterModSetting(modIndex) && instrument.modFilterTypes[modSlot] == 0;
+                        const followerActive = instrument.modPitchChannels[modSlot] >= 0 && pitchFollowerIncompatibleSettings.indexOf(modSettingName) == -1 && !filterTargetIsMorph;
+                        sizeInert = followerActive && !instrument.modPitchModValues[modSlot];
                     }
                     for (let i = 0; i < note.pitches.length; i++) {
                         const pitch = note.pitches[i];
@@ -44313,18 +44394,22 @@ You should be redirected to the song at:<br /><br />
                         let colorSecondary = (disabled ? ColorConfig.disabledNoteSecondary : ColorConfig.getChannelColor(this._doc.song, this._doc.channel).secondaryNote);
                         notePath.setAttribute("fill", colorSecondary);
                         notePath.setAttribute("pointer-events", "none");
+                        if (sizeInert)
+                            notePath.style.opacity = "0.5";
                         this._drawNote(notePath, pitch, note.start, note.pins, (this._pitchHeight - this._pitchBorder) / 2 + 1, false, this._octaveOffset);
                         this._svgNoteContainer.appendChild(notePath);
                         notePath = SVG.path();
                         notePath.setAttribute("fill", colorPrimary);
                         notePath.setAttribute("pointer-events", "none");
-                        this._drawNote(notePath, pitch, note.start, note.pins, (this._pitchHeight - this._pitchBorder) / 2 + 1, true, this._octaveOffset);
+                        if (sizeInert)
+                            notePath.style.opacity = "0.5";
+                        this._drawNote(notePath, pitch, note.start, note.pins, (this._pitchHeight - this._pitchBorder) / 2 + 1, !sizeInert, this._octaveOffset);
                         this._svgNoteContainer.appendChild(notePath);
                         if (this._doc.prefs.notesFlashWhenPlayed && !disabled) {
                             notePath = SVG.path();
                             notePath.setAttribute("fill", noteFlashColor);
                             notePath.setAttribute("pointer-events", "none");
-                            this._drawNote(notePath, pitch, note.start, note.pins, (this._pitchHeight - this._pitchBorder) / 2 + 1, true, this._octaveOffset);
+                            this._drawNote(notePath, pitch, note.start, note.pins, (this._pitchHeight - this._pitchBorder) / 2 + 1, !sizeInert, this._octaveOffset);
                             this._svgNoteContainer.appendChild(notePath);
                             notePath.classList.add('note-flash');
                             notePath.style.opacity = "0";
@@ -45724,17 +45809,17 @@ You should be redirected to the song at:<br /><br />
                     break;
                 case "modPitchChannel":
                     {
-                        message = div$5(h2$4("Pitch Follower Channel"), p$1("Normally, a modulator's value comes from the notes you draw on this mod channel. With a pitch follower, the value instead comes from the actual pitch of notes playing on another channel, and updates as that channel plays higher or lower notes."), p$1("Choose the channel whose pitch you want to follow here. The pitch is scaled to the full range of the modulator setting you picked - for example, a low note will act like a low value and a high note like a high value."), p$1("Note that while a pitch follower is active, the values drawn on this mod channel's notes are ignored - the notes themselves only determine when the modulator is active."), p$1("Pitch followers don't apply to settings that use their value as an index or trigger, like filter morphs or resets, so the row is hidden for those."), p$1("If a noise channel is chosen, its notes' values (0 to 15) are used as the pitch, since noise channels don't play musical pitches."));
+                        message = div$5(h2$4("Pitch Follower Channel"), p$1("Normally, a modulator's value comes from the notes you draw on this mod channel. With a pitch follower, the value instead comes from the actual pitch of notes playing on another channel, and updates as that channel plays higher or lower notes."), p$1("Choose the channel whose pitch you want to follow here. The pitch is scaled to the full range of the modulator setting you picked - for example, a low note will act like a low value and a high note like a high value."), p$1("Note that while a pitch follower is active, the values drawn on this mod channel's notes are ignored (unless 'Scale by mod note values' is ticked) - the notes themselves only determine when the modulator is active. Notes whose sizes are being ignored are shown dimmed and flat in the pattern editor."), p$1("Pitch followers don't apply to settings that use their value as an index or trigger, like filter morphs or resets, so the row is hidden for those."), p$1("If a noise channel is chosen, its notes' values (0 to 15) are used as the pitch, since noise channels don't play musical pitches."));
                     }
                     break;
                 case "modPitchVoice":
                     {
-                        message = div$5(h2$4("Pitch Follower Voice"), p$1("Instruments with unisons play several voices at once, each at a slightly different pitch. This setting lets you choose which voice's pitch the follower uses."), p$1("'Primary' follows the note's main pitch, ignoring the unison spread and offset. The numbered voices follow the pitch that voice plays at based on the instrument's unison spread and offset - for example, with an octave unison, voice 1 sounds an octave up while voice 2 is at the base pitch."), p$1("If the followed channel's instrument doesn't have enough voices, the highest available voice is used instead."));
+                        message = div$5(h2$4("Pitch Follower Voice"), p$1("Instruments with unisons play several voices at once, each at a slightly different pitch. This setting lets you choose which voice's pitch the follower uses."), p$1("'Primary' follows the note's main pitch, ignoring the unison spread and offset. The numbered voices follow the pitch that voice plays at based on the instrument's unison spread and offset - for example, with an octave unison, voice 1 sounds an octave up while voice 2 is at the base pitch."), p$1("If the followed channel's instrument doesn't have enough voices, the highest available voice is used instead. The dropdown only shows the voices the source channel's current instrument actually has, so unusable options stay hidden."));
                     }
                     break;
                 case "modPitchFollowMode":
                     {
-                        message = div$5(h2$4("Pitch Follower Source"), p$1("Choose what the follower reads from the source channel's notes."), p$1("'pitch' uses the note's base pitch. 'played pitch' also includes live pitch bends and slides, so the modulator follows the note wherever it's actually playing - great for vibrato or pitch-bend-driven effects. 'bend only' follows just the bend amount itself, resting at 0 whenever the source note isn't bending."), p$1("When the source channel plays chords (several notes at once), 'highest note' follows the top note, 'lowest note' the bottom note, and 'average' the middle of all sounding notes - handy for making an effect track the overall register of a chord rather than a single note."));
+                        message = div$5(h2$4("Pitch Follower Source"), p$1("Choose what the follower reads from the source channel's notes."), p$1("'pitch' uses the note's base pitch. 'played pitch' also includes live pitch bends and slides, so the modulator follows the note wherever it's actually playing - great for vibrato or pitch-bend-driven effects. 'bend only' follows just the bend amount itself, resting at 0 whenever the source note isn't bending."), p$1("When the source channel plays chords (several notes at once), 'highest note' follows the top note, 'lowest note' the bottom note, and 'average' the middle of all sounding notes - handy for making an effect track the overall register of a chord rather than a single note."), p$1("'note size' follows the size of the most recently started note, and 'loudest note size' follows the loudest of all currently sounding notes. Sizes range from 0 to 6, so a quiet note drives the modulator toward its minimum and a loud one toward its maximum. Combined with the Invert checkbox on a volume modulator, this is a simple way to sidechain - the volume ducks whenever the source channel plays loudly, regardless of pitch. Range, transpose, and detune don't apply in these modes."));
                     }
                     break;
                 case "modPitchRange":
@@ -45749,7 +45834,17 @@ You should be redirected to the song at:<br /><br />
                     break;
                 case "modPitchDetune":
                     {
-                        message = div$5(h2$4("Voice Detune"), p$1("How much of the followed unison voice's detune (its spread and offset) is applied. 100% follows the voice at its exact pitch; lower values pull it back toward the note's primary pitch."));
+                        message = div$5(h2$4("Voice Detune"), p$1("How much of the followed unison voice's detune (its spread and offset) is applied. 100% follows the voice at its exact pitch; lower values pull it back toward the note's primary pitch."), p$1("The 'Det' and 'PS' checkboxes additionally fold the source instrument's live detune effect and pitch shift effect into the followed pitch, scaled by this same percentage. These effects can move over time (they have their own envelopes and can be driven by mods), so following them captures that movement rather than just a static offset."));
+                    }
+                    break;
+                case "modPitchTrackDetune":
+                    {
+                        message = div$5(h2$4("Track Detune Effect"), p$1("When ticked, the live interval of the source instrument's detune effect is added to the followed pitch, scaled by the Detune percentage. This includes the detune effect's own envelope, plus any 'detune' or 'song detune' mods affecting the source - so the follower moves with the source's actual detuning as it changes over time."));
+                    }
+                    break;
+                case "modPitchTrackPitchShift":
+                    {
+                        message = div$5(h2$4("Track Pitch Shift Effect"), p$1("When ticked, the live interval of the source instrument's pitch shift effect is added to the followed pitch, scaled by the Detune percentage. Pitch shift is usually a static offset (you could use Transpose instead), but if the source is being driven by a 'pitch shift' mod, ticking this lets the follower ride along with that modulation."));
                     }
                     break;
                 case "modPitchSmooth":
@@ -47846,7 +47941,7 @@ You should be redirected to the song at:<br /><br />
     }
 
     const { button, div, input, select, span, optgroup, option, canvas } = HTML;
-    const pitchFollowerIncompatibleSettings = ["song eq", "eq filter", "note filter", "reset arp", "reset envelope", "next bar", "individual envelope speed", "individual envelope lower bound", "individual envelope upper bound"];
+    const pitchFollowerIncompatibleSettings = ["reset arp", "reset envelope", "next bar"];
     function buildOptions(menu, items) {
         for (let index = 0; index < items.length; index++) {
             menu.appendChild(option({ value: index }, items[index]));
@@ -49998,17 +50093,28 @@ You should be redirected to the song at:<br /><br />
                             buildOptions(this._modPitchChannelBoxes[mod], pitchChannelList);
                         }
                         this._modPitchChannelBoxes[mod].selectedIndex = instrument.modPitchChannels[mod] + 1;
-                        if (this._modPitchVoiceBoxes[mod].children.length != Config.unisonVoicesMax + 1) {
+                        let maxFollowerVoice = Config.unisonVoicesMax;
+                        const followerSourceChannel = instrument.modPitchChannels[mod];
+                        if (followerSourceChannel >= 0 && followerSourceChannel < this.doc.song.getChannelCount()) {
+                            const sourcePattern = this.doc.song.getPattern(followerSourceChannel, this.doc.bar);
+                            const sourceInstruments = this.doc.song.channels[followerSourceChannel].instruments;
+                            const sourceInstrumentIndex = (sourcePattern != null && sourcePattern.instruments.length > 0) ? sourcePattern.instruments[0] : 0;
+                            const sourceInstrument = sourceInstruments[Math.min(sourceInstrumentIndex, sourceInstruments.length - 1)];
+                            maxFollowerVoice = Math.min(Config.unisonVoicesMax, Math.max(1, sourceInstrument.unisonVoices));
+                        }
+                        if (this._modPitchVoiceBoxes[mod].children.length != maxFollowerVoice + 1) {
                             while (this._modPitchVoiceBoxes[mod].firstChild)
                                 this._modPitchVoiceBoxes[mod].remove(0);
                             const voiceList = ["primary"];
-                            for (let i = 0; i < Config.unisonVoicesMax; i++) {
+                            for (let i = 0; i < maxFollowerVoice; i++) {
                                 voiceList.push("voice " + (i + 1));
                             }
                             buildOptions(this._modPitchVoiceBoxes[mod], voiceList);
                         }
-                        this._modPitchVoiceBoxes[mod].selectedIndex = instrument.modPitchVoices[mod] + 1;
-                        const pitchCompatibleSetting = instrument.modChannels[mod] != -2 && pitchFollowerIncompatibleSettings.indexOf(Config.modulators[instrument.modulators[mod]].name) == -1;
+                        this._modPitchVoiceBoxes[mod].selectedIndex = Math.min(maxFollowerVoice, instrument.modPitchVoices[mod] + 1);
+                        const modSettingName = Config.modulators[instrument.modulators[mod]].name;
+                        const filterTargetIsMorph = Synth.isFilterModSetting(instrument.modulators[mod]) && instrument.modFilterTypes[mod] == 0;
+                        const pitchCompatibleSetting = instrument.modChannels[mod] != -2 && pitchFollowerIncompatibleSettings.indexOf(modSettingName) == -1 && !filterTargetIsMorph;
                         if (pitchCompatibleSetting) {
                             $("#modPitchChannelText" + mod).get(0).style.display = "";
                         }
@@ -50016,18 +50122,20 @@ You should be redirected to the song at:<br /><br />
                             $("#modPitchChannelText" + mod).get(0).style.display = "none";
                             $("#modPitchVoiceText" + mod).get(0).style.display = "none";
                         }
-                        if (pitchCompatibleSetting && instrument.modPitchChannels[mod] >= 0) {
+                        const pitchFollowerActive = pitchCompatibleSetting && instrument.modPitchChannels[mod] >= 0;
+                        const sizeFollowMode = pitchFollowerActive && (instrument.modPitchFollowModes[mod] == 6 || instrument.modPitchFollowModes[mod] == 7);
+                        if (pitchFollowerActive && !sizeFollowMode) {
                             $("#modPitchVoiceText" + mod).get(0).style.display = "";
                         }
                         else {
                             $("#modPitchVoiceText" + mod).get(0).style.display = "none";
                         }
-                        if (this._modPitchFollowBoxes[mod].children.length != 6) {
+                        if (this._modPitchFollowBoxes[mod].children.length != 8) {
                             while (this._modPitchFollowBoxes[mod].firstChild)
                                 this._modPitchFollowBoxes[mod].remove(0);
-                            buildOptions(this._modPitchFollowBoxes[mod], ["pitch", "played pitch", "bend only", "highest note", "lowest note", "average"]);
+                            buildOptions(this._modPitchFollowBoxes[mod], ["pitch", "played pitch", "bend only", "highest note", "lowest note", "average", "note size", "loudest note size"]);
                         }
-                        this._modPitchFollowBoxes[mod].selectedIndex = Math.max(0, Math.min(5, instrument.modPitchFollowModes[mod]));
+                        this._modPitchFollowBoxes[mod].selectedIndex = Math.max(0, Math.min(7, instrument.modPitchFollowModes[mod]));
                         if (this._modPitchRangeBoxes[mod].children.length != Config.pitchFollowerRanges.length) {
                             while (this._modPitchRangeBoxes[mod].firstChild)
                                 this._modPitchRangeBoxes[mod].remove(0);
@@ -50065,10 +50173,15 @@ You should be redirected to the song at:<br /><br />
                         this._modPitchInvertBoxes[mod].checked = instrument.modPitchInverts[mod];
                         this._modPitchEnvelopeBoxes[mod].checked = instrument.modPitchEnvelopes[mod];
                         this._modPitchModValueBoxes[mod].checked = instrument.modPitchModValues[mod];
-                        const pitchFollowerActive = pitchCompatibleSetting && instrument.modPitchChannels[mod] >= 0;
-                        for (const rowId of ["modPitchFollowText", "modPitchRangeText", "modPitchTransposeText", "modPitchDetuneText", "modPitchSmoothText", "modPitchModValueText"]) {
+                        this._modPitchTrackDetuneBoxes[mod].checked = !!instrument.modPitchTrackDetunes[mod];
+                        this._modPitchTrackPitchShiftBoxes[mod].checked = !!instrument.modPitchTrackPitchShifts[mod];
+                        for (const rowId of ["modPitchFollowText", "modPitchSmoothText", "modPitchModValueText"]) {
                             $("#" + rowId + mod).get(0).style.display = pitchFollowerActive ? "" : "none";
                         }
+                        $("#modPitchRangeText" + mod).get(0).style.display = (pitchFollowerActive && !sizeFollowMode) ? "" : "none";
+                        const transposeOrDetuneApplicable = pitchFollowerActive && !sizeFollowMode && instrument.modPitchFollowModes[mod] != 2;
+                        $("#modPitchTransposeText" + mod).get(0).style.display = transposeOrDetuneApplicable ? "" : "none";
+                        $("#modPitchDetuneText" + mod).get(0).style.display = transposeOrDetuneApplicable ? "" : "none";
                     }
                     this.doc.recalcChannelNames = false;
                     for (let chordIndex = 0; chordIndex < Config.chords.length; chordIndex++) {
@@ -51305,6 +51418,12 @@ You should be redirected to the song at:<br /><br />
             this._whenSetModPitchDetune = (mod) => {
                 this.doc.selection.setModPitchDetune(mod, this._modPitchDetuneBoxes[mod].selectedIndex * 10);
             };
+            this._whenSetModPitchTrackDetune = (mod) => {
+                this.doc.selection.setModPitchTrackDetune(mod, this._modPitchTrackDetuneBoxes[mod].checked);
+            };
+            this._whenSetModPitchTrackPitchShift = (mod) => {
+                this.doc.selection.setModPitchTrackPitchShift(mod, this._modPitchTrackPitchShiftBoxes[mod].checked);
+            };
             this._whenSetModPitchSmooth = (mod) => {
                 this.doc.selection.setModPitchSmooth(mod, this._modPitchSmoothBoxes[mod].selectedIndex * 10);
             };
@@ -51741,6 +51860,8 @@ You should be redirected to the song at:<br /><br />
             this._modPitchModValueBoxes = [];
             this._modPitchTransposeBoxes = [];
             this._modPitchDetuneBoxes = [];
+            this._modPitchTrackDetuneBoxes = [];
+            this._modPitchTrackPitchShiftBoxes = [];
             this._modPitchSmoothBoxes = [];
             this._modTargetIndicators = [];
             for (let mod = 0; mod < Config.modCount; mod++) {
@@ -51766,7 +51887,9 @@ You should be redirected to the song at:<br /><br />
                 let modPitchTransposeBox = select({ style: "width: 100%; color: currentColor;" });
                 let modPitchTransposeRow = div({ class: "selectRow", id: "modPitchTransposeText" + mod, style: "margin-bottom: 0.9em; color: currentColor;" }, span({ class: "tip", onclick: () => this._openPrompt("modPitchTranspose") }, "Tran: "), div({ class: "selectContainer" }, modPitchTransposeBox));
                 let modPitchDetuneBox = select({ style: "width: 100%; color: currentColor;" });
-                let modPitchDetuneRow = div({ class: "selectRow", id: "modPitchDetuneText" + mod, style: "margin-bottom: 0.9em; color: currentColor;" }, span({ class: "tip", onclick: () => this._openPrompt("modPitchDetune") }, "Detune: "), div({ class: "selectContainer" }, modPitchDetuneBox));
+                let modPitchTrackDetuneBox = input({ type: "checkbox", style: "width: auto; margin-left: 0.8em; vertical-align: middle;" });
+                let modPitchTrackPitchShiftBox = input({ type: "checkbox", style: "width: auto; margin-left: 0.8em; vertical-align: middle;" });
+                let modPitchDetuneRow = div({ class: "selectRow", id: "modPitchDetuneText" + mod, style: "margin-bottom: 0.9em; color: currentColor;" }, span({ class: "tip", onclick: () => this._openPrompt("modPitchDetune") }, "Detune: "), div({ class: "selectContainer" }, modPitchDetuneBox), span({ class: "tip", style: "margin-left: 0.8em;", onclick: () => this._openPrompt("modPitchTrackDetune") }, "Det"), modPitchTrackDetuneBox, span({ class: "tip", style: "margin-left: 0.8em;", onclick: () => this._openPrompt("modPitchTrackPitchShift") }, "PS"), modPitchTrackPitchShiftBox);
                 let modPitchSmoothBox = select({ style: "width: 100%; color: currentColor;" });
                 let modPitchSmoothRow = div({ class: "selectRow", id: "modPitchSmoothText" + mod, style: "margin-bottom: 0.9em; color: currentColor;" }, span({ class: "tip", onclick: () => this._openPrompt("modPitchSmooth") }, "Smooth: "), div({ class: "selectContainer" }, modPitchSmoothBox));
                 let modPitchModValueBox = input({ type: "checkbox", style: "width: auto; margin-left: 0.8em; vertical-align: middle;" });
@@ -51797,6 +51920,8 @@ You should be redirected to the song at:<br /><br />
                 this._modPitchEnvelopeBoxes.push(modPitchEnvelopeBox);
                 this._modPitchTransposeBoxes.push(modPitchTransposeBox);
                 this._modPitchDetuneBoxes.push(modPitchDetuneBox);
+                this._modPitchTrackDetuneBoxes.push(modPitchTrackDetuneBox);
+                this._modPitchTrackPitchShiftBoxes.push(modPitchTrackPitchShiftBox);
                 this._modPitchSmoothBoxes.push(modPitchSmoothBox);
                 this._modPitchModValueBoxes.push(modPitchModValueBox);
                 this._modTargetIndicators.push(modTarget);
@@ -51900,6 +52025,8 @@ You should be redirected to the song at:<br /><br />
                 this._modPitchEnvelopeBoxes[mod].addEventListener("change", function () { thisRef._whenSetModPitchEnvelope(mod); });
                 this._modPitchTransposeBoxes[mod].addEventListener("change", function () { thisRef._whenSetModPitchTranspose(mod); });
                 this._modPitchDetuneBoxes[mod].addEventListener("change", function () { thisRef._whenSetModPitchDetune(mod); });
+                this._modPitchTrackDetuneBoxes[mod].addEventListener("change", function () { thisRef._whenSetModPitchTrackDetune(mod); });
+                this._modPitchTrackPitchShiftBoxes[mod].addEventListener("change", function () { thisRef._whenSetModPitchTrackPitchShift(mod); });
                 this._modPitchSmoothBoxes[mod].addEventListener("change", function () { thisRef._whenSetModPitchSmooth(mod); });
                 this._modPitchModValueBoxes[mod].addEventListener("change", function () { thisRef._whenSetModPitchModValue(mod); });
                 this._modTargetIndicators[mod].addEventListener("click", function () { thisRef._whenClickModTarget(mod); });

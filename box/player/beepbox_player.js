@@ -10961,6 +10961,8 @@ var beepbox = (function (exports) {
             this.modPitchSmooths = [];
             this.modPitchInverts = [];
             this.modPitchEnvelopes = [];
+            this.modPitchTrackDetunes = [];
+            this.modPitchTrackPitchShifts = [];
             this.invalidModulators = [];
             this.isNoiseInstrument = false;
             if (isModChannel) {
@@ -10978,6 +10980,8 @@ var beepbox = (function (exports) {
                     this.modPitchInverts.push(false);
                     this.modPitchEnvelopes.push(false);
                     this.modPitchModValues.push(false);
+                    this.modPitchTrackDetunes.push(false);
+                    this.modPitchTrackPitchShifts.push(false);
                 }
             }
             this.spectrumWave = new SpectrumWave(isNoiseChannel);
@@ -11165,6 +11169,8 @@ var beepbox = (function (exports) {
                     this.modPitchInverts = [];
                     this.modPitchEnvelopes = [];
                     this.modPitchModValues = [];
+                    this.modPitchTrackDetunes = [];
+                    this.modPitchTrackPitchShifts = [];
                     for (let mod = 0; mod < Config.modCount; mod++) {
                         this.modChannels.push(-2);
                         this.modInstruments.push(0);
@@ -11179,6 +11185,8 @@ var beepbox = (function (exports) {
                         this.modPitchInverts.push(false);
                         this.modPitchEnvelopes.push(false);
                         this.modPitchModValues.push(false);
+                        this.modPitchTrackDetunes.push(false);
+                        this.modPitchTrackPitchShifts.push(false);
                         this.invalidModulators[mod] = false;
                         this.modFilterTypes[mod] = 0;
                         this.modEnvelopeNumbers[mod] = 0;
@@ -11526,6 +11534,8 @@ var beepbox = (function (exports) {
                 instrumentObject["modPitchInverts"] = [];
                 instrumentObject["modPitchEnvelopes"] = [];
                 instrumentObject["modPitchModValues"] = [];
+                instrumentObject["modPitchTrackDetunes"] = [];
+                instrumentObject["modPitchTrackPitchShifts"] = [];
                 for (let mod = 0; mod < Config.modCount; mod++) {
                     instrumentObject["modChannels"][mod] = this.modChannels[mod];
                     instrumentObject["modInstruments"][mod] = this.modInstruments[mod];
@@ -11542,6 +11552,8 @@ var beepbox = (function (exports) {
                     instrumentObject["modPitchInverts"][mod] = this.modPitchInverts[mod];
                     instrumentObject["modPitchEnvelopes"][mod] = this.modPitchEnvelopes[mod];
                     instrumentObject["modPitchModValues"][mod] = this.modPitchModValues[mod];
+                    instrumentObject["modPitchTrackDetunes"][mod] = this.modPitchTrackDetunes[mod];
+                    instrumentObject["modPitchTrackPitchShifts"][mod] = this.modPitchTrackPitchShifts[mod];
                 }
             }
             else {
@@ -12093,6 +12105,10 @@ var beepbox = (function (exports) {
                             this.modPitchEnvelopes[mod] = instrumentObject["modPitchEnvelopes"][mod];
                         if (instrumentObject["modPitchModValues"] != undefined)
                             this.modPitchModValues[mod] = instrumentObject["modPitchModValues"][mod];
+                        if (instrumentObject["modPitchTrackDetunes"] != undefined)
+                            this.modPitchTrackDetunes[mod] = instrumentObject["modPitchTrackDetunes"][mod];
+                        if (instrumentObject["modPitchTrackPitchShifts"] != undefined)
+                            this.modPitchTrackPitchShifts[mod] = instrumentObject["modPitchTrackPitchShifts"][mod];
                     }
                 }
             }
@@ -13160,7 +13176,7 @@ var beepbox = (function (exports) {
                             }
                             if (Song._latestSlarmoosBoxVersion >= 7 && instrument.modPitchChannels[mod] >= 0) {
                                 const followModeFieldBits = Song._latestSlarmoosBoxVersion >= 9 ? 3 : 2;
-                                bits.write(followModeFieldBits, clamp(0, followModeFieldBits == 3 ? 6 : 4, instrument.modPitchFollowModes[mod]));
+                                bits.write(followModeFieldBits, clamp(0, followModeFieldBits == 3 ? 8 : 4, instrument.modPitchFollowModes[mod]));
                                 bits.write(3, clamp(0, Config.pitchFollowerRanges.length, instrument.modPitchRanges[mod]));
                                 bits.write(6, clamp(Config.pitchFollowerTransposeMin, Config.pitchFollowerTransposeMax + 1, instrument.modPitchTransposes[mod]) - Config.pitchFollowerTransposeMin);
                                 bits.write(7, clamp(0, Config.pitchFollowerPercentMax + 1, instrument.modPitchDetunes[mod]));
@@ -13169,6 +13185,10 @@ var beepbox = (function (exports) {
                                 bits.write(1, instrument.modPitchEnvelopes[mod] ? 1 : 0);
                                 if (Song._latestSlarmoosBoxVersion >= 8) {
                                     bits.write(1, instrument.modPitchModValues[mod] ? 1 : 0);
+                                }
+                                if (Song._latestSlarmoosBoxVersion >= 10) {
+                                    bits.write(1, instrument.modPitchTrackDetunes[mod] ? 1 : 0);
+                                    bits.write(1, instrument.modPitchTrackPitchShifts[mod] ? 1 : 0);
                                 }
                             }
                         }
@@ -13412,6 +13432,7 @@ var beepbox = (function (exports) {
             const beforeSeven = version < 7;
             const beforeEight = version < 8;
             const beforeNine = version < 9;
+            const beforeTen = version < 10;
             this.initToDefault((fromBeepBox && beforeNine) || ((fromJummBox && beforeFive) || (beforeFour && fromGoldBox)));
             const forceSimpleFilter = (fromBeepBox && beforeNine || fromJummBox && beforeFive);
             let willLoadLegacySamplesForOldSongs = false;
@@ -15198,7 +15219,7 @@ var beepbox = (function (exports) {
                                                 instrument.modPitchChannels[mod] = bits.read(7) - 1;
                                                 instrument.modPitchVoices[mod] = bits.read(4) - 1;
                                                 if (!beforeSeven && instrument.modPitchChannels[mod] >= 0) {
-                                                    instrument.modPitchFollowModes[mod] = Math.min(5, beforeNine ? bits.read(2) : bits.read(3));
+                                                    instrument.modPitchFollowModes[mod] = Math.min(7, beforeNine ? bits.read(2) : bits.read(3));
                                                     instrument.modPitchRanges[mod] = Math.min(Config.pitchFollowerRanges.length - 1, bits.read(3));
                                                     instrument.modPitchTransposes[mod] = bits.read(6) + Config.pitchFollowerTransposeMin;
                                                     instrument.modPitchDetunes[mod] = bits.read(7);
@@ -15207,6 +15228,10 @@ var beepbox = (function (exports) {
                                                     instrument.modPitchEnvelopes[mod] = bits.read(1) == 1;
                                                     if (!beforeEight) {
                                                         instrument.modPitchModValues[mod] = bits.read(1) == 1;
+                                                    }
+                                                    if (!beforeTen) {
+                                                        instrument.modPitchTrackDetunes[mod] = bits.read(1) == 1;
+                                                        instrument.modPitchTrackPitchShifts[mod] = bits.read(1) == 1;
                                                     }
                                                 }
                                             }
@@ -16470,7 +16495,7 @@ var beepbox = (function (exports) {
     Song._oldestUltraBoxVersion = 1;
     Song._latestUltraBoxVersion = 5;
     Song._oldestSlarmoosBoxVersion = 1;
-    Song._latestSlarmoosBoxVersion = 9;
+    Song._latestSlarmoosBoxVersion = 10;
     Song._variant = 0x73;
     class PickedString {
         constructor() {
@@ -23200,17 +23225,16 @@ var beepbox = (function (exports) {
             drumFunction(synth, bufferIndex, runLength, tone, instrumentState);
         }
         static isPitchFollowerCompatibleSetting(setting) {
-            return setting != Config.modulators.dictionary["song eq"].index
-                && setting != Config.modulators.dictionary["eq filter"].index
-                && setting != Config.modulators.dictionary["note filter"].index
-                && setting != Config.modulators.dictionary["reset arp"].index
+            return setting != Config.modulators.dictionary["reset arp"].index
                 && setting != Config.modulators.dictionary["reset envelope"].index
-                && setting != Config.modulators.dictionary["next bar"].index
-                && setting != Config.modulators.dictionary["individual envelope speed"].index
-                && setting != Config.modulators.dictionary["individual envelope lower bound"].index
-                && setting != Config.modulators.dictionary["individual envelope upper bound"].index;
+                && setting != Config.modulators.dictionary["next bar"].index;
         }
-        static getPitchModValue(synth, sourceChannel, voice, followMode = 0, detunePercent = 100, includeEnvelope = false) {
+        static isFilterModSetting(setting) {
+            return setting == Config.modulators.dictionary["song eq"].index
+                || setting == Config.modulators.dictionary["eq filter"].index
+                || setting == Config.modulators.dictionary["note filter"].index;
+        }
+        static getPitchModValue(synth, sourceChannel, voice, followMode = 0, detunePercent = 100, includeEnvelope = false, trackDetuneEffect = false, trackPitchShiftEffect = false) {
             if (synth.song == null || sourceChannel < 0 || synth.channels[sourceChannel] == null)
                 return -1;
             const getVoicePitchOffset = (tone) => {
@@ -23239,6 +23263,7 @@ var beepbox = (function (exports) {
             let count = 0;
             let lowest = Number.MAX_SAFE_INTEGER;
             let highest = -Number.MAX_SAFE_INTEGER;
+            let loudestSize = 0;
             for (let instrumentIndex = 0; instrumentIndex < synth.channels[sourceChannel].instruments.length; instrumentIndex++) {
                 const instrumentState = synth.channels[sourceChannel].instruments[instrumentIndex];
                 for (let i = 0; i < instrumentState.activeTones.count(); i++) {
@@ -23259,21 +23284,62 @@ var beepbox = (function (exports) {
                                 highest = basePitch;
                         }
                     }
+                    if (followMode == 7 && candidate.expression > loudestSize)
+                        loudestSize = candidate.expression;
                 }
             }
             if (latestTone == null)
                 return -1;
+            if (followMode == 6)
+                return latestTone.expression;
+            if (followMode == 7)
+                return loudestSize;
+            let pitch;
             switch (followMode) {
-                case 3: return highest;
-                case 4: return lowest;
-                case 5: return (count > 0) ? sum / count : 0;
+                case 3:
+                    pitch = highest;
+                    break;
+                case 4:
+                    pitch = lowest;
+                    break;
+                case 5:
+                    pitch = (count > 0) ? sum / count : 0;
+                    break;
+                default:
+                    pitch = latestTone.pitches[0] + getVoicePitchOffset(latestTone);
+                    if (followMode == 1)
+                        pitch += latestTone.lastInterval;
+                    else if (followMode == 2)
+                        return latestTone.lastInterval;
+                    break;
             }
-            let pitch = latestTone.pitches[0] + getVoicePitchOffset(latestTone);
-            if (followMode == 1) {
-                pitch += latestTone.lastInterval;
-            }
-            else if (followMode == 2) {
-                return latestTone.lastInterval;
+            if (trackDetuneEffect || trackPitchShiftEffect) {
+                const sourceInstrument = synth.song.channels[sourceChannel].instruments[latestTone.instrumentIndex];
+                const instrumentIndex = latestTone.instrumentIndex;
+                let extra = 0;
+                if (trackDetuneEffect && (effectsIncludeDetune(sourceInstrument.effects) || synth.isModActive(Config.modulators.dictionary["song detune"].index, sourceChannel, instrumentIndex))) {
+                    let detuneSetting = sourceInstrument.detune;
+                    if (synth.isModActive(Config.modulators.dictionary["detune"].index, sourceChannel, instrumentIndex)) {
+                        detuneSetting = synth.getModValue(Config.modulators.dictionary["detune"].index, sourceChannel, instrumentIndex, false) + Config.detuneCenter;
+                    }
+                    if (synth.isModActive(Config.modulators.dictionary["song detune"].index, sourceChannel, instrumentIndex)) {
+                        detuneSetting += 4 * synth.getModValue(Config.modulators.dictionary["song detune"].index, sourceChannel, instrumentIndex, false);
+                    }
+                    const detuneEnvelope = latestTone.envelopeComputer.envelopeStarts[19];
+                    extra += Synth.detuneToCents(detuneSetting) * ((detuneEnvelope != null && !Number.isNaN(detuneEnvelope)) ? detuneEnvelope : 1.0) * Config.pitchesPerOctave / (12.0 * 100.0);
+                }
+                if (trackPitchShiftEffect && effectsIncludePitchShift(sourceInstrument.effects)) {
+                    const pitchShiftSemitones = Config.justIntonationSemitones[sourceInstrument.pitchShift];
+                    let pitchShiftScalar = 1.0;
+                    if (synth.isModActive(Config.modulators.dictionary["pitch shift"].index, sourceChannel, instrumentIndex)) {
+                        pitchShiftScalar = synth.getModValue(Config.modulators.dictionary["pitch shift"].index, sourceChannel, instrumentIndex, false) / Config.pitchShiftCenter;
+                    }
+                    const pitchShiftEnvelope = latestTone.envelopeComputer.envelopeStarts[18];
+                    extra += pitchShiftSemitones * ((pitchShiftEnvelope != null && !Number.isNaN(pitchShiftEnvelope)) ? pitchShiftEnvelope : 1.0) * pitchShiftScalar;
+                }
+                if (detunePercent != 100)
+                    extra *= detunePercent / 100;
+                pitch += extra;
             }
             return pitch;
         }
@@ -23285,18 +23351,21 @@ var beepbox = (function (exports) {
                 return;
             let setting = instrument.modulators[mod];
             const pitchSourceChannel = instrument.modPitchChannels[mod];
-            const usingPitchFollower = pitchSourceChannel >= 0 && Synth.isPitchFollowerCompatibleSetting(setting);
+            const usingPitchFollower = pitchSourceChannel >= 0
+                && Synth.isPitchFollowerCompatibleSetting(setting)
+                && !(Synth.isFilterModSetting(setting) && instrument.modFilterTypes[mod] == 0);
             let modValueStart = tone.expression;
             let modValueEnd = tone.expression + tone.expressionDelta;
             if (usingPitchFollower) {
-                const followMode = clamp(0, 6, instrument.modPitchFollowModes[mod]);
-                const pitch = Synth.getPitchModValue(synth, pitchSourceChannel, instrument.modPitchVoices[mod], followMode, clamp(0, Config.pitchFollowerPercentMax + 1, instrument.modPitchDetunes[mod]), instrument.modPitchEnvelopes[mod]);
+                const followMode = clamp(0, 8, instrument.modPitchFollowModes[mod]);
+                const sizeMode = followMode == 6 || followMode == 7;
+                const pitch = Synth.getPitchModValue(synth, pitchSourceChannel, instrument.modPitchVoices[mod], followMode, clamp(0, Config.pitchFollowerPercentMax + 1, instrument.modPitchDetunes[mod]), instrument.modPitchEnvelopes[mod], instrument.modPitchTrackDetunes[mod] == true, instrument.modPitchTrackPitchShifts[mod] == true);
                 if (pitch < 0)
                     return;
                 const maxRawVol = Config.modulators[setting].maxRawVol;
                 const rangeIndex = clamp(0, Config.pitchFollowerRanges.length, instrument.modPitchRanges[mod]);
-                const range = Config.pitchFollowerRanges[rangeIndex];
-                const sourcePitch = (followMode == 2) ? pitch : pitch + clamp(Config.pitchFollowerTransposeMin, Config.pitchFollowerTransposeMax + 1, instrument.modPitchTransposes[mod]);
+                const range = sizeMode ? Config.noteSizeMax : Config.pitchFollowerRanges[rangeIndex];
+                const sourcePitch = (sizeMode || followMode == 2) ? pitch : pitch + clamp(Config.pitchFollowerTransposeMin, Config.pitchFollowerTransposeMax + 1, instrument.modPitchTransposes[mod]);
                 let scaled = clamp(0, maxRawVol + 1, sourcePitch * maxRawVol / range);
                 if (instrument.modPitchInverts[mod])
                     scaled = maxRawVol - scaled;
@@ -23387,10 +23456,10 @@ var beepbox = (function (exports) {
                         }
                         if (tgtSong.tmpEqFilterEnd.controlPointCount > Math.floor((dotTarget - 1) / 2)) {
                             if (dotTarget % 2) {
-                                tgtSong.tmpEqFilterEnd.controlPoints[Math.floor((dotTarget - 1) / 2)].freq = tone.expression + tone.expressionDelta;
+                                tgtSong.tmpEqFilterEnd.controlPoints[Math.floor((dotTarget - 1) / 2)].freq = modValueEnd;
                             }
                             else {
-                                tgtSong.tmpEqFilterEnd.controlPoints[Math.floor((dotTarget - 1) / 2)].gain = tone.expression + tone.expressionDelta;
+                                tgtSong.tmpEqFilterEnd.controlPoints[Math.floor((dotTarget - 1) / 2)].gain = modValueEnd;
                             }
                         }
                     }
@@ -23425,10 +23494,10 @@ var beepbox = (function (exports) {
                             }
                             if (tgtInstrument.tmpEqFilterEnd.controlPointCount > Math.floor((dotTarget - 1) / 2)) {
                                 if (dotTarget % 2) {
-                                    tgtInstrument.tmpEqFilterEnd.controlPoints[Math.floor((dotTarget - 1) / 2)].freq = tone.expression + tone.expressionDelta;
+                                    tgtInstrument.tmpEqFilterEnd.controlPoints[Math.floor((dotTarget - 1) / 2)].freq = modValueEnd;
                                 }
                                 else {
-                                    tgtInstrument.tmpEqFilterEnd.controlPoints[Math.floor((dotTarget - 1) / 2)].gain = tone.expression + tone.expressionDelta;
+                                    tgtInstrument.tmpEqFilterEnd.controlPoints[Math.floor((dotTarget - 1) / 2)].gain = modValueEnd;
                                 }
                             }
                         }
@@ -23464,10 +23533,10 @@ var beepbox = (function (exports) {
                             }
                             if (tgtInstrument.tmpNoteFilterEnd.controlPointCount > Math.floor((dotTarget - 1) / 2)) {
                                 if (dotTarget % 2) {
-                                    tgtInstrument.tmpNoteFilterEnd.controlPoints[Math.floor((dotTarget - 1) / 2)].freq = tone.expression + tone.expressionDelta;
+                                    tgtInstrument.tmpNoteFilterEnd.controlPoints[Math.floor((dotTarget - 1) / 2)].freq = modValueEnd;
                                 }
                                 else {
-                                    tgtInstrument.tmpNoteFilterEnd.controlPoints[Math.floor((dotTarget - 1) / 2)].gain = tone.expression + tone.expressionDelta;
+                                    tgtInstrument.tmpNoteFilterEnd.controlPoints[Math.floor((dotTarget - 1) / 2)].gain = modValueEnd;
                                 }
                             }
                         }
@@ -23476,7 +23545,7 @@ var beepbox = (function (exports) {
                 else if (setting == Config.modulators.dictionary["individual envelope speed"].index) {
                     const tgtInstrument = synth.song.channels[instrument.modChannels[mod]].instruments[usedInstruments[instrumentIndex]];
                     let envelopeTarget = instrument.modEnvelopeNumbers[mod];
-                    let speed = tone.expression + tone.expressionDelta;
+                    let speed = modValueEnd;
                     if (tgtInstrument.envelopeCount > envelopeTarget) {
                         if (Number.isInteger(speed)) {
                             tgtInstrument.envelopes[envelopeTarget].tempEnvelopeSpeed = Config.perEnvelopeSpeedIndices[speed];
@@ -23490,7 +23559,7 @@ var beepbox = (function (exports) {
                 else if (setting == Config.modulators.dictionary["individual envelope lower bound"].index) {
                     const tgtInstrument = synth.song.channels[instrument.modChannels[mod]].instruments[usedInstruments[instrumentIndex]];
                     let envelopeTarget = instrument.modEnvelopeNumbers[mod];
-                    let bound = tone.expression + tone.expressionDelta;
+                    let bound = modValueEnd;
                     if (tgtInstrument.envelopeCount > envelopeTarget) {
                         tgtInstrument.envelopes[envelopeTarget].tempEnvelopeLowerBound = bound / 10;
                     }
@@ -23498,7 +23567,7 @@ var beepbox = (function (exports) {
                 else if (setting == Config.modulators.dictionary["individual envelope upper bound"].index) {
                     const tgtInstrument = synth.song.channels[instrument.modChannels[mod]].instruments[usedInstruments[instrumentIndex]];
                     let envelopeTarget = instrument.modEnvelopeNumbers[mod];
-                    let bound = tone.expression + tone.expressionDelta;
+                    let bound = modValueEnd;
                     if (tgtInstrument.envelopeCount > envelopeTarget) {
                         tgtInstrument.envelopes[envelopeTarget].tempEnvelopeUpperBound = bound / 10;
                     }
