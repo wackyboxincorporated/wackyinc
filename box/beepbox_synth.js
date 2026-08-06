@@ -1021,6 +1021,8 @@ var beepbox = (function (exports) {
     Config.modCount = 6;
     Config.maxPitch = _a.pitchOctaves * _a.pitchesPerOctave;
     Config.pitchFollowerRanges = [12, 24, 36, 48, 72, 96];
+    Config.pitchFollowerRangeMin = 12;
+    Config.pitchFollowerRangeMax = 120;
     Config.pitchFollowerTransposeMin = -24;
     Config.pitchFollowerTransposeMax = 24;
     Config.pitchFollowerPercentMax = 100;
@@ -3920,6 +3922,7 @@ var beepbox = (function (exports) {
             this.modPitchVoices = [];
             this.modPitchFollowModes = [];
             this.modPitchRanges = [];
+            this.modPitchRangeStarts = [];
             this.modPitchTransposes = [];
             this.modPitchDetunes = [];
             this.modPitchSmooths = [];
@@ -3937,7 +3940,8 @@ var beepbox = (function (exports) {
                     this.modPitchChannels.push(-1);
                     this.modPitchVoices.push(-1);
                     this.modPitchFollowModes.push(0);
-                    this.modPitchRanges.push(Config.pitchFollowerRanges.length - 1);
+                    this.modPitchRanges.push(Config.pitchFollowerRanges[Config.pitchFollowerRanges.length - 1]);
+                    this.modPitchRangeStarts.push(0);
                     this.modPitchTransposes.push(0);
                     this.modPitchDetunes.push(100);
                     this.modPitchSmooths.push(0);
@@ -4127,6 +4131,7 @@ var beepbox = (function (exports) {
                     this.modPitchVoices = [];
                     this.modPitchFollowModes = [];
                     this.modPitchRanges = [];
+                    this.modPitchRangeStarts = [];
                     this.modPitchTransposes = [];
                     this.modPitchDetunes = [];
                     this.modPitchSmooths = [];
@@ -4142,7 +4147,8 @@ var beepbox = (function (exports) {
                         this.modPitchChannels.push(-1);
                         this.modPitchVoices.push(-1);
                         this.modPitchFollowModes.push(0);
-                        this.modPitchRanges.push(Config.pitchFollowerRanges.length - 1);
+                        this.modPitchRanges.push(Config.pitchFollowerRanges[Config.pitchFollowerRanges.length - 1]);
+                        this.modPitchRangeStarts.push(0);
                         this.modPitchTransposes.push(0);
                         this.modPitchDetunes.push(100);
                         this.modPitchSmooths.push(0);
@@ -4492,6 +4498,7 @@ var beepbox = (function (exports) {
                 instrumentObject["modPitchVoices"] = [];
                 instrumentObject["modPitchFollowModes"] = [];
                 instrumentObject["modPitchRanges"] = [];
+                instrumentObject["modPitchRangeStarts"] = [];
                 instrumentObject["modPitchTransposes"] = [];
                 instrumentObject["modPitchDetunes"] = [];
                 instrumentObject["modPitchSmooths"] = [];
@@ -4510,6 +4517,7 @@ var beepbox = (function (exports) {
                     instrumentObject["modPitchVoices"][mod] = this.modPitchVoices[mod];
                     instrumentObject["modPitchFollowModes"][mod] = this.modPitchFollowModes[mod];
                     instrumentObject["modPitchRanges"][mod] = this.modPitchRanges[mod];
+                    instrumentObject["modPitchRangeStarts"][mod] = this.modPitchRangeStarts[mod];
                     instrumentObject["modPitchTransposes"][mod] = this.modPitchTransposes[mod];
                     instrumentObject["modPitchDetunes"][mod] = this.modPitchDetunes[mod];
                     instrumentObject["modPitchSmooths"][mod] = this.modPitchSmooths[mod];
@@ -5055,8 +5063,14 @@ var beepbox = (function (exports) {
                             this.modPitchVoices[mod] = instrumentObject["modPitchVoices"][mod];
                         if (instrumentObject["modPitchFollowModes"] != undefined)
                             this.modPitchFollowModes[mod] = instrumentObject["modPitchFollowModes"][mod];
-                        if (instrumentObject["modPitchRanges"] != undefined)
-                            this.modPitchRanges[mod] = instrumentObject["modPitchRanges"][mod];
+                        if (instrumentObject["modPitchRanges"] != undefined) {
+                            const rangeValue = instrumentObject["modPitchRanges"][mod];
+                            this.modPitchRanges[mod] = (rangeValue <= 5)
+                                ? Config.pitchFollowerRanges[Math.max(0, Math.min(Config.pitchFollowerRanges.length - 1, rangeValue))]
+                                : clamp(Config.pitchFollowerRangeMin, Config.pitchFollowerRangeMax + 1, rangeValue);
+                        }
+                        if (instrumentObject["modPitchRangeStarts"] != undefined)
+                            this.modPitchRangeStarts[mod] = clamp(0, Config.maxPitch, instrumentObject["modPitchRangeStarts"][mod]);
                         if (instrumentObject["modPitchTransposes"] != undefined)
                             this.modPitchTransposes[mod] = instrumentObject["modPitchTransposes"][mod];
                         if (instrumentObject["modPitchDetunes"] != undefined)
@@ -6141,7 +6155,20 @@ var beepbox = (function (exports) {
                             if (Song._latestSlarmoosBoxVersion >= 7 && instrument.modPitchChannels[mod] >= 0) {
                                 const followModeFieldBits = Song._latestSlarmoosBoxVersion >= 9 ? 3 : 2;
                                 bits.write(followModeFieldBits, clamp(0, followModeFieldBits == 3 ? 8 : 4, instrument.modPitchFollowModes[mod]));
-                                bits.write(3, clamp(0, Config.pitchFollowerRanges.length, instrument.modPitchRanges[mod]));
+                                if (Song._latestSlarmoosBoxVersion >= 11) {
+                                    bits.write(7, clamp(Config.pitchFollowerRangeMin, Config.pitchFollowerRangeMax + 1, instrument.modPitchRanges[mod]));
+                                }
+                                else {
+                                    let legacyRangeIndex = 0;
+                                    for (let i = 1; i < Config.pitchFollowerRanges.length; i++) {
+                                        if (Math.abs(Config.pitchFollowerRanges[i] - instrument.modPitchRanges[mod]) < Math.abs(Config.pitchFollowerRanges[legacyRangeIndex] - instrument.modPitchRanges[mod]))
+                                            legacyRangeIndex = i;
+                                    }
+                                    bits.write(3, clamp(0, Config.pitchFollowerRanges.length, legacyRangeIndex));
+                                }
+                                if (Song._latestSlarmoosBoxVersion >= 12) {
+                                    bits.write(7, clamp(0, Config.maxPitch, instrument.modPitchRangeStarts[mod]));
+                                }
                                 bits.write(6, clamp(Config.pitchFollowerTransposeMin, Config.pitchFollowerTransposeMax + 1, instrument.modPitchTransposes[mod]) - Config.pitchFollowerTransposeMin);
                                 bits.write(7, clamp(0, Config.pitchFollowerPercentMax + 1, instrument.modPitchDetunes[mod]));
                                 bits.write(7, clamp(0, Config.pitchFollowerPercentMax + 1, instrument.modPitchSmooths[mod]));
@@ -6397,6 +6424,8 @@ var beepbox = (function (exports) {
             const beforeEight = version < 8;
             const beforeNine = version < 9;
             const beforeTen = version < 10;
+            const beforeEleven = version < 11;
+            const beforeTwelve = version < 12;
             this.initToDefault((fromBeepBox && beforeNine) || ((fromJummBox && beforeFive) || (beforeFour && fromGoldBox)));
             const forceSimpleFilter = (fromBeepBox && beforeNine || fromJummBox && beforeFive);
             let willLoadLegacySamplesForOldSongs = false;
@@ -8184,7 +8213,12 @@ var beepbox = (function (exports) {
                                                 instrument.modPitchVoices[mod] = bits.read(4) - 1;
                                                 if (!beforeSeven && instrument.modPitchChannels[mod] >= 0) {
                                                     instrument.modPitchFollowModes[mod] = Math.min(7, beforeNine ? bits.read(2) : bits.read(3));
-                                                    instrument.modPitchRanges[mod] = Math.min(Config.pitchFollowerRanges.length - 1, bits.read(3));
+                                                    instrument.modPitchRanges[mod] = beforeEleven
+                                                        ? Config.pitchFollowerRanges[Math.min(Config.pitchFollowerRanges.length - 1, bits.read(3))]
+                                                        : clamp(Config.pitchFollowerRangeMin, Config.pitchFollowerRangeMax + 1, bits.read(7));
+                                                    if (!beforeTwelve) {
+                                                        instrument.modPitchRangeStarts[mod] = clamp(0, Config.maxPitch, bits.read(7));
+                                                    }
                                                     instrument.modPitchTransposes[mod] = bits.read(6) + Config.pitchFollowerTransposeMin;
                                                     instrument.modPitchDetunes[mod] = bits.read(7);
                                                     instrument.modPitchSmooths[mod] = bits.read(7);
@@ -9459,7 +9493,7 @@ var beepbox = (function (exports) {
     Song._oldestUltraBoxVersion = 1;
     Song._latestUltraBoxVersion = 5;
     Song._oldestSlarmoosBoxVersion = 1;
-    Song._latestSlarmoosBoxVersion = 10;
+    Song._latestSlarmoosBoxVersion = 12;
     Song._variant = 0x73;
     class PickedString {
         constructor() {
@@ -16327,10 +16361,12 @@ var beepbox = (function (exports) {
                 if (pitch < 0)
                     return;
                 const maxRawVol = Config.modulators[setting].maxRawVol;
-                const rangeIndex = clamp(0, Config.pitchFollowerRanges.length, instrument.modPitchRanges[mod]);
-                const range = sizeMode ? Config.noteSizeMax : Config.pitchFollowerRanges[rangeIndex];
+                const range = sizeMode ? Config.noteSizeMax : clamp(Config.pitchFollowerRangeMin, Config.pitchFollowerRangeMax + 1, instrument.modPitchRanges[mod]);
                 const sourcePitch = (sizeMode || followMode == 2) ? pitch : pitch + clamp(Config.pitchFollowerTransposeMin, Config.pitchFollowerTransposeMax + 1, instrument.modPitchTransposes[mod]);
-                let scaled = clamp(0, maxRawVol + 1, sourcePitch * maxRawVol / range);
+                const rangeStartApplies = !sizeMode && followMode != 2 && !synth.song.getChannelIsNoise(pitchSourceChannel);
+                const rangeStart = rangeStartApplies ? clamp(0, Config.maxPitch, instrument.modPitchRangeStarts[mod]) : 0;
+                const effectiveRange = rangeStartApplies ? Math.max(1, Math.min(range, Config.maxPitch - rangeStart)) : range;
+                let scaled = clamp(0, maxRawVol + 1, (sourcePitch - rangeStart) * maxRawVol / effectiveRange);
                 if (instrument.modPitchInverts[mod])
                     scaled = maxRawVol - scaled;
                 const smooth = clamp(0, Config.pitchFollowerPercentMax + 1, instrument.modPitchSmooths[mod]);

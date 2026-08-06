@@ -1035,6 +1035,8 @@ var beepbox = (function (exports) {
     Config.modCount = 6;
     Config.maxPitch = _a$1.pitchOctaves * _a$1.pitchesPerOctave;
     Config.pitchFollowerRanges = [12, 24, 36, 48, 72, 96];
+    Config.pitchFollowerRangeMin = 12;
+    Config.pitchFollowerRangeMax = 120;
     Config.pitchFollowerTransposeMin = -24;
     Config.pitchFollowerTransposeMax = 24;
     Config.pitchFollowerPercentMax = 100;
@@ -12849,6 +12851,7 @@ li.select2-results__option[role=group] > strong:hover {
             this.modPitchVoices = [];
             this.modPitchFollowModes = [];
             this.modPitchRanges = [];
+            this.modPitchRangeStarts = [];
             this.modPitchTransposes = [];
             this.modPitchDetunes = [];
             this.modPitchSmooths = [];
@@ -12866,7 +12869,8 @@ li.select2-results__option[role=group] > strong:hover {
                     this.modPitchChannels.push(-1);
                     this.modPitchVoices.push(-1);
                     this.modPitchFollowModes.push(0);
-                    this.modPitchRanges.push(Config.pitchFollowerRanges.length - 1);
+                    this.modPitchRanges.push(Config.pitchFollowerRanges[Config.pitchFollowerRanges.length - 1]);
+                    this.modPitchRangeStarts.push(0);
                     this.modPitchTransposes.push(0);
                     this.modPitchDetunes.push(100);
                     this.modPitchSmooths.push(0);
@@ -13056,6 +13060,7 @@ li.select2-results__option[role=group] > strong:hover {
                     this.modPitchVoices = [];
                     this.modPitchFollowModes = [];
                     this.modPitchRanges = [];
+                    this.modPitchRangeStarts = [];
                     this.modPitchTransposes = [];
                     this.modPitchDetunes = [];
                     this.modPitchSmooths = [];
@@ -13071,7 +13076,8 @@ li.select2-results__option[role=group] > strong:hover {
                         this.modPitchChannels.push(-1);
                         this.modPitchVoices.push(-1);
                         this.modPitchFollowModes.push(0);
-                        this.modPitchRanges.push(Config.pitchFollowerRanges.length - 1);
+                        this.modPitchRanges.push(Config.pitchFollowerRanges[Config.pitchFollowerRanges.length - 1]);
+                        this.modPitchRangeStarts.push(0);
                         this.modPitchTransposes.push(0);
                         this.modPitchDetunes.push(100);
                         this.modPitchSmooths.push(0);
@@ -13421,6 +13427,7 @@ li.select2-results__option[role=group] > strong:hover {
                 instrumentObject["modPitchVoices"] = [];
                 instrumentObject["modPitchFollowModes"] = [];
                 instrumentObject["modPitchRanges"] = [];
+                instrumentObject["modPitchRangeStarts"] = [];
                 instrumentObject["modPitchTransposes"] = [];
                 instrumentObject["modPitchDetunes"] = [];
                 instrumentObject["modPitchSmooths"] = [];
@@ -13439,6 +13446,7 @@ li.select2-results__option[role=group] > strong:hover {
                     instrumentObject["modPitchVoices"][mod] = this.modPitchVoices[mod];
                     instrumentObject["modPitchFollowModes"][mod] = this.modPitchFollowModes[mod];
                     instrumentObject["modPitchRanges"][mod] = this.modPitchRanges[mod];
+                    instrumentObject["modPitchRangeStarts"][mod] = this.modPitchRangeStarts[mod];
                     instrumentObject["modPitchTransposes"][mod] = this.modPitchTransposes[mod];
                     instrumentObject["modPitchDetunes"][mod] = this.modPitchDetunes[mod];
                     instrumentObject["modPitchSmooths"][mod] = this.modPitchSmooths[mod];
@@ -13984,8 +13992,14 @@ li.select2-results__option[role=group] > strong:hover {
                             this.modPitchVoices[mod] = instrumentObject["modPitchVoices"][mod];
                         if (instrumentObject["modPitchFollowModes"] != undefined)
                             this.modPitchFollowModes[mod] = instrumentObject["modPitchFollowModes"][mod];
-                        if (instrumentObject["modPitchRanges"] != undefined)
-                            this.modPitchRanges[mod] = instrumentObject["modPitchRanges"][mod];
+                        if (instrumentObject["modPitchRanges"] != undefined) {
+                            const rangeValue = instrumentObject["modPitchRanges"][mod];
+                            this.modPitchRanges[mod] = (rangeValue <= 5)
+                                ? Config.pitchFollowerRanges[Math.max(0, Math.min(Config.pitchFollowerRanges.length - 1, rangeValue))]
+                                : clamp(Config.pitchFollowerRangeMin, Config.pitchFollowerRangeMax + 1, rangeValue);
+                        }
+                        if (instrumentObject["modPitchRangeStarts"] != undefined)
+                            this.modPitchRangeStarts[mod] = clamp(0, Config.maxPitch, instrumentObject["modPitchRangeStarts"][mod]);
                         if (instrumentObject["modPitchTransposes"] != undefined)
                             this.modPitchTransposes[mod] = instrumentObject["modPitchTransposes"][mod];
                         if (instrumentObject["modPitchDetunes"] != undefined)
@@ -15070,7 +15084,20 @@ li.select2-results__option[role=group] > strong:hover {
                             if (Song._latestSlarmoosBoxVersion >= 7 && instrument.modPitchChannels[mod] >= 0) {
                                 const followModeFieldBits = Song._latestSlarmoosBoxVersion >= 9 ? 3 : 2;
                                 bits.write(followModeFieldBits, clamp(0, followModeFieldBits == 3 ? 8 : 4, instrument.modPitchFollowModes[mod]));
-                                bits.write(3, clamp(0, Config.pitchFollowerRanges.length, instrument.modPitchRanges[mod]));
+                                if (Song._latestSlarmoosBoxVersion >= 11) {
+                                    bits.write(7, clamp(Config.pitchFollowerRangeMin, Config.pitchFollowerRangeMax + 1, instrument.modPitchRanges[mod]));
+                                }
+                                else {
+                                    let legacyRangeIndex = 0;
+                                    for (let i = 1; i < Config.pitchFollowerRanges.length; i++) {
+                                        if (Math.abs(Config.pitchFollowerRanges[i] - instrument.modPitchRanges[mod]) < Math.abs(Config.pitchFollowerRanges[legacyRangeIndex] - instrument.modPitchRanges[mod]))
+                                            legacyRangeIndex = i;
+                                    }
+                                    bits.write(3, clamp(0, Config.pitchFollowerRanges.length, legacyRangeIndex));
+                                }
+                                if (Song._latestSlarmoosBoxVersion >= 12) {
+                                    bits.write(7, clamp(0, Config.maxPitch, instrument.modPitchRangeStarts[mod]));
+                                }
                                 bits.write(6, clamp(Config.pitchFollowerTransposeMin, Config.pitchFollowerTransposeMax + 1, instrument.modPitchTransposes[mod]) - Config.pitchFollowerTransposeMin);
                                 bits.write(7, clamp(0, Config.pitchFollowerPercentMax + 1, instrument.modPitchDetunes[mod]));
                                 bits.write(7, clamp(0, Config.pitchFollowerPercentMax + 1, instrument.modPitchSmooths[mod]));
@@ -15326,6 +15353,8 @@ li.select2-results__option[role=group] > strong:hover {
             const beforeEight = version < 8;
             const beforeNine = version < 9;
             const beforeTen = version < 10;
+            const beforeEleven = version < 11;
+            const beforeTwelve = version < 12;
             this.initToDefault((fromBeepBox && beforeNine) || ((fromJummBox && beforeFive) || (beforeFour && fromGoldBox)));
             const forceSimpleFilter = (fromBeepBox && beforeNine || fromJummBox && beforeFive);
             let willLoadLegacySamplesForOldSongs = false;
@@ -17113,7 +17142,12 @@ li.select2-results__option[role=group] > strong:hover {
                                                 instrument.modPitchVoices[mod] = bits.read(4) - 1;
                                                 if (!beforeSeven && instrument.modPitchChannels[mod] >= 0) {
                                                     instrument.modPitchFollowModes[mod] = Math.min(7, beforeNine ? bits.read(2) : bits.read(3));
-                                                    instrument.modPitchRanges[mod] = Math.min(Config.pitchFollowerRanges.length - 1, bits.read(3));
+                                                    instrument.modPitchRanges[mod] = beforeEleven
+                                                        ? Config.pitchFollowerRanges[Math.min(Config.pitchFollowerRanges.length - 1, bits.read(3))]
+                                                        : clamp(Config.pitchFollowerRangeMin, Config.pitchFollowerRangeMax + 1, bits.read(7));
+                                                    if (!beforeTwelve) {
+                                                        instrument.modPitchRangeStarts[mod] = clamp(0, Config.maxPitch, bits.read(7));
+                                                    }
                                                     instrument.modPitchTransposes[mod] = bits.read(6) + Config.pitchFollowerTransposeMin;
                                                     instrument.modPitchDetunes[mod] = bits.read(7);
                                                     instrument.modPitchSmooths[mod] = bits.read(7);
@@ -18388,7 +18422,7 @@ li.select2-results__option[role=group] > strong:hover {
     Song._oldestUltraBoxVersion = 1;
     Song._latestUltraBoxVersion = 5;
     Song._oldestSlarmoosBoxVersion = 1;
-    Song._latestSlarmoosBoxVersion = 10;
+    Song._latestSlarmoosBoxVersion = 12;
     Song._variant = 0x73;
     class PickedString {
         constructor() {
@@ -25256,10 +25290,12 @@ li.select2-results__option[role=group] > strong:hover {
                 if (pitch < 0)
                     return;
                 const maxRawVol = Config.modulators[setting].maxRawVol;
-                const rangeIndex = clamp(0, Config.pitchFollowerRanges.length, instrument.modPitchRanges[mod]);
-                const range = sizeMode ? Config.noteSizeMax : Config.pitchFollowerRanges[rangeIndex];
+                const range = sizeMode ? Config.noteSizeMax : clamp(Config.pitchFollowerRangeMin, Config.pitchFollowerRangeMax + 1, instrument.modPitchRanges[mod]);
                 const sourcePitch = (sizeMode || followMode == 2) ? pitch : pitch + clamp(Config.pitchFollowerTransposeMin, Config.pitchFollowerTransposeMax + 1, instrument.modPitchTransposes[mod]);
-                let scaled = clamp(0, maxRawVol + 1, sourcePitch * maxRawVol / range);
+                const rangeStartApplies = !sizeMode && followMode != 2 && !synth.song.getChannelIsNoise(pitchSourceChannel);
+                const rangeStart = rangeStartApplies ? clamp(0, Config.maxPitch, instrument.modPitchRangeStarts[mod]) : 0;
+                const effectiveRange = rangeStartApplies ? Math.max(1, Math.min(range, Config.maxPitch - rangeStart)) : range;
+                let scaled = clamp(0, maxRawVol + 1, (sourcePitch - rangeStart) * maxRawVol / effectiveRange);
                 if (instrument.modPitchInverts[mod])
                     scaled = maxRawVol - scaled;
                 const smooth = clamp(0, Config.pitchFollowerPercentMax + 1, instrument.modPitchSmooths[mod]);
@@ -33483,6 +33519,9 @@ li.select2-results__option[role=group] > strong:hover {
         }
         setModPitchRange(mod, value) {
             this._doc.record(new ChangeModPitchNumericSetting(this._doc, mod, "modPitchRanges", value));
+        }
+        setModPitchRangeStart(mod, value) {
+            this._doc.record(new ChangeModPitchNumericSetting(this._doc, mod, "modPitchRangeStarts", value));
         }
         setModPitchTranspose(mod, value) {
             this._doc.record(new ChangeModPitchNumericSetting(this._doc, mod, "modPitchTransposes", value));
@@ -45824,7 +45863,12 @@ You should be redirected to the song at:<br /><br />
                     break;
                 case "modPitchRange":
                     {
-                        message = div$5(h2$4("Pitch Range"), p$1("How many semitones of the source pitch sweep the modulator's full value range. A range of 12 means one octave of source notes goes from the modulator's minimum to its maximum. Smaller ranges make the modulation more dramatic; larger ones make it more gradual."));
+                        message = div$5(h2$4("Pitch Range"), p$1("How many semitones of the source pitch sweep the modulator's full value range. A range of 12 means one octave of source notes goes from the modulator's minimum to its maximum. Smaller ranges make the modulation more dramatic; larger ones make it more gradual."), p$1("Type a value directly (12 to " + Config.pitchFollowerRangeMax + " semitones), or use the up/down arrows on the box, which step by 12 semitones."), p$1("The 'Start' box next to the range chooses the absolute note the range begins at - see its own help for details."));
+                    }
+                    break;
+                case "modPitchRangeStart":
+                    {
+                        message = div$5(h2$4("Range Start"), p$1("Where the pitch follower's range begins, picked as a note and octave (like the song's key and its octave box). Pitches at or below the start note drive the modulator to its minimum, and pitches above it sweep toward the maximum."), p$1("The range automatically ends at the highest note that can be played: if it would poke past the top of the playable register it's truncated there, so the full modulator sweep still lines up with the notes that can actually sound. For example, a 96-semitone range starting at C3 reaches its maximum at C8, the highest note."), p$1("A start at the lowest octave matches the original behavior, where the range begins at the bottom of the piano. The octave shown matches the piano's labels (it follows the song's octave setting). This setting doesn't apply in 'bend only' or note-size follow modes, or when following a noise channel."));
                     }
                     break;
                 case "modPitchTranspose":
@@ -50136,12 +50180,10 @@ You should be redirected to the song at:<br /><br />
                             buildOptions(this._modPitchFollowBoxes[mod], ["pitch", "played pitch", "bend only", "highest note", "lowest note", "average", "note size", "loudest note size"]);
                         }
                         this._modPitchFollowBoxes[mod].selectedIndex = Math.max(0, Math.min(7, instrument.modPitchFollowModes[mod]));
-                        if (this._modPitchRangeBoxes[mod].children.length != Config.pitchFollowerRanges.length) {
-                            while (this._modPitchRangeBoxes[mod].firstChild)
-                                this._modPitchRangeBoxes[mod].remove(0);
-                            buildOptions(this._modPitchRangeBoxes[mod], Config.pitchFollowerRanges.map(range => range + " st"));
-                        }
-                        this._modPitchRangeBoxes[mod].selectedIndex = Math.max(0, Math.min(Config.pitchFollowerRanges.length - 1, instrument.modPitchRanges[mod]));
+                        this._modPitchRangeInputs[mod].value = String(Math.max(Config.pitchFollowerRangeMin, Math.min(Config.pitchFollowerRangeMax, instrument.modPitchRanges[mod])));
+                        const rangeStartValue = Math.max(0, Math.min(Config.maxPitch - 1, instrument.modPitchRangeStarts[mod]));
+                        this._modPitchRangeStartNotes[mod].selectedIndex = rangeStartValue % Config.pitchesPerOctave;
+                        this._modPitchRangeStartOctaves[mod].value = String(Math.floor(rangeStartValue / Config.pitchesPerOctave) + this.doc.song.octave);
                         if (this._modPitchTransposeBoxes[mod].children.length != Config.pitchFollowerTransposeMax - Config.pitchFollowerTransposeMin + 1) {
                             while (this._modPitchTransposeBoxes[mod].firstChild)
                                 this._modPitchTransposeBoxes[mod].remove(0);
@@ -50179,6 +50221,9 @@ You should be redirected to the song at:<br /><br />
                             $("#" + rowId + mod).get(0).style.display = pitchFollowerActive ? "" : "none";
                         }
                         $("#modPitchRangeText" + mod).get(0).style.display = (pitchFollowerActive && !sizeFollowMode) ? "" : "none";
+                        const rangeStartSourceNoise = pitchFollowerActive && instrument.modPitchChannels[mod] >= 0 && instrument.modPitchChannels[mod] < this.doc.song.getChannelCount() && this.doc.song.getChannelIsNoise(instrument.modPitchChannels[mod]);
+                        const rangeStartApplicable = pitchFollowerActive && !sizeFollowMode && instrument.modPitchFollowModes[mod] != 2 && !rangeStartSourceNoise;
+                        $("#modPitchRangeStartText" + mod).get(0).style.display = rangeStartApplicable ? "" : "none";
                         const transposeOrDetuneApplicable = pitchFollowerActive && !sizeFollowMode && instrument.modPitchFollowModes[mod] != 2;
                         $("#modPitchTransposeText" + mod).get(0).style.display = transposeOrDetuneApplicable ? "" : "none";
                         $("#modPitchDetuneText" + mod).get(0).style.display = transposeOrDetuneApplicable ? "" : "none";
@@ -51410,7 +51455,12 @@ You should be redirected to the song at:<br /><br />
                 this._piano.forceRender();
             };
             this._whenSetModPitchRange = (mod) => {
-                this.doc.selection.setModPitchRange(mod, this._modPitchRangeBoxes[mod].selectedIndex);
+                this.doc.selection.setModPitchRange(mod, Math.max(Config.pitchFollowerRangeMin, Math.min(Config.pitchFollowerRangeMax, parseInt(this._modPitchRangeInputs[mod].value) | 0)));
+            };
+            this._whenSetModPitchRangeStart = (mod) => {
+                const noteIndex = Math.max(0, Math.min(Config.keys.length - 1, this._modPitchRangeStartNotes[mod].selectedIndex));
+                const octave = Math.max(Config.octaveMin, Math.min(Config.pitchOctaves - 1 - Config.octaveMin, parseInt(this._modPitchRangeStartOctaves[mod].value) | 0));
+                this.doc.selection.setModPitchRangeStart(mod, Math.max(0, Math.min(Config.maxPitch - 1, noteIndex + (octave - this.doc.song.octave) * Config.pitchesPerOctave)));
             };
             this._whenSetModPitchTranspose = (mod) => {
                 this.doc.selection.setModPitchTranspose(mod, this._modPitchTransposeBoxes[mod].selectedIndex + Config.pitchFollowerTransposeMin);
@@ -51855,7 +51905,7 @@ You should be redirected to the song at:<br /><br />
             this._modPitchVoiceBoxes = [];
             this._modPitchFollowBoxes = [];
             this._modPitchInvertBoxes = [];
-            this._modPitchRangeBoxes = [];
+            this._modPitchRangeInputs = [];
             this._modPitchEnvelopeBoxes = [];
             this._modPitchModValueBoxes = [];
             this._modPitchTransposeBoxes = [];
@@ -51881,9 +51931,12 @@ You should be redirected to the song at:<br /><br />
                 let modPitchFollowBox = select({ style: "width: 100%; color: currentColor;" });
                 let modPitchInvertBox = input({ type: "checkbox", style: "width: auto; margin-left: 0.8em; vertical-align: middle;" });
                 let modPitchFollowRow = div({ class: "selectRow", id: "modPitchFollowText" + mod, style: "margin-bottom: 0.9em; color: currentColor;" }, span({ class: "tip", onclick: () => this._openPrompt("modPitchFollowMode") }, "Follow: "), div({ class: "selectContainer" }, modPitchFollowBox), span({ class: "tip", style: "margin-left: 0.8em;", onclick: () => this._openPrompt("modPitchInvert") }, "Inv"), modPitchInvertBox);
-                let modPitchRangeBox = select({ style: "width: 100%; color: currentColor;" });
+                let modPitchRangeInput = input({ type: "number", step: "12", min: String(Config.pitchFollowerRangeMin), max: String(Config.pitchFollowerRangeMax), style: "width: 4em; font-size: 80%; margin-left: 0.4em; vertical-align: middle; color: currentColor;" });
                 let modPitchEnvelopeBox = input({ type: "checkbox", style: "width: auto; margin-left: 0.8em; vertical-align: middle;" });
-                let modPitchRangeRow = div({ class: "selectRow", id: "modPitchRangeText" + mod, style: "margin-bottom: 0.9em; color: currentColor;" }, span({ class: "tip", onclick: () => this._openPrompt("modPitchRange") }, "Range: "), div({ class: "selectContainer" }, modPitchRangeBox), span({ class: "tip", style: "margin-left: 0.8em;", onclick: () => this._openPrompt("modPitchEnvelope") }, "Env"), modPitchEnvelopeBox);
+                let modPitchRangeRow = div({ class: "selectRow", id: "modPitchRangeText" + mod, style: "margin-bottom: 0.9em; color: currentColor;" }, span({ class: "tip", onclick: () => this._openPrompt("modPitchRange") }, "Range: "), modPitchRangeInput, span({ class: "tip", style: "margin-left: 0.8em;", onclick: () => this._openPrompt("modPitchEnvelope") }, "Env"), modPitchEnvelopeBox);
+                let modPitchRangeStartNoteBox = buildOptions(select({ style: "width: 100%; color: currentColor;" }), Config.keys.map(key => key.name));
+                let modPitchRangeStartOctaveInput = input({ type: "number", min: String(Config.octaveMin), max: String(Config.pitchOctaves - 1 - Config.octaveMin), step: "1", style: "width: 3em; font-size: 80%; margin-left: 0.4em; vertical-align: middle; color: currentColor;" });
+                let modPitchRangeStartRow = div({ class: "selectRow", id: "modPitchRangeStartText" + mod, style: "margin-bottom: 0.9em; color: currentColor;" }, span({ class: "tip", onclick: () => this._openPrompt("modPitchRangeStart") }, "Start: "), div({ class: "selectContainer" }, modPitchRangeStartNoteBox), modPitchRangeStartOctaveInput);
                 let modPitchTransposeBox = select({ style: "width: 100%; color: currentColor;" });
                 let modPitchTransposeRow = div({ class: "selectRow", id: "modPitchTransposeText" + mod, style: "margin-bottom: 0.9em; color: currentColor;" }, span({ class: "tip", onclick: () => this._openPrompt("modPitchTranspose") }, "Tran: "), div({ class: "selectContainer" }, modPitchTransposeBox));
                 let modPitchDetuneBox = select({ style: "width: 100%; color: currentColor;" });
@@ -51916,7 +51969,9 @@ You should be redirected to the song at:<br /><br />
                 this._modPitchVoiceBoxes.push(modPitchVoiceBox);
                 this._modPitchFollowBoxes.push(modPitchFollowBox);
                 this._modPitchInvertBoxes.push(modPitchInvertBox);
-                this._modPitchRangeBoxes.push(modPitchRangeBox);
+                this._modPitchRangeInputs.push(modPitchRangeInput);
+                this._modPitchRangeStartNotes.push(modPitchRangeStartNoteBox);
+                this._modPitchRangeStartOctaves.push(modPitchRangeStartOctaveInput);
                 this._modPitchEnvelopeBoxes.push(modPitchEnvelopeBox);
                 this._modPitchTransposeBoxes.push(modPitchTransposeBox);
                 this._modPitchDetuneBoxes.push(modPitchDetuneBox);
@@ -51934,6 +51989,7 @@ You should be redirected to the song at:<br /><br />
                 this._modulatorGroup.appendChild(modPitchVoiceRow);
                 this._modulatorGroup.appendChild(modPitchFollowRow);
                 this._modulatorGroup.appendChild(modPitchRangeRow);
+                this._modulatorGroup.appendChild(modPitchRangeStartRow);
                 this._modulatorGroup.appendChild(modPitchTransposeRow);
                 this._modulatorGroup.appendChild(modPitchDetuneRow);
                 this._modulatorGroup.appendChild(modPitchSmoothRow);
@@ -52021,7 +52077,9 @@ You should be redirected to the song at:<br /><br />
                 this._modPitchVoiceBoxes[mod].addEventListener("change", function () { thisRef._whenSetModPitchVoice(mod); });
                 this._modPitchFollowBoxes[mod].addEventListener("change", function () { thisRef._whenSetModPitchFollowMode(mod); });
                 this._modPitchInvertBoxes[mod].addEventListener("change", function () { thisRef._whenSetModPitchInvert(mod); });
-                this._modPitchRangeBoxes[mod].addEventListener("change", function () { thisRef._whenSetModPitchRange(mod); });
+                this._modPitchRangeInputs[mod].addEventListener("change", function () { thisRef._whenSetModPitchRange(mod); });
+                this._modPitchRangeStartNotes[mod].addEventListener("change", function () { thisRef._whenSetModPitchRangeStart(mod); });
+                this._modPitchRangeStartOctaves[mod].addEventListener("change", function () { thisRef._whenSetModPitchRangeStart(mod); });
                 this._modPitchEnvelopeBoxes[mod].addEventListener("change", function () { thisRef._whenSetModPitchEnvelope(mod); });
                 this._modPitchTransposeBoxes[mod].addEventListener("change", function () { thisRef._whenSetModPitchTranspose(mod); });
                 this._modPitchDetuneBoxes[mod].addEventListener("change", function () { thisRef._whenSetModPitchDetune(mod); });
