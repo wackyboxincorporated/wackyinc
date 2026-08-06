@@ -12859,6 +12859,7 @@ li.select2-results__option[role=group] > strong:hover {
             this.modPitchEnvelopes = [];
             this.modPitchTrackDetunes = [];
             this.modPitchTrackPitchShifts = [];
+            this.modPitchTrackEchoes = [];
             this.invalidModulators = [];
             this.isNoiseInstrument = false;
             if (isModChannel) {
@@ -12879,6 +12880,7 @@ li.select2-results__option[role=group] > strong:hover {
                     this.modPitchModValues.push(false);
                     this.modPitchTrackDetunes.push(false);
                     this.modPitchTrackPitchShifts.push(false);
+                    this.modPitchTrackEchoes.push(false);
                 }
             }
             this.spectrumWave = new SpectrumWave(isNoiseChannel);
@@ -13069,6 +13071,7 @@ li.select2-results__option[role=group] > strong:hover {
                     this.modPitchModValues = [];
                     this.modPitchTrackDetunes = [];
                     this.modPitchTrackPitchShifts = [];
+                    this.modPitchTrackEchoes = [];
                     for (let mod = 0; mod < Config.modCount; mod++) {
                         this.modChannels.push(-2);
                         this.modInstruments.push(0);
@@ -13086,6 +13089,7 @@ li.select2-results__option[role=group] > strong:hover {
                         this.modPitchModValues.push(false);
                         this.modPitchTrackDetunes.push(false);
                         this.modPitchTrackPitchShifts.push(false);
+                        this.modPitchTrackEchoes.push(false);
                         this.invalidModulators[mod] = false;
                         this.modFilterTypes[mod] = 0;
                         this.modEnvelopeNumbers[mod] = 0;
@@ -13436,6 +13440,7 @@ li.select2-results__option[role=group] > strong:hover {
                 instrumentObject["modPitchModValues"] = [];
                 instrumentObject["modPitchTrackDetunes"] = [];
                 instrumentObject["modPitchTrackPitchShifts"] = [];
+                instrumentObject["modPitchTrackEchoes"] = [];
                 for (let mod = 0; mod < Config.modCount; mod++) {
                     instrumentObject["modChannels"][mod] = this.modChannels[mod];
                     instrumentObject["modInstruments"][mod] = this.modInstruments[mod];
@@ -13455,6 +13460,7 @@ li.select2-results__option[role=group] > strong:hover {
                     instrumentObject["modPitchModValues"][mod] = this.modPitchModValues[mod];
                     instrumentObject["modPitchTrackDetunes"][mod] = this.modPitchTrackDetunes[mod];
                     instrumentObject["modPitchTrackPitchShifts"][mod] = this.modPitchTrackPitchShifts[mod];
+                    instrumentObject["modPitchTrackEchoes"][mod] = this.modPitchTrackEchoes[mod];
                 }
             }
             else {
@@ -14016,6 +14022,8 @@ li.select2-results__option[role=group] > strong:hover {
                             this.modPitchTrackDetunes[mod] = instrumentObject["modPitchTrackDetunes"][mod];
                         if (instrumentObject["modPitchTrackPitchShifts"] != undefined)
                             this.modPitchTrackPitchShifts[mod] = instrumentObject["modPitchTrackPitchShifts"][mod];
+                        if (instrumentObject["modPitchTrackEchoes"] != undefined)
+                            this.modPitchTrackEchoes[mod] = instrumentObject["modPitchTrackEchoes"][mod];
                     }
                 }
             }
@@ -15110,6 +15118,9 @@ li.select2-results__option[role=group] > strong:hover {
                                     bits.write(1, instrument.modPitchTrackDetunes[mod] ? 1 : 0);
                                     bits.write(1, instrument.modPitchTrackPitchShifts[mod] ? 1 : 0);
                                 }
+                                if (Song._latestSlarmoosBoxVersion >= 13) {
+                                    bits.write(1, instrument.modPitchTrackEchoes[mod] ? 1 : 0);
+                                }
                             }
                         }
                     }
@@ -15351,6 +15362,7 @@ li.select2-results__option[role=group] > strong:hover {
             const beforeSix = version < 6;
             const beforeSeven = version < 7;
             const beforeEight = version < 8;
+            const beforeThirteen = version < 13;
             const beforeNine = version < 9;
             const beforeTen = version < 10;
             const beforeEleven = version < 11;
@@ -17160,6 +17172,9 @@ li.select2-results__option[role=group] > strong:hover {
                                                         instrument.modPitchTrackDetunes[mod] = bits.read(1) == 1;
                                                         instrument.modPitchTrackPitchShifts[mod] = bits.read(1) == 1;
                                                     }
+                                                    if (!beforeThirteen) {
+                                                        instrument.modPitchTrackEchoes[mod] = bits.read(1) == 1;
+                                                    }
                                                 }
                                             }
                                             if (jumfive && instrument.modChannels[mod] >= 0) {
@@ -18422,7 +18437,7 @@ li.select2-results__option[role=group] > strong:hover {
     Song._oldestUltraBoxVersion = 1;
     Song._latestUltraBoxVersion = 5;
     Song._oldestSlarmoosBoxVersion = 1;
-    Song._latestSlarmoosBoxVersion = 12;
+    Song._latestSlarmoosBoxVersion = 13;
     Song._variant = 0x73;
     class PickedString {
         constructor() {
@@ -19196,6 +19211,15 @@ li.select2-results__option[role=group] > strong:hover {
             this.drumsetFilterEnvelopeEnd = drumsetFilterEnvelopeEnd;
         }
     }
+    class EchoNote {
+        constructor(pitches, lastInterval, noteSize, noteStartPartAbs, noteEndPartAbs) {
+            this.pitches = pitches;
+            this.lastInterval = lastInterval;
+            this.noteSize = noteSize;
+            this.noteStartPartAbs = noteStartPartAbs;
+            this.noteEndPartAbs = noteEndPartAbs;
+        }
+    }
     class Tone {
         constructor() {
             this.pitches = Array(Config.maxChordSize + 2).fill(0);
@@ -19231,6 +19255,7 @@ li.select2-results__option[role=group] > strong:hover {
             this.phaseDeltaScales = [];
             this.expression = 0.0;
             this.expressionDelta = 0.0;
+            this.noteSize = 0.0;
             this.operatorExpressions = [];
             this.operatorExpressionDeltas = [];
             this.prevPitchExpressions = Array(Config.maxPitchOrOperatorCount).fill(null);
@@ -19407,6 +19432,7 @@ li.select2-results__option[role=group] > strong:hover {
             this.chorusVoiceMultDelta = 0;
             this.chorusCombinedMult = 0;
             this.chorusCombinedMultDelta = 0;
+            this.echoNotes = [];
             this.echoDelayLineL = null;
             this.echoDelayLineR = null;
             this.echoDelayLineDirty = false;
@@ -22089,9 +22115,24 @@ li.select2-results__option[role=group] > strong:hover {
                     while (toneList.count() > toneCount) {
                         const tone = toneList.popBack();
                         const channel = song.channels[channelIndex];
-                        if (tone.instrumentIndex < channel.instruments.length && !tone.isOnLastTick) {
+                        if (tone.instrumentIndex < channel.instruments.length) {
                             const instrumentState = channelState.instruments[tone.instrumentIndex];
-                            this.releaseTone(instrumentState, tone);
+                            if (tone.note != null && effectsIncludeEcho(channel.instruments[tone.instrumentIndex].effects)) {
+                                const partsInBar = Config.partsPerBeat * song.beatsPerBar;
+                                const startAbs = this.bar * partsInBar + tone.noteStartPart;
+                                const lastEntry = (instrumentState.echoNotes.length > 0) ? instrumentState.echoNotes[instrumentState.echoNotes.length - 1] : null;
+                                if (lastEntry == null || lastEntry.noteStartPartAbs != startAbs || lastEntry.pitches[0] != tone.pitches[0]) {
+                                    if (instrumentState.echoNotes.length >= 64)
+                                        instrumentState.echoNotes.shift();
+                                    instrumentState.echoNotes.push(new EchoNote(tone.pitches.concat(), tone.lastInterval, tone.noteSize, startAbs, this.bar * partsInBar + tone.noteEndPart));
+                                }
+                            }
+                            if (!tone.isOnLastTick) {
+                                this.releaseTone(instrumentState, tone);
+                            }
+                            else {
+                                this.freeTone(tone);
+                            }
                         }
                         else {
                             this.freeTone(tone);
@@ -22146,6 +22187,7 @@ li.select2-results__option[role=group] > strong:hover {
                 const ratioEnd = (tickTimeEnd - startPinTick) / (endPinTick - startPinTick);
                 tone.expression = startPin.size + (endPin.size - startPin.size) * ratioStart;
                 tone.expressionDelta = (startPin.size + (endPin.size - startPin.size) * ratioEnd) - tone.expression;
+                tone.noteSize = tone.expression;
                 Synth.modSynth(this, bufferIndex, roundedSamplesPerTick, channelIndex, tone, instrument);
             }
         }
@@ -22325,6 +22367,7 @@ li.select2-results__option[role=group] > strong:hover {
                 intervalStart = startPin.interval + (endPin.interval - startPin.interval) * pinRatioStart;
                 intervalEnd = startPin.interval + (endPin.interval - startPin.interval) * pinRatioEnd;
                 tone.lastInterval = intervalEnd;
+                tone.noteSize = startPin.size + (endPin.size - startPin.size) * pinRatioStart;
                 if ((!transition.isSeamless && !tone.forceContinueAtEnd) || nextNote == null) {
                     const fadeOutTicks = -instrument.getFadeOutTicks();
                     if (fadeOutTicks > 0.0) {
@@ -25161,7 +25204,7 @@ li.select2-results__option[role=group] > strong:hover {
                 || setting == Config.modulators.dictionary["eq filter"].index
                 || setting == Config.modulators.dictionary["note filter"].index;
         }
-        static getPitchModValue(synth, sourceChannel, voice, followMode = 0, detunePercent = 100, includeEnvelope = false, trackDetuneEffect = false, trackPitchShiftEffect = false) {
+        static getPitchModValue(synth, sourceChannel, voice, followMode = 0, detunePercent = 100, includeEnvelope = false, trackDetuneEffect = false, trackPitchShiftEffect = false, trackEchoes = false) {
             if (synth.song == null || sourceChannel < 0 || synth.channels[sourceChannel] == null)
                 return -1;
             const getVoicePitchOffset = (tone) => {
@@ -25184,8 +25227,13 @@ li.select2-results__option[role=group] > strong:hover {
                 return semitoneOffset;
             };
             const chordAware = followMode == 3 || followMode == 4 || followMode == 5;
+            const partsInBar = Config.partsPerBeat * synth.song.beatsPerBar;
             let latestTone = null;
             let latestStartPart = -1;
+            let echoLatestPitch = 0;
+            let echoLatestInterval = 0;
+            let echoLatestSize = 0;
+            let echoLatestStart = -1;
             let sum = 0;
             let count = 0;
             let lowest = Number.MAX_SAFE_INTEGER;
@@ -25211,14 +25259,59 @@ li.select2-results__option[role=group] > strong:hover {
                                 highest = basePitch;
                         }
                     }
-                    if (followMode == 7 && candidate.expression > loudestSize)
-                        loudestSize = candidate.expression;
+                    if (followMode == 7 && candidate.noteSize > loudestSize)
+                        loudestSize = candidate.noteSize;
+                }
+                if (trackEchoes) {
+                    const echoInstrument = synth.song.channels[sourceChannel].instruments[instrumentIndex];
+                    if (effectsIncludeEcho(echoInstrument.effects)) {
+                        const echoDelayParts = (echoInstrument.echoDelay + 1) * Config.echoDelayStepTicks / Config.ticksPerPart;
+                        const echoMult = Math.min(1.0, Math.pow(echoInstrument.echoSustain / Config.echoSustainRange, 1.1)) * 0.9;
+                        let repeatCount = 0;
+                        if (echoMult > 0.01)
+                            repeatCount = Math.min(64, Math.max(1, Math.ceil(8 / -Math.log2(Math.min(0.999, echoMult)))));
+                        const absoluteNow = synth.bar * partsInBar + synth.getCurrentPart();
+                        const echoList = instrumentState.echoNotes;
+                        for (let i = echoList.length - 1; i >= 0; i--) {
+                            const entry = echoList[i];
+                            if (repeatCount <= 0 || absoluteNow >= entry.noteStartPartAbs + (repeatCount + 1) * echoDelayParts) {
+                                echoList.splice(i, 1);
+                                continue;
+                            }
+                            const k = Math.floor((absoluteNow - entry.noteStartPartAbs) / echoDelayParts);
+                            if (k < 1 || k > repeatCount)
+                                continue;
+                            const fire = entry.noteStartPartAbs + k * echoDelayParts;
+                            if (fire < entry.noteEndPartAbs)
+                                continue;
+                            if (fire > echoLatestStart) {
+                                echoLatestStart = fire;
+                                echoLatestPitch = entry.pitches[0];
+                                echoLatestInterval = entry.lastInterval;
+                                echoLatestSize = entry.noteSize;
+                            }
+                            if (chordAware) {
+                                for (const pitch of entry.pitches) {
+                                    sum += pitch;
+                                    count++;
+                                    if (pitch < lowest)
+                                        lowest = pitch;
+                                    if (pitch > highest)
+                                        highest = pitch;
+                                }
+                            }
+                            if (followMode == 7 && entry.noteSize > loudestSize)
+                                loudestSize = entry.noteSize;
+                        }
+                    }
                 }
             }
-            if (latestTone == null)
+            if (latestTone == null && echoLatestStart < 0)
                 return -1;
+            const absoluteLatestRealStart = (latestTone != null) ? synth.bar * partsInBar + latestStartPart : -1;
+            const echoIsLatest = echoLatestStart > absoluteLatestRealStart;
             if (followMode == 6)
-                return latestTone.expression;
+                return echoIsLatest ? echoLatestSize : latestTone.noteSize;
             if (followMode == 7)
                 return loudestSize;
             let pitch;
@@ -25233,14 +25326,23 @@ li.select2-results__option[role=group] > strong:hover {
                     pitch = (count > 0) ? sum / count : 0;
                     break;
                 default:
-                    pitch = latestTone.pitches[0] + getVoicePitchOffset(latestTone);
-                    if (followMode == 1)
-                        pitch += latestTone.lastInterval;
-                    else if (followMode == 2)
-                        return latestTone.lastInterval;
+                    if (echoIsLatest) {
+                        pitch = echoLatestPitch;
+                        if (followMode == 1)
+                            pitch += echoLatestInterval;
+                        else if (followMode == 2)
+                            return echoLatestInterval;
+                    }
+                    else {
+                        pitch = latestTone.pitches[0] + getVoicePitchOffset(latestTone);
+                        if (followMode == 1)
+                            pitch += latestTone.lastInterval;
+                        else if (followMode == 2)
+                            return latestTone.lastInterval;
+                    }
                     break;
             }
-            if (trackDetuneEffect || trackPitchShiftEffect) {
+            if ((trackDetuneEffect || trackPitchShiftEffect) && !echoIsLatest) {
                 const sourceInstrument = synth.song.channels[sourceChannel].instruments[latestTone.instrumentIndex];
                 const instrumentIndex = latestTone.instrumentIndex;
                 let extra = 0;
@@ -25286,7 +25388,7 @@ li.select2-results__option[role=group] > strong:hover {
             if (usingPitchFollower) {
                 const followMode = clamp(0, 8, instrument.modPitchFollowModes[mod]);
                 const sizeMode = followMode == 6 || followMode == 7;
-                const pitch = Synth.getPitchModValue(synth, pitchSourceChannel, instrument.modPitchVoices[mod], followMode, clamp(0, Config.pitchFollowerPercentMax + 1, instrument.modPitchDetunes[mod]), instrument.modPitchEnvelopes[mod], instrument.modPitchTrackDetunes[mod] == true, instrument.modPitchTrackPitchShifts[mod] == true);
+                const pitch = Synth.getPitchModValue(synth, pitchSourceChannel, instrument.modPitchVoices[mod], followMode, clamp(0, Config.pitchFollowerPercentMax + 1, instrument.modPitchDetunes[mod]), instrument.modPitchEnvelopes[mod], instrument.modPitchTrackDetunes[mod] == true, instrument.modPitchTrackPitchShifts[mod] == true, instrument.modPitchTrackEchoes[mod] == true);
                 if (pitch < 0)
                     return;
                 const maxRawVol = Config.modulators[setting].maxRawVol;
@@ -25307,7 +25409,7 @@ li.select2-results__option[role=group] > strong:hover {
                     smoothValues[smoothKey] = scaled;
                 }
                 if (instrument.modPitchModValues[mod]) {
-                    const modNoteRatio = clamp(0, 1.000001, tone.expression / maxRawVol);
+                    const modNoteRatio = clamp(0, 2, tone.expression / maxRawVol);
                     scaled = Math.round(scaled * modNoteRatio);
                 }
                 modValueStart = Math.round(scaled);
@@ -33546,6 +33648,9 @@ li.select2-results__option[role=group] > strong:hover {
         }
         setModPitchTrackPitchShift(mod, value) {
             this._doc.record(new ChangeModPitchBooleanSetting(this._doc, mod, "modPitchTrackPitchShifts", value));
+        }
+        setModPitchTrackEcho(mod, value) {
+            this._doc.record(new ChangeModPitchBooleanSetting(this._doc, mod, "modPitchTrackEchoes", value));
         }
         insertBars() {
             this._doc.record(new ChangeInsertBars(this._doc, this.boxSelectionBar + this.boxSelectionWidth, this.boxSelectionWidth));
@@ -45891,6 +45996,11 @@ You should be redirected to the song at:<br /><br />
                         message = div$5(h2$4("Track Pitch Shift Effect"), p$1("When ticked, the live interval of the source instrument's pitch shift effect is added to the followed pitch, scaled by the Detune percentage. Pitch shift is usually a static offset (you could use Transpose instead), but if the source is being driven by a 'pitch shift' mod, ticking this lets the follower ride along with that modulation."));
                     }
                     break;
+                case "modPitchTrackEcho":
+                    {
+                        message = div$5(h2$4("Track Echoed Notes"), p$1("When ticked, each audible echo repeat of the source instrument's notes acts like another note for the follower, so it keeps tracking a note through its echo tail instead of dropping it the moment the note ends. This works in every follow mode (including the note-size modes) - handy for keeping sidechain-style ducking active through a bass line's echoes. Repeats only count once they fire after the note itself ends, and each one is treated as a fresh note start."));
+                    }
+                    break;
                 case "modPitchSmooth":
                     {
                         message = div$5(h2$4("Smoothing"), p$1("Glides the modulator toward each new pitch value instead of jumping instantly. Higher values glide more slowly, which can make filter sweeps and other pitch-driven effects feel less steppy."));
@@ -50217,6 +50327,7 @@ You should be redirected to the song at:<br /><br />
                         this._modPitchModValueBoxes[mod].checked = instrument.modPitchModValues[mod];
                         this._modPitchTrackDetuneBoxes[mod].checked = !!instrument.modPitchTrackDetunes[mod];
                         this._modPitchTrackPitchShiftBoxes[mod].checked = !!instrument.modPitchTrackPitchShifts[mod];
+                        this._modPitchTrackEchoBoxes[mod].checked = !!instrument.modPitchTrackEchoes[mod];
                         for (const rowId of ["modPitchFollowText", "modPitchSmoothText", "modPitchModValueText"]) {
                             $("#" + rowId + mod).get(0).style.display = pitchFollowerActive ? "" : "none";
                         }
@@ -50227,6 +50338,7 @@ You should be redirected to the song at:<br /><br />
                         const transposeOrDetuneApplicable = pitchFollowerActive && !sizeFollowMode && instrument.modPitchFollowModes[mod] != 2;
                         $("#modPitchTransposeText" + mod).get(0).style.display = transposeOrDetuneApplicable ? "" : "none";
                         $("#modPitchDetuneText" + mod).get(0).style.display = transposeOrDetuneApplicable ? "" : "none";
+                        $("#modPitchTrackEchoText" + mod).get(0).style.display = pitchFollowerActive ? "" : "none";
                     }
                     this.doc.recalcChannelNames = false;
                     for (let chordIndex = 0; chordIndex < Config.chords.length; chordIndex++) {
@@ -51474,6 +51586,9 @@ You should be redirected to the song at:<br /><br />
             this._whenSetModPitchTrackPitchShift = (mod) => {
                 this.doc.selection.setModPitchTrackPitchShift(mod, this._modPitchTrackPitchShiftBoxes[mod].checked);
             };
+            this._whenSetModPitchTrackEcho = (mod) => {
+                this.doc.selection.setModPitchTrackEcho(mod, this._modPitchTrackEchoBoxes[mod].checked);
+            };
             this._whenSetModPitchSmooth = (mod) => {
                 this.doc.selection.setModPitchSmooth(mod, this._modPitchSmoothBoxes[mod].selectedIndex * 10);
             };
@@ -51914,6 +52029,7 @@ You should be redirected to the song at:<br /><br />
             this._modPitchDetuneBoxes = [];
             this._modPitchTrackDetuneBoxes = [];
             this._modPitchTrackPitchShiftBoxes = [];
+            this._modPitchTrackEchoBoxes = [];
             this._modPitchSmoothBoxes = [];
             this._modTargetIndicators = [];
             for (let mod = 0; mod < Config.modCount; mod++) {
@@ -51945,6 +52061,8 @@ You should be redirected to the song at:<br /><br />
                 let modPitchTrackDetuneBox = input({ type: "checkbox", style: "width: auto; margin-left: 0.8em; vertical-align: middle;" });
                 let modPitchTrackPitchShiftBox = input({ type: "checkbox", style: "width: auto; margin-left: 0.8em; vertical-align: middle;" });
                 let modPitchDetuneRow = div({ class: "selectRow", id: "modPitchDetuneText" + mod, style: "margin-bottom: 0.9em; color: currentColor;" }, span({ class: "tip", onclick: () => this._openPrompt("modPitchDetune") }, "Detune: "), div({ class: "selectContainer" }, modPitchDetuneBox), span({ class: "tip", style: "margin-left: 0.8em;", onclick: () => this._openPrompt("modPitchTrackDetune") }, "Det"), modPitchTrackDetuneBox, span({ class: "tip", style: "margin-left: 0.8em;", onclick: () => this._openPrompt("modPitchTrackPitchShift") }, "PS"), modPitchTrackPitchShiftBox);
+                let modPitchTrackEchoBox = input({ type: "checkbox", style: "width: auto; margin-left: 0.8em; vertical-align: middle;" });
+                let modPitchTrackEchoRow = div({ class: "selectRow", id: "modPitchTrackEchoText" + mod, style: "margin-bottom: 0.9em; color: currentColor;" }, span({ class: "tip", style: "margin-left: 0.3em;", onclick: () => this._openPrompt("modPitchTrackEcho") }, "Track echoes"), modPitchTrackEchoBox);
                 let modPitchSmoothBox = select({ style: "width: 100%; color: currentColor;" });
                 let modPitchSmoothRow = div({ class: "selectRow", id: "modPitchSmoothText" + mod, style: "margin-bottom: 0.9em; color: currentColor;" }, span({ class: "tip", onclick: () => this._openPrompt("modPitchSmooth") }, "Smooth: "), div({ class: "selectContainer" }, modPitchSmoothBox));
                 let modPitchModValueBox = input({ type: "checkbox", style: "width: auto; margin-left: 0.8em; vertical-align: middle;" });
@@ -51979,6 +52097,7 @@ You should be redirected to the song at:<br /><br />
                 this._modPitchDetuneBoxes.push(modPitchDetuneBox);
                 this._modPitchTrackDetuneBoxes.push(modPitchTrackDetuneBox);
                 this._modPitchTrackPitchShiftBoxes.push(modPitchTrackPitchShiftBox);
+                this._modPitchTrackEchoBoxes.push(modPitchTrackEchoBox);
                 this._modPitchSmoothBoxes.push(modPitchSmoothBox);
                 this._modPitchModValueBoxes.push(modPitchModValueBox);
                 this._modTargetIndicators.push(modTarget);
@@ -51994,6 +52113,7 @@ You should be redirected to the song at:<br /><br />
                 this._modulatorGroup.appendChild(modPitchRangeStartRow);
                 this._modulatorGroup.appendChild(modPitchTransposeRow);
                 this._modulatorGroup.appendChild(modPitchDetuneRow);
+                this._modulatorGroup.appendChild(modPitchTrackEchoRow);
                 this._modulatorGroup.appendChild(modPitchSmoothRow);
                 this._modulatorGroup.appendChild(modPitchModValueRow);
             }
@@ -52087,6 +52207,7 @@ You should be redirected to the song at:<br /><br />
                 this._modPitchDetuneBoxes[mod].addEventListener("change", function () { thisRef._whenSetModPitchDetune(mod); });
                 this._modPitchTrackDetuneBoxes[mod].addEventListener("change", function () { thisRef._whenSetModPitchTrackDetune(mod); });
                 this._modPitchTrackPitchShiftBoxes[mod].addEventListener("change", function () { thisRef._whenSetModPitchTrackPitchShift(mod); });
+                this._modPitchTrackEchoBoxes[mod].addEventListener("change", function () { thisRef._whenSetModPitchTrackEcho(mod); });
                 this._modPitchSmoothBoxes[mod].addEventListener("change", function () { thisRef._whenSetModPitchSmooth(mod); });
                 this._modPitchModValueBoxes[mod].addEventListener("change", function () { thisRef._whenSetModPitchModValue(mod); });
                 this._modTargetIndicators[mod].addEventListener("click", function () { thisRef._whenClickModTarget(mod); });
